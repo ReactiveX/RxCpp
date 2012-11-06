@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "testbench", "testbench\testbench.vcxproj", "{6FC6DE04-1645-457E-9728-0E8E6FCDC9EB}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MfcTimeFliesLikeAnArrow", "MfcTimeFliesLikeAnArrow\MfcTimeFliesLikeAnArrow.vcxproj", "{E773817F-F3E5-4E78-ADD3-B70E11F611B6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6FC6DE04-1645-457E-9728-0E8E6FCDC9EB}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6FC6DE04-1645-457E-9728-0E8E6FCDC9EB}.Debug|Win32.Build.0 = Debug|Win32
+		{6FC6DE04-1645-457E-9728-0E8E6FCDC9EB}.Release|Win32.ActiveCfg = Release|Win32
+		{6FC6DE04-1645-457E-9728-0E8E6FCDC9EB}.Release|Win32.Build.0 = Release|Win32
+		{E773817F-F3E5-4E78-ADD3-B70E11F611B6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{E773817F-F3E5-4E78-ADD3-B70E11F611B6}.Debug|Win32.Build.0 = Debug|Win32
+		{E773817F-F3E5-4E78-ADD3-B70E11F611B6}.Release|Win32.ActiveCfg = Release|Win32
+		{E773817F-F3E5-4E78-ADD3-B70E11F611B6}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
