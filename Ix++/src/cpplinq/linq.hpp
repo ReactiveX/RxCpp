@@ -475,7 +475,7 @@ public:
 
     // -------------------- container/range methods --------------------
 
-    iterator begin() const  { return iterator(c.get_cursor()); }
+    iterator begin() const  { auto cur = c.get_cursor(); return !cur.empty() ? iterator(cur) : iterator(); }
     iterator end() const    { return iterator(); }
     linq_driver& operator=(const linq_driver& other) { c = other.c; return *this; }
     template <class TC2> 
