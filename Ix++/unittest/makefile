@@ -9,7 +9,7 @@ O=..\..\bin\$(Config)
 !message Building ===== $(Config) =====
 
 program=testbench.exe
-INCLUDE=$(INCLUDE);../
+INCLUDE=$(INCLUDE);../src
 
 !if "$(Config)"=="Debug"
 OPTIONS=/Od 
@@ -27,7 +27,7 @@ all : "$O/$(program)"
 $O : 
   mkdir $O
 
-"$O/$(program)" : testbench.cpp testbench.hpp ../cpplinq/*.hpp $O
+"$O/$(program)" : testbench.cpp testbench.hpp ../src/cpplinq/*.hpp $O
   $(CPP) $(OPTIONS) /EHsc /Zi /Fe"$@" /Fo$O/ testbench.cpp 
 
 clean :
