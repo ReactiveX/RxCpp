@@ -104,17 +104,26 @@ namespace cpplinq { namespace util {
                                                 detail::instance<A2>(),
                                                 detail::instance<A3>())) type;
     };
-#else
+#elif defined(_MSC_VER)
     template <class T>
     struct result_of<T> : std::tr1::result_of<T> {};
+#else
+    using std::result_of;
 #endif
+
+    template<class Type>
+    struct identity 
+    {
+        typedef Type type;
+        Type operator()(const Type& left) const {return left;}
+    };
 
     // faux pointer proxy for iterators that dereference to a value rather than reference, such as selectors
     template <class T>
     struct value_ptr
     {
         T value;
-        value_ptr(const T& pvalue) : value(value)
+        value_ptr(const T& value) : value(value)
         {}
         value_ptr(const T* pvalue) : value(*pvalue)
         {}

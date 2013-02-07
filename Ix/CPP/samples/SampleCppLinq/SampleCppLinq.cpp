@@ -3,8 +3,6 @@
 // SampleCppLinq.cpp : Defines the entry point for the console application.
 //
 
-#include <cpplinq\linq.hpp>
-
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -15,6 +13,8 @@
 #include <cmath>
 #include <algorithm>
 #include <numeric>
+
+#include <cpplinq/linq.hpp>
 
 using namespace std;
 
@@ -52,7 +52,7 @@ void run()
     
     for (auto giter = data.begin(), end = data.end(); giter != end; ++giter)
     {
-        auto& g = *giter;
+        const auto& g = *giter;
 
         cout << "arguments: " << g.key << endl;
 
@@ -63,7 +63,7 @@ void run()
 
         for (auto giter = seq.begin(), end = seq.end(); giter != end; ++giter)
         {
-            auto& g = *giter;
+            const auto& g = *giter;
 
             cout << g.key << ", ";
             

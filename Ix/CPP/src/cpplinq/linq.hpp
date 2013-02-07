@@ -149,6 +149,15 @@
 #define LINQ_USE_RTTI 1
 #endif
 
+#if defined(__clang__)
+#if __has_feature(cxx_rvalue_references)
+#define LINQ_USE_RVALUEREF 1
+#endif
+#if __has_feature(cxx_rtti)
+#define LINQ_USE_RTTI 1
+#endif
+#endif
+
 
 // individual features 
 #include "util.hpp"
@@ -242,7 +251,7 @@ public:
 
     template <class Predicate>
     linq_driver< linq_where<Collection, Predicate> > where(Predicate p) const {
-        return typename linq_where<Collection, Predicate>(c, std::move(p) );
+        return linq_where<Collection, Predicate>(c, std::move(p) );
     }
     
 
@@ -266,7 +275,7 @@ public:
         return std::accumulate(begin(), end(), initialValue, fn);
     }
 
-    bool any() const { return !empty(cur); }
+    bool any() const { auto cur = c.get_cursor(); return !cur.empty(); }
 
     template <class Predicate>
     bool any(Predicate p) const {
@@ -282,12 +291,16 @@ public:
 
     // TODO: average
 
+#if !defined(__clang__)
+    // Clang complains that linq_driver is not complete until the closing brace 
+    // so (linq_driver*)->select() cannot be resolved.
     template <class U>
     auto cast() 
     -> decltype(static_cast<linq_driver*>(0)->select(detail::cast_to<U>())) 
     {
         return this->select(detail::cast_to<U>());
     }
+#endif
 
     // TODO: concat
 
@@ -295,12 +308,12 @@ public:
         return std::find(begin(), end(), value) != end();
     }
 
-    typename std::iterator_traits<iterator>::distance_type count() const {
+    typename std::iterator_traits<iterator>::difference_type count() const {
         return std::distance(begin(), end());
     }
 
     template <class Predicate>
-    typename std::iterator_traits<iterator>::distance_type count(Predicate p) const {
+    typename std::iterator_traits<iterator>::difference_type count(Predicate p) const {
         auto filtered = this->where(p);
         return std::distance(begin(filtered), end(filtered));
     }

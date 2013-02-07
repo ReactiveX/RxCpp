@@ -74,16 +74,16 @@ namespace cpplinq {
     namespace util {
         template <class Iter, class T>
         typename std::iterator_traits<Iter>::pointer deref_iterator(const Iter& it) {
-            return detail::deref_iterator(it, std::identity<typename std::iterator_traits<Iter>::reference>());
+            return deref_iterator(it, util::identity<typename std::iterator_traits<Iter>::reference>());
         }
 
         template <class Iter, class T>
-        T* deref_iterator(const Iter& it, std::identity<T&>) {
+        T* deref_iterator(const Iter& it, util::identity<T&>) {
             return &*it;
         }
 
         template <class Iter, class T>
-        util::value_ptr<T> deref_iterator(const Iter& it, std::identity<T>) {
+        util::value_ptr<T> deref_iterator(const Iter& it, util::identity<T>) {
             return util::value_ptr<T>(*it);
         }
     } 
@@ -137,7 +137,7 @@ namespace cpplinq {
             return cur->get();
         }
 
-        pointer operator->() const {
+        typename cursor_iterator::pointer operator->() const {
             auto& v = **this;
             return &v;
         }
