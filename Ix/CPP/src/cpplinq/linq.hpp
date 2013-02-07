@@ -131,6 +131,8 @@
 
 #include <functional>
 #include <iterator>
+#include <algorithm>
+#include <numeric>
 #include <list>
 #include <map>
 #include <memory>

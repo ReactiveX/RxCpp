@@ -3,6 +3,8 @@
 // SampleCppLinq.cpp : Defines the entry point for the console application.
 //
 
+#include <cpplinq/linq.hpp>
+
 #include <iostream>
 #include <fstream>
 #include <iomanip>
@@ -13,8 +15,6 @@
 #include <cmath>
 #include <algorithm>
 #include <numeric>
-
-#include <cpplinq/linq.hpp>
 
 using namespace std;
 
