@@ -1,6 +1,32 @@
 // Copyright (c) Microsoft Open Technologies, Inc. All rights reserved. See License.txt in the project root for license information.
 
+#if !defined(CPPRX_RX_HPP)
+#define CPPRX_RX_HPP
 #pragma once
+
+#include <exception>
+#include <functional>
+#include <memory>
+#include <vector>
+#include <algorithm>
+#include <atomic>
+#include <map>
+#include <mutex>
+#include <deque>
+#include <thread>
+#include <vector>
+#include <queue>
+#include <chrono>
+#include <condition_variable>
+
+#include <Windows.h>
+
+#pragma push_macro("min")
+#pragma push_macro("max")
+#undef min
+#undef max
+
+#include "rx-base.hpp"
 
 namespace rxcpp
 {
@@ -46,3 +72,8 @@ namespace rxcpp
     Binder<Obj> from(Obj&& obj) { return Binder<Obj>(std::move(obj)); }
 
 }
+
+#pragma pop_macro("min")
+#pragma pop_macro("max")
+
+#endif

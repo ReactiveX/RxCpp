@@ -3,7 +3,7 @@
 // testbench.cpp : Defines the entry point for the console application.
 //
 
-#include "rxcpp.h"
+#include "cpprx/rx.hpp"
 
 #include <iostream>
 #include <iomanip>
