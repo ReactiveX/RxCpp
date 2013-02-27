@@ -60,5 +60,5 @@
 #include <string>
 #include <sstream>
 
-#include "rxcpp.h"
+#include "cpprx/rx.hpp"
 
