@@ -6,7 +6,6 @@
 
 namespace rxcpp
 {
-
     //////////////////////////////////////////////////////////////////////
     // 
     // Abstract interfaces
@@ -218,7 +217,7 @@ namespace rxcpp
     template <class T>
     Disposable Subscribe(
         const std::shared_ptr<Observable<T>>& source,
-        typename std::identity<std::function<void(const T&)>>::type onNext,
+        typename util::identity<std::function<void(const T&)>>::type onNext,
         std::function<void()> onCompleted = nullptr,
         std::function<void(const std::exception_ptr&)> onError = nullptr
         )
@@ -226,70 +225,6 @@ namespace rxcpp
         auto observer = CreateObserver<T>(std::move(onNext), std::move(onCompleted), std::move(onError));
         
         return source->Subscribe(observer);
-    }
-
-    template <class F>
-    struct fix0_thunk {
-        F f;
-        fix0_thunk(F&& f) : f(std::move(f))
-        {
-        }
-        void operator()() const 
-        {
-            f(*this);
-        }
-    };
-    template <class F>
-    fix0_thunk<F> fix0(F f)
-    {
-        return fix0_thunk<F>(std::move(f));
-    }
-
-    template <class Integral>
-    auto Range(
-        Integral start, Integral end = (Integral)-1, Integral step = 1
-        )
-    -> std::shared_ptr<Observable<Integral>>
-    {
-        return CreateObservable<Integral>(
-            [=](std::shared_ptr<Observer<Integral>> observer) -> Disposable
-        {
-            struct State 
-            {
-                bool cancel;
-                Integral i;
-                Integral rem;
-            };
-            auto state = std::make_shared<State>();
-            state->cancel = false;
-            state->i = start;
-            state->rem = (end - start) / step;
-
-            DefaultScheduler::Instance().Schedule(
-                fix0([=](std::function<void()> self) // TODO:
-            {
-                try {
-                    if (state->cancel)
-                        return;
-
-                    if (!state->rem)
-                    {
-                        observer->OnCompleted();
-                    }
-                    else
-                    {
-                        observer->OnNext(state->i);
-                        --state->rem; 
-                        ++state->i;
-                        DefaultScheduler::Instance().Schedule(std::move(self));
-                    }
-                } catch (...) {
-                    observer->OnError(std::current_exception());
-                }                
-            }));
-
-            return [=]{ state->cancel = true; };
-        });
     }
 
     // reference handle type for a container for composing disposables
@@ -427,7 +362,8 @@ namespace rxcpp
         )    
     {
         return CreateObservable<T>(
-            [=](std::shared_ptr<Observer<T>> observer)
+            [=](std::shared_ptr<Observer<T>> observer) 
+            -> Disposable
             {
                 auto remaining = std::make_shared<int>(n);
 
@@ -499,11 +435,16 @@ namespace rxcpp
         }
         ~DefaultScheduler()
         {
-            std::unique_lock<std::mutex> guard(scheduleLock);
-            shutdownRequested = true;
-            guard.unlock();
-            cv.notify_one();
+            {
+                std::unique_lock<std::mutex> guard(scheduleLock);
+                shutdownRequested = true;
+            }
+            cv.notify_all();
         }
+
+
+        void ScopeEnter() {++trampoline;}
+        void ScopeExit() {--trampoline; Schedule([]{});}
 
         void Schedule(Work work)
         {
@@ -524,9 +465,9 @@ namespace rxcpp
                 {
                     queue.push_back(std::move(work));
                 }
+                --trampoline;
             }
-            catch (...)
-            {
+            catch (...) {
                 --trampoline;
                 throw;
             }
@@ -554,12 +495,14 @@ namespace rxcpp
         {
             Clock::time_point dueTime = Clock::now() + std::chrono::duration<int, std::milli>(milliseconds);
 
-            std::unique_lock<std::mutex> guard(scheduleLock);
-            bool wake = scheduledWork.empty() || dueTime < scheduledWork.top().first;
+            bool wake = false;
 
-            scheduledWork.push(std::make_pair(dueTime, std::move(work)));
+            {
+                std::unique_lock<std::mutex> guard(scheduleLock);
+                wake = scheduledWork.empty() || dueTime < scheduledWork.top().first;
 
-            guard.unlock();
+                scheduledWork.push(std::make_pair(dueTime, std::move(work)));
+            }
             
             if (wake)
                 cv.notify_one();
@@ -571,7 +514,6 @@ namespace rxcpp
 
             while(!shutdownRequested)
             {
-                
                 if (scheduledWork.empty())
                 {
                     cv.wait(guard);
@@ -592,14 +534,82 @@ namespace rxcpp
 
                 guard.unlock();
                 try { 
-                    work(); 
+                    Schedule([=]{work();}); 
                 } catch (...) { 
-                    // TODO: ??? what now?
+                    // work must catch all expected exceptions 
+                    // (yes, expected exceptions is an oxymoron)
+                    std::unexpected();
                 }
                 guard.lock();
             }
         }
     };
+
+    template <class F>
+    struct fix0_thunk {
+        F f;
+        fix0_thunk(F&& f) : f(std::move(f))
+        {
+        }
+        void operator()() const 
+        {
+            f(*this);
+        }
+    };
+    template <class F>
+    fix0_thunk<F> fix0(F f)
+    {
+        return fix0_thunk<F>(std::move(f));
+    }
+
+    template <class Integral>
+    auto Range(
+        Integral start, Integral end = std::numeric_limits<Integral>::max(), Integral step = 1
+        )
+    -> std::shared_ptr<Observable<Integral>>
+    {
+        return CreateObservable<Integral>(
+            [=](std::shared_ptr<Observer<Integral>> observer) -> Disposable
+        {
+            struct State 
+            {
+                bool cancel;
+                Integral i;
+                Integral rem;
+            };
+            auto state = std::make_shared<State>();
+            state->cancel = false;
+            state->i = start;
+            state->rem = ((end - start) + step) / step;
+
+            DefaultScheduler::Instance().Schedule(
+                fix0([=](std::function<void()> self) // TODO:
+            {
+                try {
+                    if (state->cancel)
+                        return;
+
+                    if (!state->rem)
+                    {
+                        observer->OnCompleted();
+                    }
+                    else
+                    {
+                        observer->OnNext(state->i);
+                        --state->rem; 
+                        state->i += step;
+                        DefaultScheduler::Instance().Schedule(std::move(self));
+                    }
+                } catch (...) {
+                    observer->OnError(std::current_exception());
+                }                
+            }));
+
+            return Disposable([=]{
+                state->cancel = true;
+            });
+        });
+    }
 
     template <class T>
     std::shared_ptr<Observable<T>> Delay(
@@ -616,6 +626,7 @@ namespace rxcpp
         
         return CreateObservable<T>(
             [=](std::shared_ptr<Observer<T>> observer)
+            -> Disposable
             {
                 auto cancel = std::make_shared<bool>(false);
 
@@ -667,25 +678,25 @@ namespace rxcpp
         
         return CreateObservable<T>(
             [=](std::shared_ptr<Observer<T>> observer)
+            -> Disposable
             {
                 struct State {
-                    ULONGLONG dueTime;
+                    std::chrono::steady_clock::time_point dueTime;
                 };
         
                 auto state = std::make_shared<State>();
-                state->dueTime = 0;
 
                 return Subscribe(
                     source,
                 // on next
                     [=](const T& element)
                     {
-                        auto now = ::GetTickCount64();
+                        auto now = std::chrono::steady_clock::now();
 
                         if (now >= state->dueTime)
                         {
                             observer->OnNext(element);
-                            state->dueTime = now + (ULONGLONG)milliseconds;
+                            state->dueTime = now + std::chrono::duration<int, std::milli>(milliseconds);
                         }
                     },
                 // on completed
@@ -708,6 +719,7 @@ namespace rxcpp
     {   
         return CreateObservable<T>(
             [=](std::shared_ptr<Observer<T>> observer)
+            -> Disposable
             {
                 struct State {
                     T last; bool hasValue;
@@ -741,89 +753,86 @@ namespace rxcpp
             });
     }
 
-    
-
-
-    struct ObserveOnDispatcherOp
+    class StdQueueDispatcher
     {
-        HWND hwnd;
+        mutable std::queue<std::function<void()>> pending;
+        mutable std::condition_variable wake;
+        mutable std::mutex pendingLock;
 
-        ObserveOnDispatcherOp(): hwnd(WindowClass::Instance().CreateWindow_())
+        std::function<void()> get() const
         {
-            if (!hwnd)
-                throw std::exception("error");
+            std::function<void()> fn;
+            fn = std::move(pending.front());
+            pending.pop();
+            return std::move(fn);
         }
-        ~ObserveOnDispatcherOp()
+
+        void dispatch(std::function<void()> fn) const
         {
-            // send one last message to ourselves to shutdown.
-            post([=]{ CloseWindow(hwnd); });
-        }
-
-        struct WindowClass
-        {
-            static const wchar_t* const className(){ return L"ObserveOnDispatcherOp::WindowClass"; }
-            WindowClass()
+            if (fn)
             {
-                WNDCLASS wndclass = {};
-                wndclass.style = 0;
-                wndclass.lpfnWndProc = &WndProc;
-                wndclass.cbClsExtra;
-                wndclass.cbWndExtra = 0;
-                wndclass.hInstance = NULL;
-                wndclass.lpszClassName = className();
-
-                if (!RegisterClass(&wndclass))
-                    throw std::exception("error");
-                
-            }
-            HWND CreateWindow_()
-            {
-                return CreateWindowEx(0, WindowClass::className(), L"MessageOnlyWindow", 0, 0, 0, 0, 0, HWND_MESSAGE, 0, 0, 0);
-            }
-            static const int WM_USER_DISPATCH = WM_USER + 1;
-
-            static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
-            {
-                switch (message)
-                {
-                    // TODO: shatter attack surface. should validate the message, e.g. using a handle table.
-                case WM_USER_DISPATCH:
-                    ((void(*)(void*))wParam)((void*)lParam);
-                    return 0;
-                default:
-                    return DefWindowProc(hwnd, message, wParam, lParam);
+                try {
+                    fn();
+                }
+                catch(...) {
+                    std::unexpected();
                 }
             }
-            static WindowClass& Instance() { 
-                static WindowClass instance;
-                return instance;
-            }
-        };
+        }
 
+    public:
         template <class Fn>
         void post(Fn fn) const
         {
-            auto p = new Fn(fn);
-            ::PostMessage(hwnd, WindowClass::WM_USER_DISPATCH, (WPARAM)(void(*)(void*))&run_proc<Fn>, (LPARAM)(void*)p);
+            {
+                std::unique_lock<std::mutex> guard(pendingLock);
+                pending.push(std::move(fn));
+            }
+            wake.notify_one();
         }
-        template <class Fn>
-        static void run_proc(
-            void* pvfn
-        )
+
+        void try_dispatch() const
         {
-            auto fn = (Fn*)(void*) pvfn;
-            (*fn)();
-            delete fn;
+            std::function<void()> fn;
+            {
+                std::unique_lock<std::mutex> guard(pendingLock);
+                if (!pending.empty())
+                {
+                    fn = get();
+                }
+            }
+            dispatch(std::move(fn));
+        }
+
+        bool dispatch_one() const
+        {
+            std::function<void()> fn;
+            {
+                std::unique_lock<std::mutex> guard(pendingLock);
+                wake.wait(guard, [this]{ return !pending.empty();});
+                fn = get();
+            }
+            bool result = !!fn;
+            dispatch(std::move(fn));
+            return result;
         }
     };
+#if !defined(OBSERVE_ON_DISPATCHER_OP)
+    typedef StdQueueDispatcher ObserveOnDispatcherOp;
+#endif 
 
-    template <class T>
+    template <class T, class Dispatcher>
     std::shared_ptr<Observable<T>> ObserveOnDispatcher(
-        const std::shared_ptr<Observable<T>>& source)
+        const std::shared_ptr<Observable<T>>& source, 
+        std::shared_ptr<Dispatcher> dispatcher = nullptr)
     {
-        auto dispatcher = std::make_shared<ObserveOnDispatcherOp>();
+        if (!dispatcher)
+        {
+            dispatcher = std::make_shared<Dispatcher>();
+        }
         return CreateObservable<T>(
             [=](std::shared_ptr<Observer<T>> observer)
+            -> Disposable
             {
                 auto cancel = std::make_shared<bool>(false);
 
@@ -861,6 +870,6 @@ namespace rxcpp
                 return cd;
             });
     }
-}
 
+}
 #endif
