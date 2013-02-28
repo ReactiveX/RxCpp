@@ -14,22 +14,19 @@
 #include <mutex>
 #include <deque>
 #include <thread>
+#include <future>
 #include <vector>
 #include <queue>
 #include <chrono>
 #include <condition_variable>
 
-#include <Windows.h>
 
-#pragma push_macro("min")
-#pragma push_macro("max")
-#undef min
-#undef max
-
+#include "rx-util.hpp"
+#include "rx-windows.hpp"
 #include "rx-base.hpp"
 
 namespace rxcpp
-{
+{    
     template <class Obj>
     class Binder
     {
@@ -59,21 +56,44 @@ namespace rxcpp
         auto distinct_until_changed() -> decltype(from(DistinctUntilChanged(obj))) {
             return from(DistinctUntilChanged(obj));
         }
-        auto on_dispatcher() -> decltype(from(ObserveOnDispatcher(obj)))
+        template<class Dispatcher>
+        auto observe_on(std::shared_ptr<Dispatcher> dispatcher) 
+        -> decltype(from(ObserveOnDispatcher(obj, std::move(dispatcher))))
         {
-            return from(ObserveOnDispatcher(obj));
+            return from(ObserveOnDispatcher(obj, std::move(dispatcher)));
+        }
+        auto on_dispatcher(std::shared_ptr<ObserveOnDispatcherOp> dispatcher = nullptr) 
+        -> decltype(from(ObserveOnDispatcher(obj, std::move(dispatcher))))
+        {
+            return from(ObserveOnDispatcher(obj, std::move(dispatcher)));
         }
         template <class OnNext>
         auto subscribe(OnNext onNext) -> decltype(Subscribe(obj, onNext)) {
-            return Subscribe(obj, onNext);
+            DefaultScheduler::Instance().ScopeEnter();
+            auto result = Subscribe(obj, onNext);
+            DefaultScheduler::Instance().ScopeExit();
+            return result;
+        }
+        template <class OnNext, class OnComplete>
+        auto subscribe(OnNext onNext, OnComplete onComplete) -> decltype(Subscribe(obj, onNext, onComplete)) {
+            DefaultScheduler::Instance().ScopeEnter();
+            auto result = Subscribe(obj, onNext, onComplete);
+            DefaultScheduler::Instance().ScopeExit();
+            return result;
+        }
+        template <class OnNext, class OnComplete, class OnError>
+        auto subscribe(OnNext onNext, OnComplete onComplete, OnError onError) 
+            -> decltype(Subscribe(obj, onNext, onComplete, onError)) {
+            DefaultScheduler::Instance().ScopeEnter();
+            auto result = Subscribe(obj, onNext, onComplete, onError);
+            DefaultScheduler::Instance().ScopeExit();
+            return result;
         }
     };
     template <class Obj>
-    Binder<Obj> from(Obj&& obj) { return Binder<Obj>(std::move(obj)); }
+    Binder<typename std::remove_reference<Obj>::type> from(Obj&& obj) { 
+        return Binder<typename std::remove_reference<Obj>::type>(std::move(obj)); }
 
 }
-
-#pragma pop_macro("min")
-#pragma pop_macro("max")
 
 #endif
