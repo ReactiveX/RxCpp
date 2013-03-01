@@ -18,23 +18,16 @@ bool IsPrime(int x);
 
 void PrintPrimes(int n)
 {
-    bool done = false;
-    auto dispatcher = std::make_shared<rxcpp::ObserveOnDispatcherOp>();
+    std::cout << "first " << n << " primes squared" << endl;
     auto values = rxcpp::Range(2); // infinite (until overflow) stream of integers
     auto s1 = rxcpp::from(values)
         .where(IsPrime)
         .select([](int x) { return std::make_pair(x,  x*x); })
         .take(n)
-        .on_dispatcher(dispatcher)
         .subscribe(
             [](pair<int, int> p) {
                 cout << p.first << " =square=> " << p.second << endl;
-            },
-            [&done](){done = true;}, 
-            [&done](const std::exception_ptr&){done = true;});
-
-    std::cout << "first " << n << " primes squared" << endl;
-    while(!done){dispatcher->dispatch_one();}
+            });
 }
 
 

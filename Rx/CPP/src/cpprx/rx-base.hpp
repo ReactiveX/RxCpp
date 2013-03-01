@@ -818,19 +818,16 @@ namespace rxcpp
         }
     };
 #if !defined(OBSERVE_ON_DISPATCHER_OP)
-    typedef StdQueueDispatcher ObserveOnDispatcherOp;
+    typedef StdQueueDispatcher c;
 #endif 
 
-    template <class T, class Dispatcher>
+    template <class T>
     std::shared_ptr<Observable<T>> ObserveOnDispatcher(
-        const std::shared_ptr<Observable<T>>& source, 
-        std::shared_ptr<Dispatcher> dispatcher = nullptr)
+        const std::shared_ptr<Observable<T>>& source)
     {
-        if (!dispatcher)
-        {
-            dispatcher = std::make_shared<Dispatcher>();
-        }
-        return CreateObservable<T>(
+        auto dispatcher = std::make_shared<ObserveOnDispatcherOp>();
+
+		return CreateObservable<T>(
             [=](std::shared_ptr<Observer<T>> observer)
             -> Disposable
             {
