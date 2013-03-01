@@ -27,8 +27,10 @@
 
 
 #include "rx-util.hpp"
-#include "rx-windows.hpp"
 #include "rx-base.hpp"
+#include "rx-scheduler.h"
+#include "rx-windows.hpp"
+#include "rx-operators.hpp"
 
 namespace rxcpp
 {    
@@ -52,14 +54,27 @@ namespace rxcpp
         auto take(Integral n) -> decltype(from(Take(obj, n))) {
             return from(Take(obj, n));
         }
-        auto delay(int milliseconds) -> decltype(from(Delay(obj, milliseconds))) {
-            return from(Delay(obj, milliseconds));
+        auto delay(Scheduler::clock::duration due) -> decltype(from(Delay(obj, due))) {
+            return from(Delay(obj, due));
+        }
+        auto delay(Scheduler::clock::duration due, Scheduler::shared scheduler) -> decltype(from(Delay(obj, due, scheduler))) {
+            return from(Delay(obj, due, scheduler));
         }
         auto limit_window(int milliseconds) -> decltype(from(LimitWindow(obj, milliseconds))) {
             return from(LimitWindow(obj, milliseconds));
         }
         auto distinct_until_changed() -> decltype(from(DistinctUntilChanged(obj))) {
             return from(DistinctUntilChanged(obj));
+        }
+        auto subscribe_on(Scheduler::shared scheduler)
+        -> decltype(from(SubscribeOnObservable(obj, std::move(scheduler))))
+        {
+            return from(SubscribeOnObservable(obj, std::move(scheduler)));
+        }
+        auto observe_on(Scheduler::shared scheduler)
+        -> decltype(from(ObserveOnObserver(obj, std::move(scheduler))))
+        {
+            return from(ObserveOnObserver(obj, std::move(scheduler)));
         }
         auto on_dispatcher() 
         -> decltype(from(ObserveOnDispatcher(obj)))
@@ -68,24 +83,18 @@ namespace rxcpp
         }
         template <class OnNext>
         auto subscribe(OnNext onNext) -> decltype(Subscribe(obj, onNext)) {
-            DefaultScheduler::Instance().ScopeEnter();
             auto result = Subscribe(obj, onNext);
-            DefaultScheduler::Instance().ScopeExit();
             return result;
         }
         template <class OnNext, class OnComplete>
         auto subscribe(OnNext onNext, OnComplete onComplete) -> decltype(Subscribe(obj, onNext, onComplete)) {
-            DefaultScheduler::Instance().ScopeEnter();
             auto result = Subscribe(obj, onNext, onComplete);
-            DefaultScheduler::Instance().ScopeExit();
             return result;
         }
         template <class OnNext, class OnComplete, class OnError>
         auto subscribe(OnNext onNext, OnComplete onComplete, OnError onError) 
             -> decltype(Subscribe(obj, onNext, onComplete, onError)) {
-            DefaultScheduler::Instance().ScopeEnter();
             auto result = Subscribe(obj, onNext, onComplete, onError);
-            DefaultScheduler::Instance().ScopeExit();
             return result;
         }
     };

@@ -12,6 +12,14 @@
 #endif
 #endif
 
+#if !defined(RXCPP_SELECT_ANY)
+#if defined(_MSC_VER)
+#define RXCPP_SELECT_ANY __declspec(selectany)
+#else
+#define RXCPP_SELECT_ANY 
+#endif
+#endif
+
 #define RXCPP_CONCAT(Prefix, Suffix) Prefix ## Suffix
 #define RXCPP_CONCAT_EVALUATE(Prefix, Suffix) RXCPP_CONCAT(Prefix, Suffix)
 
@@ -26,7 +34,107 @@ namespace rxcpp { namespace util {
         Type operator()(const Type& left) const {return left;}
     };
 
-	template<typename Function>
+    template <class T>
+    class maybe
+    {
+        bool is_set;
+        typename std::aligned_storage<sizeof(T), std::alignment_of<T>::value>::type 
+            storage;
+    public:
+        maybe()
+        : is_set(false)
+        {
+        }
+
+        maybe(T value)
+        : is_set(false)
+        {
+            new (reinterpret_cast<T*>(&storage)) T(value);
+            is_set = true;
+        }
+
+        maybe(const maybe& other)
+        : is_set(false)
+        {
+            if (other.is_set) {
+                new (reinterpret_cast<T*>(&storage)) T(*other.get());
+                is_set = true;
+            }
+        }
+        maybe(maybe&& other)
+        : is_set(false)
+        {
+            if (other.is_set) {
+                new (reinterpret_cast<T*>(&storage)) T(std::move(*other.get()));
+                is_set = true;
+                other.reset();
+            }
+        }
+
+        ~maybe()
+        {
+            reset();
+        }
+
+        void reset()
+        {
+            if (is_set) {
+                is_set = false;
+                reinterpret_cast<T*>(&storage)->~T();
+            }
+        }
+
+        T* get() {
+            return is_set ? reinterpret_cast<T*>(&storage) : 0;
+        }
+
+        const T* get() const {
+            return is_set ? reinterpret_cast<const T*>(&storage) : 0;
+        }
+
+        void set(const T& value) {
+            if (is_set) {
+                *reinterpret_cast<T*>(&storage) = value;
+            } else {
+                new (reinterpret_cast<T*>(&storage)) T(value);
+                is_set = true;
+            }
+        }
+        void set(T&& value) {
+            if (is_set) {
+                *reinterpret_cast<T*>(&storage) = std::move(value);
+            } else {
+                new (reinterpret_cast<T*>(&storage)) T(std::move(value));
+                is_set = true;
+            }
+        }
+
+        T& operator*() { return *get(); }
+        const T& operator*() const { return *get(); }
+        T* operator->() { return get(); }
+        const T* operator->() const { return get(); }
+
+        maybe& operator=(const T& other) {
+            set(other);
+        }
+        maybe& operator=(const maybe& other) {
+            if (const T* pother = other.get()) {
+                set(*pother);
+            } else {
+                reset();
+            }
+            return *this;
+        }
+
+        // boolean-like operators
+        operator T*() { return get(); }
+        operator const T*() const { return get(); }
+
+    private:
+        
+    };
+
+    template<typename Function>
 	class unwinder
 	{
 	public:

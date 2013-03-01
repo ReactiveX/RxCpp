@@ -44,13 +44,13 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(VCInstallDir)include;..\src;$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>$(VCInstallDir)include;..\..\..\Ix\CPP\src;..\src;$(WindowsSDK_IncludePath);</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>obj\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VCInstallDir)include;..\src;$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>$(VCInstallDir)include;..\..\..\Ix\CPP\src;..\src;$(WindowsSDK_IncludePath);</IncludePath>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>obj\$(Configuration)\</IntDir>
   </PropertyGroup>
