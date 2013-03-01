@@ -4,6 +4,11 @@
 #define CPPRX_RX_HPP
 #pragma once
 
+#pragma push_macro("min")
+#pragma push_macro("max")
+#undef min
+#undef max
+
 #include <exception>
 #include <functional>
 #include <memory>
@@ -32,7 +37,7 @@ namespace rxcpp
     {
         Obj obj;
     public:
-        Binder(Obj&& obj) : obj(std::move(obj))
+        Binder(Obj obj) : obj(std::move(obj))
         {
         }
         template <class S>
@@ -56,16 +61,10 @@ namespace rxcpp
         auto distinct_until_changed() -> decltype(from(DistinctUntilChanged(obj))) {
             return from(DistinctUntilChanged(obj));
         }
-        template<class Dispatcher>
-        auto observe_on(std::shared_ptr<Dispatcher> dispatcher) 
-        -> decltype(from(ObserveOnDispatcher(obj, std::move(dispatcher))))
+        auto on_dispatcher() 
+        -> decltype(from(ObserveOnDispatcher(obj)))
         {
-            return from(ObserveOnDispatcher(obj, std::move(dispatcher)));
-        }
-        auto on_dispatcher(std::shared_ptr<ObserveOnDispatcherOp> dispatcher = nullptr) 
-        -> decltype(from(ObserveOnDispatcher(obj, std::move(dispatcher))))
-        {
-            return from(ObserveOnDispatcher(obj, std::move(dispatcher)));
+            return from(ObserveOnDispatcher(obj));
         }
         template <class OnNext>
         auto subscribe(OnNext onNext) -> decltype(Subscribe(obj, onNext)) {
@@ -92,8 +91,11 @@ namespace rxcpp
     };
     template <class Obj>
     Binder<typename std::remove_reference<Obj>::type> from(Obj&& obj) { 
-        return Binder<typename std::remove_reference<Obj>::type>(std::move(obj)); }
+        return Binder<typename std::remove_reference<Obj>::type>(std::forward<Obj>(obj)); }
 
 }
+
+#pragma pop_macro("min")
+#pragma pop_macro("max")
 
 #endif
