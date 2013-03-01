@@ -56,6 +56,195 @@ namespace rxcpp
         virtual ~Observable() {}
     };
 
+        struct Scheduler : public std::enable_shared_from_this<Scheduler>
+    {
+        typedef std::chrono::steady_clock clock;
+        typedef std::shared_ptr<Scheduler> shared;
+        typedef std::function<Disposable(shared)> Work;
+
+        shared get() {return shared_from_this();}
+
+        virtual ~Scheduler() {}
+
+        virtual clock::time_point Now() =0;
+        virtual Disposable Schedule(Work work) = 0;
+        virtual Disposable Schedule(clock::duration due, Work work) = 0;
+        virtual Disposable Schedule(clock::time_point due, Work work) = 0;
+    };
+
+    //////////////////////////////////////////////////////////////////////
+    // 
+    // disposables
+
+    
+    // reference handle type for a container for composing disposables
+    class ComposableDisposable
+    {
+        struct State
+        {
+            std::vector<Disposable> disposables;
+            std::mutex lock;
+            bool isDisposed;
+            
+            State() : isDisposed(false)
+            {
+            }
+            void Add(Disposable&& d)
+            {
+                std::unique_lock<decltype(lock)> guard(lock);
+                if (isDisposed) {
+                    guard.unlock();
+                    d.Dispose();
+                } else {
+                    disposables.emplace_back(std::move(d));
+                }
+            }
+            void Dispose()
+            {
+                std::unique_lock<decltype(lock)> guard(lock);
+
+                if (!isDisposed)
+                {
+                    isDisposed = true;
+                    auto v = std::move(disposables);
+                    guard.unlock();
+                    
+                    std::for_each(v.begin(), v.end(),
+                                  [](Disposable& d) { 
+                                    d.Dispose(); });
+                }
+            }
+        };
+        
+        std::shared_ptr<State> state;
+        
+    public:
+
+        ComposableDisposable() : state(new State)
+        {
+        }
+        void Add(Disposable d) const
+        {
+            state->Add(std::move(d));
+        }
+        void Dispose() const
+        {
+            state->Dispose();
+        }
+        operator Disposable() const
+        {
+            // make sure to capture state and not 'this'.
+            // usage means that 'this' will usualy be destructed
+            // immediately
+            auto local = state;
+            return Disposable([local]{
+                local->Dispose();
+            });
+        }
+    };
+
+    class ScheduledDisposable
+    {
+        struct State : public std::enable_shared_from_this<State>
+        {
+            Scheduler::shared scheduler;
+            Disposable disposable;
+            
+            State(Scheduler::shared scheduler, Disposable disposable) 
+                : scheduler(std::move(scheduler))
+                , disposable(std::move(disposable))
+            {
+            }
+            void Dispose()
+            {
+                auto local = std::move(scheduler);
+                if (local) {
+                    auto keepAlive = shared_from_this();
+                    local->Schedule([keepAlive] (Scheduler::shared) {
+                        keepAlive->disposable.Dispose();
+                        return Disposable::Empty();
+                    });
+                }
+            }
+        };
+        
+        std::shared_ptr<State> state;
+        
+        ScheduledDisposable();
+    public:
+
+        ScheduledDisposable(Scheduler::shared scheduler, Disposable disposable) 
+            : state(new State(std::move(scheduler), std::move(disposable)))
+        {
+        }
+        void Dispose() const
+        {
+            state->Dispose();
+        }
+        operator Disposable() const
+        {
+            // make sure to capture state and not 'this'.
+            // usage means that 'this' will usualy be destructed
+            // immediately
+            auto local = state;
+            return Disposable([local]{
+                local->Dispose();
+            });
+        }
+    };
+
+    class SharedDisposable
+    {
+        typedef std::function<void()> dispose_type;
+
+        struct State : public std::enable_shared_from_this<State>
+        {
+            mutable Disposable disposable;
+            mutable std::mutex lock;
+
+            State() : disposable(Disposable::Empty()) {}
+
+            void Set(Disposable disposeArg) const
+            {
+                std::unique_lock<decltype(lock)> guard(lock);
+                {using std::swap; swap(disposable, disposeArg);}
+            }
+            void Dispose()
+            {
+                std::unique_lock<decltype(lock)> guard(lock);
+                auto local = std::move(disposable);
+                guard.unlock();
+                local.Dispose();
+            }
+        };
+        
+        std::shared_ptr<State> state;
+        
+    public:
+
+        SharedDisposable() 
+            : state(new State())
+        {
+        }
+        void Dispose() const
+        {
+            state->Dispose();
+        }
+        void Set(Disposable disposeArg) const
+        {
+            state->Set(std::move(disposeArg));
+        }
+        operator Disposable() const
+        {
+            // make sure to capture state and not 'this'.
+            // usage means that 'this' will usualy be destructed
+            // immediately
+            auto local = state;
+            return Disposable([local]{
+                local->Dispose();
+            });
+        }
+    };
 
 
     //////////////////////////////////////////////////////////////////////
@@ -242,65 +431,6 @@ namespace rxcpp
         
         return source->Subscribe(observer);
     }
-
-    // reference handle type for a container for composing disposables
-    class ComposableDisposable 
-    {
-        struct State
-        {
-            std::vector<Disposable> disposables;
-            std::mutex lock;
-            bool isDisposed;
-
-            State() : isDisposed(false)
-            {
-            }
-            void Add(Disposable&& d)
-            {
-                std::unique_lock<decltype(lock)> guard(lock);
-                if (isDisposed) {
-                    guard.unlock();
-                    d.Dispose();
-                } else {
-                    disposables.push_back(std::move(d));
-                }
-            }
-            void Dispose() 
-            {
-                std::unique_lock<decltype(lock)> guard(lock);
-
-                isDisposed = true;
-                auto v = std::move(disposables);
-                guard.unlock();
-
-                std::for_each(v.begin(), v.end(),
-                    [](Disposable& d) { d.Dispose(); });
-            }
-        };
-
-        std::shared_ptr<State> state;
-
-    public:
-        ComposableDisposable() : state(new State)
-        {
-        }
-        void Add(Disposable d) const
-        {
-            state->Add(std::move(d));
-        }
-        void Dispose() const
-        {
-            state->Dispose();
-        }
-        operator Disposable() const
-        {
-            auto d = Disposable([=]{ 
-                state->Dispose(); 
-            });
-            return d;
-        }
-    };
-
 
 
     //////////////////////////////////////////////////////////////////////
