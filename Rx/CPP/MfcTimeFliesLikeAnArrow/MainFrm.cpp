@@ -76,7 +76,7 @@ void CMainFrame::UserInit()
                 this->UpdateWindow();
             });
 
-        composableDisposable.Add(s);
+        composableDisposable.Add(std::move(s));
     }
 }
 

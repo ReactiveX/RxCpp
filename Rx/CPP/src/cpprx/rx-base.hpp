@@ -22,16 +22,32 @@ namespace rxcpp
 
     class Disposable
     {
-        std::function<void()> dispose;
+        Disposable();
+        Disposable(const Disposable&);
+        typedef std::function<void()> dispose_type;
+        dispose_type dispose;
     public:
-        Disposable(std::function<void()> dispose) : dispose(std::move(dispose)) 
-        {
+        explicit Disposable(dispose_type disposearg) 
+            : dispose(std::move(disposearg)) {
+            disposearg = nullptr;}
+        Disposable(Disposable&& other) 
+            : dispose(std::move(other.dispose)) {
+            other.dispose = nullptr; }
+        Disposable& operator=(Disposable other) {
+            swap(other); 
+            return *this;
         }
         void Dispose()
         {
-            if (dispose) dispose();
+            if (dispose) {
+                dispose();
+                dispose = nullptr;
+            }
         }
+        void swap(Disposable& rhs) {{using std::swap; swap(dispose, rhs.dispose);}}
+        static Disposable Empty() { return Disposable(nullptr); }
     };
+    void swap(Disposable& lhs, Disposable& rhs) {lhs.swap(rhs);}
 
     template <class T>
     struct Observable
@@ -176,12 +192,12 @@ namespace rxcpp
             std::weak_ptr<Observer<T>> wptr = observer;
             std::weak_ptr<Subject> wself = this->shared_from_this();
 
-            Disposable d = [wptr, wself]{
+            Disposable d([wptr, wself]{
                 if (auto self = wself.lock())
                 {
                     self->RemoveObserver(wptr.lock());
                 }
-            };
+            });
 
             for(auto& o : observers)
             {
@@ -827,7 +843,7 @@ namespace rxcpp
     {
         auto dispatcher = std::make_shared<ObserveOnDispatcherOp>();
 
-		return CreateObservable<T>(
+        return CreateObservable<T>(
             [=](std::shared_ptr<Observer<T>> observer)
             -> Disposable
             {
