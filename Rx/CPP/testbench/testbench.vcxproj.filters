@@ -19,12 +19,4 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="rxcpp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="rxcpp-binder.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
 </Project>

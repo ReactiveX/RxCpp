@@ -48,6 +48,8 @@ CMainFrame::~CMainFrame()
 // inspired by: http://minirx.codeplex.com/
 void CMainFrame::UserInit()
 {
+    auto worker = std::make_shared<rxcpp::EventLoopScheduler>();
+    auto mainFormScheduler = std::make_shared<rxcpp::win32::WindowScheduler>();
     auto mouseMove = BindEventToObservable(mouseMoveEvent);
 
     // set up labels and query
@@ -64,8 +66,8 @@ void CMainFrame::UserInit()
         auto s = rxcpp::from(mouseMove)
             .select([](MouseMoveEventValue e) { return e.point; })
             .distinct_until_changed()   
-            .delay(i * 100 + 1)
-            .on_dispatcher()
+            .delay(std::chrono::milliseconds(i * 100 + 1),  worker)
+            .observe_on(mainFormScheduler)
             .subscribe([=](CPoint point) 
             {
                 label->SetWindowPos(nullptr, point.x+20*i, point.y-20, 20, 30, SWP_NOOWNERZORDER);

@@ -200,6 +200,14 @@ namespace cpplinq { namespace util {
                 is_set = true;
             }
         }
+        void set(T&& value) {
+            if (is_set) {
+                *reinterpret_cast<T*>(&storage) = std::move(value);
+            } else {
+                new (reinterpret_cast<T*>(&storage)) T(std::move(value));
+                is_set = true;
+            }
+        }
 
         T& operator*() { return *get(); }
         const T& operator*() const { return *get(); }
