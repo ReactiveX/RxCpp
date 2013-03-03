@@ -1,8 +1,10 @@
  // Copyright (c) Microsoft Open Technologies, Inc. All rights reserved. See License.txt in the project root for license information.
 
+#pragma once
+#include "rx-includes.hpp"
+
 #if !defined(CPPRX_RX_OPERATORS_HPP)
 #define CPPRX_RX_OPERATORS_HPP
-#pragma once
 
 namespace rxcpp
 {
@@ -111,50 +113,23 @@ namespace rxcpp
         return p;
     }
 
-    template <class T>
-    class Subject : 
-        public Observable<T>, 
-        public Observer<T>, 
-        public std::enable_shared_from_this<Subject<T>>
+
+    template <class T, class Base, class Subject>
+    class ObservableSubject : 
+        public Base,
+        public std::enable_shared_from_this<Subject>
     {
+    protected:
         std::vector<std::shared_ptr<Observer<T>>> observers;
+
+        void RemoveObserver(std::shared_ptr<Observer<T>> toRemove)
+        {
+            auto it = std::find(begin(observers), end(observers), toRemove);
+            if (it != end(observers))
+                *it = nullptr;
+        }
     public:
-        virtual void OnNext(const T& element)
-        {
-            for(auto& o : observers)
-            {
-                try 
-                {
-                    if (o)
-                        o->OnNext(element);
-                }
-                catch (...)
-                {
-                    auto o_ = std::move(o);
-                    o_->OnError(std::current_exception());
-                }
-            }
-        }
-        virtual void OnCompleted() 
-        {
-            for(auto& o : observers)
-            {
-                if (o) {
-                    o->OnCompleted();
-                    o = nullptr;
-                }
-            }
-        }
-        virtual void OnError(const std::exception_ptr& error) 
-        {
-            for(auto& o : observers)
-            {
-                if (o) {
-                    o->OnError(error);
-                    o = nullptr;
-                }
-            }
-        }
+
         virtual Disposable Subscribe(std::shared_ptr<Observer<T>> observer)
         {
             std::weak_ptr<Observer<T>> wptr = observer;
@@ -177,20 +152,92 @@ namespace rxcpp
             observers.push_back(std::move(observer));
             return d;
         }
+    };
 
-    private:
-        void RemoveObserver(std::shared_ptr<Observer<T>> toRemove)
+    template <class T, class Base>
+    class ObserverSubject : 
+        public Base
+    {
+    public:
+        ObserverSubject() {}
+
+        template<class A>
+        explicit ObserverSubject(A&& a) : Base(std::forward<A>(a)) {}
+
+        virtual void OnNext(const T& element)
         {
-            auto it = std::find(begin(observers), end(observers), toRemove);
-            if (it != end(observers))
-                *it = nullptr;
+            for(auto& o : Base::observers)
+            {
+                try 
+                {
+                    if (o)
+                        o->OnNext(element);
+                }
+                catch (...)
+                {
+                    auto o_ = std::move(o);
+                    o_->OnError(std::current_exception());
+                }
+            }
         }
+        virtual void OnCompleted() 
+        {
+            for(auto& o : Base::observers)
+            {
+                if (o) {
+                    o->OnCompleted();
+                    o = nullptr;
+                }
+            }
+        }
+        virtual void OnError(const std::exception_ptr& error) 
+        {
+            for(auto& o : Base::observers)
+            {
+                if (o) {
+                    o->OnError(error);
+                    o = nullptr;
+                }
+            }
+        }
+    };
+
+    template <class T>
+    class Subject : 
+        public ObserverSubject<T, ObservableSubject<T, Observable<T>, Subject<T>>>
+    {
     };
 
     template <class T>
     std::shared_ptr<Subject<T>> CreateSubject()
     {
         return std::make_shared<Subject<T>>();
+    }
+
+    template <class K, class T, class Base>
+    class GroupedObservableSubject : 
+        public Base
+    {
+        K key;
+    public:
+        GroupedObservableSubject(K key) : key(std::move(key)) {}
+
+        virtual K Key() {return key;}
+    };
+
+    template <class K, class T>
+    class GroupedSubject : 
+        public ObserverSubject<T, GroupedObservableSubject<K, T, ObservableSubject<T, GroupedObservable<K, T>, GroupedSubject<K, T>>>>
+    {
+        typedef ObserverSubject<T, GroupedObservableSubject<K, T, ObservableSubject<T, GroupedObservable<K, T>, GroupedSubject<K, T>>>> base;
+    public:
+        GroupedSubject(K key) : base(std::move(key)) {}
+    };
+
+    template <class T, class K>
+    std::shared_ptr<GroupedSubject<K, T>> CreateGroupedSubject(K key)
+    {
+        return std::make_shared<GroupedSubject<K, T>>(std::move(key));
     }
 
     template <class F>
@@ -283,6 +330,36 @@ namespace rxcpp
         return source->Subscribe(observer);
     }
 
+    template <class T>
+    void ForEach(
+        const std::shared_ptr<Observable<T>>& source,
+        typename util::identity<std::function<void(const T&)>>::type onNext
+        )
+    {
+        std::mutex lock;
+        std::condition_variable wake;
+        bool done = false;
+        std::exception_ptr error;
+        auto observer = CreateObserver<T>(std::move(onNext), [&]{
+            std::unique_lock<std::mutex> guard(lock);
+            done = true;
+            wake.notify_one();
+        }, [&](const std::exception_ptr& e){
+            std::unique_lock<std::mutex> guard(lock);
+            done = true;
+            error = std::move(e);
+            wake.notify_one();
+        });
+        
+        source->Subscribe(observer);
+
+        {
+            std::unique_lock<std::mutex> guard(lock);
+            wake.wait(guard, [&]{return done;});
+        }
+
+        if (error != std::exception_ptr()) {std::rethrow_exception(error);}
+    }
 
     //////////////////////////////////////////////////////////////////////
     // 
@@ -299,7 +376,7 @@ namespace rxcpp
         return CreateObservable<U>(
             [=](std::shared_ptr<Observer<U>> observer)
             {
-                return Subscribe(
+                return Subscribe<T>(
                     source,
                 // on next
                     [=](const T& element)
@@ -348,6 +425,95 @@ namespace rxcpp
                 // on error
                     [=](const std::exception_ptr& error)
                     {
+                        observer->OnError(error);
+                    });
+            });
+    }
+
+    template <class T, class KS, class VS, class L>
+    auto GroupBy(
+        const std::shared_ptr<Observable<T>>& source,
+        KS keySelector,
+        VS valueSelector,
+        L less) 
+        -> std::shared_ptr<Observable<std::shared_ptr<GroupedObservable<
+            typename std::decay<decltype(keySelector((*(T*)0)))>::type, 
+            typename std::decay<decltype(valueSelector((*(T*)0)))>::type>>>>
+    {
+        typedef typename std::decay<decltype(keySelector((*(T*)0)))>::type Key;
+        typedef typename std::decay<decltype(valueSelector((*(T*)0)))>::type Value;
+
+        typedef std::shared_ptr<GroupedObservable<Key, Value>> LocalGroupObservable;
+
+        return CreateObservable<LocalGroupObservable>(
+            [=](std::shared_ptr<Observer<LocalGroupObservable>> observer)
+            {
+                typedef std::function<void(Value)> OnNext;
+                typedef std::function<void()> OnCompleted;
+                typedef std::function<void(const std::exception_ptr&)> OnError;
+
+                struct GroupValue
+                {
+                    OnNext onNext;
+                    OnCompleted onCompleted;
+                    OnError onError;
+                };
+                typedef std::map<Key, GroupValue, L> Groups;
+
+                struct State
+                {
+                    State(L less) : groups(std::move(less)) {}
+                    std::mutex lock;
+                    Groups groups;
+                };
+                auto state = std::make_shared<State>(std::move(less));
+
+                return Subscribe(
+                    source,
+                // on next
+                    [=](const T& element)
+                    {
+                        auto key = keySelector(element);
+                        auto keySubject = CreateGroupedSubject<Value>(key);
+
+                        typename Groups::iterator groupIt;
+                        bool newGroup = false;
+                        GroupValue value;
+                        value.onNext = [keySubject](Value v){
+                            keySubject->OnNext(std::move(v));};
+                        value.onCompleted = [keySubject](){
+                            keySubject->OnCompleted();};
+                        value.onError = [keySubject](const std::exception_ptr& e){
+                            keySubject->OnError(std::move(e));};
+
+                        {
+                            std::unique_lock<std::mutex> guard(state->lock);
+                            std::tie(groupIt, newGroup) = state->groups.insert(std::make_pair(
+                                key,std::move(value))
+                            );
+                        }
+
+                        if (newGroup)
+                        {
+                            LocalGroupObservable nextGroup(std::move(keySubject));
+                            observer->OnNext(nextGroup);
+                        }
+                        groupIt->second.onNext(valueSelector(element));
+                    },
+                // on completed
+                    [=]
+                    {
+                        for(auto& group : state->groups) {
+                            group.second.onCompleted();
+                        }
+                        observer->OnCompleted();
+                    },
+                // on error
+                    [=](const std::exception_ptr& error)
+                    {
+                        for(auto& group : state->groups) {
+                            group.second.onError(error);
+                        }
                         observer->OnError(error);
                     });
             });

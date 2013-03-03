@@ -1,8 +1,10 @@
 // Copyright (c) Microsoft Open Technologies, Inc. All rights reserved. See License.txt in the project root for license information.
 
+#pragma once
+#include "rx-includes.hpp"
+
 #if !defined(CPPRX_RX_BASE_HPP)
 #define CPPRX_RX_BASE_HPP
-#pragma once
 
 namespace rxcpp
 {
@@ -56,7 +58,14 @@ namespace rxcpp
         virtual ~Observable() {}
     };
 
-        struct Scheduler : public std::enable_shared_from_this<Scheduler>
+    template <class K, class T>
+    struct GroupedObservable : Observable<T>
+    {
+        virtual K Key() = 0;
+        virtual ~GroupedObservable() {}
+    };
+
+    struct Scheduler : public std::enable_shared_from_this<Scheduler>
     {
         typedef std::chrono::steady_clock clock;
         typedef std::shared_ptr<Scheduler> shared;
