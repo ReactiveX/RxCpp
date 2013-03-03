@@ -7,6 +7,7 @@
 #include "cpplinq/linq.hpp"
 
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <iomanip>
 #include <string>
@@ -37,7 +38,6 @@ std::shared_ptr<rxcpp::Observable<string>> Data(
 );
 string extract_value(const string& input, const string& key);
 
-
 void run()
 {
     using namespace cpplinq;
@@ -54,101 +54,85 @@ void run()
         }
     };
 
-    cout << "data >input ^parse and <push_back:" << endl;
-    auto shared_data_parsed = std::make_shared<std::vector<item>>();
-    {
-        std::exception_ptr error;
-        std::condition_variable cv;
+    auto input = std::make_shared<rxcpp::EventLoopScheduler>();
+    auto output = std::make_shared<rxcpp::EventLoopScheduler>();
 
-        std::mutex coutLock;
-        int inID = 0;
-        int parseID = 0;
-        int outID = 0;
+    auto dataLines = Data("data.txt");
 
-        auto dataLines = Data(
-            "data.txt"
-//            , std::make_shared<rxcpp::EventLoopScheduler>()
-        );
-        auto input = std::make_shared<rxcpp::NewThreadScheduler>();
-        auto parsing = std::make_shared<rxcpp::EventLoopScheduler>();
-        auto output = std::make_shared<rxcpp::EventLoopScheduler>();
-        auto exp = rxcpp::from(dataLines)
-            .subscribe_on(input)
-            .select([&coutLock, &inID](const string& line) { 
-                {
-                    std::unique_lock<std::mutex> guard(coutLock);
-                    if (inID++ == 0) std::cout << std::this_thread::get_id(); 
-                    std::cout << '>' << std::flush;
-                }
-                return line; })
-            .observe_on(parsing)
-            .select([&coutLock, &parseID](const string& line) { 
-                {
-                    std::unique_lock<std::mutex> guard(coutLock);
-                    if (parseID++ == 0) std::cout << std::this_thread::get_id(); 
-                    std::cout << '^' << std::flush;
-                }
-                return item(line); })
-            .observe_on(output)
-//            .delay(std::chrono::milliseconds(10), output)
-            .subscribe(
-               [=, &coutLock, &outID](const item& i){
-                    {
-                        std::unique_lock<std::mutex> guard(coutLock);
-                        if (outID++ == 0) std::cout << std::this_thread::get_id(); 
-                        std::cout << '<' << std::flush;
-                    }
-                    shared_data_parsed->push_back(i); },
-               [&cv](){
-                   cv.notify_one();},
-               [&cv, &error](const std::exception_ptr& e){
-                   error = e; cv.notify_one();});
+    int arggroupcount = 0;
 
-        std::mutex doneLock;
-        std::unique_lock<decltype(doneLock)> guard(doneLock);
-        cv.wait(guard);
-        if (error != std::exception_ptr()) {std::rethrow_exception(error);}
-        cout << endl << "data loaded" << endl;
-    }
+    rxcpp::from(dataLines)
+        .subscribe_on(input)
+        // parse input into items
+        .select([](const string& line) { 
+            return item(line);}
+        )
+        // group items by args field
+        .group_by([](const item& i) {
+            return i.args;}
+        )
+        .select([=](const std::shared_ptr<rxcpp::GroupedObservable<std::string, item>> & gob){
+            return std::make_pair(
+                gob->Key(), // keep args key
+                rxcpp::from(gob)
+                    // group items by concurrency field
+                    .group_by([](const item& i){
+                        return i.concurrency;}
+                    )
+                    // select only the times field
+                    .select([=] (const std::shared_ptr<rxcpp::GroupedObservable<int, item>> & gob){
+                        return std::make_pair(
+                            gob->Key(), // keep concurrency key
+                            rxcpp::from(gob)
+                                .select([](const item& i){
+                                    return i.time;}
+                                )
+                                .publish());}
+                    )
+                    .publish());}
+        )
+        .observe_on(output)
+        // print the grouped results
+        // for_each the args to block until the nested subscribes have finished
+        .for_each([&](const std::pair<std::basic_string<char>, std::shared_ptr<rxcpp::Observable<std::pair<int, std::shared_ptr<rxcpp::Observable<double> > > > > >& ob){
+            auto argsstate = std::make_shared<std::tuple<bool, std::string, int>>(false, ob.first, arggroupcount++);
+            rxcpp::from(ob.second)
+                // subscribe the concurrencies within each args
+                .subscribe([=](const std::pair<int, std::shared_ptr<rxcpp::Observable<double> > >& ob){
+                    auto linestate = std::make_shared<std::pair<int, std::vector<double>>>(ob.first, std::vector<double>());
+                    rxcpp::from(ob.second)
+                        // subscribe the times within each concurrency
+                        .subscribe([=](const double& i){
+                            // collect the times
+                            linestate->second.push_back(i);
+                        },[=]{
+                            // this concurrency's times are complete
+                            // output a line to the console.
 
-    auto data_parsed = shared_data_parsed.get();
-    auto data = 
-        from(*data_parsed)        
-        .groupby([](const item& i) { return i.args; });
-   
-    for (auto giter = data.begin(), end = data.end(); giter != end; ++giter)
-    {
-        const auto& g = *giter;
+                            if (!std::get<0>(*argsstate))
+                            {
+                                std::get<0>(*argsstate) = true;
+                                cout<<"arguments: "<<std::get<1>(*argsstate)<<endl;
+                                cout << "concurrency, mean, |, raw_data," << endl;
+                            }
 
-        cout << "arguments: " << g.key << endl;
+                            cout << linestate->first << ", ";
+                            
+                            auto n = from(linestate->second).count();
+                            auto sum = std::accumulate(linestate->second.begin(), linestate->second.end(), 0.0);
 
-        cout << "concurrency, mean, |, raw_data," << endl;
-        auto seq =
-            from(g)
-            .groupby([](const item& i) { return i.concurrency; });
+                            cout << (sum / n) << ", |";
 
-        for (auto giter = seq.begin(), end = seq.end(); giter != end; ++giter)
-        {
-            const auto& g = *giter;
-
-            cout << g.key << ", ";
-            
-            auto times = from(g).select([](const item& i) { return i.time; });
-            
-            auto n = from(g).count();
-            auto sum = std::accumulate(times.begin(), times.end(), 0.0);
-
-            cout << (sum / n) << ", |";
-
-            for (auto timeIter = times.begin(), end = times.end();
-                timeIter != end;
-                ++timeIter)
-            {
-                cout << ", " << *timeIter;
-            }
-            cout << endl;
-        }
-    }
+                            for (auto timeIter = linestate->second.begin(), end = linestate->second.end();
+                                timeIter != end;
+                                ++timeIter)
+                            {
+                                cout << ", " << *timeIter;
+                            }
+                            cout << endl;
+                        });
+                });
+        });
 }
 
 int main(int argc, char* argv[])

@@ -1,8 +1,10 @@
 // Copyright (c) Microsoft Open Technologies, Inc. All rights reserved. See License.txt in the project root for license information.
 
+#pragma once
+#include "rx-includes.hpp"
+
 #if !defined(CPPRX_RX_UTIL_HPP)
 #define CPPRX_RX_UTIL_HPP
-#pragma once
 
 #if !defined(RXCPP_THREAD_LOCAL)
 #if defined(_MSC_VER)
