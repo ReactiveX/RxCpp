@@ -93,78 +93,181 @@ namespace rxcpp { namespace win32 {
 
     class WindowScheduler : public rxcpp::LocalScheduler
     {
-        HWND hwnd;
-        Scheduler::shared ct;
+
+        struct compare_work
+        {
+            template <class T>
+            bool operator()(const T& work1, const T& work2) const {
+                return work1.first > work2.first;
+            }
+        };
+        
+        struct Queue;
+
         typedef std::pair<Scheduler::shared, Work> Item;
+
+        typedef std::priority_queue<
+            std::pair<clock::time_point, std::shared_ptr<Item>>,
+            std::vector<std::pair<clock::time_point, std::shared_ptr<Item>>>,
+            compare_work 
+        > ScheduledWork;
+
+        struct Queue 
+        {
+            Queue() : exit(false), window(NULL) {}
+            bool exit;
+            HWND window;
+            ScheduledWork scheduledWork;
+            mutable std::mutex lock;
+        };
 
         struct WindowClass
         {
+            std::shared_ptr<Queue> queue;
+
             static const wchar_t* const className(){ return L"rxcpp::win32::WindowScheduler::WindowClass"; }
             WindowClass()
             {
-                WNDCLASS wndclass = {};
+            }
+
+            static void Create(const std::shared_ptr<Queue>& queue)
+            {
+                WNDCLASSW wndclass = {};
                 wndclass.style = 0;
                 wndclass.lpfnWndProc = &WndProc;
-                wndclass.cbClsExtra;
                 wndclass.cbWndExtra = 0;
                 wndclass.hInstance = NULL;
                 wndclass.lpszClassName = className();
 
-                if (!RegisterClass(&wndclass))
+                if (!RegisterClassW(&wndclass))
                     throw std::exception("failed to register windows class");
                 
+                std::unique_ptr<WindowClass> that(new WindowClass);
+                that->queue = queue;
+
+                queue->window = CreateWindowExW(0, WindowClass::className(), L"MessageOnlyWindow", 0, 0, 0, 0, 0, HWND_MESSAGE, 0, 0, reinterpret_cast<LPVOID>(that.get()));
+                if (!queue->window)
+                    throw std::exception("create window failed");
+
+                that.release();
             }
-            HWND CreateWindow_()
-            {
-                return CreateWindowEx(0, WindowClass::className(), L"MessageOnlyWindow", 0, 0, 0, 0, 0, HWND_MESSAGE, 0, 0, 0);
-            }
+
             static const int WM_USER_DISPATCH = WM_USER + 1;
 
             static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
             {
+                static WindowClass* windowClass; 
                 switch (message)
                 {
-                    // TODO: shatter attack surface. should validate the message, e.g. using a handle table.
+                case WM_NCCREATE:
+                    {
+                        windowClass = reinterpret_cast<WindowClass*>(reinterpret_cast<LPCREATESTRUCT>(lParam)->lpCreateParams);
+                    }
+                    break;
+                case WM_NCDESTROY:
+                    {
+                        delete windowClass;
+                        windowClass = nullptr;
+                    }
+                    break;
+                case WM_TIMER:
                 case WM_USER_DISPATCH:
-                    ((void(*)(void*))wParam)((void*)lParam);
+                    {
+                        bool destroy = false;
+                        HWND window = NULL;
+                        {
+                            std::unique_lock<std::mutex> guard(windowClass->queue->lock);
+
+                            while (!windowClass->queue->scheduledWork.empty() && !windowClass->queue->scheduledWork.top().second.get()->second)
+                            {
+                                // discard the disposed items
+                                windowClass->queue->scheduledWork.pop();
+                            }
+
+                            if (!windowClass->queue->scheduledWork.empty())
+                            {                
+                                auto& item = windowClass->queue->scheduledWork.top();
+                                auto now = item.second.get()->first->Now();
+                
+                                // wait until the work is due
+                                if(now < item.first)
+                                {
+                                    auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(item.first - now).count();
+                                    if (remaining >= USER_TIMER_MINIMUM)
+                                    {
+                                        return SetTimer(hwnd, 0, static_cast<UINT>(remaining), nullptr);
+                                    }
+                                    std::this_thread::sleep_until(item.first);
+                                }
+                
+                                // dispatch work
+                                auto work = std::move(item.second.get()->second);
+                                auto scheduler = std::move(item.second.get()->first);
+                                windowClass->queue->scheduledWork.pop();
+
+                                {
+                                    RXCPP_UNWIND_AUTO([&]{guard.lock();});
+                                    guard.unlock();
+                                    LocalScheduler::Do(work, scheduler);
+                                    work = nullptr;
+                                    scheduler = nullptr;
+                                }
+
+                                if (!windowClass->queue->scheduledWork.empty())
+                                {
+                                    ::PostMessageW(windowClass->queue->window, WindowClass::WM_USER_DISPATCH, 0, 0);
+                                }
+                            }
+
+                            destroy = windowClass->queue->exit && windowClass->queue->scheduledWork.empty();
+                            window = windowClass->queue->window;
+                        }
+
+                        if (destroy)
+                        {
+                            DestroyWindow(window); 
+                        }
+                    }
                     return 0;
                 default:
-                    return DefWindowProc(hwnd, message, wParam, lParam);
+                    break;
                 }
-            }
-            static WindowClass& Instance() { 
-                static WindowClass instance;
-                return instance;
+                return DefWindowProcW(hwnd, message, wParam, lParam);
             }
         };
-        static void run_proc(
-            void* pvfn
-        )
-        {
-            std::unique_ptr<Item> f((Item*)(void*) pvfn);
-            Do(f->second, f->first);
-        }
+        std::shared_ptr<Queue> queue;
 
     public:
         WindowScheduler()
-            : hwnd(WindowClass::Instance().CreateWindow_())
-            , ct(std::make_shared<CurrentThreadScheduler>())
+            : queue(std::make_shared<Queue>())
         {
-            if (!hwnd)
-                throw std::exception("create window failed");
+            WindowClass::Create(queue);
         }
         ~WindowScheduler()
         {
             // send one last message to ourselves to shutdown.
-            Schedule([=](Scheduler::shared){ CloseWindow(hwnd); return Disposable::Empty();});
+            {
+                std::unique_lock<std::mutex> guard(queue->lock);
+                queue->exit = true;
+            }
+            ::PostMessageW(queue->window, WindowClass::WM_USER_DISPATCH, 0, 0);
         }
 
         using LocalScheduler::Schedule;
         virtual Disposable Schedule(clock::time_point dueTime, Work work)
         {
-            std::unique_ptr<Item> f(new Item(ct, std::move(work)));
-            ::PostMessage(hwnd, WindowClass::WM_USER_DISPATCH, (WPARAM)(void(*)(void*))&run_proc, (LPARAM)(void*)f.release());
-            return Disposable::Empty();
+            auto cancelable = std::make_shared<Item>(std::make_pair(get(), std::move(work)));
+            {
+                std::unique_lock<std::mutex> guard(queue->lock);
+                queue->scheduledWork.push(std::make_pair(dueTime, cancelable));
+            }
+            ::PostMessageW(queue->window, WindowClass::WM_USER_DISPATCH, 0, 0);
+            auto local = queue;
+            return Disposable([local, cancelable]{
+                std::unique_lock<std::mutex> guard(local->lock);
+                cancelable.get()->second = nullptr;
+                ::PostMessageW(local->window, WindowClass::WM_USER_DISPATCH, 0, 0);
+            });
         }
     };
 } }

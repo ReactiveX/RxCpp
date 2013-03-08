@@ -103,6 +103,7 @@ namespace rxcpp
         virtual Disposable Schedule(clock::time_point dueTime, Work work)
         {
             auto ct = std::make_shared<CurrentThreadScheduler>();
+            std::this_thread::sleep_until(dueTime);
             Do(work, ct);
             return Disposable::Empty();
         }
@@ -183,7 +184,8 @@ namespace rxcpp
             if (++trampoline == 1)
             {
                 auto local = shared_from_this();
-                result.set(factory([local]{local->Run();}));
+                result.set(factory([local]{
+                           local->Run();}));
                 // trampoline lifetime is now owned by the thread
                 unwindTrampoline.dismiss();
             }

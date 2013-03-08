@@ -261,23 +261,11 @@ namespace rxcpp
         LocalScheduler(const LocalScheduler&);
 
     public:
-        static void DoNoThrow(Work& work, Scheduler::shared scheduler) throw()
+        static void Do(Work& work, Scheduler::shared scheduler) throw()
         {
             if (work)
             {
                 work(std::move(scheduler));
-            }
-        }
-        static void Do(Work& work, Scheduler::shared scheduler)
-        {
-            try {
-                DoNoThrow(work, std::move(scheduler));
-            } catch (const std::exception& ) {
-                // work must catch all expected exceptions
-                std::unexpected();
-            } catch (...) {
-                // work must catch all expected exceptions
-                std::unexpected();
             }
         }
 
@@ -305,5 +293,28 @@ namespace rxcpp
         }
     };
 
+    template<class T>
+    T item(const std::shared_ptr<Observable<T>>&);
+
+    template<class K, class T>
+    T item(const std::shared_ptr<GroupedObservable<K,T>>&);
+
+    template<class Observable>
+    struct is_observable {static const bool value = false;};
+
+    template<class T>
+    struct is_observable<std::shared_ptr<Observable<T>>> {static const bool value = true;};
+
+    template<class K, class T>
+    struct is_observable<std::shared_ptr<GroupedObservable<K, T>>> {static const bool value = true;};
+
+    template<class Observable>
+    struct observable_item;
+
+    template<class T>
+    struct observable_item<std::shared_ptr<Observable<T>>> {typedef T type;};
+
+    template<class K, class T>
+    struct observable_item<std::shared_ptr<GroupedObservable<K, T>>> {typedef T type;};
 }
 #endif

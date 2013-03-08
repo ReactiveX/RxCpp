@@ -26,6 +26,33 @@
 #include <chrono>
 #include <condition_variable>
 
+// some configuration macros
+#if defined(_MSC_VER)
+
+#if _MSC_VER > 1600 
+#define RXCPP_USE_RVALUEREF 1
+#define RXCPP_USE_VARIADIC_TEMPLATES 0
+#endif
+
+#if _CPPRTTI
+#define RXCPP_USE_RTTI 1
+#endif
+
+#elif defined(__clang__)
+
+#if __has_feature(cxx_rvalue_references)
+#define RXCPP_USE_RVALUEREF 1
+#endif
+#if __has_feature(cxx_rtti)
+#define RXCPP_USE_RTTI 1
+#endif
+#if __has_feature(cxx_variadic_templates)
+#define RXCPP_USE_VARIADIC_TEMPLATES 1
+#endif
+
+#endif
+
+
 #include "rx-util.hpp"
 #include "rx-base.hpp"
 #include "rx-scheduler.hpp"

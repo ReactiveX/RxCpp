@@ -120,10 +120,12 @@ namespace rxcpp
         public std::enable_shared_from_this<Subject>
     {
     protected:
+        std::mutex lock;
         std::vector<std::shared_ptr<Observer<T>>> observers;
 
         void RemoveObserver(std::shared_ptr<Observer<T>> toRemove)
         {
+            std::unique_lock<decltype(lock)> guard(lock);
             auto it = std::find(begin(observers), end(observers), toRemove);
             if (it != end(observers))
                 *it = nullptr;
@@ -142,14 +144,17 @@ namespace rxcpp
                 }
             });
 
-            for(auto& o : observers)
             {
-                if (!o){
-                    o = std::move(observer);
-                    return d;
+                std::unique_lock<decltype(lock)> guard(lock);
+                for(auto& o : observers)
+                {
+                    if (!o){
+                        o = std::move(observer);
+                        return d;
+                    }
                 }
+                observers.push_back(std::move(observer));
             }
-            observers.push_back(std::move(observer));
             return d;
         }
     };
@@ -166,37 +171,45 @@ namespace rxcpp
 
         virtual void OnNext(const T& element)
         {
-            for(auto& o : Base::observers)
+            std::unique_lock<decltype(Base::lock)> guard(Base::lock);
+            auto local = Base::observers;
+            guard.unlock();
+            for(auto& o : local)
             {
                 try 
                 {
-                    if (o)
+                    if (o) {
                         o->OnNext(element);
+                    }
                 }
                 catch (...)
                 {
-                    auto o_ = std::move(o);
-                    o_->OnError(std::current_exception());
+                    o->OnError(std::current_exception());
+                    Base::RemoveObserver(o);
                 }
             }
         }
         virtual void OnCompleted() 
         {
-            for(auto& o : Base::observers)
+            std::unique_lock<decltype(Base::lock)> guard(Base::lock);
+            auto local = std::move(Base::observers);
+            guard.unlock();
+            for(auto& o : local)
             {
                 if (o) {
                     o->OnCompleted();
-                    o = nullptr;
                 }
             }
         }
         virtual void OnError(const std::exception_ptr& error) 
         {
-            for(auto& o : Base::observers)
+            std::unique_lock<decltype(Base::lock)> guard(Base::lock);
+            auto local = std::move(Base::observers);
+            guard.unlock();
+            for(auto& o : local)
             {
                 if (o) {
                     o->OnError(error);
-                    o = nullptr;
                 }
             }
         }
@@ -317,15 +330,16 @@ namespace rxcpp
     // 
     // imperative functions
 
-    template <class T>
+    template <class S>
     Disposable Subscribe(
-        const std::shared_ptr<Observable<T>>& source,
-        typename util::identity<std::function<void(const T&)>>::type onNext,
+        const S& source,
+        typename util::identity<std::function<void(const typename observable_item<S>::type&)>>::type onNext,
         std::function<void()> onCompleted = nullptr,
         std::function<void(const std::exception_ptr&)> onError = nullptr
         )
     {
-        auto observer = CreateObserver<T>(std::move(onNext), std::move(onCompleted), std::move(onError));
+        auto observer = CreateObserver<typename observable_item<S>::type>(
+            std::move(onNext), std::move(onCompleted), std::move(onError));
         
         return source->Subscribe(observer);
     }
@@ -376,7 +390,7 @@ namespace rxcpp
         return CreateObservable<U>(
             [=](std::shared_ptr<Observer<U>> observer)
             {
-                return Subscribe<T>(
+                return Subscribe(
                     source,
                 // on next
                     [=](const T& element)
@@ -394,6 +408,146 @@ namespace rxcpp
                     {
                         observer->OnError(error);
                     });
+            });
+    }
+    
+    template<class T>
+    struct reveal_type {private: reveal_type();};
+
+    template <class T, class CS, class RS>
+    auto SelectMany(
+        const std::shared_ptr<Observable<T>>& source,
+        CS collectionSelector,
+        RS resultSelector)
+        -> const std::shared_ptr<Observable<
+            typename std::result_of<RS(
+                const typename observable_item<
+                    typename std::result_of<CS(const T&)>::type>::type&)>::type>>
+    {
+        typedef typename std::result_of<CS(const T&)>::type C;
+        typedef typename observable_item<C>::type CI;
+        typedef typename std::result_of<RS(const CI&)>::type U;
+
+        return CreateObservable<U>(
+            [=](std::shared_ptr<Observer<U>> observer)
+            -> Disposable
+            {
+                struct State {
+                    size_t subscribed;
+                    bool cancel;
+                    std::mutex lock;
+                };
+                auto state = std::make_shared<State>();
+                state->cancel = false;
+                state->subscribed = 0;
+
+                ComposableDisposable cd;
+
+                cd.Add(Disposable([=]{ 
+                    std::unique_lock<std::mutex> guard(state->lock);
+                    state->cancel = true; })
+                );
+
+                ++state->subscribed;
+                cd.Add(Subscribe(
+                    source,
+                // on next
+                    [=](const T& element)
+                    {
+                        bool cancel = false;
+                        {
+                            std::unique_lock<std::mutex> guard(state->lock);
+                            cancel = state->cancel;
+                            if (!cancel) ++state->subscribed;
+                        }
+                        if (!cancel) {
+                            try {
+                                auto collection = collectionSelector(element);
+                                cd.Add(Subscribe(
+                                    collection,
+                                // on next
+                                    [=](const CI& element)
+                                    {
+                                        bool cancel = false;
+                                        {
+                                            std::unique_lock<std::mutex> guard(state->lock);
+                                            cancel = state->cancel;
+                                        }
+                                        try {
+                                            if (!cancel) {
+                                                auto result = resultSelector(element);
+                                                observer->OnNext(std::move(result)); 
+                                            }
+                                        } catch (...) {
+                                            observer->OnError(std::current_exception());
+                                            cd.Dispose();
+                                        }
+                                    },
+                                // on completed
+                                    [=]
+                                    {
+                                        bool cancel = false;
+                                        bool finished = false;
+                                        {
+                                            std::unique_lock<std::mutex> guard(state->lock);
+                                            finished = (--state->subscribed) == 0;
+                                            cancel = state->cancel;
+                                        }
+                                        if (!cancel && finished)
+                                            observer->OnCompleted(); 
+                                    },
+                                // on error
+                                    [=](const std::exception_ptr& error)
+                                    {
+                                        bool cancel = false;
+                                        {
+                                            std::unique_lock<std::mutex> guard(state->lock);
+                                            --state->subscribed;
+                                            cancel = state->cancel;
+                                        }
+                                        if (!cancel)
+                                            observer->OnError(error);
+                                        cd.Dispose();
+                                    }));
+                            } catch (...) {
+                                bool cancel = false;
+                                {
+                                    std::unique_lock<std::mutex> guard(state->lock);
+                                    cancel = state->cancel;
+                                }
+                                if (!cancel) {
+                                    observer->OnError(std::current_exception());
+                                }
+                                cd.Dispose();
+                            }
+                        }
+                    },
+                // on completed
+                    [=]
+                    {
+                        bool cancel = false;
+                        bool finished = false;
+                        {
+                            std::unique_lock<std::mutex> guard(state->lock);
+                            finished = (--state->subscribed) == 0;
+                            cancel = state->cancel;
+                        }
+                        if (!cancel && finished)
+                            observer->OnCompleted(); 
+                    },
+                // on error
+                    [=](const std::exception_ptr& error)
+                    {
+                        bool cancel = false;
+                        {
+                            std::unique_lock<std::mutex> guard(state->lock);
+                            --state->subscribed;
+                            cancel = state->cancel;
+                        }
+                        if (!cancel)
+                            observer->OnError(error);
+                    }));
+                return cd;
             });
     }
 
@@ -577,9 +731,8 @@ namespace rxcpp
     std::shared_ptr<Observable<T>> Delay(
         const std::shared_ptr<Observable<T>>& source,
         Scheduler::clock::duration due,
-        Scheduler::shared scheduler = nullptr)
+        Scheduler::shared scheduler)
     {
-        if (!scheduler) {scheduler = std::make_shared<CurrentThreadScheduler>();}
         return CreateObservable<T>(
             [=](std::shared_ptr<Observer<T>> observer)
             -> Disposable
@@ -685,6 +838,7 @@ namespace rxcpp
             -> Disposable
             {
                 struct State {
+                    State() : last(), hasValue(false) {}
                     T last; bool hasValue;
                 };
         
