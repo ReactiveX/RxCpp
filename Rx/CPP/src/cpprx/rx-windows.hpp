@@ -9,6 +9,8 @@
 
 #if defined(WINDOWS) || defined(WIN32) || defined(_WIN32)
 
+#pragma comment(lib, "user32.lib")
+
 #define NOMINMAX
 #include <Windows.h>
 

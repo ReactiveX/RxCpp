@@ -136,6 +136,62 @@ namespace rxcpp { namespace util {
         
     };
 
+    template<class T>
+    struct reveal_type {private: reveal_type();};
+
+#if RXCPP_USE_VARIADIC_TEMPLATES
+    template <int... Indices> 
+    struct tuple_indices;
+    template <> 
+    struct tuple_indices<-1> {                // for an empty std::tuple<> there is no entry
+        typedef tuple_indices<> type;
+    };
+    template <int... Indices>
+    struct tuple_indices<0, Indices...> {     // stop the recursion when 0 is reached
+        typedef tuple_indices<0, Indices...> type;
+    };
+    template <int Index, int... Indices>
+    struct tuple_indices<Index, Indices...> { // recursively build a sequence of indices
+        typedef typename tuple_indices<Index - 1, Index, Indices...>::type type;
+    };
+
+    template <typename T>
+    struct make_tuple_indices {
+        typedef typename tuple_indices<std::tuple_size<T>::value - 1>::type type;
+    };
+
+    namespace detail {
+    template<class T>
+    struct tuple_dispatch;
+    template<size_t... DisptachIndices>
+    struct tuple_dispatch<tuple_indices<DisptachIndices...>> {
+        template<class F, class T>
+        static
+        auto call(F&& f, T&& t) 
+            -> decltype (std::forward<F>(f)(std::get<DisptachIndices>(std::forward<T>(t))...)) {
+            return       std::forward<F>(f)(std::get<DisptachIndices>(std::forward<T>(t))...);
+        }
+    };}
+
+    template<class F, class T>
+    auto tuple_dispatch(F&& f, T&& t) 
+        -> decltype(detail::tuple_dispatch<typename make_tuple_indices<typename std::decay<T>::type>::type>::call(std::forward<F>(f), std::forward<T>(t))) {
+        return      detail::tuple_dispatch<typename make_tuple_indices<typename std::decay<T>::type>::type>::call(std::forward<F>(f), std::forward<T>(t));
+    }
+
+    struct as_tuple {
+        template<class... AsTupleNext>
+        auto operator()(AsTupleNext... x) 
+            -> decltype(std::make_tuple(std::move(x)...)) const {
+            return      std::make_tuple(std::move(x)...);}
+    };
+#endif //RXCPP_USE_VARIADIC_TEMPLATES
+
+    struct pass_through {
+        template<class X>
+        X operator()(X x) const {return std::move(x);}
+    };
+
     template<typename Function>
 	class unwinder
 	{
