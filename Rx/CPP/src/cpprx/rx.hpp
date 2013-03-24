@@ -14,13 +14,13 @@ namespace rxcpp
     protected:
         Obj obj;
 
-        struct pass_through {
-            template<class X>
-            X operator()(X x) const {return std::move(x);}
-        };
     public:
         typedef T item_type;
         typedef Obj observable_type;
+        typedef util::pass_through pass_through; 
+#if RXCPP_USE_VARIADIC_TEMPLATES
+        typedef util::as_tuple as_tuple; 
+#endif //RXCPP_USE_VARIADIC_TEMPLATES
 
         BinderBase(Obj obj) : obj(std::move(obj))
         {
@@ -37,6 +37,9 @@ namespace rxcpp
         typedef BinderBase<T, Obj> base;
         typedef typename base::item_type item_type;
         typedef typename base::pass_through pass_through;
+#if RXCPP_USE_VARIADIC_TEMPLATES
+        typedef typename base::as_tuple as_tuple;
+#endif //RXCPP_USE_VARIADIC_TEMPLATES
         using base::obj;
     public:
         static const bool is_item_observable = false;
@@ -52,6 +55,9 @@ namespace rxcpp
         typedef BinderBase<T, Obj> base;
         typedef typename base::item_type item_type;
         typedef typename base::pass_through pass_through;
+#if RXCPP_USE_VARIADIC_TEMPLATES
+        typedef typename base::as_tuple as_tuple;
+#endif //RXCPP_USE_VARIADIC_TEMPLATES
         using base::obj;
     public:
         static const bool is_item_observable = true;
@@ -88,6 +94,9 @@ namespace rxcpp
         is_observable<typename observable_item<Obj>::type>::value> base;
         typedef typename base::item_type item_type;
         typedef typename base::pass_through pass_through;
+#if RXCPP_USE_VARIADIC_TEMPLATES
+        typedef typename base::as_tuple as_tuple;
+#endif //RXCPP_USE_VARIADIC_TEMPLATES
         using base::obj;
     public:
 
@@ -99,6 +108,33 @@ namespace rxcpp
         auto select(S selector) -> decltype(from(Select<item_type>(obj, selector))) {
             return from(Select<item_type>(obj, selector));
         }
+#if RXCPP_USE_VARIADIC_TEMPLATES
+        template <class... MergeSource>
+        auto merge(const MergeSource&... source) 
+            -> decltype(from(Merge(obj, source...))) {
+            return      from(Merge(obj, source...));
+        }
+        template <class S, class... ZipSource>
+        auto zip(S selector, const ZipSource&... source) 
+            -> decltype(from(Zip(selector, obj, source...))) {
+            return      from(Zip(selector, obj, source...));
+        }
+        template <class... Zip1Source>
+        auto zip(const Zip1Source&... source) 
+            -> decltype(from(Zip(as_tuple(), obj, source...))) {
+            return      from(Zip(as_tuple(), obj, source...));
+        }
+        template <class S, class... CombineLSource>
+        auto combine_latest(S selector, const CombineLSource&... source) 
+            -> decltype(from(CombineLatest(selector, obj, source...))) {
+            return      from(CombineLatest(selector, obj, source...));
+        }
+        template <class... CombineL1Source>
+        auto combine_latest(const CombineL1Source&... source) 
+            -> decltype(from(CombineLatest(as_tuple(), obj, source...))) {
+            return      from(CombineLatest(as_tuple(), obj, source...));
+        }
+#endif //RXCPP_USE_VARIADIC_TEMPLATES
         template <class P>
         auto where(P predicate) -> decltype(from(Where<item_type>(obj, predicate))) {
             return from(Where<item_type>(obj, predicate));
@@ -177,10 +213,10 @@ namespace rxcpp
             return result;
         }
 #if RXCPP_USE_VARIADIC_TEMPLATES
-        template <class Tag, class... Arg>
-        auto chain(Arg&& ...arg) 
-            -> decltype(from(rxcpp_chain(Tag(), obj, std::forward<Arg>(arg)...))) {
-            return from(rxcpp_chain(Tag(), obj, std::forward<Arg>(arg)...));
+        template <class Tag, class... ChainArg>
+        auto chain(ChainArg&&... arg) 
+            -> decltype(from(rxcpp_chain(Tag(), obj, std::forward<ChainArg>(arg)...))) {
+            return from(rxcpp_chain(Tag(), obj, std::forward<ChainArg>(arg)...));
         }
 #endif
     };

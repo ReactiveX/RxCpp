@@ -13,27 +13,138 @@ namespace rxcpp
     // 
     // schedulers
 
-    struct CurrentThreadScheduler : public LocalScheduler
+    struct CurrentThreadQueue
     {
+        typedef Scheduler::clock clock;
+        typedef Scheduler::Work Work;
+        struct QueueItem {
+            QueueItem(clock::time_point due, std::shared_ptr<Work> work)
+                : due(due)
+                , work(std::move(work))
+            {}
+            clock::time_point due;
+            std::shared_ptr<Work> work;
+        };
+
     private:
-        CurrentThreadScheduler(const CurrentThreadScheduler&);
+        ~CurrentThreadQueue();
         
         struct compare_work
         {
-            template <class T>
-            bool operator()(const T& work1, const T& work2) const {
-                return work1.first > work2.first;
+            bool operator()(const QueueItem& work1, const QueueItem& work2) const {
+                return work1.due > work2.due;
             }
         };
         
         typedef std::priority_queue<
-            std::pair<clock::time_point, std::shared_ptr<Work>>,
-            std::vector<std::pair<clock::time_point, std::shared_ptr<Work>>>,
+            QueueItem,
+            std::vector<QueueItem>,
             compare_work 
         > ScheduledWork;
 
-        RXCPP_THREAD_LOCAL static ScheduledWork* scheduledWork;
+    public:
+        struct ThreadLocalQueue {
+            Scheduler::shared scheduler;
+            ScheduledWork queue;
+        };
+
+    private:
+        RXCPP_THREAD_LOCAL static ThreadLocalQueue* threadLocalQueue;
         
+    public:
+
+        static Scheduler::shared GetScheduler() { 
+            return !!threadLocalQueue ? threadLocalQueue->scheduler : Scheduler::shared(); 
+        }
+        static bool empty() {
+            if (!threadLocalQueue) {
+                throw std::logic_error("this thread does not have a queue!");
+            }
+            return threadLocalQueue->queue.empty();
+        }
+        static ScheduledWork::const_reference top() {
+            if (!threadLocalQueue) {
+                throw std::logic_error("this thread does not have a queue!");
+            }
+            return threadLocalQueue->queue.top();
+        }
+        static void pop() {
+            if (!threadLocalQueue) {
+                throw std::logic_error("this thread does not have a queue!");
+            }
+            threadLocalQueue->queue.pop();
+        }
+        static void push(QueueItem item) {
+            if (!threadLocalQueue) {
+                throw std::logic_error("this thread does not have a queue!");
+            }
+            threadLocalQueue->queue.push(std::move(item));
+        }
+        static void EnsureQueue(Scheduler::shared scheduler) {
+            if (!!threadLocalQueue) {
+                throw std::logic_error("this thread already has a queue!");
+            }
+            // create and publish new queue
+            threadLocalQueue = new ThreadLocalQueue();
+            threadLocalQueue->scheduler = scheduler;
+        }
+        static std::unique_ptr<ThreadLocalQueue> CreateQueue(Scheduler::shared scheduler) {
+            std::unique_ptr<ThreadLocalQueue> result(new ThreadLocalQueue());
+            result->scheduler = std::move(scheduler);
+            return result;
+        }
+        static void SetQueue(ThreadLocalQueue* queue) {
+            if (!!threadLocalQueue) {
+                throw std::logic_error("this thread already has a queue!");
+            }
+            // create and publish new queue
+            threadLocalQueue = queue;
+        }
+        static void DestroyQueue(ThreadLocalQueue* queue) {
+            delete queue;
+        }
+        static void DestroyQueue() {
+            if (!threadLocalQueue) {
+                throw std::logic_error("this thread does not have a queue!");
+            }
+            DestroyQueue(threadLocalQueue);
+            threadLocalQueue = nullptr;
+        }
+    };
+    // static 
+    RXCPP_SELECT_ANY RXCPP_THREAD_LOCAL CurrentThreadQueue::ThreadLocalQueue* CurrentThreadQueue::threadLocalQueue = nullptr;
+
+    struct CurrentThreadScheduler : public LocalScheduler
+    {
+    private:
+        CurrentThreadScheduler(const CurrentThreadScheduler&);
+
+        struct Derecurser : public LocalScheduler
+        {
+        private:
+            Derecurser(const Derecurser&);
+        public:
+            Derecurser()
+            {
+            }
+            virtual ~Derecurser()
+            {
+            }
+
+            static bool IsScheduleRequired() { return false; }
+        
+            using LocalScheduler::Schedule;
+            virtual Disposable Schedule(clock::time_point dueTime, Work work)
+            {
+                auto cancelable = std::make_shared<Work>(std::move(work));
+
+                CurrentThreadQueue::push(CurrentThreadQueue::QueueItem(dueTime, cancelable));
+
+                return Disposable([cancelable]{
+                    *cancelable.get() = nullptr;});
+            }
+        };
+
     public:
         CurrentThreadScheduler()
         {
@@ -42,49 +153,50 @@ namespace rxcpp
         {
         }
 
-        static bool IsScheduleRequired() { return scheduledWork == nullptr; }
+        static bool IsScheduleRequired() { return !CurrentThreadQueue::GetScheduler(); }
         
         using LocalScheduler::Schedule;
         virtual Disposable Schedule(clock::time_point dueTime, Work work)
         {
-            auto cancelable = std::make_shared<Work>(std::move(work));
-            // check trampoline
-            if (!!scheduledWork) 
+            auto localScheduler = CurrentThreadQueue::GetScheduler();
+            // check ownership
+            if (!!localScheduler) 
             {
-                scheduledWork->push(std::make_pair(dueTime, cancelable));
-                return Disposable([=]{(*cancelable.get()) = nullptr;});
+                // already has an owner - delegate
+                return localScheduler->Schedule(dueTime, std::move(work));
             }
 
-            // create and publish new queue 
-            scheduledWork = new ScheduledWork();
+            // take ownership
+
+            auto cancelable = std::make_shared<Work>(std::move(work));
+
+            CurrentThreadQueue::EnsureQueue(std::make_shared<Derecurser>());
             RXCPP_UNWIND_AUTO([]{
-                delete scheduledWork;
-                scheduledWork = nullptr;
+                CurrentThreadQueue::DestroyQueue();
             });
 
-            scheduledWork->push(std::make_pair(dueTime, cancelable));
+            CurrentThreadQueue::push(CurrentThreadQueue::QueueItem(dueTime, std::move(cancelable)));
 
             // loop until queue is empty
             for (
-                 auto dueTime = scheduledWork->top().first;
+                 auto dueTime = CurrentThreadQueue::top().due;
                  std::this_thread::sleep_until(dueTime), true;
-                 dueTime = scheduledWork->top().first
+                 dueTime = CurrentThreadQueue::top().due
                  )
             {
                 // dispatch work
-                auto work = std::move(*scheduledWork->top().second.get());
-                scheduledWork->pop();
+                auto work = std::move(*CurrentThreadQueue::top().work.get());
+                *CurrentThreadQueue::top().work.get() = nullptr;
+                CurrentThreadQueue::pop();
                 
                 Do(work, get());
-
-                if (scheduledWork->empty()) {break;}
+                
+                if (CurrentThreadQueue::empty()) {break;}
             }
 
             return Disposable::Empty();
         }
     };
-    // static 
-    RXCPP_SELECT_ANY RXCPP_THREAD_LOCAL CurrentThreadScheduler::ScheduledWork* CurrentThreadScheduler::scheduledWork = nullptr;
 
     struct ImmediateScheduler : public LocalScheduler
     {
@@ -109,237 +221,248 @@ namespace rxcpp
         }
     };
     
-
-    class WorkQueue : public std::enable_shared_from_this<WorkQueue>
+    template<class T>
+    class ScheduledObserver : 
+        public Observer<T>, 
+        public std::enable_shared_from_this<ScheduledObserver<T>>
     {
-        typedef LocalScheduler::Work Work;
-        typedef LocalScheduler::clock clock;
-        typedef std::pair<Scheduler::shared, Work> Item;
-        typedef std::shared_ptr<WorkQueue> shared;
+        typedef std::function<void()> Action;
 
-        struct compare_work
-        {
-            template <class T>
-            bool operator()(const T& work1, const T& work2) const {
-                return work1.first > work2.first;
-            }
-        };
-        
+        Scheduler::shared scheduler;
+        std::shared_ptr<Observer<T>> observer;
         std::atomic<size_t> trampoline;
-        std::priority_queue< 
-            std::pair<clock::time_point, std::shared_ptr<Item>>,
-            std::vector<std::pair<clock::time_point, std::shared_ptr<Item>>>,
-            compare_work > scheduledWork;
+        SharedDisposable sd;
+        mutable std::queue<Action> queue;
         mutable std::mutex lock;
-        mutable std::condition_variable wake;
-        mutable std::atomic<bool> exit;
-
-        struct WorkQueueScheduler : public LocalScheduler
-        {
-        private:
-            WorkQueueScheduler();
-            WorkQueueScheduler(const WorkQueueScheduler&);
-         
-            WorkQueue::shared queue;
-
-        public:
-            WorkQueueScheduler(WorkQueue::shared queue) : queue(queue)
-            {
-            }
-            virtual ~WorkQueueScheduler()
-            {
-            }
-
-            using LocalScheduler::Schedule;
-            virtual Disposable Schedule(clock::time_point dueTime, Work work)
-            {
-                auto cancelable = std::make_shared<Item>(std::make_pair(get(), std::move(work)));
-                {
-                    std::unique_lock<std::mutex> guard(queue->lock);
-                    queue->scheduledWork.push(std::make_pair(dueTime, cancelable));
-                }
-                queue->wake.notify_one();
-                auto local = queue;
-                return Disposable([local, cancelable]{
-                    std::unique_lock<std::mutex> guard(local->lock);
-                    cancelable.get()->second = nullptr;});
-            }
-        };
 
     public:
-        typedef std::function<void()> RunLoop;
-        typedef std::function<std::thread(RunLoop)> Factory;
-
-        WorkQueue()
-            : trampoline(0)
-            , exit(false)
+        ScheduledObserver(Scheduler::shared scheduler, std::shared_ptr<Observer<T>> observer)
+            : scheduler(std::move(scheduler))
+            , observer(std::move(observer))
+            , trampoline(0)
         {
-        }
-
-        util::maybe<std::thread> EnsureThread(Factory& factory)
-        {
-            util::maybe<std::thread> result;
-            std::unique_lock<std::mutex> guard(lock);
-            RXCPP_UNWIND(unwindTrampoline, [&]{--trampoline;});
-            if (++trampoline == 1)
-            {
-                auto local = shared_from_this();
-                result.set(factory([local]{
-                           local->Run();}));
-                // trampoline lifetime is now owned by the thread
-                unwindTrampoline.dismiss();
-            }
-            return result;
         }
 
         void Dispose() const
         {
             std::unique_lock<std::mutex> guard(lock);
-            if (trampoline > 0)
-            {
-                exit = true;
-                wake.notify_one();
-            }
+            while (!queue.empty()) {queue.pop();}
+            sd.Dispose();
         }
         operator Disposable() const
         {
-            auto local = shared_from_this();
+            auto local = this->shared_from_this();
             return Disposable([local]{
                 local->Dispose();
             });
         }
-        Scheduler::shared GetScheduler()
+
+        virtual void OnNext(const T& element)
         {
-            return std::make_shared<WorkQueueScheduler>(shared_from_this());
+            std::unique_lock<std::mutex> guard(lock);
+            auto local = this->shared_from_this();
+            queue.push(Action([=](){
+                local->observer->OnNext(std::move(element));}));
         }
-        void Run()
+        virtual void OnCompleted() 
         {
-            auto keepAlive = shared_from_this();
-            {
-                RXCPP_UNWIND_AUTO([&]{--trampoline;});
-
-                std::unique_lock<std::mutex> guard(lock);
-
-                while(!exit && !scheduledWork.empty())
-                {
-                    // wait until there is work
-                    wake.wait(guard, [this]{ return this->exit || !this->scheduledWork.empty();});
-                    if (exit || scheduledWork.empty()) {break;}
-                
-                    auto item = &scheduledWork.top();
-                    if (!item->second) {scheduledWork.pop(); continue;}
-                
-                    // wait until the work is due
-                    while (!exit && item->second && item->second.get()->first->Now() < item->first)
-                    {
-                        wake.wait_until(guard, item->first);
-                        item = &scheduledWork.top();
-                    }
-                    if (exit || scheduledWork.empty()) {break;}
-                    if (!item->second) {scheduledWork.pop(); continue;}
-                
-                    // dispatch work
-                    auto work = std::move(item->second.get()->second);
-                    auto scheduler = std::move(item->second.get()->first);
-                    scheduledWork.pop();
-                
-                    RXCPP_UNWIND_AUTO([&]{guard.lock();});
-                    guard.unlock();
-                    LocalScheduler::Do(work, scheduler);
-                }
-            }
-            exit = false;
+            std::unique_lock<std::mutex> guard(lock);
+            auto local = this->shared_from_this();
+            queue.push(Action([=](){
+                local->observer->OnCompleted();}));
+        }
+        virtual void OnError(const std::exception_ptr& error) 
+        {
+            std::unique_lock<std::mutex> guard(lock);
+            auto local = this->shared_from_this();
+            queue.push(Action([=](){
+                local->observer->OnError(std::move(error));}));
         }
 
-        Disposable RunOnScheduler(Scheduler::shared scheduler)
+        void EnsureActive()
         {
             RXCPP_UNWIND_AUTO([&]{--trampoline;});
             if (++trampoline == 1)
             {
                 // this is decremented when no further work is scheduled
                 ++trampoline;
-                auto keepAlive = shared_from_this();
-                return scheduler->Schedule(
-                    [keepAlive, scheduler](Scheduler::shared){
-                        return keepAlive->RunOnSchedulerWork(scheduler);});
+                auto keepAlive = this->shared_from_this();
+                sd.Set(scheduler->Schedule(
+                    [keepAlive](Scheduler::shared sched){
+                        return keepAlive->Run(sched);}));
             }
-            return Disposable::Empty();
         }
     private:
-        Disposable RunOnSchedulerWork(Scheduler::shared scheduler)
+        Disposable Run(Scheduler::shared sched)
         {
-            auto keepAlive = shared_from_this();
+            auto keepAlive = this->shared_from_this();
 
             std::unique_lock<std::mutex> guard(lock);
 
-            if(!exit && !scheduledWork.empty())
-            {                
-                auto& item = scheduledWork.top();
+            if(!queue.empty())
+            {
+                auto& item = queue.front();
                 
-                // wait until the work is due
-                if(!exit && item.second.get()->first->Now() < item.first)
-                {
-                    return scheduler->Schedule(
-                        item.first, 
-                        [keepAlive, scheduler](Scheduler::shared){
-                            return keepAlive->RunOnSchedulerWork(scheduler);});
-                }
-                
-                if(!exit)
-                {
-                    // dispatch work
-                    auto work = std::move(item.second.get()->second);
-                    auto scheduler = std::move(item.second.get()->first);
-                    scheduledWork.pop();
+                // dispatch action
+                auto action = std::move(item);
+                item = nullptr;
+                queue.pop();
                     
-                    RXCPP_UNWIND_AUTO([&]{guard.lock();});
-                    guard.unlock();
-                    LocalScheduler::Do(work, scheduler);
-                }
+                RXCPP_UNWIND_AUTO([&]{guard.lock();});
+                guard.unlock();
+                action();
             }
 
-            if(!exit && !scheduledWork.empty())
+            if(!queue.empty())
             {
-                return scheduler->Schedule(
-                    [keepAlive, scheduler](Scheduler::shared){
-                        return keepAlive->RunOnSchedulerWork(scheduler);});
+                guard.unlock();
+                sd.Set(sched->Schedule(
+                    [keepAlive](Scheduler::shared sched){
+                        return keepAlive->Run(sched);}));
+                return Disposable::Empty();
             }
 
             // only decrement when no further work is scheduled
             --trampoline;
-            exit = false;
             return Disposable::Empty();
         }
     };
-
 
     struct EventLoopScheduler : public LocalScheduler
     {
     private:
         EventLoopScheduler(const EventLoopScheduler&);
+
+        struct Derecurser : public std::enable_shared_from_this<Derecurser>
+        {
+        private:
+            Derecurser(const Derecurser&);
+
+            std::atomic<size_t> trampoline;
+            mutable std::mutex lock;
+            mutable std::condition_variable wake;
+            mutable std::atomic<bool> exit;
+            CurrentThreadQueue::ThreadLocalQueue* queue;
+
+        public:
+            Derecurser()
+                : trampoline(0)
+                , exit(false)
+            {
+            }
+            virtual ~Derecurser()
+            {
+            }
+
+            typedef std::function<void()> RunLoop;
+            typedef std::function<std::thread(RunLoop)> Factory;
+
+            static bool IsScheduleRequired() { return false; }
         
-        std::shared_ptr<WorkQueue> queue;
-        Scheduler::shared scheduler;
+            typedef std::tuple<util::maybe<std::thread>, Disposable> EnsureThreadResult;
+            EnsureThreadResult EnsureThread(Factory& factory, Scheduler::shared owner, clock::time_point dueTime, Work work)
+            {
+                EnsureThreadResult result(util::maybe<std::thread>(), Disposable::Empty());
+
+                auto cancelable = std::make_shared<Work>(std::move(work));
+
+                std::unique_lock<std::mutex> guard(lock);
+                RXCPP_UNWIND(unwindTrampoline, [&]{--trampoline;});
+
+                if (++trampoline == 1)
+                {
+                    RXCPP_UNWIND(unwindQueue, [&](){
+                        CurrentThreadQueue::DestroyQueue(queue); queue = nullptr;});
+                    queue = CurrentThreadQueue::CreateQueue(owner).release();
+
+                    std::get<1>(result) = Disposable([cancelable]{
+                        *cancelable.get() = nullptr;});
+                    queue->queue.push(CurrentThreadQueue::QueueItem(dueTime, std::move(cancelable)));
+
+                    auto local = std::static_pointer_cast<Derecurser>(shared_from_this());
+                    auto localQueue = queue;
+                    std::get<0>(result).set(factory([local, localQueue]{
+                               local->Run(localQueue);}));
+
+                    // trampoline and queue lifetime is now owned by the thread
+                    unwindTrampoline.dismiss();
+                    unwindQueue.dismiss();
+                }
+                else
+                {
+                    std::get<1>(result) = Disposable([cancelable]{
+                        *cancelable.get() = nullptr;});
+                    queue->queue.push(CurrentThreadQueue::QueueItem(dueTime, std::move(cancelable)));
+                    wake.notify_one();
+                }
+                return std::move(result);
+            }
+
+        private:
+            void Run(CurrentThreadQueue::ThreadLocalQueue* queue) {
+                auto keepAlive = shared_from_this();
+                {
+                    RXCPP_UNWIND_AUTO([&]{--trampoline;});
+
+                    std::unique_lock<std::mutex> guard(lock);
+
+                    CurrentThreadQueue::SetQueue(queue);
+                    RXCPP_UNWIND(unwindQueue, [&](){
+                        CurrentThreadQueue::DestroyQueue(); 
+                        queue = nullptr;});
+
+                    while(!exit && (!CurrentThreadQueue::empty() || trampoline > 1))
+                    {
+                        if (CurrentThreadQueue::empty()) {
+                            wake.wait(guard, [&](){
+                                return exit || !CurrentThreadQueue::empty() || trampoline == 1;});
+                            continue;
+                        }
+
+                        auto item = &CurrentThreadQueue::top();
+                        if (!item->work || !*item->work.get()) {CurrentThreadQueue::pop(); continue;}
+                        
+                        // wait until the work is due
+                        if (!exit && queue->scheduler->Now() < item->due)
+                        {
+                            wake.wait_until(guard, item->due);
+                            continue;
+                        }
+                        if (exit || CurrentThreadQueue::empty()) {break;}
+                        if (!item->work || !*item->work.get()) {CurrentThreadQueue::pop(); continue;}
+                        
+                        // dispatch work
+                        auto work = std::move(*item->work.get());
+                        *item->work.get() = nullptr;
+                        CurrentThreadQueue::pop();
+                        
+                        RXCPP_UNWIND_AUTO([&]{guard.lock();});
+                        guard.unlock();
+                        LocalScheduler::Do(work, queue->scheduler);
+                    }
+                }
+                exit = false;
+            }
+        };
+
         std::thread worker;
-        WorkQueue::Factory factory;
-        
+        Derecurser::Factory factory;
+        std::shared_ptr<Derecurser> derecurser;
+
     public:
         EventLoopScheduler()
-            : queue(std::make_shared<WorkQueue>())
-            , scheduler(queue->GetScheduler())
+            : derecurser(std::make_shared<Derecurser>())
         {
-            auto local = queue;
-            factory = [local] (WorkQueue::RunLoop rl) -> std::thread {
+            auto local = derecurser;
+            factory = [local] (Derecurser::RunLoop rl) -> std::thread {
                 return std::thread([local, rl]{rl();});
             };
         }
         template<class Factory>
         EventLoopScheduler(Factory factoryarg) 
-            : queue(std::make_shared<WorkQueue>())
-            , scheduler(queue->GetScheduler())
+            : derecurser(std::make_shared<Derecurser>())
+            , factory(std::move(factoryarg))
         {
-            auto local = queue;
-            factory = std::move(factoryarg);
         }
         virtual ~EventLoopScheduler()
         {
@@ -347,22 +470,22 @@ namespace rxcpp
                 worker.detach();
             }
         }
+
+        static bool IsScheduleRequired() { return !CurrentThreadQueue::GetScheduler(); }
         
         using LocalScheduler::Schedule;
         virtual Disposable Schedule(clock::time_point dueTime, Work work)
         {
-            Disposable result = scheduler->Schedule(dueTime, std::move(work));
-
-            auto maybeThread = queue->EnsureThread(factory);
-            if (maybeThread)
+            auto maybeThread = derecurser->EnsureThread(factory, this->shared_from_this(), dueTime, std::move(work));
+            if (std::get<0>(maybeThread))
             {
                 if (worker.joinable())
                 {
                     worker.join();
                 }
-                worker = std::move(*maybeThread.get());
+                worker = std::move(*std::get<0>(maybeThread).get());
             }
-            return std::move(result);
+            return std::move(std::get<1>(maybeThread));
         }
     };
     

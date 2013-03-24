@@ -32,6 +32,164 @@ void PrintPrimes(int n)
             });
 }
 
+void Combine(int n)
+{
+#if RXCPP_USE_VARIADIC_TEMPLATES
+    auto input1 = std::make_shared<rxcpp::EventLoopScheduler>();
+    auto input2 = std::make_shared<rxcpp::EventLoopScheduler>();
+    auto output = std::make_shared<rxcpp::EventLoopScheduler>();
+
+    auto values1 = rxcpp::Range(100); // infinite (until overflow) stream of integers
+    auto s1 = rxcpp::from(values1)
+        .subscribe_on(input1)
+        .where(IsPrime)
+        .select([](int prime){this_thread::yield(); return prime;})
+        .publish();
+
+    auto values2 = rxcpp::Range(2); // infinite (until overflow) stream of integers
+    rxcpp::from(values2)
+        .subscribe_on(input2)
+        .where(IsPrime)
+        .select([](int prime){this_thread::yield(); return prime;})
+        .combine_latest(s1)
+        .take(n)
+        .observe_on(output)
+        .for_each(
+            [](tuple<int, int> p) {
+                cout << get<0>(p) << " =combined=> " << get<1>(p) << endl;
+            });
+#else
+    (void)n;
+#endif //RXCPP_USE_VARIADIC_TEMPLATES
+}
+
+struct Count {
+    Count() : nexts(0), completions(0), errors(0), disposals(0) {}
+    std::atomic<int> nexts;
+    std::atomic<int> completions;
+    std::atomic<int> errors;
+    std::atomic<int> disposals;
+};
+template <class T>
+std::shared_ptr<rxcpp::Observable<T>> Record(
+    const std::shared_ptr<rxcpp::Observable<T>>& source,
+    Count* count
+    )
+{
+    return rxcpp::CreateObservable<T>(
+        [=](std::shared_ptr<rxcpp::Observer<T>> observer)
+        {
+            rxcpp::ComposableDisposable cd;
+            cd.Add(rxcpp::Disposable([=](){
+                ++count->disposals;}));
+            cd.Add(rxcpp::Subscribe(
+                source,
+            // on next
+                [=](T element)
+                {
+                    ++count->nexts;
+                    observer->OnNext(std::move(element));
+                },
+            // on completed
+                [=]
+                {
+                    ++count->completions;
+                    observer->OnCompleted();
+                },
+            // on error
+                [=](const std::exception_ptr& error)
+                {
+                    ++count->errors;
+                    observer->OnError(error);
+                }));
+            return cd;
+        });
+}
+struct record {};
+template<class T>
+rxcpp::Binder<std::shared_ptr<rxcpp::Observable<T>>> rxcpp_chain(record&&, const std::shared_ptr<rxcpp::Observable<T>>& source, Count* count) {
+    return rxcpp::from(Record(source, count));
+}
+
+template<class InputScheduler, class OutputScheduler>
+void Zip(int n)
+{
+#if RXCPP_USE_VARIADIC_TEMPLATES
+    auto input1 = std::make_shared<InputScheduler>();
+    auto input2 = std::make_shared<InputScheduler>();
+    auto output = std::make_shared<OutputScheduler>();
+
+    Count s1count, s2count, zipcount, takecount, outputcount;
+
+    auto values1 = rxcpp::Range(100); // infinite (until overflow) stream of integers
+    auto s1 = rxcpp::from(values1)
+        .subscribe_on(input1)
+        .where(IsPrime)
+        .template chain<record>(&s1count)
+        .select([](int prime){this_thread::yield(); return prime;})
+        .publish();
+
+    auto values2 = rxcpp::Range(2); // infinite (until overflow) stream of integers
+    rxcpp::from(values2)
+        .subscribe_on(input2)
+        .where(IsPrime)
+        .template chain<record>(&s2count)
+        .select([](int prime){this_thread::yield(); return prime;})
+        .zip(s1)
+        .template chain<record>(&zipcount)
+        .take(n)
+        .template chain<record>(&takecount)
+        .observe_on(output)
+        .template chain<record>(&outputcount)
+        .for_each(
+            [](tuple<int, int> p) {
+                cout << get<0>(p) << " =zipped=> " << get<1>(p) << endl;
+            });
+
+    cout << "location: nexts, completions, errors, disposals" << endl;
+    cout << "s1count:" << s1count.nexts << ", " << s1count.completions << ", " << s1count.errors << ", " << s1count.disposals << endl;
+    cout << "s2count:" << s2count.nexts << ", " << s2count.completions << ", " << s2count.errors << ", " << s2count.disposals << endl;
+    cout << "zipcount:" << zipcount.nexts << ", " << zipcount.completions << ", " << zipcount.errors << ", " << zipcount.disposals << endl;
+    cout << "takecount:" << takecount.nexts << ", " << takecount.completions << ", " << takecount.errors << ", " << takecount.disposals << endl;
+    cout << "outputcount:" << outputcount.nexts << ", " << outputcount.completions << ", " << outputcount.errors << ", " << outputcount.disposals << endl;
+#else
+    (void)n;
+#endif //RXCPP_USE_VARIADIC_TEMPLATES
+}
+
+void Merge(int n)
+{
+#if RXCPP_USE_VARIADIC_TEMPLATES
+    auto input1 = std::make_shared<rxcpp::EventLoopScheduler>();
+    auto input2 = std::make_shared<rxcpp::EventLoopScheduler>();
+    auto output = std::make_shared<rxcpp::EventLoopScheduler>();
+
+    cout << "merge==> <source>: <prime>" << endl;
+
+    auto values1 = rxcpp::Range(100); // infinite (until overflow) stream of integers
+    auto s1 = rxcpp::from(values1)
+        .subscribe_on(input1)
+        .where(IsPrime)
+        .select([](int prime1) {this_thread::yield(); return std::make_tuple("1: ", prime1);})
+        .publish();
+
+    auto values2 = rxcpp::Range(2); // infinite (until overflow) stream of integers
+    rxcpp::from(values2)
+        .subscribe_on(input2)
+        .where(IsPrime)
+        .select([](int prime2) {this_thread::yield(); return std::make_tuple("2: ", prime2);})
+        .merge(s1)
+        .take(n)
+        .observe_on(output)
+        .for_each(
+            [](tuple<const char*, int> p) {
+                cout << get<0>(p) << get<1>(p) << endl;
+            });
+#else
+    (void)n;
+#endif //RXCPP_USE_VARIADIC_TEMPLATES
+}
+
 std::shared_ptr<rxcpp::Observable<string>> Data(
     string filename,
     rxcpp::Scheduler::shared scheduler = std::make_shared<rxcpp::CurrentThreadScheduler>()
@@ -135,12 +293,38 @@ void run()
         });
 }
 
+template<class Scheduler>
+void innerScheduler() {
+    auto outer = std::make_shared<Scheduler>();
+    rxcpp::Scheduler::shared inner;
+    outer->Schedule([&](rxcpp::Scheduler::shared s){
+        inner = s; return rxcpp::Disposable::Empty();});
+    while(!inner);
+    inner->Schedule([&](rxcpp::Scheduler::shared s){
+        inner = nullptr; return rxcpp::Disposable::Empty();});
+    while(!!inner);
+    cout << "innerScheduler test succeeded" << endl;
+}
+
 int main(int argc, char* argv[])
 {
-    PrintPrimes(20);
-
     try {
+        PrintPrimes(20);
+        cout << "Zip Immediate" << endl;
+        Zip<rxcpp::ImmediateScheduler, rxcpp::ImmediateScheduler>(20);
+        cout << "Zip Current" << endl;
+        Zip<rxcpp::CurrentThreadScheduler, rxcpp::CurrentThreadScheduler>(20);
+        cout << "Zip EventLoop" << endl;
+        Zip<rxcpp::EventLoopScheduler, rxcpp::EventLoopScheduler>(20);
+        Combine(20);
+        Merge(20);
+
+        innerScheduler<rxcpp::ImmediateScheduler>();
+        innerScheduler<rxcpp::CurrentThreadScheduler>();
+        innerScheduler<rxcpp::EventLoopScheduler>();
+
         run();
+        
     } catch (exception& e) {
         cerr << "exception: " << e.what() << endl;
     }
