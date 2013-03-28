@@ -26,10 +26,10 @@ void PrintPrimes(int n)
         .where(IsPrime)
         .select([](int x) { return std::make_pair(x,  x*x); })
         .take(n)
-        .subscribe(
-            [](pair<int, int> p) {
-                cout << p.first << " =square=> " << p.second << endl;
-            });
+        .subscribe(rxcpp::MakeTupleDispatch(
+            [](int p, int s) {
+                cout << p << " =square=> " << s << endl;
+            }));
 }
 
 void Combine(int n)
@@ -54,10 +54,10 @@ void Combine(int n)
         .combine_latest(s1)
         .take(n)
         .observe_on(output)
-        .for_each(
-            [](tuple<int, int> p) {
-                cout << get<0>(p) << " =combined=> " << get<1>(p) << endl;
-            });
+        .for_each(rxcpp::MakeTupleDispatch(
+            [](int p2, int p1) {
+                cout << p2 << " =combined=> " << p1 << endl;
+            }));
 #else
     (void)n;
 #endif //RXCPP_USE_VARIADIC_TEMPLATES
@@ -141,10 +141,10 @@ void Zip(int n)
         .template chain<record>(&takecount)
         .observe_on(output)
         .template chain<record>(&outputcount)
-        .for_each(
-            [](tuple<int, int> p) {
-                cout << get<0>(p) << " =zipped=> " << get<1>(p) << endl;
-            });
+        .for_each(rxcpp::MakeTupleDispatch(
+            [](int p2, int p1) {
+                cout << p2 << " =zipped=> " << p1 << endl;
+            }));
 
     cout << "location: nexts, completions, errors, disposals" << endl;
     cout << "s1count:" << s1count.nexts << ", " << s1count.completions << ", " << s1count.errors << ", " << s1count.disposals << endl;
@@ -181,10 +181,10 @@ void Merge(int n)
         .merge(s1)
         .take(n)
         .observe_on(output)
-        .for_each(
-            [](tuple<const char*, int> p) {
-                cout << get<0>(p) << get<1>(p) << endl;
-            });
+        .for_each(rxcpp::MakeTupleDispatch(
+            [](const char* s, int p) {
+                cout << s << p << endl;
+            }));
 #else
     (void)n;
 #endif //RXCPP_USE_VARIADIC_TEMPLATES
@@ -229,68 +229,55 @@ void run()
         .group_by([](const item& i) {
             return i.args;}
         )
-        .select([=](const std::shared_ptr<rxcpp::GroupedObservable<std::string, item>> & gob){
-            return std::make_pair(
-                gob->Key(), // keep args key
-                rxcpp::from(gob)
+        // flatten concurrencies in the same args
+        .select_many(
+            [](const std::shared_ptr<rxcpp::GroupedObservable<std::string, item>> & argsGroup){
+                return rxcpp::from(argsGroup)
                     // group items by concurrency field
                     .group_by([](const item& i){
                         return i.concurrency;}
                     )
-                    // select only the times field
-                    .select([=] (const std::shared_ptr<rxcpp::GroupedObservable<int, item>> & gob){
-                        return std::make_pair(
-                            gob->Key(), // keep concurrency key
-                            rxcpp::from(gob)
+                    // flatten times in the same concurrency
+                    .select_many(
+                        [](const std::shared_ptr<rxcpp::GroupedObservable<int, item>> & concurrencyGroup){
+                            return rxcpp::from(concurrencyGroup)
                                 .select([](const item& i){
-                                    return i.time;}
-                                )
-                                .publish());}
+                                    return i.time;})
+                                .to_vector()
+                                .publish();}, 
+                        [](const std::shared_ptr<rxcpp::GroupedObservable<int, item>> & concurrencyGroup,
+                            const std::vector<double> & times){
+                                return std::make_tuple(concurrencyGroup->Key(), times);}
                     )
-                    .publish());}
+                    .to_vector()
+                    .publish();}, 
+            [](const std::shared_ptr<rxcpp::GroupedObservable<std::string, item>> & argsGroup,
+                const std::vector<std::tuple<int, std::vector<double>>> & ouputGroup){
+                    return std::make_tuple(argsGroup->Key(), ouputGroup);}
         )
         .observe_on(output)
-        // print the grouped results
-        // for_each the args to block until the nested subscribes have finished
-        .for_each([&](const std::pair<std::basic_string<char>, std::shared_ptr<rxcpp::Observable<std::pair<int, std::shared_ptr<rxcpp::Observable<double> > > > > >& ob){
-            auto argsstate = std::make_shared<std::tuple<bool, std::string, int>>(false, ob.first, arggroupcount++);
-            rxcpp::from(ob.second)
-                // subscribe the concurrencies within each args
-                .subscribe([=](const std::pair<int, std::shared_ptr<rxcpp::Observable<double> > >& ob){
-                    auto linestate = std::make_shared<std::pair<int, std::vector<double>>>(ob.first, std::vector<double>());
-                    rxcpp::from(ob.second)
-                        // subscribe the times within each concurrency
-                        .subscribe([=](const double& i){
-                            // collect the times
-                            linestate->second.push_back(i);
-                        },[=]{
-                            // this concurrency's times are complete
-                            // output a line to the console.
-
-                            if (!std::get<0>(*argsstate))
-                            {
-                                std::get<0>(*argsstate) = true;
-                                cout<<"arguments: "<<std::get<1>(*argsstate)<<endl;
-                                cout << "concurrency, mean, |, raw_data," << endl;
-                            }
-
-                            cout << linestate->first << ", ";
+        .for_each(rxcpp::MakeTupleDispatch(
+            [](const std::string& args, const std::vector<std::tuple<int, std::vector<double>>>& concurrencyGroup){
+            cout<<"arguments: "<< args << endl;
+            cout << "concurrency, mean, |, raw_data," << endl;
+            for(auto& concurrencyItem : concurrencyGroup) {
+                rxcpp::MakeTupleDispatch(
+                    [](int concurrency, const std::vector<double>& rawtimes){
+                    cout << concurrency << ", ";
                             
-                            auto n = from(linestate->second).count();
-                            auto sum = std::accumulate(linestate->second.begin(), linestate->second.end(), 0.0);
+                    auto n = from(rawtimes).count();
+                    auto sum = std::accumulate(rawtimes.begin(), rawtimes.end(), 0.0);
 
-                            cout << (sum / n) << ", |";
+                    cout << (sum / n) << ", |";
 
-                            for (auto timeIter = linestate->second.begin(), end = linestate->second.end();
-                                timeIter != end;
-                                ++timeIter)
-                            {
-                                cout << ", " << *timeIter;
-                            }
-                            cout << endl;
-                        });
-                });
-        });
+                    for (auto timeIter = rawtimes.begin(), end = rawtimes.end();
+                        timeIter != end;
+                        ++timeIter)
+                    {
+                        cout << ", " << *timeIter;
+                    }
+                    cout << endl;})(concurrencyItem);}})
+        );
 }
 
 template<class Scheduler>

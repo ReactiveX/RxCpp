@@ -22,6 +22,7 @@
 #include <thread>
 #include <future>
 #include <vector>
+#include <list>
 #include <queue>
 #include <chrono>
 #include <condition_variable>

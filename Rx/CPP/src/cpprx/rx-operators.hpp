@@ -387,7 +387,8 @@ namespace rxcpp
             wake.wait(guard, [&]{return done;});
         }
 
-        if (error != std::exception_ptr()) {std::rethrow_exception(error);}
+        if (error != std::exception_ptr()) {
+            std::rethrow_exception(error);}
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -432,13 +433,13 @@ namespace rxcpp
         CS collectionSelector,
         RS resultSelector)
         -> const std::shared_ptr<Observable<
-            typename std::result_of<RS(
+            typename std::result_of<RS(const T&,
                 const typename observable_item<
                     typename std::result_of<CS(const T&)>::type>::type&)>::type>>
     {
         typedef typename std::result_of<CS(const T&)>::type C;
         typedef typename observable_item<C>::type CI;
-        typedef typename std::result_of<RS(const CI&)>::type U;
+        typedef typename std::result_of<RS(const T&, const CI&)>::type U;
 
         return CreateObservable<U>(
             [=](std::shared_ptr<Observer<U>> observer)
@@ -464,7 +465,7 @@ namespace rxcpp
                 cd.Add(Subscribe(
                     source,
                 // on next
-                    [=](const T& element)
+                    [=](const T& sourceElement)
                     {
                         bool cancel = false;
                         {
@@ -474,11 +475,11 @@ namespace rxcpp
                         }
                         if (!cancel) {
                             try {
-                                auto collection = collectionSelector(element);
+                                auto collection = collectionSelector(sourceElement);
                                 cd.Add(Subscribe(
                                     collection,
                                 // on next
-                                    [=](const CI& element)
+                                    [=](const CI& collectionElement)
                                     {
                                         bool cancel = false;
                                         {
@@ -487,7 +488,7 @@ namespace rxcpp
                                         }
                                         try {
                                             if (!cancel) {
-                                                auto result = resultSelector(element);
+                                                auto result = resultSelector(sourceElement, collectionElement);
                                                 observer->OnNext(std::move(result)); 
                                             }
                                         } catch (...) {
@@ -940,21 +941,11 @@ namespace rxcpp
         return CreateObservable<LocalGroupObservable>(
             [=](std::shared_ptr<Observer<LocalGroupObservable>> observer)
             {
-                typedef std::function<void(Value)> OnNext;
-                typedef std::function<void()> OnCompleted;
-                typedef std::function<void(const std::exception_ptr&)> OnError;
-
-                struct GroupValue
-                {
-                    OnNext onNext;
-                    OnCompleted onCompleted;
-                    OnError onError;
-                };
-                typedef std::map<Key, GroupValue, L> Groups;
+                typedef std::map<Key, std::shared_ptr<GroupedSubject<Key, Value>>, L> Groups;
 
                 struct State
                 {
-                    State(L less) : groups(std::move(less)) {}
+                    explicit State(L less) : groups(std::move(less)) {}
                     std::mutex lock;
                     Groups groups;
                 };
@@ -970,18 +961,11 @@ namespace rxcpp
 
                         typename Groups::iterator groupIt;
                         bool newGroup = false;
-                        GroupValue value;
-                        value.onNext = [keySubject](Value v){
-                            keySubject->OnNext(std::move(v));};
-                        value.onCompleted = [keySubject](){
-                            keySubject->OnCompleted();};
-                        value.onError = [keySubject](const std::exception_ptr& e){
-                            keySubject->OnError(std::move(e));};
 
                         {
                             std::unique_lock<std::mutex> guard(state->lock);
-                            std::tie(groupIt, newGroup) = state->groups.insert(std::make_pair(
-                                key,std::move(value))
+                            std::tie(groupIt, newGroup) = state->groups.insert(
+                                std::make_pair(key,keySubject)
                             );
                         }
 
@@ -990,13 +974,14 @@ namespace rxcpp
                             LocalGroupObservable nextGroup(std::move(keySubject));
                             observer->OnNext(nextGroup);
                         }
-                        groupIt->second.onNext(valueSelector(element));
+                        auto result = valueSelector(element);
+                        groupIt->second->OnNext(std::move(result));
                     },
                 // on completed
                     [=]
                     {
                         for(auto& group : state->groups) {
-                            group.second.onCompleted();
+                            group.second->OnCompleted();
                         }
                         observer->OnCompleted();
                     },
@@ -1004,7 +989,7 @@ namespace rxcpp
                     [=](const std::exception_ptr& error)
                     {
                         for(auto& group : state->groups) {
-                            group.second.onError(error);
+                            group.second->OnError(error);
                         }
                         observer->OnError(error);
                     });
@@ -1064,6 +1049,36 @@ namespace rxcpp
             });
     }
 
+    template <class StdCollection>
+    const std::shared_ptr<Observable<StdCollection>> ToStdCollection(
+        const std::shared_ptr<Observable<typename StdCollection::value_type>>& source
+        )
+    {
+        typedef typename StdCollection::value_type Value;
+        return CreateObservable<StdCollection>(
+            [=](std::shared_ptr<Observer<StdCollection>> observer)
+            {
+                auto stdCollection = std::make_shared<StdCollection>();
+                return Subscribe(
+                    source,
+                // on next
+                    [=](const Value& element)
+                    {
+                        stdCollection->insert(stdCollection->end(), element);
+                    },
+                // on completed
+                    [=]
+                    {
+                        observer->OnNext(std::move(*stdCollection.get()));
+                        observer->OnCompleted();
+                    },
+                // on error
+                    [=](const std::exception_ptr& error)
+                    {
+                        observer->OnError(error);
+                    });
+            });
+    }
 
     //////////////////////////////////////////////////////////////////////
     // 

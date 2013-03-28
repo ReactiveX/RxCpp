@@ -179,17 +179,163 @@ namespace rxcpp { namespace util {
         return      detail::tuple_dispatch<typename make_tuple_indices<typename std::decay<T>::type>::type>::call(std::forward<F>(f), std::forward<T>(t));
     }
 
+    namespace detail {
+    template<class Lhs, class Rhs>
+    struct tuple_concat;
+    template<size_t... LhsIndices, size_t... RhsIndices>
+    struct tuple_concat<tuple_indices<LhsIndices...>, tuple_indices<RhsIndices...>> {
+        template<class LhsTuple, class RhsTuple>
+        static
+        auto concatenate(LhsTuple&& lhs, RhsTuple&& rhs) 
+            -> decltype (std::tuple<
+                typename std::tuple_element<LhsIndices, typename std::decay<LhsTuple>::type>::type..., 
+                typename std::tuple_element<RhsIndices, typename std::decay<RhsTuple>::type>::type...>(
+                std::get<LhsIndices>(std::forward<LhsTuple>(lhs))..., 
+                std::get<RhsIndices>(std::forward<RhsTuple>(rhs))...)) {
+            return       std::tuple<
+                typename std::tuple_element<LhsIndices, typename std::decay<LhsTuple>::type>::type..., 
+                typename std::tuple_element<RhsIndices, typename std::decay<RhsTuple>::type>::type...>(
+                std::get<LhsIndices>(std::forward<LhsTuple>(lhs))..., 
+                std::get<RhsIndices>(std::forward<RhsTuple>(rhs))...);
+        }
+    };}
+
+    template<class LhsTuple, class RhsTuple>
+    auto tuple_concat(LhsTuple&& lhs, RhsTuple&& rhs) 
+        -> decltype(detail::tuple_concat<
+            typename make_tuple_indices<typename std::decay<LhsTuple>::type>::type, 
+            typename make_tuple_indices<typename std::decay<RhsTuple>::type>::type>::
+            concatenate(std::forward<LhsTuple>(lhs), std::forward<RhsTuple>(rhs))) {
+        return      detail::tuple_concat<
+            typename make_tuple_indices<typename std::decay<LhsTuple>::type>::type, 
+            typename make_tuple_indices<typename std::decay<RhsTuple>::type>::type>::
+            concatenate(std::forward<LhsTuple>(lhs), std::forward<RhsTuple>(rhs));
+    }
+
+    namespace detail {
+    template<class T>
+    struct tuple_tie;
+    template<size_t... TIndices>
+    struct tuple_tie<tuple_indices<TIndices...>> {
+        template<class T>
+        static
+        auto tie(T&& t) 
+            -> decltype (std::tie(std::get<TIndices>(std::forward<T>(t))...)) {
+            return       std::tie(std::get<TIndices>(std::forward<T>(t))...);
+        }
+    };}
+
+    template<class T>
+    auto tuple_tie(T&& t) 
+        -> decltype(detail::tuple_tie<typename make_tuple_indices<typename std::decay<T>::type>::type>::tie(std::forward<T>(t))) {
+        return      detail::tuple_tie<typename make_tuple_indices<typename std::decay<T>::type>::type>::tie(std::forward<T>(t));
+    }
+
     struct as_tuple {
         template<class... AsTupleNext>
         auto operator()(AsTupleNext... x) 
-            -> decltype(std::make_tuple(std::move(x)...)) const {
+            -> decltype(std::make_tuple(std::move(x)...)) {
+            return      std::make_tuple(std::move(x)...);}
+        template<class... AsTupleNext>
+        auto operator()(AsTupleNext... x) const
+            -> decltype(std::make_tuple(std::move(x)...)) {
             return      std::make_tuple(std::move(x)...);}
     };
+#else
+    namespace detail {
+    template<size_t TupleSize>
+    struct tuple_dispatch;
+    template<>
+    struct tuple_dispatch<0> {
+        template<class F, class T>
+        static auto call(F&& f, T&& ) 
+            -> decltype (std::forward<F>(f)()) {
+            return       std::forward<F>(f)();}
+    };
+    template<>
+    struct tuple_dispatch<1> {
+        template<class F, class T>
+        static auto call(F&& f, T&& t) 
+            -> decltype (std::forward<F>(f)(std::get<0>(std::forward<T>(t)))) {
+            return       std::forward<F>(f)(std::get<0>(std::forward<T>(t)));}
+    };
+    template<>
+    struct tuple_dispatch<2> {
+        template<class F, class T>
+        static auto call(F&& f, T&& t) 
+            -> decltype (std::forward<F>(f)(
+                         std::get<0>(std::forward<T>(t)),
+                         std::get<1>(std::forward<T>(t)))) {
+            return       std::forward<F>(f)(
+                         std::get<0>(std::forward<T>(t)),
+                         std::get<1>(std::forward<T>(t)));}
+    };
+    template<>
+    struct tuple_dispatch<3> {
+        template<class F, class T>
+        static auto call(F&& f, T&& t) 
+            -> decltype (std::forward<F>(f)(
+                         std::get<0>(std::forward<T>(t)),
+                         std::get<1>(std::forward<T>(t)),
+                         std::get<2>(std::forward<T>(t)))) {
+            return       std::forward<F>(f)(
+                         std::get<0>(std::forward<T>(t)),
+                         std::get<1>(std::forward<T>(t)),
+                         std::get<2>(std::forward<T>(t)));}
+    };
+    template<>
+    struct tuple_dispatch<4> {
+        template<class F, class T>
+        static auto call(F&& f, T&& t) 
+            -> decltype (std::forward<F>(f)(
+                         std::get<0>(std::forward<T>(t)),
+                         std::get<1>(std::forward<T>(t)),
+                         std::get<2>(std::forward<T>(t)),
+                         std::get<3>(std::forward<T>(t)))) {
+            return       std::forward<F>(f)(
+                         std::get<0>(std::forward<T>(t)),
+                         std::get<1>(std::forward<T>(t)),
+                         std::get<2>(std::forward<T>(t)),
+                         std::get<3>(std::forward<T>(t)));}
+    };
+    template<>
+    struct tuple_dispatch<5> {
+        template<class F, class T>
+        static auto call(F&& f, T&& t) 
+            -> decltype (std::forward<F>(f)(
+                         std::get<0>(std::forward<T>(t)),
+                         std::get<1>(std::forward<T>(t)),
+                         std::get<2>(std::forward<T>(t)),
+                         std::get<3>(std::forward<T>(t)),
+                         std::get<4>(std::forward<T>(t)))) {
+            return       std::forward<F>(f)(
+                         std::get<0>(std::forward<T>(t)),
+                         std::get<1>(std::forward<T>(t)),
+                         std::get<2>(std::forward<T>(t)),
+                         std::get<3>(std::forward<T>(t)),
+                         std::get<4>(std::forward<T>(t)));}
+    };
+    }
+
+    template<class F, class T>
+    auto tuple_dispatch(F&& f, T&& t) 
+        -> decltype(detail::tuple_dispatch<std::tuple_size<typename std::decay<T>::type>::value>::call(std::forward<F>(f), std::forward<T>(t))) {
+        return      detail::tuple_dispatch<std::tuple_size<typename std::decay<T>::type>::value>::call(std::forward<F>(f), std::forward<T>(t));
+    }
 #endif //RXCPP_USE_VARIADIC_TEMPLATES
 
     struct pass_through {
         template<class X>
+        X operator()(X x) {return std::move(x);}
+        template<class X>
         X operator()(X x) const {return std::move(x);}
+    };
+
+    struct pass_through_second {
+        template<class X, class Y>
+        Y operator()(X , Y y) {return std::move(y);}
+        template<class X, class Y>
+        Y operator()(X , Y y) const {return std::move(y);}
     };
 
     template<typename Function>

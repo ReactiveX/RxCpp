@@ -293,6 +293,44 @@ namespace rxcpp
         }
     };
 
+    template<class Target>
+    class TupleDispatch {
+        Target target;
+    public:
+        TupleDispatch(Target target) : target(std::move(target)) {
+        }
+        template<class Tuple>
+        auto operator()(const Tuple& tuple) -> decltype(util::tuple_dispatch(target, tuple)) {
+        return util::tuple_dispatch(target, tuple);}
+    };
+
+    template<class Target>
+    TupleDispatch<Target> MakeTupleDispatch(Target&& target) {
+    return TupleDispatch<Target>(std::forward<Target>(target));}
+
+    template<class Tuple, class Target>
+    auto DispatchTuple(Tuple&& tuple, Target&& target) -> 
+        decltype(util::tuple_dispatch(std::forward<Target>(target), std::forward<Tuple>(tuple))) {
+        return   util::tuple_dispatch(std::forward<Target>(target), std::forward<Tuple>(tuple));}
+
+#if RXCPP_USE_VARIADIC_TEMPLATES
+    template<class Lhs, class Rhs>
+    auto ConcatTuple(Lhs&& lhs, Rhs&& rhs) -> 
+        decltype(util::tuple_concat(std::forward<Lhs>(lhs), std::forward<Rhs>(rhs))) {
+        return   util::tuple_concat(std::forward<Lhs>(lhs), std::forward<Rhs>(rhs));}
+
+    template<class T>
+    auto TieTuple(T&& t) -> 
+        decltype(util::tuple_tie(std::forward<T>(t))) {
+        return   util::tuple_tie(std::forward<T>(t));}
+#endif //RXCPP_USE_VARIADIC_TEMPLATES
+
+    template<class T>
+    class Subject;
+
+    template<class K, class T>
+    class GroupedSubject;
+
     template<class T>
     T item(const std::shared_ptr<Observable<T>>&);
 
@@ -305,8 +343,14 @@ namespace rxcpp
     template<class T>
     struct is_observable<std::shared_ptr<Observable<T>>> {static const bool value = true;};
 
+    template<class T>
+    struct is_observable<std::shared_ptr<Subject<T>>> {static const bool value = true;};
+
     template<class K, class T>
     struct is_observable<std::shared_ptr<GroupedObservable<K, T>>> {static const bool value = true;};
+
+    template<class K, class T>
+    struct is_observable<std::shared_ptr<GroupedSubject<K, T>>> {static const bool value = true;};
 
     template<class Observable>
     struct observable_item;
@@ -316,5 +360,38 @@ namespace rxcpp
 
     template<class K, class T>
     struct observable_item<std::shared_ptr<GroupedObservable<K, T>>> {typedef T type;};
+
+    template<class Observable>
+    struct observable_observer;
+
+    template<class T>
+    struct observable_observer<std::shared_ptr<Observable<T>>> {typedef std::shared_ptr<Observer<T>> type;};
+
+    template<class K, class T>
+    struct observable_observer<std::shared_ptr<GroupedObservable<K, T>>> {typedef std::shared_ptr<Observer<T>> type;};
+
+    template<class Observer>
+    struct observer_item;
+
+    template<class T>
+    struct observer_item<std::shared_ptr<Observer<T>>> {typedef T type;};
+
+    template<class Subject>
+    struct subject_item;
+
+    template<class T>
+    struct subject_item<std::shared_ptr<Subject<T>>> {typedef T type;};
+
+    template<class Subject>
+    struct subject_observer;
+
+    template<class T>
+    struct subject_observer<std::shared_ptr<Subject<T>>> {typedef std::shared_ptr<Observer<T>> type;};
+
+    template<class Subject>
+    struct subject_observable;
+
+    template<class T>
+    struct subject_observable<std::shared_ptr<Subject<T>>> {typedef std::shared_ptr<Observable<T>> type;};
 }
 #endif

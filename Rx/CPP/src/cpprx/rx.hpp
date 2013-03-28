@@ -17,10 +17,6 @@ namespace rxcpp
     public:
         typedef T item_type;
         typedef Obj observable_type;
-        typedef util::pass_through pass_through; 
-#if RXCPP_USE_VARIADIC_TEMPLATES
-        typedef util::as_tuple as_tuple; 
-#endif //RXCPP_USE_VARIADIC_TEMPLATES
 
         BinderBase(Obj obj) : obj(std::move(obj))
         {
@@ -36,10 +32,6 @@ namespace rxcpp
     protected:
         typedef BinderBase<T, Obj> base;
         typedef typename base::item_type item_type;
-        typedef typename base::pass_through pass_through;
-#if RXCPP_USE_VARIADIC_TEMPLATES
-        typedef typename base::as_tuple as_tuple;
-#endif //RXCPP_USE_VARIADIC_TEMPLATES
         using base::obj;
     public:
         static const bool is_item_observable = false;
@@ -54,10 +46,6 @@ namespace rxcpp
     protected:
         typedef BinderBase<T, Obj> base;
         typedef typename base::item_type item_type;
-        typedef typename base::pass_through pass_through;
-#if RXCPP_USE_VARIADIC_TEMPLATES
-        typedef typename base::as_tuple as_tuple;
-#endif //RXCPP_USE_VARIADIC_TEMPLATES
         using base::obj;
     public:
         static const bool is_item_observable = true;
@@ -67,18 +55,18 @@ namespace rxcpp
         }
         
         auto select_many()
-        -> decltype(from(SelectMany<item_type>(obj, pass_through(), pass_through()))) {
-            return from(SelectMany<item_type>(obj, pass_through(), pass_through()));
+            -> decltype(from(SelectMany<item_type>(obj, util::pass_through(), util::pass_through_second()))) {
+            return      from(SelectMany<item_type>(obj, util::pass_through(), util::pass_through_second()));
         }
         template <class CS>
         auto select_many(CS collectionSelector)
-        -> decltype(from(SelectMany<item_type>(obj, std::move(collectionSelector), pass_through()))) {
-            return from(SelectMany<item_type>(obj, std::move(collectionSelector), pass_through()));
+            -> decltype(from(SelectMany<item_type>(obj, std::move(collectionSelector), util::pass_through_second()))) {
+            return      from(SelectMany<item_type>(obj, std::move(collectionSelector), util::pass_through_second()));
         }
         template <class CS, class RS>
         auto select_many(CS collectionSelector, RS resultSelector)
-        -> decltype(from(SelectMany<item_type>(obj, std::move(collectionSelector), std::move(resultSelector)))) {
-            return from(SelectMany<item_type>(obj, std::move(collectionSelector), std::move(resultSelector)));
+            -> decltype(from(SelectMany<item_type>(obj, std::move(collectionSelector), std::move(resultSelector)))) {
+            return      from(SelectMany<item_type>(obj, std::move(collectionSelector), std::move(resultSelector)));
         }
     };
     
@@ -93,10 +81,6 @@ namespace rxcpp
         Obj,
         is_observable<typename observable_item<Obj>::type>::value> base;
         typedef typename base::item_type item_type;
-        typedef typename base::pass_through pass_through;
-#if RXCPP_USE_VARIADIC_TEMPLATES
-        typedef typename base::as_tuple as_tuple;
-#endif //RXCPP_USE_VARIADIC_TEMPLATES
         using base::obj;
     public:
 
@@ -121,8 +105,8 @@ namespace rxcpp
         }
         template <class... Zip1Source>
         auto zip(const Zip1Source&... source) 
-            -> decltype(from(Zip(as_tuple(), obj, source...))) {
-            return      from(Zip(as_tuple(), obj, source...));
+            -> decltype(from(Zip(util::as_tuple(), obj, source...))) {
+            return      from(Zip(util::as_tuple(), obj, source...));
         }
         template <class S, class... CombineLSource>
         auto combine_latest(S selector, const CombineLSource&... source) 
@@ -131,8 +115,8 @@ namespace rxcpp
         }
         template <class... CombineL1Source>
         auto combine_latest(const CombineL1Source&... source) 
-            -> decltype(from(CombineLatest(as_tuple(), obj, source...))) {
-            return      from(CombineLatest(as_tuple(), obj, source...));
+            -> decltype(from(CombineLatest(util::as_tuple(), obj, source...))) {
+            return      from(CombineLatest(util::as_tuple(), obj, source...));
         }
 #endif //RXCPP_USE_VARIADIC_TEMPLATES
         template <class P>
@@ -145,15 +129,15 @@ namespace rxcpp
         template <class KS>
         auto group_by(
             KS keySelector)
-            -> decltype(from(GroupBy<item_type>(obj, keySelector, pass_through(), std::less<decltype(keySelector((*(item_type*)0)))>()))) {
-            return from(GroupBy<item_type>(obj, keySelector, pass_through(), std::less<decltype(keySelector((*(item_type*)0)))>()));
+            -> decltype(from(GroupBy<item_type>(obj, keySelector, util::pass_through(), std::less<decltype(keySelector((*(item_type*)0)))>()))) {
+            return      from(GroupBy<item_type>(obj, keySelector, util::pass_through(), std::less<decltype(keySelector((*(item_type*)0)))>()));
         }
         template <class KS, class VS>
         auto group_by(
             KS keySelector,
             VS valueSelector)
             -> decltype(from(GroupBy<item_type>(obj, keySelector, valueSelector, std::less<decltype(keySelector((*(item_type*)0)))>()))) {
-            return from(GroupBy<item_type>(obj, keySelector, valueSelector, std::less<decltype(keySelector((*(item_type*)0)))>()));
+            return      from(GroupBy<item_type>(obj, keySelector, valueSelector, std::less<decltype(keySelector((*(item_type*)0)))>()));
         }
         template <class KS, class VS, class L>
         auto group_by(
@@ -161,11 +145,29 @@ namespace rxcpp
             VS valueSelector,
             L less)
             -> decltype(from(GroupBy<item_type>(obj, keySelector, valueSelector, less))) {
-            return from(GroupBy<item_type>(obj, keySelector, valueSelector, less));
+            return      from(GroupBy<item_type>(obj, keySelector, valueSelector, less));
         }
         template <class Integral>
         auto take(Integral n) -> decltype(from(Take<item_type>(obj, n))) {
             return from(Take<item_type>(obj, n));
+        }
+        template<template<class Value>class Allocator>
+        auto to_vector() 
+            -> decltype(from(ToStdCollection<std::vector<item_type, Allocator<item_type>>>(obj))) {
+            return      from(ToStdCollection<std::vector<item_type, Allocator<item_type>>>(obj));
+        }
+        auto to_vector() 
+            -> decltype(from(ToStdCollection<std::vector<item_type>>(obj))) {
+            return      from(ToStdCollection<std::vector<item_type>>(obj));
+        }
+        template<template<class Value>class Allocator>
+        auto to_list() 
+            -> decltype(from(ToStdCollection<std::list<item_type, Allocator<item_type>>>(obj))) {
+            return      from(ToStdCollection<std::list<item_type, Allocator<item_type>>>(obj));
+        }
+        auto to_list() 
+            -> decltype(from(ToStdCollection<std::list<item_type>>(obj))) {
+            return      from(ToStdCollection<std::list<item_type>>(obj));
         }
         auto delay(Scheduler::clock::duration due, Scheduler::shared scheduler) -> decltype(from(Delay<item_type>(obj, due, scheduler))) {
             return from(Delay<item_type>(obj, due, scheduler));

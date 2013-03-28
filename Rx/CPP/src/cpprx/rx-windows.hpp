@@ -141,8 +141,7 @@ namespace rxcpp { namespace win32 {
                 wndclass.hInstance = NULL;
                 wndclass.lpszClassName = className();
 
-                if (!RegisterClassW(&wndclass))
-                    throw std::exception("failed to register windows class");
+                RegisterClassW(&wndclass);
                 
                 std::unique_ptr<WindowClass> that(new WindowClass);
                 that->queue = queue;
