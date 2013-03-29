@@ -234,6 +234,9 @@ namespace rxcpp
     class Subject : 
         public ObserverSubject<T, ObservableSubject<T, Observable<T>, Subject<T>>>
     {
+    public:
+        std::shared_ptr<Observable<T>> observable(){return std::static_pointer_cast<Observable<T>>(this->shared_from_this());}
+        std::shared_ptr<Observer<T>> observer(){return std::static_pointer_cast<Observer<T>>(this->shared_from_this());}
     };
 
     template <class T>
@@ -260,6 +263,9 @@ namespace rxcpp
         typedef ObserverSubject<T, GroupedObservableSubject<K, T, ObservableSubject<T, GroupedObservable<K, T>, GroupedSubject<K, T>>>> base;
     public:
         GroupedSubject(K key) : base(std::move(key)) {}
+        std::shared_ptr<Observable<T>> observable(){return std::static_pointer_cast<Observable<T>>(this->shared_from_this());}
+        std::shared_ptr<Observer<T>> observer(){return std::static_pointer_cast<Observer<T>>(this->shared_from_this());}
+        std::shared_ptr<GroupedObservable<K, T>> grouped_observable(){return std::static_pointer_cast<GroupedObservable<K, T>>(this->shared_from_this());}
     };
 
     template <class T, class K>
@@ -996,10 +1002,10 @@ namespace rxcpp
             });
     }
 
-    template <class T>
+    template <class T, class Integral>
     std::shared_ptr<Observable<T>> Take(
         const std::shared_ptr<Observable<T>>& source,
-        int n // TODO: long long?
+        Integral n 
         )    
     {
         return CreateObservable<T>(
@@ -1007,7 +1013,7 @@ namespace rxcpp
             -> Disposable
             {
                 // keep count of remaining calls received OnNext and count of OnNext calls issued.
-                auto remaining = std::make_shared<std::tuple<std::atomic<int>, std::atomic<int>>>(n, n);
+                auto remaining = std::make_shared<std::tuple<std::atomic<Integral>, std::atomic<Integral>>>(n, n);
 
                 ComposableDisposable cd;
 
@@ -1040,14 +1046,216 @@ namespace rxcpp
                 // on error
                     [=](const std::exception_ptr& error)
                     {
-                        if (std::get<1>(*remaining) == 0 && std::get<0>(*remaining) <= 0) {
-                            observer->OnError(error);
-                            cd.Dispose();
-                        }
+                        observer->OnError(error);
+                        cd.Dispose();
                     }));
                 return cd;
             });
     }
+
+    template <class T, class U>
+    std::shared_ptr<Observable<T>> TakeUntil(
+        const std::shared_ptr<Observable<T>>& source,
+        const std::shared_ptr<Observable<U>>& terminus
+        )    
+    {
+        return CreateObservable<T>(
+            [=](std::shared_ptr<Observer<T>> observer)
+            -> Disposable
+            {
+
+                struct TerminusState {
+                    enum type {
+                        Live,
+                        Terminated
+                    };
+                };
+                struct TakeState {
+                    enum type {
+                        Taking,
+                        Completed
+                    };
+                };
+                struct State {
+                    State() : terminusState(TerminusState::Live), takeState(TakeState::Taking) {}
+                    std::atomic<typename TerminusState::type> terminusState;
+                    std::atomic<typename TakeState::type> takeState;
+                };
+                auto state = std::make_shared<State>();
+
+                ComposableDisposable cd;
+
+                cd.Add(Subscribe(
+                    terminus,
+                // on next
+                    [=](const T& element)
+                    {
+                        state->terminusState = TerminusState::Terminated;
+                    },
+                // on completed
+                    [=]
+                    {
+                        state->terminusState = TerminusState::Terminated;
+                    },
+                // on error
+                    [=](const std::exception_ptr& error)
+                    {
+                        state->terminusState = TerminusState::Terminated;
+                    }));
+
+                cd.Add(Subscribe(
+                    source,
+                // on next
+                    [=](const T& element)
+                    {
+                        if (state->terminusState == TerminusState::Live) {
+                            observer->OnNext(element);
+                        } else if (state->takeState.exchange(TakeState::Completed) == TakeState::Taking) {
+                            observer->OnCompleted();
+                            cd.Dispose();
+                        }
+                    },
+                // on completed
+                    [=]
+                    {
+                        if (state->takeState.exchange(TakeState::Completed) == TakeState::Taking) {
+                            state->terminusState = TerminusState::Terminated;
+                            observer->OnCompleted();
+                            cd.Dispose();
+                        }
+                    },
+                // on error
+                    [=](const std::exception_ptr& error)
+                    {
+                        state->takeState = TakeState::Completed;
+                        state->terminusState = TerminusState::Terminated;
+                        observer->OnError(error);
+                        cd.Dispose();
+                    }));
+                return cd;
+            });
+    }
+
+    template <class T, class Integral>
+    std::shared_ptr<Observable<T>> Skip(
+        const std::shared_ptr<Observable<T>>& source,
+        Integral n
+        )    
+    {
+        return CreateObservable<T>(
+            [=](std::shared_ptr<Observer<T>> observer)
+            -> Disposable
+            {
+                struct State {
+                    enum type {
+                        Skipping,
+                        Forwarding
+                    };
+                };
+                // keep count of remaining OnNext calls to skip and state.
+                auto remaining = std::make_shared<std::tuple<std::atomic<Integral>, std::atomic<typename State::type>>>(n, State::Skipping);
+
+                ComposableDisposable cd;
+
+                cd.Add(Subscribe(
+                    source,
+                // on next
+                    [=](const T& element)
+                    {
+                        if (std::get<1>(*remaining) == State::Forwarding) {
+                            observer->OnNext(element);
+                        } else {
+                            auto local = --std::get<0>(*remaining);
+
+                            if (local == 0) {
+                                std::get<1>(*remaining) = State::Forwarding;
+                                observer->OnNext(element);
+                            }
+                        }
+                    },
+                // on completed
+                    [=]
+                    {
+                        observer->OnCompleted();
+                        cd.Dispose();
+                    },
+                // on error
+                    [=](const std::exception_ptr& error)
+                    {
+                        observer->OnError(error);
+                        cd.Dispose();
+                    }));
+                return cd;
+            });
+    }
+
+    template <class T, class U>
+    std::shared_ptr<Observable<T>> SkipUntil(
+        const std::shared_ptr<Observable<T>>& source,
+        const std::shared_ptr<Observable<U>>& terminus
+        )    
+    {
+        return CreateObservable<T>(
+            [=](std::shared_ptr<Observer<T>> observer)
+            -> Disposable
+            {
+                struct SkipState {
+                    enum type {
+                        Skipping,
+                        Taking
+                    };
+                };
+                struct State {
+                    State() : skipState(SkipState::Skipping) {}
+                    std::atomic<typename SkipState::type> skipState;
+                };
+                auto state = std::make_shared<State>();
+
+                ComposableDisposable cd;
+
+                cd.Add(Subscribe(
+                    terminus,
+                // on next
+                    [=](const T& element)
+                    {
+                        state->skipState = SkipState::Taking;
+                    },
+                // on completed
+                    [=]
+                    {
+                        state->skipState = SkipState::Taking;
+                    },
+                // on error
+                    [=](const std::exception_ptr& error)
+                    {
+                        state->skipState = SkipState::Taking;
+                    }));
+
+                cd.Add(Subscribe(
+                    source,
+                // on next
+                    [=](const T& element)
+                    {
+                        if (state->skipState == SkipState::Taking) {
+                            observer->OnNext(element);
+                        }
+                    },
+                // on completed
+                    [=]
+                    {
+                        observer->OnCompleted();
+                        cd.Dispose();
+                    },
+                // on error
+                    [=](const std::exception_ptr& error)
+                    {
+                        observer->OnError(error);
+                        cd.Dispose();
+                    }));
+                return cd;
+            });
+    }
+
 
     template <class StdCollection>
     const std::shared_ptr<Observable<StdCollection>> ToStdCollection(

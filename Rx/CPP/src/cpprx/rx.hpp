@@ -58,16 +58,6 @@ namespace rxcpp
             -> decltype(from(SelectMany<item_type>(obj, util::pass_through(), util::pass_through_second()))) {
             return      from(SelectMany<item_type>(obj, util::pass_through(), util::pass_through_second()));
         }
-        template <class CS>
-        auto select_many(CS collectionSelector)
-            -> decltype(from(SelectMany<item_type>(obj, std::move(collectionSelector), util::pass_through_second()))) {
-            return      from(SelectMany<item_type>(obj, std::move(collectionSelector), util::pass_through_second()));
-        }
-        template <class CS, class RS>
-        auto select_many(CS collectionSelector, RS resultSelector)
-            -> decltype(from(SelectMany<item_type>(obj, std::move(collectionSelector), std::move(resultSelector)))) {
-            return      from(SelectMany<item_type>(obj, std::move(collectionSelector), std::move(resultSelector)));
-        }
     };
     
     template<class Obj>
@@ -91,6 +81,16 @@ namespace rxcpp
         template <class S>
         auto select(S selector) -> decltype(from(Select<item_type>(obj, selector))) {
             return from(Select<item_type>(obj, selector));
+        }
+        template <class CS>
+        auto select_many(CS collectionSelector)
+            -> decltype(from(SelectMany<item_type>(obj, std::move(collectionSelector), util::pass_through_second()))) {
+            return      from(SelectMany<item_type>(obj, std::move(collectionSelector), util::pass_through_second()));
+        }
+        template <class CS, class RS>
+        auto select_many(CS collectionSelector, RS resultSelector)
+            -> decltype(from(SelectMany<item_type>(obj, std::move(collectionSelector), std::move(resultSelector)))) {
+            return      from(SelectMany<item_type>(obj, std::move(collectionSelector), std::move(resultSelector)));
         }
 #if RXCPP_USE_VARIADIC_TEMPLATES
         template <class... MergeSource>
@@ -148,8 +148,24 @@ namespace rxcpp
             return      from(GroupBy<item_type>(obj, keySelector, valueSelector, less));
         }
         template <class Integral>
-        auto take(Integral n) -> decltype(from(Take<item_type>(obj, n))) {
-            return from(Take<item_type>(obj, n));
+        auto take(Integral n) 
+            -> decltype(from(Take<item_type>(obj, n))) {
+            return      from(Take<item_type>(obj, n));
+        }
+        template <class U>
+        auto take_until(std::shared_ptr<Observable<U>> terminus) 
+            -> decltype(from(TakeUntil<item_type>(obj, terminus))) {
+            return      from(TakeUntil<item_type>(obj, terminus));
+        }
+        template <class Integral>
+        auto skip(Integral n) 
+            -> decltype(from(Skip<item_type>(obj, n))) {
+            return      from(Skip<item_type>(obj, n));
+        }
+        template <class U>
+        auto skip_until(std::shared_ptr<Observable<U>> terminus) 
+            -> decltype(from(SkipUntil<item_type>(obj, terminus))) {
+            return      from(SkipUntil<item_type>(obj, terminus));
         }
         template<template<class Value>class Allocator>
         auto to_vector() 
