@@ -34,7 +34,6 @@ void PrintPrimes(int n)
 
 void Combine(int n)
 {
-#if RXCPP_USE_VARIADIC_TEMPLATES
     auto input1 = std::make_shared<rxcpp::EventLoopScheduler>();
     auto input2 = std::make_shared<rxcpp::EventLoopScheduler>();
     auto output = std::make_shared<rxcpp::EventLoopScheduler>();
@@ -58,9 +57,6 @@ void Combine(int n)
             [](int p2, int p1) {
                 cout << p2 << " =combined=> " << p1 << endl;
             }));
-#else
-    (void)n;
-#endif //RXCPP_USE_VARIADIC_TEMPLATES
 }
 
 struct Count {
@@ -114,7 +110,6 @@ rxcpp::Binder<std::shared_ptr<rxcpp::Observable<T>>> rxcpp_chain(record&&, const
 template<class InputScheduler, class OutputScheduler>
 void Zip(int n)
 {
-#if RXCPP_USE_VARIADIC_TEMPLATES
     auto input1 = std::make_shared<InputScheduler>();
     auto input2 = std::make_shared<InputScheduler>();
     auto output = std::make_shared<OutputScheduler>();
@@ -152,14 +147,10 @@ void Zip(int n)
     cout << "zipcount:" << zipcount.nexts << ", " << zipcount.completions << ", " << zipcount.errors << ", " << zipcount.disposals << endl;
     cout << "takecount:" << takecount.nexts << ", " << takecount.completions << ", " << takecount.errors << ", " << takecount.disposals << endl;
     cout << "outputcount:" << outputcount.nexts << ", " << outputcount.completions << ", " << outputcount.errors << ", " << outputcount.disposals << endl;
-#else
-    (void)n;
-#endif //RXCPP_USE_VARIADIC_TEMPLATES
 }
 
 void Merge(int n)
 {
-#if RXCPP_USE_VARIADIC_TEMPLATES
     auto input1 = std::make_shared<rxcpp::EventLoopScheduler>();
     auto input2 = std::make_shared<rxcpp::EventLoopScheduler>();
     auto output = std::make_shared<rxcpp::EventLoopScheduler>();
@@ -185,9 +176,48 @@ void Merge(int n)
             [](const char* s, int p) {
                 cout << s << p << endl;
             }));
-#else
-    (void)n;
-#endif //RXCPP_USE_VARIADIC_TEMPLATES
+}
+
+void PrintIntervals(int n) {
+    using namespace std::chrono;
+    typedef steady_clock clock;
+    struct Tick {
+        Tick(size_t c, clock::time_point at) : cursor(c), at(at) {}
+        size_t cursor;
+        clock::time_point at;
+    };
+    auto source = std::make_shared<rxcpp::EventLoopScheduler>();
+    auto subject = rxcpp::CreateSubject<Tick>();
+
+    cout << "Intervals of .5 second: " << endl;
+    rxcpp::from(subject)
+        .zip(rxcpp::from(subject).skip(1).publish())
+        .select(rxcpp::MakeTupleDispatch(
+            [=](Tick a, Tick b){
+                return duration_cast<milliseconds>(b.at.time_since_epoch()) - 
+                       duration_cast<milliseconds>(a.at.time_since_epoch());}))
+        .to_vector()
+        .subscribe(
+        // on next
+            [=](std::vector<milliseconds> d)
+            {
+                cout << endl;
+                auto l = std::max_element(d.begin(), d.end());
+                auto s = std::min_element(d.begin(), d.end());
+                cout << "range: " << s->count() << "-" << l->count() << endl;
+            });
+
+    rxcpp::from(rxcpp::Interval(std::chrono::milliseconds(500), source))
+        .select([](size_t interval){return Tick(interval, clock::now());})
+        .take(n)
+        .for_each(
+        // on next
+            [=](Tick t)
+            {
+                cout << ".";
+                subject->OnNext(std::move(t));
+            });
+    subject->OnCompleted();
 }
 
 std::shared_ptr<rxcpp::Observable<string>> Data(
@@ -296,6 +326,7 @@ void innerScheduler() {
 int main(int argc, char* argv[])
 {
     try {
+        PrintIntervals(10);
         PrintPrimes(20);
         cout << "Zip Immediate" << endl;
         Zip<rxcpp::ImmediateScheduler, rxcpp::ImmediateScheduler>(20);

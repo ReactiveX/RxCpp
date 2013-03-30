@@ -98,6 +98,14 @@ namespace rxcpp
             -> decltype(from(Merge(obj, source...))) {
             return      from(Merge(obj, source...));
         }
+#else
+        template <class MergeSource>
+        auto merge(const MergeSource& source) 
+            -> decltype(from(Merge(obj, source))) {
+            return      from(Merge(obj, source));
+        }
+#endif //RXCPP_USE_VARIADIC_TEMPLATES
+#if RXCPP_USE_VARIADIC_TEMPLATES
         template <class S, class... ZipSource>
         auto zip(S selector, const ZipSource&... source) 
             -> decltype(from(Zip(selector, obj, source...))) {
@@ -108,6 +116,19 @@ namespace rxcpp
             -> decltype(from(Zip(util::as_tuple(), obj, source...))) {
             return      from(Zip(util::as_tuple(), obj, source...));
         }
+#else
+        template <class S, class ZipSource>
+        auto zip(S selector, const ZipSource& source) 
+            -> decltype(from(Zip(selector, obj, source))) {
+            return      from(Zip(selector, obj, source));
+        }
+        template <class Zip1Source>
+        auto zip(const Zip1Source& source) 
+            -> decltype(from(Zip(util::as_tuple(), obj, source))) {
+            return      from(Zip(util::as_tuple(), obj, source));
+        }
+#endif //RXCPP_USE_VARIADIC_TEMPLATES
+#if RXCPP_USE_VARIADIC_TEMPLATES
         template <class S, class... CombineLSource>
         auto combine_latest(S selector, const CombineLSource&... source) 
             -> decltype(from(CombineLatest(selector, obj, source...))) {
@@ -117,6 +138,17 @@ namespace rxcpp
         auto combine_latest(const CombineL1Source&... source) 
             -> decltype(from(CombineLatest(util::as_tuple(), obj, source...))) {
             return      from(CombineLatest(util::as_tuple(), obj, source...));
+        }
+#else
+        template <class S, class CombineLSource>
+        auto combine_latest(S selector, const CombineLSource& source) 
+            -> decltype(from(CombineLatest(selector, obj, source))) {
+            return      from(CombineLatest(selector, obj, source));
+        }
+        template <class CombineLSource>
+        auto combine_latest(const CombineLSource& source) 
+            -> decltype(from(CombineLatest(util::as_tuple(), obj, source))) {
+            return      from(CombineLatest(util::as_tuple(), obj, source));
         }
 #endif //RXCPP_USE_VARIADIC_TEMPLATES
         template <class P>
@@ -188,6 +220,10 @@ namespace rxcpp
         auto delay(Scheduler::clock::duration due, Scheduler::shared scheduler) -> decltype(from(Delay<item_type>(obj, due, scheduler))) {
             return from(Delay<item_type>(obj, due, scheduler));
         }
+        auto throttle(Scheduler::clock::duration due, Scheduler::shared scheduler) 
+            -> decltype(from(Throttle<item_type>(obj, due, scheduler))) {
+            return      from(Throttle<item_type>(obj, due, scheduler));
+        }
         auto limit_window(int milliseconds) -> decltype(from(LimitWindow<item_type>(obj, milliseconds))) {
             return from(LimitWindow<item_type>(obj, milliseconds));
         }
@@ -230,11 +266,98 @@ namespace rxcpp
             auto result = Subscribe(obj, onNext, onComplete, onError);
             return result;
         }
-#if RXCPP_USE_VARIADIC_TEMPLATES
+#if RXCPP_USE_VARIADIC_TEMPLATE
         template <class Tag, class... ChainArg>
         auto chain(ChainArg&&... arg) 
             -> decltype(from(rxcpp_chain(Tag(), obj, std::forward<ChainArg>(arg)...))) {
             return from(rxcpp_chain(Tag(), obj, std::forward<ChainArg>(arg)...));
+        }
+#else
+        template <class Tag>
+        auto chain() 
+            -> decltype(from(rxcpp_chain(Tag(), obj))) {
+            return      from(rxcpp_chain(Tag(), obj));
+        }
+        template <class Tag, class ChainArg>
+        auto chain(ChainArg&& arg) 
+            -> decltype(from(rxcpp_chain(Tag(), obj, std::forward<ChainArg>(arg)))) {
+            return      from(rxcpp_chain(Tag(), obj, std::forward<ChainArg>(arg)));
+        }
+        template <class Tag, 
+            class ChainArg1, 
+            class ChainArg2>
+        auto chain(
+            ChainArg1&& arg1,
+            ChainArg2&& arg2) 
+            -> decltype(from(rxcpp_chain(Tag(), obj, 
+                std::forward<ChainArg1>(arg1),
+                std::forward<ChainArg2>(arg2)))) {
+            return      from(rxcpp_chain(Tag(), obj, 
+                std::forward<ChainArg1>(arg1),
+                std::forward<ChainArg2>(arg2)));
+        }
+        template <class Tag, 
+            class ChainArg1, 
+            class ChainArg2, 
+            class ChainArg3>
+        auto chain(
+            ChainArg1&& arg1,
+            ChainArg2&& arg2,
+            ChainArg3&& arg3) 
+            -> decltype(from(rxcpp_chain(Tag(), obj, 
+                std::forward<ChainArg1>(arg1),
+                std::forward<ChainArg2>(arg2),
+                std::forward<ChainArg3>(arg3)))) {
+            return      from(rxcpp_chain(Tag(), obj, 
+                std::forward<ChainArg1>(arg1),
+                std::forward<ChainArg2>(arg2),
+                std::forward<ChainArg3>(arg3)));
+        }
+        template <class Tag, 
+            class ChainArg1, 
+            class ChainArg2, 
+            class ChainArg3, 
+            class ChainArg4>
+        auto chain(
+            ChainArg1&& arg1,
+            ChainArg2&& arg2,
+            ChainArg3&& arg3,
+            ChainArg4&& arg4) 
+            -> decltype(from(rxcpp_chain(Tag(), obj, 
+                std::forward<ChainArg1>(arg1),
+                std::forward<ChainArg2>(arg2),
+                std::forward<ChainArg3>(arg3),
+                std::forward<ChainArg4>(arg4)))) {
+            return      from(rxcpp_chain(Tag(), obj, 
+                std::forward<ChainArg1>(arg1),
+                std::forward<ChainArg2>(arg2),
+                std::forward<ChainArg3>(arg3),
+                std::forward<ChainArg4>(arg4)));
+        }
+        template <class Tag, 
+            class ChainArg1, 
+            class ChainArg2, 
+            class ChainArg3, 
+            class ChainArg4, 
+            class ChainArg5>
+        auto chain(
+            ChainArg1&& arg1,
+            ChainArg2&& arg2,
+            ChainArg3&& arg3,
+            ChainArg4&& arg4,
+            ChainArg5&& arg5) 
+            -> decltype(from(rxcpp_chain(Tag(), obj, 
+                std::forward<ChainArg1>(arg1),
+                std::forward<ChainArg2>(arg2),
+                std::forward<ChainArg3>(arg3),
+                std::forward<ChainArg4>(arg4),
+                std::forward<ChainArg5>(arg5)))) {
+            return      from(rxcpp_chain(Tag(), obj, 
+                std::forward<ChainArg1>(arg1),
+                std::forward<ChainArg2>(arg2),
+                std::forward<ChainArg3>(arg3),
+                std::forward<ChainArg4>(arg4),
+                std::forward<ChainArg5>(arg5)));
         }
 #endif
     };

@@ -300,8 +300,13 @@ namespace rxcpp
         TupleDispatch(Target target) : target(std::move(target)) {
         }
         template<class Tuple>
-        auto operator()(const Tuple& tuple) -> decltype(util::tuple_dispatch(target, tuple)) {
-        return util::tuple_dispatch(target, tuple);}
+        auto operator()(const Tuple& tuple) 
+            -> decltype(util::tuple_dispatch(target, tuple)) {
+            return      util::tuple_dispatch(target, tuple);}
+        template<class Tuple>
+        auto operator()(const Tuple& tuple) const 
+            -> decltype(util::tuple_dispatch(target, tuple))  {
+        return          util::tuple_dispatch(target, tuple);}
     };
 
     template<class Target>

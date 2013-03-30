@@ -346,6 +346,55 @@ namespace rxcpp
         });
     }
 
+    std::shared_ptr<Observable<size_t>> Interval(
+        Scheduler::clock::duration due,
+        Scheduler::shared scheduler)
+    {
+        return CreateObservable<size_t>(
+            [=](std::shared_ptr<Observer<size_t>> observer)
+            -> Disposable
+            {
+                struct State : public std::enable_shared_from_this<State> {
+                    State(Scheduler::clock::duration due,
+                        Scheduler::clock::time_point last,
+                        std::shared_ptr<Observer<size_t>> observer) : due(due), last(last), cursor(0), observer(observer) {
+                        cd.Add(sd);}
+
+                    Scheduler::clock::duration due;
+                    Scheduler::clock::time_point last;
+                    size_t cursor;
+                    std::shared_ptr<Observer<size_t>> observer;
+                    ComposableDisposable cd;
+                    SharedDisposable sd;
+
+                    void Tick(Scheduler::shared s){
+                        observer->OnNext(cursor); 
+                        last += due;
+                        ++cursor;
+                        auto keepAlive = this->shared_from_this();
+                        sd.Set(s->Schedule(
+                            last, 
+                            [this, keepAlive] (Scheduler::shared s){
+                                Tick(s);
+                                return Disposable::Empty();
+                            }
+                        ));
+                    }
+                };
+                auto state = std::make_shared<State>(due, scheduler->Now(), observer);
+
+                state->last += state->due;
+                state->sd.Set(scheduler->Schedule(
+                    state->last, 
+                    [=] (Scheduler::shared s){
+                        state->Tick(s);
+                        return Disposable::Empty();
+                    }
+                ));
+                return state->cd;
+            });
+    }
+
 
     //////////////////////////////////////////////////////////////////////
     // 
@@ -570,7 +619,6 @@ namespace rxcpp
             });
     }
 
-#if RXCPP_USE_VARIADIC_TEMPLATES
     namespace detail{
         template<size_t Index, size_t SourcesSize, class SubscribeState>
         struct CombineLatestSubscriber {
@@ -643,6 +691,8 @@ namespace rxcpp
                 const typename SubscribeState::Sources& ) {}
         };
     }
+
+#if RXCPP_USE_VARIADIC_TEMPLATES
     template <class... CombineLSource, class S>
     auto CombineLatest(
         S selector,
@@ -684,6 +734,50 @@ namespace rxcpp
                 return cd;
             });
     }
+#else
+    template <class CombineLSource1, class CombineLSource2, class S>
+    auto CombineLatest(
+        S selector,
+        const std::shared_ptr<Observable<CombineLSource1>>& source1,
+        const std::shared_ptr<Observable<CombineLSource2>>& source2
+        )
+    -> std::shared_ptr<Observable<typename std::result_of<S(const CombineLSource1&, const CombineLSource2&)>::type>>
+    {
+        typedef typename std::result_of<S(const CombineLSource1&, const CombineLSource2&)>::type result_type;
+        typedef std::tuple<std::shared_ptr<Observable<CombineLSource1>>, std::shared_ptr<Observable<CombineLSource2>>> Sources;
+        typedef std::tuple<CombineLSource1, CombineLSource2> Latest;
+        struct State {
+            typedef Latest Latest;
+            typedef Sources Sources;
+            typedef result_type result_type;
+            typedef std::tuple_size<Sources> SourcesSize;
+            explicit State(S selector) 
+                : pendingFirst(SourcesSize::value)
+                , pendingIssue(0)
+                , pendingComplete(SourcesSize::value)
+                , done(false)
+                , selector(std::move(selector))
+            {}
+            std::mutex lock;
+            size_t pendingFirst;
+            size_t pendingIssue;
+            size_t pendingComplete;
+            bool done;
+            S selector;
+            Latest latest;
+        };
+        Sources sources(source1, source2);
+        // bug on osx prevents using make_shared 
+        std::shared_ptr<State> state(new State(std::move(selector)));
+        return CreateObservable<result_type>(
+            [=](std::shared_ptr<Observer<result_type>> observer) -> Disposable
+            {
+                ComposableDisposable cd;
+                detail::CombineLatestSubscriber<0, State::SourcesSize::value, State>::subscribe(cd, observer, state, sources);
+                return cd;
+            });
+    }
+#endif
 
     namespace detail{
         template<size_t Index, size_t SourcesSize, class SubscribeState>
@@ -706,6 +800,7 @@ namespace rxcpp
                     , observer(observer)
                     , cd(cd) {
                 }
+#if RXCPP_USE_VARIADIC_TEMPLATES
                 template<class... ZipQueue>
                 void operator()(ZipQueue&... queue) {
                     // build array of bool that we can iterate to detect empty queues
@@ -741,6 +836,43 @@ namespace rxcpp
                         cd.Dispose();
                     }
                 }
+#else
+                template<class ZipQueue1, class ZipQueue2>
+                void operator()(ZipQueue1& queue1, ZipQueue2& queue2) {
+                    // build array of bool that we can iterate to detect empty queues
+                    bool empties[] = {queue1.empty(), queue2.empty()};
+                    if (std::find(std::begin(empties), std::end(empties), true) == std::end(empties)) {
+                        // all queues have an item.
+                        //
+                        // copy front of each queue
+                        auto args = std::make_tuple(queue1.front(), queue2.front());
+                        
+                        queue1.pop();
+                        queue2.pop();
+                        
+                        ++state->pending;
+                        auto result = util::tuple_dispatch(state->selector, args);
+                        {
+                            RXCPP_UNWIND_AUTO([&](){guard.lock();});
+                            guard.unlock();
+                            observer->OnNext(std::move(result));
+                        }
+                        --state->pending;
+                    }
+                    // build new array to check for any empty queue
+                    bool post_empties[] = {queue1.empty(), queue2.empty()};
+                    if (state->completed && state->pending == 0 &&
+                        std::find(std::begin(post_empties), std::end(post_empties), true) != std::end(post_empties)) {
+                        // at least one queue is empty and at least one of the sources has completed.
+                        // it is time to stop.
+                        
+                        RXCPP_UNWIND_AUTO([&](){guard.lock();});
+                        guard.unlock();
+                        observer->OnCompleted();
+                        cd.Dispose();
+                    }
+                }
+#endif //RXCPP_USE_VARIADIC_TEMPLATES
             };
             static void subscribe(
                 ComposableDisposable& cd, 
@@ -784,6 +916,7 @@ namespace rxcpp
                 const typename SubscribeState::Sources& ) {}
         };
     }
+#if RXCPP_USE_VARIADIC_TEMPLATES
     template <class... ZipSource, class S>
     auto Zip(
         S selector,
@@ -793,7 +926,7 @@ namespace rxcpp
     {
         typedef typename std::result_of<S(const ZipSource&...)>::type result_type;
         typedef std::tuple<std::shared_ptr<Observable<ZipSource>>...> Sources;
-        typedef std::tuple<std::queue<ZipSource, std::deque<ZipSource, std::allocator<ZipSource>>>...> Queues;
+        typedef std::tuple<std::queue<ZipSource>...> Queues;
         struct State {
             typedef Queues Queues;
             typedef Sources Sources;
@@ -821,6 +954,46 @@ namespace rxcpp
                 return cd;
             });
     }
+#else
+    template <class ZipSource1, class ZipSource2, class S>
+    auto Zip(
+        S selector,
+        const std::shared_ptr<Observable<ZipSource1>>& source1,
+        const std::shared_ptr<Observable<ZipSource2>>& source2
+        )
+    -> std::shared_ptr<Observable<typename std::result_of<S(const ZipSource1&, const ZipSource2&)>::type>>
+    {
+        typedef typename std::result_of<S(const ZipSource1&, const ZipSource2&)>::type result_type;
+        typedef std::tuple<std::shared_ptr<Observable<ZipSource1>>, std::shared_ptr<Observable<ZipSource2>>> Sources;
+        typedef std::tuple<std::queue<ZipSource1>, std::queue<ZipSource2>> Queues;
+        struct State {
+            typedef Queues Queues;
+            typedef Sources Sources;
+            typedef result_type result_type;
+            typedef std::tuple_size<Sources> SourcesSize;
+            explicit State(S selector) 
+                : selector(std::move(selector))
+                , pending(0)
+                , completed(false)
+            {}
+            std::mutex lock;
+            S selector;
+            size_t pending;
+            bool completed;
+            Queues queues;
+        };
+        Sources sources(source1, source2);
+        // bug on osx prevents using make_shared 
+        std::shared_ptr<State> state(new State(std::move(selector)));
+        return CreateObservable<result_type>(
+            [=](std::shared_ptr<Observer<result_type>> observer) -> Disposable
+            {
+                ComposableDisposable cd;
+                detail::ZipSubscriber<0, State::SourcesSize::value, State>::subscribe(cd, observer, state, sources);
+                return cd;
+            });
+    }
+#endif //RXCPP_USE_VARIADIC_TEMPLATES
 
     namespace detail{
         template<size_t Index, size_t SourcesSize, class SubscribeState>
@@ -866,6 +1039,7 @@ namespace rxcpp
                 const typename SubscribeState::Sources& ) {}
         };
     }
+#if RXCPP_USE_VARIADIC_TEMPLATES
     template <class MergeSource, class... MergeSourceNext>
     std::shared_ptr<Observable<MergeSource>> Merge(
         const std::shared_ptr<Observable<MergeSource>>& firstSource,
@@ -884,6 +1058,35 @@ namespace rxcpp
             std::atomic<size_t> pendingComplete;
         };
         Sources sources(firstSource, otherSource...);
+        // bug on osx prevents using make_shared
+        std::shared_ptr<State> state(new State());
+        return CreateObservable<result_type>(
+            [=](std::shared_ptr<Observer<result_type>> observer) -> Disposable
+            {
+                ComposableDisposable cd;
+                detail::MergeSubscriber<0, State::SourcesSize::value, State>::subscribe(cd, observer, state, sources);
+                return cd;
+            });
+    }
+#else
+    template <class MergeSource, class MergeSourceNext>
+    std::shared_ptr<Observable<MergeSource>> Merge(
+        const std::shared_ptr<Observable<MergeSource>>& firstSource,
+        const std::shared_ptr<Observable<MergeSourceNext>>& otherSource
+        )
+    {
+        typedef MergeSource result_type;
+        typedef decltype(std::make_tuple(firstSource, otherSource)) Sources;
+        struct State {
+            typedef Sources Sources;
+            typedef result_type result_type;
+            typedef std::tuple_size<Sources> SourcesSize;
+            State()
+                : pendingComplete(SourcesSize::value)
+            {}
+            std::atomic<size_t> pendingComplete;
+        };
+        Sources sources(firstSource, otherSource);
         // bug on osx prevents using make_shared
         std::shared_ptr<State> state(new State());
         return CreateObservable<result_type>(
@@ -1169,7 +1372,6 @@ namespace rxcpp
 
                             if (local == 0) {
                                 std::get<1>(*remaining) = State::Forwarding;
-                                observer->OnNext(element);
                             }
                         }
                     },
@@ -1346,6 +1548,91 @@ namespace rxcpp
                 return cd;
             });
     }
+
+    template <class T>
+    std::shared_ptr<Observable<T>> Throttle(
+        const std::shared_ptr<Observable<T>>& source,
+        Scheduler::clock::duration due,
+        Scheduler::shared scheduler)
+    {
+        return CreateObservable<T>(
+            [=](std::shared_ptr<Observer<T>> observer)
+            -> Disposable
+            {
+                struct State {
+                    State() : hasValue(false), id(0) {}
+                    std::mutex lock;
+                    T value;
+                    bool hasValue;
+                    size_t id;
+                };
+                auto state = std::make_shared<State>();
+
+                ComposableDisposable cd;
+
+                SharedDisposable sd;
+                cd.Add(sd);
+
+                cd.Add(Subscribe(
+                    source,
+                // on next
+                    [=](const T& element)
+                    {
+                        size_t current = 0;
+                        {
+                            std::unique_lock<std::mutex> guard(state->lock);
+                            state->hasValue = true;
+                            state->value = std::move(element);
+                            current = ++state->id;
+                        }
+                        sd.Set(scheduler->Schedule(
+                            due, 
+                            [=] (Scheduler::shared){ 
+                                {
+                                    std::unique_lock<std::mutex> guard(state->lock);
+                                    if (state->hasValue && state->id == current) {
+                                        observer->OnNext(std::move(state->value));
+                                    }
+                                    state->hasValue = false;
+                                }
+
+                                return Disposable::Empty();
+                            }
+                        ));
+                    },
+                // on completed
+                    [=]
+                    {
+                        bool sendValue = false;
+                        T value;
+                        {
+                            std::unique_lock<std::mutex> guard(state->lock);
+                            sendValue = state->hasValue;
+                            if (sendValue) {
+                                value = std::move(state->value);}
+                            state->hasValue = false;
+                            ++state->id;
+                        }
+                        if (sendValue) {
+                            observer->OnNext(std::move(value));}
+                        observer->OnCompleted();
+                        cd.Dispose();
+                    },
+                // on error
+                    [=](const std::exception_ptr& error)
+                    {
+                        {
+                            std::unique_lock<std::mutex> guard(state->lock);
+                            state->hasValue = false;
+                            ++state->id;
+                        }
+                        observer->OnError(error);
+                        cd.Dispose();
+                    }));
+                return cd;
+            });
+    }
+
 
     // no more than one event ever 'milliseconds'
     // TODO: oops, this is not the right definition for throttle.

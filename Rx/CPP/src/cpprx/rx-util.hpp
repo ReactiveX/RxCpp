@@ -322,6 +322,168 @@ namespace rxcpp { namespace util {
         -> decltype(detail::tuple_dispatch<std::tuple_size<typename std::decay<T>::type>::value>::call(std::forward<F>(f), std::forward<T>(t))) {
         return      detail::tuple_dispatch<std::tuple_size<typename std::decay<T>::type>::value>::call(std::forward<F>(f), std::forward<T>(t));
     }
+
+    struct as_tuple {
+        auto operator()() 
+            -> decltype(std::make_tuple()) {
+            return      std::make_tuple();}
+        template<class AsTupleNext>
+        auto operator()(AsTupleNext x) 
+            -> decltype(std::make_tuple(std::move(x))) {
+            return      std::make_tuple(std::move(x));}
+        template<
+            class AsTupleNext1, 
+            class AsTupleNext2>
+        auto operator()(
+            AsTupleNext1 x1,
+            AsTupleNext2 x2) 
+            -> decltype(std::make_tuple(
+                std::move(x1),
+                std::move(x2))) {
+            return      std::make_tuple(
+                std::move(x1),
+                std::move(x2));}
+        template<
+            class AsTupleNext1, 
+            class AsTupleNext2, 
+            class AsTupleNext3>
+        auto operator()(
+            AsTupleNext1 x1,
+            AsTupleNext2 x2,
+            AsTupleNext3 x3) 
+            -> decltype(std::make_tuple(
+                std::move(x1),
+                std::move(x2),
+                std::move(x3))) {
+            return      std::make_tuple(
+                std::move(x1),
+                std::move(x2),
+                std::move(x3));}
+        template<
+            class AsTupleNext1, 
+            class AsTupleNext2, 
+            class AsTupleNext3, 
+            class AsTupleNext4>
+        auto operator()(
+            AsTupleNext1 x1,
+            AsTupleNext2 x2,
+            AsTupleNext3 x3,
+            AsTupleNext4 x4) 
+            -> decltype(std::make_tuple(
+                std::move(x1),
+                std::move(x2),
+                std::move(x3),
+                std::move(x4))) {
+            return      std::make_tuple(
+                std::move(x1),
+                std::move(x2),
+                std::move(x3),
+                std::move(x4));}
+        template<
+            class AsTupleNext1, 
+            class AsTupleNext2, 
+            class AsTupleNext3, 
+            class AsTupleNext4, 
+            class AsTupleNext5>
+        auto operator()(
+            AsTupleNext1 x1,
+            AsTupleNext2 x2,
+            AsTupleNext3 x3,
+            AsTupleNext4 x4,
+            AsTupleNext5 x5) 
+            -> decltype(std::make_tuple(
+                std::move(x1),
+                std::move(x2),
+                std::move(x3),
+                std::move(x4),
+                std::move(x5))) {
+            return      std::make_tuple(
+                std::move(x1),
+                std::move(x2),
+                std::move(x3),
+                std::move(x4),
+                std::move(x5));}
+
+        auto operator()() const
+            -> decltype(std::make_tuple()) {
+            return      std::make_tuple();}
+        template<class AsTupleNext>
+        auto operator()(AsTupleNext x) const
+            -> decltype(std::make_tuple(std::move(x))) {
+            return      std::make_tuple(std::move(x));}
+        template<
+            class AsTupleNext1, 
+            class AsTupleNext2>
+        auto operator()(
+            AsTupleNext1 x1,
+            AsTupleNext2 x2) const
+            -> decltype(std::make_tuple(
+                std::move(x1),
+                std::move(x2))) {
+            return      std::make_tuple(
+                std::move(x1),
+                std::move(x2));}
+        template<
+            class AsTupleNext1, 
+            class AsTupleNext2, 
+            class AsTupleNext3>
+        auto operator()(
+            AsTupleNext1 x1,
+            AsTupleNext2 x2,
+            AsTupleNext3 x3) const
+            -> decltype(std::make_tuple(
+                std::move(x1),
+                std::move(x2),
+                std::move(x3))) {
+            return      std::make_tuple(
+                std::move(x1),
+                std::move(x2),
+                std::move(x3));}
+        template<
+            class AsTupleNext1, 
+            class AsTupleNext2, 
+            class AsTupleNext3, 
+            class AsTupleNext4>
+        auto operator()(
+            AsTupleNext1 x1,
+            AsTupleNext2 x2,
+            AsTupleNext3 x3,
+            AsTupleNext4 x4) const
+            -> decltype(std::make_tuple(
+                std::move(x1),
+                std::move(x2),
+                std::move(x3),
+                std::move(x4))) {
+            return      std::make_tuple(
+                std::move(x1),
+                std::move(x2),
+                std::move(x3),
+                std::move(x4));}
+        template<
+            class AsTupleNext1, 
+            class AsTupleNext2, 
+            class AsTupleNext3, 
+            class AsTupleNext4, 
+            class AsTupleNext5>
+        auto operator()(
+            AsTupleNext1 x1,
+            AsTupleNext2 x2,
+            AsTupleNext3 x3,
+            AsTupleNext4 x4,
+            AsTupleNext5 x5) const
+            -> decltype(std::make_tuple(
+                std::move(x1),
+                std::move(x2),
+                std::move(x3),
+                std::move(x4),
+                std::move(x5))) {
+            return      std::make_tuple(
+                std::move(x1),
+                std::move(x2),
+                std::move(x3),
+                std::move(x4),
+                std::move(x5));}
+    };
 #endif //RXCPP_USE_VARIADIC_TEMPLATES
 
     struct pass_through {
