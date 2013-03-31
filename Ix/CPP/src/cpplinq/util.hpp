@@ -192,15 +192,7 @@ namespace cpplinq { namespace util {
             return is_set ? reinterpret_cast<const T*>(&storage) : 0;
         }
 
-        void set(const T& value) {
-            if (is_set) {
-                *reinterpret_cast<T*>(&storage) = value;
-            } else {
-                new (reinterpret_cast<T*>(&storage)) T(value);
-                is_set = true;
-            }
-        }
-        void set(T&& value) {
+        void set(T value) {
             if (is_set) {
                 *reinterpret_cast<T*>(&storage) = std::move(value);
             } else {

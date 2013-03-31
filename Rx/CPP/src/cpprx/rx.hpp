@@ -382,6 +382,16 @@ namespace rxcpp
     Binder<Obj> from(Binder<Obj> binder) { 
         return std::move(binder); }
 
+    template<class Range>
+    auto from_iterable(Range r) 
+        -> decltype(from(FromIterable(std::move(r)))) { 
+        return      from(FromIterable(std::move(r))); }
+
+    template<class Range>
+    auto from_iterable(Range r, Scheduler::shared scheduler) 
+        -> decltype(from(FromIterable(std::move(r), std::move(scheduler)))) { 
+        return      from(FromIterable(std::move(r), std::move(scheduler))); }
+
     template<class T>
     T item(const Binder<std::shared_ptr<Observable<T>>>&);
 

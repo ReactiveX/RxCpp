@@ -18,15 +18,42 @@ using namespace std;
 
 bool IsPrime(int x);
 
+vector<int> vector_range(int start, int end)
+{
+    vector<int> v;
+    for (int i = start; i < end; ++i)
+        v.push_back(i);
+    return v;
+}
+
+void IxToRx(int n) {
+    std::cout << "IxToRx: first " << n << " primes squared" << endl;
+    auto values = vector_range(2, n * 10);
+
+    auto primes = cpplinq::from(values)
+        .where(IsPrime)
+        .select([](int x) { return std::make_pair(x,  x*x); });
+
+    auto input = std::make_shared<rxcpp::ImmediateScheduler>();
+    auto output = std::make_shared<rxcpp::EventLoopScheduler>();
+    rxcpp::from_iterable(primes, input)
+        .take(n)
+        .observe_on(output)
+        .for_each(rxcpp::MakeTupleDispatch(
+            [](int p, int s) {
+                cout << p << " =square=> " << s << endl;
+            }));
+}
+
 void PrintPrimes(int n)
 {
-    std::cout << "first " << n << " primes squared" << endl;
+    std::cout << "Rx: first " << n << " primes squared" << endl;
     auto values = rxcpp::Range(2); // infinite (until overflow) stream of integers
-    auto s1 = rxcpp::from(values)
+    rxcpp::from(values)
         .where(IsPrime)
         .select([](int x) { return std::make_pair(x,  x*x); })
         .take(n)
-        .subscribe(rxcpp::MakeTupleDispatch(
+        .for_each(rxcpp::MakeTupleDispatch(
             [](int p, int s) {
                 cout << p << " =square=> " << s << endl;
             }));
@@ -189,7 +216,7 @@ void PrintIntervals(int n) {
     auto source = std::make_shared<rxcpp::EventLoopScheduler>();
     auto subject = rxcpp::CreateSubject<Tick>();
 
-    cout << "Intervals of .5 second: " << endl;
+    cout << n << " Intervals of .5 second: " << endl;
     rxcpp::from(subject)
         .zip(rxcpp::from(subject).skip(1).publish())
         .select(rxcpp::MakeTupleDispatch(
@@ -204,7 +231,7 @@ void PrintIntervals(int n) {
                 cout << endl;
                 auto l = std::max_element(d.begin(), d.end());
                 auto s = std::min_element(d.begin(), d.end());
-                cout << "range: " << s->count() << "-" << l->count() << endl;
+                cout << "range: " << s->count() << "ms-" << l->count() << "ms" << endl;
             });
 
     rxcpp::from(rxcpp::Interval(std::chrono::milliseconds(500), source))
@@ -327,6 +354,7 @@ int main(int argc, char* argv[])
 {
     try {
         PrintIntervals(10);
+        IxToRx(20);
         PrintPrimes(20);
         cout << "Zip Immediate" << endl;
         Zip<rxcpp::ImmediateScheduler, rxcpp::ImmediateScheduler>(20);

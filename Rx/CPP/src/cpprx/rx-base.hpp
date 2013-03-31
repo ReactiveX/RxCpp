@@ -319,11 +319,6 @@ namespace rxcpp
         return   util::tuple_dispatch(std::forward<Target>(target), std::forward<Tuple>(tuple));}
 
 #if RXCPP_USE_VARIADIC_TEMPLATES
-    template<class Lhs, class Rhs>
-    auto ConcatTuple(Lhs&& lhs, Rhs&& rhs) -> 
-        decltype(util::tuple_concat(std::forward<Lhs>(lhs), std::forward<Rhs>(rhs))) {
-        return   util::tuple_concat(std::forward<Lhs>(lhs), std::forward<Rhs>(rhs));}
-
     template<class T>
     auto TieTuple(T&& t) -> 
         decltype(util::tuple_tie(std::forward<T>(t))) {

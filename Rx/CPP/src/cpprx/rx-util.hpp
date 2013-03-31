@@ -94,15 +94,7 @@ namespace rxcpp { namespace util {
             return is_set ? reinterpret_cast<const T*>(&storage) : 0;
         }
 
-        void set(const T& value) {
-            if (is_set) {
-                *reinterpret_cast<T*>(&storage) = value;
-            } else {
-                new (reinterpret_cast<T*>(&storage)) T(value);
-                is_set = true;
-            }
-        }
-        void set(T&& value) {
+        void set(T value) {
             if (is_set) {
                 *reinterpret_cast<T*>(&storage) = std::move(value);
             } else {
@@ -177,39 +169,6 @@ namespace rxcpp { namespace util {
     auto tuple_dispatch(F&& f, T&& t) 
         -> decltype(detail::tuple_dispatch<typename make_tuple_indices<typename std::decay<T>::type>::type>::call(std::forward<F>(f), std::forward<T>(t))) {
         return      detail::tuple_dispatch<typename make_tuple_indices<typename std::decay<T>::type>::type>::call(std::forward<F>(f), std::forward<T>(t));
-    }
-
-    namespace detail {
-    template<class Lhs, class Rhs>
-    struct tuple_concat;
-    template<size_t... LhsIndices, size_t... RhsIndices>
-    struct tuple_concat<tuple_indices<LhsIndices...>, tuple_indices<RhsIndices...>> {
-        template<class LhsTuple, class RhsTuple>
-        static
-        auto concatenate(LhsTuple&& lhs, RhsTuple&& rhs) 
-            -> decltype (std::tuple<
-                typename std::tuple_element<LhsIndices, typename std::decay<LhsTuple>::type>::type..., 
-                typename std::tuple_element<RhsIndices, typename std::decay<RhsTuple>::type>::type...>(
-                std::get<LhsIndices>(std::forward<LhsTuple>(lhs))..., 
-                std::get<RhsIndices>(std::forward<RhsTuple>(rhs))...)) {
-            return       std::tuple<
-                typename std::tuple_element<LhsIndices, typename std::decay<LhsTuple>::type>::type..., 
-                typename std::tuple_element<RhsIndices, typename std::decay<RhsTuple>::type>::type...>(
-                std::get<LhsIndices>(std::forward<LhsTuple>(lhs))..., 
-                std::get<RhsIndices>(std::forward<RhsTuple>(rhs))...);
-        }
-    };}
-
-    template<class LhsTuple, class RhsTuple>
-    auto tuple_concat(LhsTuple&& lhs, RhsTuple&& rhs) 
-        -> decltype(detail::tuple_concat<
-            typename make_tuple_indices<typename std::decay<LhsTuple>::type>::type, 
-            typename make_tuple_indices<typename std::decay<RhsTuple>::type>::type>::
-            concatenate(std::forward<LhsTuple>(lhs), std::forward<RhsTuple>(rhs))) {
-        return      detail::tuple_concat<
-            typename make_tuple_indices<typename std::decay<LhsTuple>::type>::type, 
-            typename make_tuple_indices<typename std::decay<RhsTuple>::type>::type>::
-            concatenate(std::forward<LhsTuple>(lhs), std::forward<RhsTuple>(rhs));
     }
 
     namespace detail {
