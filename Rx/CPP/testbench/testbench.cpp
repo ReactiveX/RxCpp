@@ -36,7 +36,7 @@ void IxToRx(int n) {
 
     auto input = std::make_shared<rxcpp::ImmediateScheduler>();
     auto output = std::make_shared<rxcpp::EventLoopScheduler>();
-    rxcpp::from_iterable(primes, input)
+    rxcpp::from(Iterate(primes, input))
         .take(n)
         .observe_on(output)
         .for_each(rxcpp::MakeTupleDispatch(
@@ -241,7 +241,7 @@ void PrintIntervals(int n) {
         // on next
             [=](Tick t)
             {
-                cout << ".";
+                cout << "." << flush;
                 subject->OnNext(std::move(t));
             });
     subject->OnCompleted();

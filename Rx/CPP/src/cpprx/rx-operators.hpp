@@ -398,7 +398,7 @@ namespace rxcpp
     using std::begin;
     using std::end;
     template <class Range>
-    auto FromIterable(
+    auto Iterate(
         Range r,
         Scheduler::shared scheduler = nullptr)
         -> std::shared_ptr<Observable<decltype(*begin(r))>>
