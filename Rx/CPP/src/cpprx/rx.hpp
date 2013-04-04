@@ -38,6 +38,9 @@ namespace rxcpp
         BinderNested(Obj obj) : BinderBase<T, Obj>(std::move(obj))
         {
         }
+
+        void select_many();
+        void concat();
     };
 
     template<class T, class Obj>
@@ -57,6 +60,10 @@ namespace rxcpp
         auto select_many()
             -> decltype(from(SelectMany<item_type>(obj, util::pass_through(), util::pass_through_second()))) {
             return      from(SelectMany<item_type>(obj, util::pass_through(), util::pass_through_second()));
+        }
+        auto concat() 
+            -> decltype(from(Concat(*(Obj*)nullptr))) {
+            return      from(Concat(obj));
         }
     };
     
@@ -82,6 +89,7 @@ namespace rxcpp
         auto select(S selector) -> decltype(from(Select<item_type>(obj, selector))) {
             return from(Select<item_type>(obj, selector));
         }
+        using base::select_many;
         template <class CS>
         auto select_many(CS collectionSelector)
             -> decltype(from(SelectMany<item_type>(obj, std::move(collectionSelector), util::pass_through_second()))) {
@@ -151,6 +159,32 @@ namespace rxcpp
             return      from(CombineLatest(util::as_tuple(), obj, source));
         }
 #endif //RXCPP_USE_VARIADIC_TEMPLATES
+
+        using base::concat;
+#if RXCPP_USE_VARIADIC_TEMPLATES
+        template<class... ConcatSource>
+        auto concat(const ConcatSource&... source) 
+            -> decltype(from(Concat(Iterate(std::vector<Obj>())))) {
+            std::vector<Obj> sources;
+            sources.push_back(obj);
+            std::make_tuple((sources.push_back(source), true)...);
+            return      from(Concat(Iterate(std::move(sources))));
+        }
+#else
+        auto concat(const Obj& source) 
+            -> decltype(from(Concat(Iterate(std::vector<Obj>())))) {
+            std::vector<Obj> sources;
+            sources.push_back(obj);
+            sources.push_back(source);
+            return      from(Concat(Iterate(std::move(sources))));
+        }
+#endif //RXCPP_USE_VARIADIC_TEMPLATES
+        template <class Range>
+        auto concat(Range range) 
+            -> decltype(from(Concat(Iterate(range.insert(range.begin(), range.front()), range)))) {
+            range.insert(range.begin(), obj);
+            return      from(Concat(Iterate(std::move(range))));
+        }
         template <class P>
         auto where(P predicate) -> decltype(from(Where<item_type>(obj, predicate))) {
             return from(Where<item_type>(obj, predicate));

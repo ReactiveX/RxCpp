@@ -59,6 +59,38 @@ void PrintPrimes(int n)
             }));
 }
 
+void Concat(int n)
+{
+    auto input1 = std::make_shared<rxcpp::EventLoopScheduler>();
+    auto input2 = std::make_shared<rxcpp::EventLoopScheduler>();
+    auto output = std::make_shared<rxcpp::EventLoopScheduler>();
+
+    auto values1 = rxcpp::Range(100); // infinite (until overflow) stream of integers
+    auto s1 = rxcpp::from(values1)
+        .subscribe_on(input1)
+        .where(IsPrime)
+        .select([](int prime){this_thread::yield(); return std::make_tuple("1:", prime);})
+        .take(n/2)
+        .publish();
+
+    auto values2 = rxcpp::Range(2); // infinite (until overflow) stream of integers
+    auto s2 = rxcpp::from(values2)
+        .subscribe_on(input2)
+        .where(IsPrime)
+        .select([](int prime){this_thread::yield(); return std::make_tuple("2:", prime);})
+        .take(n/2)
+        .publish();
+
+    rxcpp::from(s2)
+        .concat(s1)
+        .take(n)
+        .observe_on(output)
+        .for_each(rxcpp::MakeTupleDispatch(
+            [](const char* s, int p) {
+                cout << s << " =concat=> " << p << endl;
+            }));
+}
+
 void Combine(int n)
 {
     auto input1 = std::make_shared<rxcpp::EventLoopScheduler>();
@@ -364,6 +396,7 @@ int main(int argc, char* argv[])
         Zip<rxcpp::EventLoopScheduler, rxcpp::EventLoopScheduler>(20);
         Combine(20);
         Merge(20);
+        Concat(20);
 
         innerScheduler<rxcpp::ImmediateScheduler>();
         innerScheduler<rxcpp::CurrentThreadScheduler>();
