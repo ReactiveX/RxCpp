@@ -328,6 +328,9 @@ namespace rxcpp
     template<class T>
     class Subject;
 
+    template<class T>
+    class BehaviorSubject;
+
     template<class K, class T>
     class GroupedSubject;
 
@@ -345,6 +348,9 @@ namespace rxcpp
 
     template<class T>
     struct is_observable<std::shared_ptr<Subject<T>>> {static const bool value = true;};
+
+    template<class T>
+    struct is_observable<std::shared_ptr<BehaviorSubject<T>>> {static const bool value = true;};
 
     template<class K, class T>
     struct is_observable<std::shared_ptr<GroupedObservable<K, T>>> {static const bool value = true;};
@@ -382,16 +388,49 @@ namespace rxcpp
     template<class T>
     struct subject_item<std::shared_ptr<Subject<T>>> {typedef T type;};
 
+    template<class T>
+    struct subject_item<std::shared_ptr<BehaviorSubject<T>>> {typedef T type;};
+
+    template<class K, class T>
+    struct subject_item<std::shared_ptr<GroupedSubject<K, T>>> {typedef T type;};
+
     template<class Subject>
     struct subject_observer;
 
     template<class T>
     struct subject_observer<std::shared_ptr<Subject<T>>> {typedef std::shared_ptr<Observer<T>> type;};
 
+    template<class T>
+    struct subject_observer<std::shared_ptr<BehaviorSubject<T>>> {typedef std::shared_ptr<Observer<T>> type;};
+
     template<class Subject>
     struct subject_observable;
 
     template<class T>
     struct subject_observable<std::shared_ptr<Subject<T>>> {typedef std::shared_ptr<Observable<T>> type;};
+
+    template<class T>
+    struct subject_observable<std::shared_ptr<BehaviorSubject<T>>> {typedef std::shared_ptr<Observable<T>> type;};
+
+    template<class T>
+    std::shared_ptr<Observable<T>> observable(const std::shared_ptr<Subject<T>>& s){return std::static_pointer_cast<Observable<T>>(s);}
+
+    template<class T>
+    std::shared_ptr<Observable<T>> observable(const std::shared_ptr<BehaviorSubject<T>>& s){return std::static_pointer_cast<Observable<T>>(s);}
+
+    template<class K, class T>
+    std::shared_ptr<Observable<T>> observable(const std::shared_ptr<GroupedSubject<K, T>>& s){return std::static_pointer_cast<Observable<T>>(s);}
+
+    template<class T>
+    std::shared_ptr<Observer<T>> observer(const std::shared_ptr<Subject<T>>& s){return std::static_pointer_cast<Observer<T>>(s);}
+
+    template<class T>
+    std::shared_ptr<Observer<T>> observer(const std::shared_ptr<BehaviorSubject<T>>& s){return std::static_pointer_cast<Observer<T>>(s);}
+
+    template<class K, class T>
+    std::shared_ptr<Observer<T>> observer(const std::shared_ptr<GroupedSubject<K, T>>& s){return std::static_pointer_cast<Observer<T>>(s);}
+
+    template<class K, class T>
+    std::shared_ptr<GroupedObservable<K, T>> grouped_observable(const std::shared_ptr<GroupedSubject<K, T>>& s){return std::static_pointer_cast<GroupedObservable<K, T>>(s);}
 }
 #endif

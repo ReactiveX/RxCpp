@@ -234,9 +234,6 @@ namespace rxcpp
     class Subject : 
         public ObserverSubject<T, ObservableSubject<T, Observable<T>, Subject<T>>>
     {
-    public:
-        std::shared_ptr<Observable<T>> observable(){return std::static_pointer_cast<Observable<T>>(this->shared_from_this());}
-        std::shared_ptr<Observer<T>> observer(){return std::static_pointer_cast<Observer<T>>(this->shared_from_this());}
     };
 
     template <class T>
@@ -263,15 +260,134 @@ namespace rxcpp
         typedef ObserverSubject<T, GroupedObservableSubject<K, T, ObservableSubject<T, GroupedObservable<K, T>, GroupedSubject<K, T>>>> base;
     public:
         GroupedSubject(K key) : base(std::move(key)) {}
-        std::shared_ptr<Observable<T>> observable(){return std::static_pointer_cast<Observable<T>>(this->shared_from_this());}
-        std::shared_ptr<Observer<T>> observer(){return std::static_pointer_cast<Observer<T>>(this->shared_from_this());}
-        std::shared_ptr<GroupedObservable<K, T>> grouped_observable(){return std::static_pointer_cast<GroupedObservable<K, T>>(this->shared_from_this());}
     };
 
     template <class T, class K>
     std::shared_ptr<GroupedSubject<K, T>> CreateGroupedSubject(K key)
     {
         return std::make_shared<GroupedSubject<K, T>>(std::move(key));
+    }
+
+    template <class T>
+    class BehaviorSubject : 
+        public std::enable_shared_from_this<BehaviorSubject<T>>,
+        public Observable<T>,
+        public Observer<T>
+    {
+        std::mutex lock;
+        T value;
+        std::vector<std::shared_ptr<Observer<T>>> observers;
+
+        void RemoveObserver(std::shared_ptr<Observer<T>> toRemove)
+        {
+            std::unique_lock<decltype(lock)> guard(lock);
+            auto it = std::find(begin(observers), end(observers), toRemove);
+            if (it != end(observers))
+                *it = nullptr;
+        }
+
+        BehaviorSubject();
+    public:
+
+        explicit BehaviorSubject(T t) : value(std::move(t)) {}
+        
+        virtual ~BehaviorSubject() {
+            // putting this first means that the observers
+            // will be destructed outside the lock
+            std::vector<std::shared_ptr<Observer<T>>> empty;
+
+            std::unique_lock<decltype(lock)> guard(lock);
+            using std::swap;
+            swap(observers, empty);
+        }
+
+        virtual Disposable Subscribe(std::shared_ptr<Observer<T>> observer)
+        {
+            std::weak_ptr<Observer<T>> wptr = observer;
+            std::weak_ptr<BehaviorSubject> wself = this->shared_from_this();
+
+            Disposable d([wptr, wself]{
+                if (auto self = wself.lock())
+                {
+                    self->RemoveObserver(wptr.lock());
+                }
+            });
+
+            try 
+            {
+                {
+                    std::unique_lock<decltype(lock)> guard(lock);
+                    for(auto& o : observers)
+                    {
+                        if (!o){
+                            o = std::move(observer);
+                            return d;
+                        }
+                    }
+                    observers.push_back(observer);
+                }
+                observer->OnNext(value);
+            }
+            catch (...)
+            {
+                observer->OnError(std::current_exception());
+                RemoveObserver(observer);
+            }
+
+            return d;
+        }
+
+        virtual void OnNext(T element)
+        {
+            std::unique_lock<decltype(lock)> guard(lock);
+            auto local = observers;
+            value = std::move(element);
+            guard.unlock();
+            for(auto& o : local)
+            {
+                try 
+                {
+                    if (o) {
+                        o->OnNext(value);
+                    }
+                }
+                catch (...)
+                {
+                    o->OnError(std::current_exception());
+                    RemoveObserver(o);
+                }
+            }
+        }
+        virtual void OnCompleted() 
+        {
+            std::unique_lock<decltype(lock)> guard(lock);
+            auto local = std::move(observers);
+            guard.unlock();
+            for(auto& o : local)
+            {
+                if (o) {
+                    o->OnCompleted();
+                }
+            }
+        }
+        virtual void OnError(const std::exception_ptr& error) 
+        {
+            std::unique_lock<decltype(lock)> guard(lock);
+            auto local = std::move(observers);
+            guard.unlock();
+            for(auto& o : local)
+            {
+                if (o) {
+                    o->OnError(error);
+                }
+            }
+        }
+    };
+
+    template <class T, class Arg>
+    std::shared_ptr<BehaviorSubject<T>> CreateBehaviorSubject(Arg a)
+    {
+        return std::make_shared<BehaviorSubject<T>>(std::move(a));
     }
 
     template <class F>
@@ -865,9 +981,9 @@ namespace rxcpp
                         auto local = state;
                         std::unique_lock<std::mutex> guard(local->lock);
                         std::get<Index>(local->latest) = element;
-                        if (pending) {
+                        if (!std::get<Index>(local->latestValid)) {
+                            std::get<Index>(local->latestValid) = true;
                             --local->pendingFirst;
-                            pending = false;
                         }
                         if (local->pendingFirst == 0) {
                             Latest args = local->latest;
@@ -931,19 +1047,22 @@ namespace rxcpp
         typedef typename std::result_of<S(const CombineLSource&...)>::type result_type;
         typedef std::tuple<std::shared_ptr<Observable<CombineLSource>>...> Sources;
         typedef std::tuple<CombineLSource...> Latest;
+        typedef decltype(std::make_tuple((source, true)...)) LatestValid;
         struct State {
             typedef Latest Latest;
             typedef Sources Sources;
             typedef result_type result_type;
             typedef std::tuple_size<Sources> SourcesSize;
             explicit State(S selector) 
-                : pendingFirst(SourcesSize::value)
+                : latestValid()
+                , pendingFirst(SourcesSize::value)
                 , pendingIssue(0)
                 , pendingComplete(SourcesSize::value)
                 , done(false)
                 , selector(std::move(selector))
             {}
             std::mutex lock;
+            LatestValid latestValid;
             size_t pendingFirst;
             size_t pendingIssue;
             size_t pendingComplete;
@@ -953,7 +1072,7 @@ namespace rxcpp
         };
         Sources sources(source...);
         // bug on osx prevents using make_shared 
-        std::shared_ptr<State> state(new State(std::move(selector)));
+        std::shared_ptr<State> state(new State(selector));
         return CreateObservable<result_type>(
             [=](std::shared_ptr<Observer<result_type>> observer) -> Disposable
             {
@@ -974,19 +1093,22 @@ namespace rxcpp
         typedef typename std::result_of<S(const CombineLSource1&, const CombineLSource2&)>::type result_type;
         typedef std::tuple<std::shared_ptr<Observable<CombineLSource1>>, std::shared_ptr<Observable<CombineLSource2>>> Sources;
         typedef std::tuple<CombineLSource1, CombineLSource2> Latest;
+        typedef std::tuple<bool, bool> LatestValid;
         struct State {
             typedef Latest Latest;
             typedef Sources Sources;
             typedef result_type result_type;
             typedef std::tuple_size<Sources> SourcesSize;
             explicit State(S selector) 
-                : pendingFirst(SourcesSize::value)
+                : latestValid()
+                , pendingFirst(SourcesSize::value)
                 , pendingIssue(0)
                 , pendingComplete(SourcesSize::value)
                 , done(false)
                 , selector(std::move(selector))
             {}
             std::mutex lock;
+            LatestValid latestValid;
             size_t pendingFirst;
             size_t pendingIssue;
             size_t pendingComplete;
@@ -1930,7 +2052,7 @@ namespace rxcpp
                 // on next
                     [=](const T& element)
                     {
-                        if (!state->hasValue || state->last != element)
+                        if (!state->hasValue || !(state->last == element))
                         {
                             observer->OnNext(element);
                             state->last = element;

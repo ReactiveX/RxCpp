@@ -283,6 +283,9 @@ namespace rxcpp
         void for_each(OnNext onNext) {
             ForEach<item_type>(obj, onNext);
         }
+        auto subscribe(std::shared_ptr<Observer<item_type>> observer) -> decltype(obj->Subscribe(observer)) {
+            return obj->Subscribe(observer);
+        }
         template <class OnNext>
         auto subscribe(OnNext onNext) -> decltype(Subscribe(obj, onNext)) {
             auto result = Subscribe(obj, onNext);
@@ -406,8 +409,12 @@ namespace rxcpp
 
     template<class T>
     Binder<std::shared_ptr<Observable<T>>> from(std::shared_ptr<Subject<T>> obj) {
-        return Binder<std::shared_ptr<Observable<T>>>(std::move(obj)); }
+        return Binder<std::shared_ptr<Observable<T>>>(observable(obj)); }
     
+    template<class T>
+    Binder<std::shared_ptr<Observable<T>>> from(std::shared_ptr<BehaviorSubject<T>> obj) {
+        return Binder<std::shared_ptr<Observable<T>>>(observable(obj)); }
+
     template<class K, class T>
     Binder<std::shared_ptr<GroupedObservable<K, T>>> from(std::shared_ptr<GroupedSubject<K, T>> obj) {
         return Binder<std::shared_ptr<GroupedObservable<K, T>>>(std::move(obj)); }
