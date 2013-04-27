@@ -26,17 +26,19 @@ namespace rxcpp
         virtual Disposable Subscribe(std::shared_ptr<Observer<T>> observer)
         {
             if (CurrentThreadScheduler::IsScheduleRequired()) {
+                SerialDisposable sd;
                 auto scheduler = std::make_shared<CurrentThreadScheduler>();
-                return scheduler->Schedule(
+                scheduler->Schedule(
                    [=](Scheduler::shared) -> Disposable {
                         try {
-                            return subscribe(observer);
+                            sd.Set(subscribe(observer));
                         } catch (...) {
                             observer->OnError(std::current_exception());
                         }   
                         return Disposable::Empty();
                    }
                 );
+                return sd;
             }
             try {
                 return subscribe(observer);
@@ -83,16 +85,16 @@ namespace rxcpp
             if(onCompleted)
             {
                 onCompleted();
-                clear();
             }         
+            clear();
         }
         virtual void OnError(const std::exception_ptr& error) 
         {
             if(onError)
             {
                 onError(error);
-                clear();
             }
+            clear();
         }
         void clear() 
         {
@@ -481,7 +483,7 @@ namespace rxcpp
                     size_t cursor;
                     std::shared_ptr<Observer<size_t>> observer;
                     ComposableDisposable cd;
-                    SharedDisposable sd;
+                    SerialDisposable sd;
 
                     void Tick(Scheduler::shared s){
                         observer->OnNext(cursor); 
@@ -822,7 +824,7 @@ namespace rxcpp
 
                 ComposableDisposable cd;
 
-                SharedDisposable sd;
+                SerialDisposable sd;
                 cd.Add(sd);
 
                 cd.Add(Disposable([=]{ 
@@ -1858,36 +1860,47 @@ namespace rxcpp
 
                 ComposableDisposable cd;
 
-                cd.Add(Disposable([=]{ *cancel = true; }));
+                cd.Add(Disposable([=]{ 
+                    *cancel = true; }));
 
-                SharedDisposable sd;
-                cd.Add(sd);
+                SerialDisposable sd;
+                auto wsd = cd.Add(sd);
 
                 cd.Add(Subscribe(
                     source,
                 // on next
                     [=](const T& element)
                     {
-                        sd.Set(scheduler->Schedule(
+                        auto sched_disposable = scheduler->Schedule(
                             due, 
                             [=] (Scheduler::shared){ 
                                 if (!*cancel)
                                     observer->OnNext(element); 
                                 return Disposable::Empty();
                             }
-                        ));
+                        );
+                        auto ssd = wsd.lock();
+                        if (ssd)
+                        {
+                            *ssd.get() = std::move(sched_disposable);
+                        }
                     },
                 // on completed
                     [=]
                     {
-                        sd.Set(scheduler->Schedule(
+                        auto sched_disposable = scheduler->Schedule(
                             due, 
                             [=](Scheduler::shared){ 
                                 if (!*cancel)
                                     observer->OnCompleted(); 
                                 return Disposable::Empty();
                             }
-                        ));
+                        );
+                        auto ssd = wsd.lock();
+                        if (ssd)
+                        {
+                            *ssd.get() = std::move(sched_disposable);
+                        }
                     },
                 // on error
                     [=](const std::exception_ptr& error)
@@ -1920,7 +1933,7 @@ namespace rxcpp
 
                 ComposableDisposable cd;
 
-                SharedDisposable sd;
+                SerialDisposable sd;
                 cd.Add(sd);
 
                 cd.Add(Subscribe(
@@ -2083,7 +2096,7 @@ namespace rxcpp
             {
                 ComposableDisposable cd;
 
-                SharedDisposable sd;
+                SerialDisposable sd;
                 cd.Add(sd);
 
                 cd.Add(scheduler->Schedule([=](Scheduler::shared){

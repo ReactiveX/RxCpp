@@ -229,9 +229,9 @@ namespace rxcpp
         typedef std::function<void()> Action;
 
         Scheduler::shared scheduler;
-        std::shared_ptr<Observer<T>> observer;
         std::atomic<size_t> trampoline;
-        SharedDisposable sd;
+        mutable std::shared_ptr<Observer<T>> observer;
+        mutable SerialDisposable sd;
         mutable std::queue<Action> queue;
         mutable std::mutex lock;
 
@@ -245,8 +245,14 @@ namespace rxcpp
 
         void Dispose() const
         {
-            std::unique_lock<std::mutex> guard(lock);
-            while (!queue.empty()) {queue.pop();}
+            SerialDisposable sd;
+            {
+                std::unique_lock<std::mutex> guard(lock);
+                while (!queue.empty()) {queue.pop();}
+                using std::swap;
+                swap(sd, this->sd);
+                observer= nullptr;
+            }
             sd.Dispose();
         }
         operator Disposable() const
@@ -319,7 +325,7 @@ namespace rxcpp
                 sd.Set(sched->Schedule(
                     [keepAlive](Scheduler::shared sched){
                         return keepAlive->Run(sched);}));
-                return Disposable::Empty();
+                return sd;
             }
 
             // only decrement when no further work is scheduled
@@ -341,13 +347,11 @@ namespace rxcpp
             std::atomic<size_t> trampoline;
             mutable std::mutex lock;
             mutable std::condition_variable wake;
-            mutable std::atomic<bool> exit;
             CurrentThreadQueue::ThreadLocalQueue* queue;
 
         public:
             Derecurser()
                 : trampoline(0)
-                , exit(false)
             {
             }
             virtual ~Derecurser()
@@ -365,9 +369,12 @@ namespace rxcpp
                 EnsureThreadResult result(util::maybe<std::thread>(), Disposable::Empty());
 
                 auto cancelable = std::make_shared<Work>(std::move(work));
+                std::get<1>(result) = Disposable([cancelable]{
+                    *cancelable.get() = nullptr;});
 
                 std::unique_lock<std::mutex> guard(lock);
-                RXCPP_UNWIND(unwindTrampoline, [&]{--trampoline;});
+                RXCPP_UNWIND(unwindTrampoline, [&]{
+                    --trampoline;});
 
                 if (++trampoline == 1)
                 {
@@ -375,8 +382,6 @@ namespace rxcpp
                         CurrentThreadQueue::DestroyQueue(queue); queue = nullptr;});
                     queue = CurrentThreadQueue::CreateQueue(owner).release();
 
-                    std::get<1>(result) = Disposable([cancelable]{
-                        *cancelable.get() = nullptr;});
                     queue->queue.push(CurrentThreadQueue::QueueItem(dueTime, std::move(cancelable)));
 
                     auto local = std::static_pointer_cast<Derecurser>(shared_from_this());
@@ -390,8 +395,6 @@ namespace rxcpp
                 }
                 else
                 {
-                    std::get<1>(result) = Disposable([cancelable]{
-                        *cancelable.get() = nullptr;});
                     queue->queue.push(CurrentThreadQueue::QueueItem(dueTime, std::move(cancelable)));
                     wake.notify_one();
                 }
@@ -402,7 +405,8 @@ namespace rxcpp
             void Run(CurrentThreadQueue::ThreadLocalQueue* queue) {
                 auto keepAlive = shared_from_this();
                 {
-                    RXCPP_UNWIND_AUTO([&]{--trampoline;});
+                    RXCPP_UNWIND_AUTO([&]{
+                        --trampoline;});
 
                     std::unique_lock<std::mutex> guard(lock);
 
@@ -411,37 +415,81 @@ namespace rxcpp
                         CurrentThreadQueue::DestroyQueue(); 
                         queue = nullptr;});
 
-                    while(!exit && (!CurrentThreadQueue::empty() || trampoline > 1))
+                    auto start = queue->scheduler->Now();
+                    auto ms = std::chrono::milliseconds(1);
+                    while(!CurrentThreadQueue::empty() || trampoline > 1)
                     {
+                        auto now = queue->scheduler->Now();
+#if 0
+                        {std::wstringstream out;
+                        out << L"eventloop (run) pending: " << std::boolalpha << CurrentThreadQueue::empty() 
+                            << L", now: " << ((now - start) / ms);
+                            if (!CurrentThreadQueue::empty()) {
+                                out << L", due: " << ((CurrentThreadQueue::top().due - start) / ms);}
+                        out << std::endl;
+                        OutputDebugString(out.str().c_str());}
+#endif
                         if (CurrentThreadQueue::empty()) {
+#if 0
+                            {std::wstringstream out;
+                            out << L"eventloop (wait for work) pending: " << std::boolalpha << CurrentThreadQueue::empty() 
+                                << L", now: " << ((now - start) / ms);
+                            out << std::endl;
+                            OutputDebugString(out.str().c_str());}
+#endif
                             wake.wait(guard, [&](){
-                                return exit || !CurrentThreadQueue::empty() || trampoline == 1;});
+                                return !CurrentThreadQueue::empty() || trampoline == 1;});
                             continue;
                         }
 
                         auto item = &CurrentThreadQueue::top();
-                        if (!item->work || !*item->work.get()) {CurrentThreadQueue::pop(); continue;}
+                        if (!item->work || !*item->work.get()) {
+#if 0
+                            {std::wstringstream out;
+                            out << L"eventloop (pop disposed work) pending: " << std::boolalpha << CurrentThreadQueue::empty() 
+                                << L", now: " << ((now - start) / ms);
+                                if (!CurrentThreadQueue::empty()) {
+                                    out << L", due: " << ((CurrentThreadQueue::top().due - start) / ms);}
+                            out << std::endl;
+                            OutputDebugString(out.str().c_str());}
+#endif
+                            CurrentThreadQueue::pop(); continue;}
                         
                         // wait until the work is due
-                        if (!exit && queue->scheduler->Now() < item->due)
+                        if (now < item->due)
                         {
+#if 0
+                            {std::wstringstream out;
+                            out << L"eventloop (wait for due) pending: " << std::boolalpha << CurrentThreadQueue::empty() 
+                                << L", now: " << ((now - start) / ms);
+                                if (!CurrentThreadQueue::empty()) {
+                                    out << L", due: " << ((CurrentThreadQueue::top().due - start) / ms);}
+                            out << std::endl;
+                            OutputDebugString(out.str().c_str());}
+#endif
                             wake.wait_until(guard, item->due);
                             continue;
                         }
-                        if (exit || CurrentThreadQueue::empty()) {break;}
-                        if (!item->work || !*item->work.get()) {CurrentThreadQueue::pop(); continue;}
-                        
+#if 0
+                        {std::wstringstream out;
+                        out << L"eventloop (dispatch) pending: " << std::boolalpha << CurrentThreadQueue::empty() 
+                            << L", now: " << ((now - start) / ms);
+                            if (!CurrentThreadQueue::empty()) {
+                                out << L", due: " << ((CurrentThreadQueue::top().due - start) / ms);}
+                        out << std::endl;
+                        OutputDebugString(out.str().c_str());}
+#endif                        
                         // dispatch work
                         auto work = std::move(*item->work.get());
                         *item->work.get() = nullptr;
                         CurrentThreadQueue::pop();
                         
-                        RXCPP_UNWIND_AUTO([&]{guard.lock();});
+                        RXCPP_UNWIND_AUTO([&]{
+                            guard.lock();});
                         guard.unlock();
                         LocalScheduler::Do(work, queue->scheduler);
                     }
                 }
-                exit = false;
             }
         };
 

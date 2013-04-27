@@ -107,10 +107,11 @@ namespace rxcpp { namespace win32 {
         struct Queue;
 
         typedef std::pair<Scheduler::shared, Work> Item;
+        typedef std::pair<clock::time_point, std::shared_ptr<Item>> PriorityItem;
 
         typedef std::priority_queue<
-            std::pair<clock::time_point, std::shared_ptr<Item>>,
-            std::vector<std::pair<clock::time_point, std::shared_ptr<Item>>>,
+            PriorityItem,
+            std::vector<PriorityItem>,
             compare_work 
         > ScheduledWork;
 
@@ -157,18 +158,19 @@ namespace rxcpp { namespace win32 {
 
             static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
             {
-                static WindowClass* windowClass; 
+                WindowClass* windowClass = reinterpret_cast<WindowClass*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
                 switch (message)
                 {
                 case WM_NCCREATE:
                     {
                         windowClass = reinterpret_cast<WindowClass*>(reinterpret_cast<LPCREATESTRUCT>(lParam)->lpCreateParams);
+                        SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG>(reinterpret_cast<LPVOID>(windowClass)));
                     }
                     break;
                 case WM_NCDESTROY:
                     {
                         delete windowClass;
-                        windowClass = nullptr;
+                        SetWindowLongPtr(hwnd, GWLP_USERDATA, 0L);
                     }
                     break;
                 case WM_TIMER:
@@ -176,12 +178,14 @@ namespace rxcpp { namespace win32 {
                     {
                         bool destroy = false;
                         HWND window = NULL;
+                        std::vector<std::shared_ptr<Item>> expired;
                         {
                             std::unique_lock<std::mutex> guard(windowClass->queue->lock);
 
                             while (!windowClass->queue->scheduledWork.empty() && !windowClass->queue->scheduledWork.top().second.get()->second)
                             {
                                 // discard the disposed items
+                                expired.push_back(windowClass->queue->scheduledWork.top().second);
                                 windowClass->queue->scheduledWork.pop();
                             }
 

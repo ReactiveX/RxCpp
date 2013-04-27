@@ -89,23 +89,49 @@ namespace rxcpp
     // reference handle type for a container for composing disposables
     class ComposableDisposable
     {
+        typedef std::shared_ptr<Disposable> shared_disposable;
+        typedef std::weak_ptr<Disposable> weak_disposable;
         struct State
         {
-            std::vector<Disposable> disposables;
+            std::vector<shared_disposable> disposables;
             std::mutex lock;
             bool isDisposed;
             
             State() : isDisposed(false)
             {
             }
-            void Add(Disposable&& d)
+            weak_disposable Add(Disposable&& d)
+            {
+                return Add(std::make_shared<Disposable>(std::move(d)));
+            }
+            weak_disposable Add(shared_disposable s)
             {
                 std::unique_lock<decltype(lock)> guard(lock);
                 if (isDisposed) {
                     guard.unlock();
-                    d.Dispose();
+                    s->Dispose();
                 } else {
-                    disposables.emplace_back(std::move(d));
+                    auto end = std::end(disposables);
+                    auto it = std::find(std::begin(disposables), end, s);
+                    if (it == end)
+                    {
+                        disposables.emplace_back(s);
+                    }
+                }
+                return s;
+            }
+            void Remove(weak_disposable w) 
+            {
+                std::unique_lock<decltype(lock)> guard(lock);
+                auto s = w.lock();
+                if (s) 
+                {
+                    auto end = std::end(disposables);
+                    auto it = std::find(std::begin(disposables), end, s);
+                    if (it != end)
+                    {
+                        disposables.erase(it);
+                    }
                 }
             }
             void Dispose()
@@ -119,22 +145,31 @@ namespace rxcpp
                     guard.unlock();
                     
                     std::for_each(v.begin(), v.end(),
-                                  [](Disposable& d) { 
-                                    d.Dispose(); });
+                                  [](shared_disposable& d) { 
+                                    d->Dispose(); });
                 }
             }
         };
         
-        std::shared_ptr<State> state;
+        mutable std::shared_ptr<State> state;
         
     public:
 
-        ComposableDisposable() : state(new State)
+        ComposableDisposable()
+            : state(std::make_shared<State>())
         {
         }
-        void Add(Disposable d) const
+        weak_disposable Add(shared_disposable s) const
         {
-            state->Add(std::move(d));
+            return state->Add(std::move(s));
+        }
+        weak_disposable Add(Disposable d) const
+        {
+            return state->Add(std::move(d));
+        }
+        void Remove(weak_disposable w) const
+        {
+            state->Remove(w);
         }
         void Dispose() const
         {
@@ -186,6 +221,20 @@ namespace rxcpp
             : state(new State(std::move(scheduler), std::move(disposable)))
         {
         }
+        ScheduledDisposable(const ScheduledDisposable& o)
+            : state(o.state)
+        {
+        }
+        ScheduledDisposable(ScheduledDisposable&& o)
+            : state(std::move(o.state))
+        {
+            o.state = nullptr;
+        }
+        ScheduledDisposable& operator=(ScheduledDisposable o) {
+            using std::swap;
+            swap(o.state, state);
+            return *this;
+        }
         void Dispose() const
         {
             state->Dispose();
@@ -202,37 +251,44 @@ namespace rxcpp
         }
     };
 
-    class SharedDisposable
+    class SerialDisposable
     {
-        typedef std::function<void()> dispose_type;
-
-        struct State : public std::enable_shared_from_this<State>
+        struct State 
         {
             mutable Disposable disposable;
+            mutable bool disposed;
             mutable std::mutex lock;
 
-            State() : disposable(Disposable::Empty()) {}
+            State() : disposable(Disposable::Empty()), disposed(false) {}
 
             void Set(Disposable disposeArg) const
-            {
+            { 
                 std::unique_lock<decltype(lock)> guard(lock);
-                {using std::swap; swap(disposable, disposeArg);}
+                if (!disposed) {
+                    using std::swap; 
+                    swap(disposable, disposeArg);
+                }
+                guard.unlock();
+                disposeArg.Dispose();
             }
             void Dispose()
             {
                 std::unique_lock<decltype(lock)> guard(lock);
-                auto local = std::move(disposable);
-                guard.unlock();
-                local.Dispose();
+                if (!disposed) {
+                    disposed = true;
+                    auto local = std::move(disposable);
+                    guard.unlock();
+                    local.Dispose();
+                }
             }
         };
         
-        std::shared_ptr<State> state;
+        mutable std::shared_ptr<State> state;
         
     public:
 
-        SharedDisposable() 
-            : state(new State())
+        SerialDisposable() 
+            : state(std::make_shared<State>())
         {
         }
         void Dispose() const

@@ -55,6 +55,11 @@ void CMainFrame::UserInit()
     // set up labels and query
     auto msg = L"Time flies like an arrow";
 
+#if LABEL_EXPRESSION_TRACING
+    auto start = worker->Now();
+    auto ms = std::chrono::milliseconds(1);
+#endif
+
     for (int i = 0; msg[i]; ++i)
     {
         auto label = CreateLabelFromLetter(msg[i], this);
@@ -64,19 +69,44 @@ void CMainFrame::UserInit()
         //  user32 doesn't filter this for you: http://blogs.msdn.com/b/oldnewthing/archive/2003/10/01/55108.aspx
 
         auto s = rxcpp::from(mouseMove)
-            .select([](MouseMoveEventValue e) { return e.point; })
+            .select([=](MouseMoveEventValue e) { 
+                auto now = worker->Now();
+#if LABEL_EXPRESSION_TRACING
+                {std::wstringstream out;
+                out << L"input index: " << i << L", ms: " << ((now - start) / ms)
+                    << L", x: " << e.point.x << L", y: " << e.point.y 
+                    << L", x: " << e.point.x+20*i << L", y: " << e.point.y-20 << std::endl;
+                OutputDebugString(out.str().c_str());}
+#endif
+                return std::make_tuple(now, e.point); })
             .distinct_until_changed()   
             .delay(std::chrono::milliseconds(i * 100 + 1),  worker)
+#if LABEL_EXPRESSION_TRACING
+            .select(rxcpp::MakeTupleDispatch([=](rxcpp::Scheduler::clock::time_point time, CPoint point) {
+                {std::wstringstream out;
+                out << L"delayed index: " << i << L", ms: " << ((time - start) / ms)
+                    << L", x: " << point.x << L", y: " << point.y 
+                    << L", x: " << point.x+20*i << L", y: " << point.y-20 << std::endl;
+                OutputDebugString(out.str().c_str());}
+                return std::make_tuple(time, point);;}))
+#endif
             .observe_on(mainFormScheduler)
-            .subscribe([=](CPoint point) 
+            .subscribe(rxcpp::MakeTupleDispatch([=](rxcpp::Scheduler::clock::time_point time, CPoint point) 
             {
+#if LABEL_EXPRESSION_TRACING
+                {std::wstringstream out;
+                out << L"observed index: " << i << L", ms: " << ((time - start) / ms)
+                    << L", x: " << point.x << L", y: " << point.y 
+                    << L", x: " << point.x+20*i << L", y: " << point.y-20 << std::endl;
+                OutputDebugString(out.str().c_str());}
+#endif
                 label->SetWindowPos(nullptr, point.x+20*i, point.y-20, 20, 30, SWP_NOOWNERZORDER);
                 label->Invalidate();
 
                 // repaint early, for fluid animation
                 label->UpdateWindow();
-                this->UpdateWindow();
-            });
+                //this->UpdateWindow();
+            }));
 
         composableDisposable.Add(std::move(s));
     }
@@ -84,9 +114,6 @@ void CMainFrame::UserInit()
 
 void CMainFrame::OnClose()
 {
-    // TODO: figure out cause of crash -- until then, exit instead
-    ::ExitProcess(0);
-
     // shutdown subscription.
     composableDisposable.Dispose();
     
