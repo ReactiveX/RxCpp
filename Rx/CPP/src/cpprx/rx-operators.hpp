@@ -12,6 +12,68 @@ namespace rxcpp
     //////////////////////////////////////////////////////////////////////
     // 
     // constructors
+    template <class T>
+    struct CreatedAutoDetachObserver : public Observer<T>
+    {
+        std::shared_ptr<Observer<T>> observer;
+        SerialDisposable disposable;
+        
+        virtual ~CreatedAutoDetachObserver() {
+            clear();
+        }
+
+        virtual void OnNext(const T& element)
+        {
+            if (observer) {
+                RXCPP_UNWIND(disposer, [&](){
+                    disposable.Dispose();
+                });
+                observer->OnNext(element);
+                disposer.dismiss();
+            }
+        }
+        virtual void OnCompleted() 
+        {
+            if (observer) {
+                RXCPP_UNWIND(disposer, [&](){
+                    disposable.Dispose();
+                });
+                std::shared_ptr<Observer<T>> final;
+                using std::swap;
+                swap(final, observer);
+                final->OnCompleted();
+                disposer.dismiss();
+            }
+        }
+        virtual void OnError(const std::exception_ptr& error) 
+        {
+            if (observer) {
+                RXCPP_UNWIND(disposer, [&](){
+                    disposable.Dispose();
+                });
+                std::shared_ptr<Observer<T>> final;
+                using std::swap;
+                swap(final, observer);
+                final->OnError(error);
+                disposer.dismiss();
+            }
+        }
+        void clear() 
+        {
+            observer = nullptr;
+        }
+    };
+
+    template <class T>
+    std::shared_ptr<CreatedAutoDetachObserver<T>> CreateAutoDetachObserver(
+        std::shared_ptr<Observer<T>> observer
+        )
+    {
+        auto p = std::make_shared<CreatedAutoDetachObserver<T>>();
+        p->observer = std::move(observer);
+        
+        return p;
+    }
 
     template <class T, class S>
     class CreatedObservable : public Observable<T>
@@ -25,25 +87,27 @@ namespace rxcpp
         }
         virtual Disposable Subscribe(std::shared_ptr<Observer<T>> observer)
         {
+            auto autoDetachObserver = CreateAutoDetachObserver(std::move(observer));
+
             if (CurrentThreadScheduler::IsScheduleRequired()) {
-                SerialDisposable sd;
                 auto scheduler = std::make_shared<CurrentThreadScheduler>();
                 scheduler->Schedule(
                    [=](Scheduler::shared) -> Disposable {
                         try {
-                            sd.Set(subscribe(observer));
+                            autoDetachObserver->disposable.Set(subscribe(autoDetachObserver));
                         } catch (...) {
-                            observer->OnError(std::current_exception());
+                            autoDetachObserver->OnError(std::current_exception());
                         }   
                         return Disposable::Empty();
                    }
                 );
-                return sd;
+                return autoDetachObserver->disposable;
             }
             try {
-                return subscribe(observer);
+                autoDetachObserver->disposable.Set(subscribe(autoDetachObserver));
+                return autoDetachObserver->disposable;
             } catch (...) {
-                observer->OnError(std::current_exception());
+                autoDetachObserver->OnError(std::current_exception());
             }   
             return Disposable::Empty();
         }
@@ -68,33 +132,32 @@ namespace rxcpp
 
         virtual void OnNext(const T& element)
         {
-            try 
+            if(onNext)
             {
-                if(onNext)
-                {
-                    onNext(element);
-                }
-            }
-            catch (...)
-            {
-                OnError(std::current_exception());
+                onNext(element);
             }
         }
         virtual void OnCompleted() 
         {
             if(onCompleted)
             {
-                onCompleted();
-            }         
-            clear();
+                std::function<void()> final;
+                using std::swap;
+                swap(final, onCompleted);
+                clear();
+                final();
+            }
         }
         virtual void OnError(const std::exception_ptr& error) 
         {
             if(onError)
             {
-                onError(error);
+                std::function<void(const std::exception_ptr&)> final;
+                using std::swap;
+                swap(final, onError);
+                clear();
+                final(error);
             }
-            clear();
         }
         void clear() 
         {
@@ -119,6 +182,14 @@ namespace rxcpp
         return p;
     }
 
+    struct SubjectState {
+        enum type {
+            Invalid,
+            Forwarding,
+            Completed,
+            Error
+        };
+    };
 
     template <class T, class Base, class Subject>
     class ObservableSubject : 
@@ -127,6 +198,8 @@ namespace rxcpp
     {
     protected:
         std::mutex lock;
+        SubjectState::type state;
+        std::exception_ptr error;
         std::vector<std::shared_ptr<Observer<T>>> observers;
         
         virtual ~ObservableSubject() {
@@ -137,6 +210,9 @@ namespace rxcpp
             std::unique_lock<decltype(lock)> guard(lock);
             using std::swap;
             swap(observers, empty);
+        }
+
+        ObservableSubject() : state(SubjectState::Forwarding) {
         }
 
         void RemoveObserver(std::shared_ptr<Observer<T>> toRemove)
@@ -162,16 +238,24 @@ namespace rxcpp
 
             {
                 std::unique_lock<decltype(lock)> guard(lock);
-                for(auto& o : observers)
-                {
-                    if (!o){
-                        o = std::move(observer);
-                        return d;
+                if (state == SubjectState::Completed) {
+                    observer->OnCompleted();
+                    return Disposable::Empty();
+                } else if (state == SubjectState::Error) {
+                    observer->OnError(error);
+                    return Disposable::Empty();
+                } else {
+                    for(auto& o : observers)
+                    {
+                        if (!o){
+                            o = std::move(observer);
+                            return d;
+                        }
                     }
+                    observers.push_back(std::move(observer));
+                    return d;
                 }
-                observers.push_back(std::move(observer));
             }
-            return d;
         }
     };
 
@@ -193,22 +277,15 @@ namespace rxcpp
             guard.unlock();
             for(auto& o : local)
             {
-                try 
-                {
-                    if (o) {
-                        o->OnNext(element);
-                    }
-                }
-                catch (...)
-                {
-                    o->OnError(std::current_exception());
-                    Base::RemoveObserver(o);
+                if (o) {
+                    o->OnNext(element);
                 }
             }
         }
         virtual void OnCompleted() 
         {
             std::unique_lock<decltype(Base::lock)> guard(Base::lock);
+            Base::state = SubjectState::Completed;
             auto local = std::move(Base::observers);
             guard.unlock();
             for(auto& o : local)
@@ -221,6 +298,8 @@ namespace rxcpp
         virtual void OnError(const std::exception_ptr& error) 
         {
             std::unique_lock<decltype(Base::lock)> guard(Base::lock);
+            Base::state = SubjectState::Error;
+            Base::error = error;
             auto local = std::move(Base::observers);
             guard.unlock();
             for(auto& o : local)
@@ -278,6 +357,8 @@ namespace rxcpp
     {
         std::mutex lock;
         T value;
+        SubjectState::type state;
+        std::exception_ptr error;
         std::vector<std::shared_ptr<Observer<T>>> observers;
 
         void RemoveObserver(std::shared_ptr<Observer<T>> toRemove)
@@ -291,7 +372,7 @@ namespace rxcpp
         BehaviorSubject();
     public:
 
-        explicit BehaviorSubject(T t) : value(std::move(t)) {}
+        explicit BehaviorSubject(T t) : value(std::move(t)), state(SubjectState::Forwarding) {}
         
         virtual ~BehaviorSubject() {
             // putting this first means that the observers
@@ -315,10 +396,15 @@ namespace rxcpp
                 }
             });
 
-            try 
             {
-                {
-                    std::unique_lock<decltype(lock)> guard(lock);
+                std::unique_lock<decltype(lock)> guard(lock);
+                if (state == SubjectState::Completed) {
+                    observer->OnCompleted();
+                    return Disposable::Empty();
+                } else if (state == SubjectState::Error) {
+                    observer->OnError(error);
+                    return Disposable::Empty();
+                } else {
                     for(auto& o : observers)
                     {
                         if (!o){
@@ -328,12 +414,9 @@ namespace rxcpp
                     }
                     observers.push_back(observer);
                 }
-                observer->OnNext(value);
             }
-            catch (...)
-            {
-                observer->OnError(std::current_exception());
-                RemoveObserver(observer);
+            if (state == SubjectState::Forwarding) {
+                observer->OnNext(value);
             }
 
             return d;
@@ -347,22 +430,15 @@ namespace rxcpp
             guard.unlock();
             for(auto& o : local)
             {
-                try 
-                {
-                    if (o) {
-                        o->OnNext(value);
-                    }
-                }
-                catch (...)
-                {
-                    o->OnError(std::current_exception());
-                    RemoveObserver(o);
+                if (o) {
+                    o->OnNext(value);
                 }
             }
         }
         virtual void OnCompleted() 
         {
             std::unique_lock<decltype(lock)> guard(lock);
+            state = SubjectState::Completed;
             auto local = std::move(observers);
             guard.unlock();
             for(auto& o : local)
@@ -372,9 +448,11 @@ namespace rxcpp
                 }
             }
         }
-        virtual void OnError(const std::exception_ptr& error) 
+        virtual void OnError(const std::exception_ptr& errorArg) 
         {
             std::unique_lock<decltype(lock)> guard(lock);
+            state = SubjectState::Error;
+            error = errorArg;
             auto local = std::move(observers);
             guard.unlock();
             for(auto& o : local)
@@ -439,24 +517,20 @@ namespace rxcpp
             cd.Add(scheduler->Schedule(
                 fix0([=](Scheduler::shared s, std::function<Disposable(Scheduler::shared)> self) -> Disposable
             {
-                try {
-                    if (state->cancel)
-                        return Disposable::Empty();
+                if (state->cancel)
+                    return Disposable::Empty();
 
-                    if (!state->rem)
-                    {
-                        observer->OnCompleted();
-                    }
-                    else
-                    {
-                        observer->OnNext(state->i);
-                        --state->rem; 
-                        state->i += step;
-                        return s->Schedule(std::move(self));
-                    }
-                } catch (...) {
-                    observer->OnError(std::current_exception());
-                }   
+                if (!state->rem)
+                {
+                    observer->OnCompleted();
+                }
+                else
+                {
+                    observer->OnNext(state->i);
+                    --state->rem; 
+                    state->i += step;
+                    return s->Schedule(std::move(self));
+                }
                 return Disposable::Empty();             
             })));
 
@@ -553,23 +627,19 @@ namespace rxcpp
             cd.Add(scheduler->Schedule(
                 fix0([=](Scheduler::shared s, std::function<Disposable(Scheduler::shared)> self) -> Disposable
             {
-                try {
-                    if (state->cancel)
-                        return Disposable::Empty();
+                if (state->cancel)
+                    return Disposable::Empty();
 
-                    if (state->r_cursor == state->r_end)
-                    {
-                        observer->OnCompleted();
-                    }
-                    else
-                    {
-                        observer->OnNext(*state->r_cursor);
-                        ++state->r_cursor; 
-                        return s->Schedule(std::move(self));
-                    }
-                } catch (...) {
-                    observer->OnError(std::current_exception());
-                }   
+                if (state->r_cursor == state->r_end)
+                {
+                    observer->OnCompleted();
+                }
+                else
+                {
+                    observer->OnNext(*state->r_cursor);
+                    ++state->r_cursor; 
+                    return s->Schedule(std::move(self));
+                }
                 return Disposable::Empty();             
             })));
 
@@ -710,54 +780,9 @@ namespace rxcpp
                             if (!cancel) ++state->subscribed;
                         }
                         if (!cancel) {
+                            decltype(collectionSelector(sourceElement)) collection;
                             try {
-                                auto collection = collectionSelector(sourceElement);
-                                cd.Add(Subscribe(
-                                    collection,
-                                // on next
-                                    [=](const CI& collectionElement)
-                                    {
-                                        bool cancel = false;
-                                        {
-                                            std::unique_lock<std::mutex> guard(state->lock);
-                                            cancel = state->cancel;
-                                        }
-                                        try {
-                                            if (!cancel) {
-                                                auto result = resultSelector(sourceElement, collectionElement);
-                                                observer->OnNext(std::move(result)); 
-                                            }
-                                        } catch (...) {
-                                            observer->OnError(std::current_exception());
-                                            cd.Dispose();
-                                        }
-                                    },
-                                // on completed
-                                    [=]
-                                    {
-                                        bool cancel = false;
-                                        bool finished = false;
-                                        {
-                                            std::unique_lock<std::mutex> guard(state->lock);
-                                            finished = (--state->subscribed) == 0;
-                                            cancel = state->cancel;
-                                        }
-                                        if (!cancel && finished)
-                                            observer->OnCompleted(); 
-                                    },
-                                // on error
-                                    [=](const std::exception_ptr& error)
-                                    {
-                                        bool cancel = false;
-                                        {
-                                            std::unique_lock<std::mutex> guard(state->lock);
-                                            --state->subscribed;
-                                            cancel = state->cancel;
-                                        }
-                                        if (!cancel)
-                                            observer->OnError(error);
-                                        cd.Dispose();
-                                    }));
+                                collection = collectionSelector(sourceElement);
                             } catch (...) {
                                 bool cancel = false;
                                 {
@@ -769,6 +794,53 @@ namespace rxcpp
                                 }
                                 cd.Dispose();
                             }
+                            cd.Add(Subscribe(
+                                collection,
+                            // on next
+                                [=](const CI& collectionElement)
+                                {
+                                    bool cancel = false;
+                                    {
+                                        std::unique_lock<std::mutex> guard(state->lock);
+                                        cancel = state->cancel;
+                                    }
+                                    if (!cancel) {
+                                        decltype(resultSelector(sourceElement, collectionElement)) result;
+                                        try {
+                                                result = resultSelector(sourceElement, collectionElement);
+                                        } catch (...) {
+                                            observer->OnError(std::current_exception());
+                                            cd.Dispose();
+                                        }
+                                        observer->OnNext(std::move(result)); 
+                                    }
+                                },
+                            // on completed
+                                [=]
+                                {
+                                    bool cancel = false;
+                                    bool finished = false;
+                                    {
+                                        std::unique_lock<std::mutex> guard(state->lock);
+                                        finished = (--state->subscribed) == 0;
+                                        cancel = state->cancel;
+                                    }
+                                    if (!cancel && finished)
+                                        observer->OnCompleted(); 
+                                },
+                            // on error
+                                [=](const std::exception_ptr& error)
+                                {
+                                    bool cancel = false;
+                                    {
+                                        std::unique_lock<std::mutex> guard(state->lock);
+                                        --state->subscribed;
+                                        cancel = state->cancel;
+                                    }
+                                    if (!cancel)
+                                        observer->OnError(error);
+                                    cd.Dispose();
+                                }));
                         }
                     },
                 // on completed
@@ -855,78 +927,61 @@ namespace rxcpp
                             sd.Set(sched->Schedule(
                                 fix0([state, cd, sd, observer](Scheduler::shared s, std::function<Disposable(Scheduler::shared)> self) -> Disposable
                             {
-                                try {
-                                    bool cancel = false;
-                                    bool finished = false;
-                                    ObservableT next;
-                                    {
-                                        std::unique_lock<std::mutex> guard(state->lock);
-                                        finished = state->queue.empty();
-                                        cancel = state->cancel;
-                                        if (!cancel && !finished) {next = state->queue.front(); state->queue.pop();}
-                                    }
-                                    if (!cancel && !finished) {
-                                        sd.Set(Subscribe(
-                                            next,
-                                        // on next
-                                            [=](const T& t)
+                                bool cancel = false;
+                                bool finished = false;
+                                ObservableT next;
+                                {
+                                    std::unique_lock<std::mutex> guard(state->lock);
+                                    finished = state->queue.empty();
+                                    cancel = state->cancel;
+                                    if (!cancel && !finished) {next = state->queue.front(); state->queue.pop();}
+                                }
+                                if (!cancel && !finished) {
+                                    sd.Set(Subscribe(
+                                        next,
+                                    // on next
+                                        [=](const T& t)
+                                        {
+                                            bool cancel = false;
                                             {
-                                                bool cancel = false;
-                                                {
-                                                    std::unique_lock<std::mutex> guard(state->lock);
-                                                    cancel = state->cancel;
-                                                }
-                                                try {
-                                                    if (!cancel) {
-                                                        observer->OnNext(std::move(t)); 
-                                                    }
-                                                } catch (...) {
-                                                    observer->OnError(std::current_exception());
-                                                    cd.Dispose();
-                                                }
-                                            },
-                                        // on completed
-                                            [=]
+                                                std::unique_lock<std::mutex> guard(state->lock);
+                                                cancel = state->cancel;
+                                            }
+                                            if (!cancel) {
+                                                observer->OnNext(std::move(t)); 
+                                            }
+                                        },
+                                    // on completed
+                                        [=]
+                                        {
+                                            bool cancel = false;
+                                            bool finished = false;
+                                            bool subscribe = false;
                                             {
-                                                bool cancel = false;
-                                                bool finished = false;
-                                                bool subscribe = false;
-                                                {
-                                                    std::unique_lock<std::mutex> guard(state->lock);
-                                                    finished = state->queue.empty() && state->completed;
-                                                    subscribe = !state->queue.empty();
-                                                    state->subscribed = subscribe;
-                                                    cancel = state->cancel;
-                                                }
-                                                if (!cancel) {
-                                                    if (subscribe) {sd.Set(s->Schedule(std::move(self)));}
-                                                    else if (finished) {observer->OnCompleted(); cd.Dispose();}
-                                                }
-                                            },
-                                        // on error
-                                            [=](const std::exception_ptr& error)
+                                                std::unique_lock<std::mutex> guard(state->lock);
+                                                finished = state->queue.empty() && state->completed;
+                                                subscribe = !state->queue.empty();
+                                                state->subscribed = subscribe;
+                                                cancel = state->cancel;
+                                            }
+                                            if (!cancel) {
+                                                if (subscribe) {sd.Set(s->Schedule(std::move(self)));}
+                                                else if (finished) {observer->OnCompleted(); cd.Dispose();}
+                                            }
+                                        },
+                                    // on error
+                                        [=](const std::exception_ptr& error)
+                                        {
+                                            bool cancel = false;
                                             {
-                                                bool cancel = false;
-                                                {
-                                                    std::unique_lock<std::mutex> guard(state->lock);
-                                                    cancel = state->cancel;
-                                                }
-                                                if (!cancel) {
-                                                    observer->OnError(std::current_exception());
-                                                }
-                                                cd.Dispose();
-                                            }));
-                                    }
-                                } catch (...) {
-                                    bool cancel = false;
-                                    {
-                                        std::unique_lock<std::mutex> guard(state->lock);
-                                        cancel = state->cancel;
-                                    }
-                                    if (!cancel) {
-                                        observer->OnError(std::current_exception());
-                                    }
-                                    cd.Dispose();
+                                                std::unique_lock<std::mutex> guard(state->lock);
+                                                cancel = state->cancel;
+                                            }
+                                            if (!cancel) {
+                                                observer->OnError(std::current_exception());
+                                            }
+                                            cd.Dispose();
+                                        }));
                                 }
                                 return Disposable::Empty();             
                             })));

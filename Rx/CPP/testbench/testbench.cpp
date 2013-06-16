@@ -468,23 +468,19 @@ std::shared_ptr<rxcpp::Observable<string>> Data(
             cd.Add(scheduler->Schedule(
                 rxcpp::fix0([=](rxcpp::Scheduler::shared s, std::function<rxcpp::Disposable(rxcpp::Scheduler::shared)> self) -> rxcpp::Disposable
                 {
-                    try {
-                        if (state->cancel)
-                            return rxcpp::Disposable::Empty();
+                    if (state->cancel)
+                        return rxcpp::Disposable::Empty();
 
-                        string line;
-                        if (!!getline(state->data, line))
-                        {
-                            observer->OnNext(std::move(line));
-                            return s->Schedule(std::move(self));
-                        }
-                        else
-                        {
-                            observer->OnCompleted();
-                        }
-                    } catch (...) {
-                        observer->OnError(std::current_exception());
-                    }     
+                    string line;
+                    if (!!getline(state->data, line))
+                    {
+                        observer->OnNext(std::move(line));
+                        return s->Schedule(std::move(self));
+                    }
+                    else
+                    {
+                        observer->OnCompleted();
+                    }
                     return rxcpp::Disposable::Empty();           
                 })
             ));
