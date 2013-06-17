@@ -447,16 +447,16 @@ namespace rxcpp { namespace util {
 
     struct pass_through {
         template<class X>
-        X operator()(X x) {return std::move(x);}
+        typename std::decay<X>::type operator()(X&& x) {return std::forward<X>(x);}
         template<class X>
-        X operator()(X x) const {return std::move(x);}
+        typename std::decay<X>::type operator()(X&& x) const {return std::forward<X>(x);}
     };
 
     struct pass_through_second {
         template<class X, class Y>
-        Y operator()(X , Y y) {return std::move(y);}
+        typename std::decay<Y>::type operator()(X&& , Y&& y) {return std::forward<Y>(y);}
         template<class X, class Y>
-        Y operator()(X , Y y) const {return std::move(y);}
+        typename std::decay<Y>::type operator()(X&& , Y&& y) const {return std::forward<Y>(y);}
     };
 
     template<typename Function>

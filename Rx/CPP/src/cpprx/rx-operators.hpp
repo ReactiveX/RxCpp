@@ -566,7 +566,7 @@ namespace rxcpp
                         auto keepAlive = this->shared_from_this();
                         sd.Set(s->Schedule(
                             last, 
-                            [this, keepAlive] (Scheduler::shared s){
+                            [this, keepAlive] (Scheduler::shared s) -> Disposable {
                                 Tick(s);
                                 return Disposable::Empty();
                             }
@@ -578,7 +578,7 @@ namespace rxcpp
                 state->last += state->due;
                 state->sd.Set(scheduler->Schedule(
                     state->last, 
-                    [=] (Scheduler::shared s){
+                    [=] (Scheduler::shared s) -> Disposable {
                         state->Tick(s);
                         return Disposable::Empty();
                     }
@@ -717,8 +717,15 @@ namespace rxcpp
                 // on next
                     [=](const T& element)
                     {
-                        auto result = selector(element);
-                        observer->OnNext(std::move(result));
+                        util::maybe<U> result;
+                        try {
+                            result.set(selector(element));
+                        } catch(...) {
+                            observer->OnError(std::current_exception());
+                        }
+                        if (!!result) {
+                            observer->OnNext(std::move(*result.get()));
+                        }
                     },
                 // on completed
                     [=]
@@ -780,10 +787,10 @@ namespace rxcpp
                             if (!cancel) ++state->subscribed;
                         }
                         if (!cancel) {
-                            decltype(collectionSelector(sourceElement)) collection;
+                            util::maybe<C> collection;
                             try {
-                                collection = collectionSelector(sourceElement);
-                            } catch (...) {
+                                collection.set(collectionSelector(sourceElement));
+                            } catch(...) {
                                 bool cancel = false;
                                 {
                                     std::unique_lock<std::mutex> guard(state->lock);
@@ -794,53 +801,57 @@ namespace rxcpp
                                 }
                                 cd.Dispose();
                             }
-                            cd.Add(Subscribe(
-                                collection,
-                            // on next
-                                [=](const CI& collectionElement)
-                                {
-                                    bool cancel = false;
+                            if (!!collection) {
+                                cd.Add(Subscribe(
+                                    *collection.get(),
+                                // on next
+                                    [=](const CI& collectionElement)
                                     {
-                                        std::unique_lock<std::mutex> guard(state->lock);
-                                        cancel = state->cancel;
-                                    }
-                                    if (!cancel) {
-                                        decltype(resultSelector(sourceElement, collectionElement)) result;
-                                        try {
-                                                result = resultSelector(sourceElement, collectionElement);
-                                        } catch (...) {
-                                            observer->OnError(std::current_exception());
-                                            cd.Dispose();
+                                        bool cancel = false;
+                                        {
+                                            std::unique_lock<std::mutex> guard(state->lock);
+                                            cancel = state->cancel;
                                         }
-                                        observer->OnNext(std::move(result)); 
-                                    }
-                                },
-                            // on completed
-                                [=]
-                                {
-                                    bool cancel = false;
-                                    bool finished = false;
+                                        if (!cancel) {
+                                            util::maybe<U> result;
+                                            try {
+                                                result.set(resultSelector(sourceElement, collectionElement));
+                                            } catch(...) {
+                                                observer->OnError(std::current_exception());
+                                                cd.Dispose();
+                                            }
+                                            if (!!result) {
+                                                observer->OnNext(std::move(*result.get()));
+                                            }
+                                        }
+                                    },
+                                // on completed
+                                    [=]
                                     {
-                                        std::unique_lock<std::mutex> guard(state->lock);
-                                        finished = (--state->subscribed) == 0;
-                                        cancel = state->cancel;
-                                    }
-                                    if (!cancel && finished)
-                                        observer->OnCompleted(); 
-                                },
-                            // on error
-                                [=](const std::exception_ptr& error)
-                                {
-                                    bool cancel = false;
+                                        bool cancel = false;
+                                        bool finished = false;
+                                        {
+                                            std::unique_lock<std::mutex> guard(state->lock);
+                                            finished = (--state->subscribed) == 0;
+                                            cancel = state->cancel;
+                                        }
+                                        if (!cancel && finished)
+                                            observer->OnCompleted(); 
+                                    },
+                                // on error
+                                    [=](const std::exception_ptr& error)
                                     {
-                                        std::unique_lock<std::mutex> guard(state->lock);
-                                        --state->subscribed;
-                                        cancel = state->cancel;
-                                    }
-                                    if (!cancel)
-                                        observer->OnError(error);
-                                    cd.Dispose();
-                                }));
+                                        bool cancel = false;
+                                        {
+                                            std::unique_lock<std::mutex> guard(state->lock);
+                                            --state->subscribed;
+                                            cancel = state->cancel;
+                                        }
+                                        if (!cancel)
+                                            observer->OnError(error);
+                                        cd.Dispose();
+                                    }));
+                            }
                         }
                     },
                 // on completed
@@ -1034,7 +1045,6 @@ namespace rxcpp
                 // on next
                     [=](const typename std::tuple_element<Index, Latest>::type& element)
                     {
-                        static bool pending = true; 
                         auto local = state;
                         std::unique_lock<std::mutex> guard(local->lock);
                         std::get<Index>(local->latest) = element;
@@ -1044,14 +1054,22 @@ namespace rxcpp
                         }
                         if (local->pendingFirst == 0) {
                             Latest args = local->latest;
-                            auto result = util::tuple_dispatch(local->selector, args);
-                            ++state->pendingIssue;
-                            {
-                                RXCPP_UNWIND_AUTO([&](){guard.lock();});
-                                guard.unlock();
-                                observer->OnNext(std::move(result));
+                            typedef decltype(util::tuple_dispatch(local->selector, args)) U;
+                            util::maybe<U> result;
+                            try {
+                                result.set(util::tuple_dispatch(local->selector, args));
+                            } catch(...) {
+                                observer->OnError(std::current_exception());
                             }
-                            --state->pendingIssue;
+                            if (!!result) {
+                                ++state->pendingIssue;
+                                {
+                                    RXCPP_UNWIND_AUTO([&](){guard.lock();});
+                                    guard.unlock();
+                                    observer->OnNext(std::move(*result.get()));
+                                }
+                                --state->pendingIssue;
+                            }
                             if (state->done && state->pendingIssue == 0) {
                                 guard.unlock();
                                 observer->OnCompleted();
@@ -1221,14 +1239,22 @@ namespace rxcpp
                         // cause side-effect of pop on each queue
                         std::make_tuple((queue.pop(), true)...);
                         
-                        ++state->pending;
-                        auto result = util::tuple_dispatch(state->selector, args);
-                        {
-                            RXCPP_UNWIND_AUTO([&](){guard.lock();});
-                            guard.unlock();
-                            observer->OnNext(std::move(result));
+                        typedef decltype(util::tuple_dispatch(state->selector, args)) U;
+                        util::maybe<U> result;
+                        try {
+                            result.set(util::tuple_dispatch(state->selector, args));
+                        } catch(...) {
+                            observer->OnError(std::current_exception());
                         }
-                        --state->pending;
+                        if (!!result) {
+                            ++state->pending;
+                            {
+                                RXCPP_UNWIND_AUTO([&](){guard.lock();});
+                                guard.unlock();
+                                observer->OnNext(std::move(*result.get()));
+                            }
+                            --state->pending;
+                        }
                     }
                     // build new array to check for any empty queue
                     bool post_empties[] = {queue.empty()...};
@@ -1257,14 +1283,22 @@ namespace rxcpp
                         queue1.pop();
                         queue2.pop();
                         
-                        ++state->pending;
-                        auto result = util::tuple_dispatch(state->selector, args);
-                        {
-                            RXCPP_UNWIND_AUTO([&](){guard.lock();});
-                            guard.unlock();
-                            observer->OnNext(std::move(result));
+                        typedef decltype(util::tuple_dispatch(state->selector, args)) U;
+                        util::maybe<U> result;
+                        try {
+                            result.set(util::tuple_dispatch(state->selector, args));
+                        } catch(...) {
+                            observer->OnError(std::current_exception());
                         }
-                        --state->pending;
+                        if (!!result) {
+                            ++state->pending;
+                            {
+                                RXCPP_UNWIND_AUTO([&](){guard.lock();});
+                                guard.unlock();
+                                observer->OnNext(std::move(*result.get()));
+                            }
+                            --state->pending;
+                        }
                     }
                     // build new array to check for any empty queue
                     bool post_empties[] = {queue1.empty(), queue2.empty()};
@@ -1520,8 +1554,14 @@ namespace rxcpp
                 // on next
                     [=](const T& element)
                     {
-                        auto result = predicate(element);
-                        if (result)
+                        typedef decltype(predicate(element)) U;
+                        util::maybe<U> result;
+                        try {
+                            result.set(predicate(element));
+                        } catch(...) {
+                            observer->OnError(std::current_exception());
+                        }
+                        if (!!result && *result.get())
                         {
                             observer->OnNext(element);
                         }
@@ -1555,7 +1595,7 @@ namespace rxcpp
         typedef std::shared_ptr<GroupedObservable<Key, Value>> LocalGroupObservable;
 
         return CreateObservable<LocalGroupObservable>(
-            [=](std::shared_ptr<Observer<LocalGroupObservable>> observer)
+            [=](std::shared_ptr<Observer<LocalGroupObservable>> observer) -> Disposable
             {
                 typedef std::map<Key, std::shared_ptr<GroupedSubject<Key, Value>>, L> Groups;
 
@@ -1572,26 +1612,42 @@ namespace rxcpp
                 // on next
                     [=](const T& element)
                     {
-                        auto key = keySelector(element);
-                        auto keySubject = CreateGroupedSubject<Value>(key);
-
-                        typename Groups::iterator groupIt;
-                        bool newGroup = false;
-
-                        {
-                            std::unique_lock<std::mutex> guard(state->lock);
-                            std::tie(groupIt, newGroup) = state->groups.insert(
-                                std::make_pair(key,keySubject)
-                            );
+                        util::maybe<Key> key;
+                        try {
+                            key.set(keySelector(element));
+                        } catch(...) {
+                            observer->OnError(std::current_exception());
                         }
 
-                        if (newGroup)
-                        {
-                            LocalGroupObservable nextGroup(std::move(keySubject));
-                            observer->OnNext(nextGroup);
+                        if (!!key) {
+                            auto keySubject = CreateGroupedSubject<Value>(*key.get());
+
+                            typename Groups::iterator groupIt;
+                            bool newGroup = false;
+
+                            {
+                                std::unique_lock<std::mutex> guard(state->lock);
+                                std::tie(groupIt, newGroup) = state->groups.insert(
+                                    std::make_pair(*key.get(), keySubject)
+                                );
+                            }
+
+                            if (newGroup)
+                            {
+                                LocalGroupObservable nextGroup(std::move(keySubject));
+                                observer->OnNext(nextGroup);
+                            }
+
+                            util::maybe<Value> result;
+                            try {
+                                result.set(valueSelector(element));
+                            } catch(...) {
+                                observer->OnError(std::current_exception());
+                            }
+                            if (!!result) {
+                                groupIt->second->OnNext(std::move(*result.get()));
+                            }
                         }
-                        auto result = valueSelector(element);
-                        groupIt->second->OnNext(std::move(result));
                     },
                 // on completed
                     [=]
@@ -1873,7 +1929,7 @@ namespace rxcpp
     {
         typedef typename StdCollection::value_type Value;
         return CreateObservable<StdCollection>(
-            [=](std::shared_ptr<Observer<StdCollection>> observer)
+            [=](std::shared_ptr<Observer<StdCollection>> observer) -> Disposable
             {
                 auto stdCollection = std::make_shared<StdCollection>();
                 return Subscribe(
@@ -1928,7 +1984,7 @@ namespace rxcpp
                     {
                         auto sched_disposable = scheduler->Schedule(
                             due, 
-                            [=] (Scheduler::shared){ 
+                            [=] (Scheduler::shared) -> Disposable { 
                                 if (!*cancel)
                                     observer->OnNext(element); 
                                 return Disposable::Empty();
@@ -1945,7 +2001,7 @@ namespace rxcpp
                     {
                         auto sched_disposable = scheduler->Schedule(
                             due, 
-                            [=](Scheduler::shared){ 
+                            [=](Scheduler::shared) -> Disposable { 
                                 if (!*cancel)
                                     observer->OnCompleted(); 
                                 return Disposable::Empty();
@@ -2005,7 +2061,7 @@ namespace rxcpp
                         }
                         sd.Set(scheduler->Schedule(
                             due, 
-                            [=] (Scheduler::shared){ 
+                            [=] (Scheduler::shared) -> Disposable { 
                                 {
                                     std::unique_lock<std::mutex> guard(state->lock);
                                     if (state->hasValue && state->id == current) {
@@ -2154,7 +2210,7 @@ namespace rxcpp
                 SerialDisposable sd;
                 cd.Add(sd);
 
-                cd.Add(scheduler->Schedule([=](Scheduler::shared){
+                cd.Add(scheduler->Schedule([=](Scheduler::shared) -> Disposable {
                     sd.Set(ScheduledDisposable(scheduler, source->Subscribe(observer)));
                     return Disposable::Empty();
                 }));

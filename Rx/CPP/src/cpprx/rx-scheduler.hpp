@@ -238,8 +238,8 @@ namespace rxcpp
     public:
         ScheduledObserver(Scheduler::shared scheduler, std::shared_ptr<Observer<T>> observer)
             : scheduler(std::move(scheduler))
-            , observer(std::move(observer))
             , trampoline(0)
+            , observer(std::move(observer))
         {
         }
 
@@ -414,9 +414,10 @@ namespace rxcpp
                     RXCPP_UNWIND(unwindQueue, [&](){
                         CurrentThreadQueue::DestroyQueue(); 
                         queue = nullptr;});
-
+#if 0
                     auto start = queue->scheduler->Now();
                     auto ms = std::chrono::milliseconds(1);
+#endif
                     while(!CurrentThreadQueue::empty() || trampoline > 1)
                     {
                         auto now = queue->scheduler->Now();
@@ -508,8 +509,8 @@ namespace rxcpp
         }
         template<class Factory>
         EventLoopScheduler(Factory factoryarg) 
-            : derecurser(std::make_shared<Derecurser>())
-            , factory(std::move(factoryarg))
+            : factory(std::move(factoryarg))
+            , derecurser(std::make_shared<Derecurser>())
         {
         }
         virtual ~EventLoopScheduler()

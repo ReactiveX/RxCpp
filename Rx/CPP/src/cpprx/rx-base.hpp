@@ -204,7 +204,7 @@ namespace rxcpp
                 auto local = std::move(scheduler);
                 if (local) {
                     auto keepAlive = shared_from_this();
-                    local->Schedule([keepAlive] (Scheduler::shared) {
+                    local->Schedule([keepAlive] (Scheduler::shared) -> Disposable {
                         keepAlive->disposable.Dispose();
                         return Disposable::Empty();
                     });
@@ -414,6 +414,7 @@ namespace rxcpp
     template<class K, class T>
     struct is_observable<std::shared_ptr<GroupedSubject<K, T>>> {static const bool value = true;};
 
+namespace detail {
     template<class Observable>
     struct observable_item;
 
@@ -422,6 +423,12 @@ namespace rxcpp
 
     template<class K, class T>
     struct observable_item<std::shared_ptr<GroupedObservable<K, T>>> {typedef T type;};
+}
+    template<class Observable>
+    struct observable_item
+    {
+        typedef typename detail::observable_item<typename std::decay<Observable>::type>::type type;
+    };
 
     template<class Observable>
     struct observable_observer;

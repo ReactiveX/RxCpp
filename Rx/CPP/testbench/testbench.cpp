@@ -69,7 +69,7 @@ void Concat(int n)
     auto s1 = rxcpp::from(values1)
         .subscribe_on(input1)
         .where(IsPrime)
-        .select([](int prime){this_thread::yield(); return std::make_tuple("1:", prime);})
+        .select([](int prime) -> std::tuple<const char *, int> {this_thread::yield(); return std::make_tuple("1:", prime);})
         .take(n/2)
         .publish();
 
@@ -77,7 +77,7 @@ void Concat(int n)
     auto s2 = rxcpp::from(values2)
         .subscribe_on(input2)
         .where(IsPrime)
-        .select([](int prime){this_thread::yield(); return std::make_tuple("2:", prime);})
+        .select([](int prime) -> std::tuple<const char *, int> {this_thread::yield(); return std::make_tuple("2:", prime);})
         .take(n/2)
         .publish();
 
@@ -101,14 +101,14 @@ void Combine(int n)
     auto s1 = rxcpp::from(values1)
         .subscribe_on(input1)
         .where(IsPrime)
-        .select([](int prime){this_thread::yield(); return prime;})
+        .select([](int prime) -> int {this_thread::yield(); return prime;})
         .publish();
 
     auto values2 = rxcpp::Range(2); // infinite (until overflow) stream of integers
     rxcpp::from(values2)
         .subscribe_on(input2)
         .where(IsPrime)
-        .select([](int prime){this_thread::yield(); return prime;})
+        .select([](int prime) -> int {this_thread::yield(); return prime;})
         .combine_latest(s1)
         .take(n)
         .observe_on(output)
@@ -132,7 +132,7 @@ std::shared_ptr<rxcpp::Observable<T>> Record(
     )
 {
     return rxcpp::CreateObservable<T>(
-        [=](std::shared_ptr<rxcpp::Observer<T>> observer)
+        [=](std::shared_ptr<rxcpp::Observer<T>> observer) -> rxcpp::Disposable
         {
             rxcpp::ComposableDisposable cd;
             cd.Add(rxcpp::Disposable([=](){
@@ -180,7 +180,7 @@ void Zip(int n)
         .subscribe_on(input1)
         .where(IsPrime)
         .template chain<record>(&s1count)
-        .select([](int prime){this_thread::yield(); return prime;})
+        .select([](int prime) -> int {this_thread::yield(); return prime;})
         .publish();
 
     auto values2 = rxcpp::Range(2); // infinite (until overflow) stream of integers
@@ -188,7 +188,7 @@ void Zip(int n)
         .subscribe_on(input2)
         .where(IsPrime)
         .template chain<record>(&s2count)
-        .select([](int prime){this_thread::yield(); return prime;})
+        .select([](int prime) -> int {this_thread::yield(); return prime;})
         .zip(s1)
         .template chain<record>(&zipcount)
         .take(n)
@@ -220,14 +220,14 @@ void Merge(int n)
     auto s1 = rxcpp::from(values1)
         .subscribe_on(input1)
         .where(IsPrime)
-        .select([](int prime1) {this_thread::yield(); return std::make_tuple("1: ", prime1);})
+        .select([](int prime1) -> std::tuple<const char *, int> {this_thread::yield(); return std::make_tuple("1: ", prime1);})
         .publish();
 
     auto values2 = rxcpp::Range(2); // infinite (until overflow) stream of integers
     rxcpp::from(values2)
         .subscribe_on(input2)
         .where(IsPrime)
-        .select([](int prime2) {this_thread::yield(); return std::make_tuple("2: ", prime2);})
+        .select([](int prime2) -> std::tuple<const char *, int> {this_thread::yield(); return std::make_tuple("2: ", prime2);})
         .merge(s1)
         .take(n)
         .observe_on(output)
@@ -294,10 +294,21 @@ void run()
         int    concurrency;
         double time;
 
+        item(const item& other) : args(other.args), concurrency(other.concurrency), time(other.time) {
+        }
+        item(item&& other) : args(std::move(other.args)), concurrency(std::move(other.concurrency)), time(std::move(other.time)) {
+        }
         item(const string& input) {
             args =              extract_value(input, "args");
             concurrency = atoi( extract_value(input, "concurrency").c_str() );
             time =        atof( extract_value(input, "time").c_str() );
+        }
+        item& operator=(item other){
+            using std::swap;
+            swap(args, other.args);
+            swap(concurrency, other.concurrency);
+            swap(time, other.time);
+            return *this;
         }
     };
 
@@ -305,8 +316,6 @@ void run()
     auto output = std::make_shared<rxcpp::EventLoopScheduler>();
 
     auto dataLines = Data("data.txt");
-
-    int arggroupcount = 0;
 
     rxcpp::from(dataLines)
         .subscribe_on(input)
@@ -373,10 +382,10 @@ template<class Scheduler>
 void innerScheduler() {
     auto outer = std::make_shared<Scheduler>();
     rxcpp::Scheduler::shared inner;
-    outer->Schedule([&](rxcpp::Scheduler::shared s){
+    outer->Schedule([&](rxcpp::Scheduler::shared s) -> rxcpp::Disposable {
         inner = s; return rxcpp::Disposable::Empty();});
     while(!inner);
-    inner->Schedule([&](rxcpp::Scheduler::shared s){
+    inner->Schedule([&](rxcpp::Scheduler::shared s) -> rxcpp::Disposable {
         inner = nullptr; return rxcpp::Disposable::Empty();});
     while(!!inner);
     cout << "innerScheduler test succeeded" << endl;
