@@ -129,6 +129,11 @@
 #define CPPLINQ_LINQ_HPP
 #pragma once
 
+#pragma push_macro("min")
+#pragma push_macro("max")
+#undef min
+#undef max
+
 #include <functional>
 #include <iterator>
 #include <algorithm>
@@ -541,6 +546,9 @@ linq_driver<TContainer> from_value(const TContainer& c)
 }
 
 }
+
+#pragma pop_macro("min")
+#pragma pop_macro("max")
 
 #endif // defined(CPPLINQ_LINQ_HPP)
 
