@@ -177,16 +177,16 @@ namespace cpplinq {
 
 
         iter_cursor(Iterator start, Iterator fin)
-        : start(start)
+        : current(start)
+        , start(start)
         , fin(std::move(fin))
-        , current(start)
         {
         }
 
         iter_cursor(Iterator start, Iterator fin, Iterator current)
-        : start(std::move(start))
+        : current(std::move(current))
+        , start(std::move(start))
         , fin(std::move(fin))
-        , current(std::move(current))
         {
         }
 
