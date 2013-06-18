@@ -538,7 +538,7 @@ namespace rxcpp
         });
     }
 
-    std::shared_ptr<Observable<size_t>> Interval(
+    inline std::shared_ptr<Observable<size_t>> Interval(
         Scheduler::clock::duration due,
         Scheduler::shared scheduler)
     {
@@ -675,16 +675,20 @@ namespace rxcpp
         std::condition_variable wake;
         bool done = false;
         std::exception_ptr error;
-        auto observer = CreateObserver<T>(std::move(onNext), [&]{
-            std::unique_lock<std::mutex> guard(lock);
-            done = true;
-            wake.notify_one();
-        }, [&](const std::exception_ptr& e){
-            std::unique_lock<std::mutex> guard(lock);
-            done = true;
-            error = std::move(e);
-            wake.notify_one();
-        });
+        auto observer = CreateObserver<T>(std::move(onNext), 
+        //on completed
+            [&]{
+                std::unique_lock<std::mutex> guard(lock);
+                done = true;
+                wake.notify_one();
+            }, 
+        //on error
+            [&](const std::exception_ptr& e){
+                std::unique_lock<std::mutex> guard(lock);
+                done = true;
+                error = std::move(e);
+                wake.notify_one();
+            });
         
         source->Subscribe(observer);
 
