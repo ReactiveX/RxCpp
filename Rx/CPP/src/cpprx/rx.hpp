@@ -8,11 +8,24 @@
 
 namespace rxcpp
 {
+    template<class Obj>
+    class Binder;
+
+    template<class Obj>
+    class Binder<Binder<Obj>>;
+
+namespace detail {
+    template<class Obj>
+    struct observable_item<Binder<Obj>> {typedef typename rxcpp::observable_item<Obj>::type type;};
+}
+
     template<class T, class Obj>
     class BinderBase
     {
     protected:
         Obj obj;
+        template<class U, class V>
+        friend V rxcpp::observable(const BinderBase<U, V>& b);
 
     public:
         typedef T item_type;
@@ -21,7 +34,16 @@ namespace rxcpp
         BinderBase(Obj obj) : obj(std::move(obj))
         {
         }
+
+        Observable<T>* operator->() const {
+            return obj.get();
+        }
     };
+
+    template<class T, class Obj>
+    Obj observable(const BinderBase<T, Obj>& b) {
+        return b.obj;
+    }
 
     template<class T, class Obj, bool IsTObservable>
     class BinderNested;
@@ -66,7 +88,7 @@ namespace rxcpp
             return      from(Concat(obj));
         }
     };
-    
+
     template<class Obj>
     class Binder : public BinderNested<
         typename observable_item<Obj>::type,
@@ -103,60 +125,60 @@ namespace rxcpp
 #if RXCPP_USE_VARIADIC_TEMPLATES
         template <class... MergeSource>
         auto merge(const MergeSource&... source) 
-            -> decltype(from(Merge(obj, source...))) {
-            return      from(Merge(obj, source...));
+            -> decltype(from(Merge(obj, observable(source)...))) {
+            return      from(Merge(obj, observable(source)...));
         }
 #else
         template <class MergeSource>
         auto merge(const MergeSource& source) 
-            -> decltype(from(Merge(obj, source))) {
-            return      from(Merge(obj, source));
+            -> decltype(from(Merge(obj, observable(source)))) {
+            return      from(Merge(obj, observable(source)));
         }
 #endif //RXCPP_USE_VARIADIC_TEMPLATES
 #if RXCPP_USE_VARIADIC_TEMPLATES
         template <class S, class... ZipSource>
         auto zip(S selector, const ZipSource&... source) 
-            -> decltype(from(Zip(selector, obj, source...))) {
-            return      from(Zip(selector, obj, source...));
+            -> decltype(from(Zip(selector, obj, observable(source)...))) {
+            return      from(Zip(selector, obj, observable(source)...));
         }
         template <class... Zip1Source>
         auto zip(const Zip1Source&... source) 
-            -> decltype(from(Zip(util::as_tuple(), obj, source...))) {
-            return      from(Zip(util::as_tuple(), obj, source...));
+            -> decltype(from(Zip(util::as_tuple(), obj, observable(source)...))) {
+            return      from(Zip(util::as_tuple(), obj, observable(source)...));
         }
 #else
         template <class S, class ZipSource>
         auto zip(S selector, const ZipSource& source) 
-            -> decltype(from(Zip(selector, obj, source))) {
-            return      from(Zip(selector, obj, source));
+            -> decltype(from(Zip(selector, obj, observable(source)))) {
+            return      from(Zip(selector, obj, observable(source)));
         }
         template <class Zip1Source>
         auto zip(const Zip1Source& source) 
-            -> decltype(from(Zip(util::as_tuple(), obj, source))) {
-            return      from(Zip(util::as_tuple(), obj, source));
+            -> decltype(from(Zip(util::as_tuple(), obj, observable(source)))) {
+            return      from(Zip(util::as_tuple(), obj, observable(source)));
         }
 #endif //RXCPP_USE_VARIADIC_TEMPLATES
 #if RXCPP_USE_VARIADIC_TEMPLATES
         template <class S, class... CombineLSource>
         auto combine_latest(S selector, const CombineLSource&... source) 
-            -> decltype(from(CombineLatest(selector, obj, source...))) {
-            return      from(CombineLatest(selector, obj, source...));
+            -> decltype(from(CombineLatest(selector, obj, observable(source)...))) {
+            return      from(CombineLatest(selector, obj, observable(source)...));
         }
         template <class... CombineL1Source>
         auto combine_latest(const CombineL1Source&... source) 
-            -> decltype(from(CombineLatest(util::as_tuple(), obj, source...))) {
-            return      from(CombineLatest(util::as_tuple(), obj, source...));
+            -> decltype(from(CombineLatest(util::as_tuple(), obj, observable(source)...))) {
+            return      from(CombineLatest(util::as_tuple(), obj, observable(source)...));
         }
 #else
         template <class S, class CombineLSource>
         auto combine_latest(S selector, const CombineLSource& source) 
-            -> decltype(from(CombineLatest(selector, obj, source))) {
-            return      from(CombineLatest(selector, obj, source));
+            -> decltype(from(CombineLatest(selector, obj, observable(source)))) {
+            return      from(CombineLatest(selector, obj, observable(source)));
         }
         template <class CombineLSource>
         auto combine_latest(const CombineLSource& source) 
-            -> decltype(from(CombineLatest(util::as_tuple(), obj, source))) {
-            return      from(CombineLatest(util::as_tuple(), obj, source));
+            -> decltype(from(CombineLatest(util::as_tuple(), obj, observable(source)))) {
+            return      from(CombineLatest(util::as_tuple(), obj, observable(source)));
         }
 #endif //RXCPP_USE_VARIADIC_TEMPLATES
 
@@ -167,7 +189,7 @@ namespace rxcpp
             -> decltype(from(Concat(Iterate(std::vector<Obj>())))) {
             std::vector<Obj> sources;
             sources.push_back(obj);
-            std::make_tuple((sources.push_back(source), true)...);
+            std::make_tuple((sources.push_back(observable(source)), true)...);
             return      from(Concat(Iterate(std::move(sources))));
         }
 #else
@@ -175,7 +197,7 @@ namespace rxcpp
             -> decltype(from(Concat(Iterate(std::vector<Obj>())))) {
             std::vector<Obj> sources;
             sources.push_back(obj);
-            sources.push_back(source);
+            sources.push_back(observable(source));
             return      from(Concat(Iterate(std::move(sources))));
         }
 #endif //RXCPP_USE_VARIADIC_TEMPLATES
@@ -188,9 +210,6 @@ namespace rxcpp
         template <class P>
         auto where(P predicate) -> decltype(from(Where<item_type>(obj, predicate))) {
             return from(Where<item_type>(obj, predicate));
-        }
-        Obj publish() {
-            return obj;
         }
         template <class KS>
         auto group_by(

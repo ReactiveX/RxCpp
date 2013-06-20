@@ -70,16 +70,14 @@ void Concat(int n)
         .subscribe_on(input1)
         .where(IsPrime)
         .select([](int prime) -> std::tuple<const char *, int> {this_thread::yield(); return std::make_tuple("1:", prime);})
-        .take(n/2)
-        .publish();
+        .take(n/2);
 
     auto values2 = rxcpp::Range(2); // infinite (until overflow) stream of integers
     auto s2 = rxcpp::from(values2)
         .subscribe_on(input2)
         .where(IsPrime)
         .select([](int prime) -> std::tuple<const char *, int> {this_thread::yield(); return std::make_tuple("2:", prime);})
-        .take(n/2)
-        .publish();
+        .take(n/2);
 
     rxcpp::from(s2)
         .concat(s1)
@@ -101,8 +99,7 @@ void Combine(int n)
     auto s1 = rxcpp::from(values1)
         .subscribe_on(input1)
         .where(IsPrime)
-        .select([](int prime) -> int {this_thread::yield(); return prime;})
-        .publish();
+        .select([](int prime) -> int {this_thread::yield(); return prime;});
 
     auto values2 = rxcpp::Range(2); // infinite (until overflow) stream of integers
     rxcpp::from(values2)
@@ -180,8 +177,7 @@ void Zip(int n)
         .subscribe_on(input1)
         .where(IsPrime)
         .template chain<record>(&s1count)
-        .select([](int prime) -> int {this_thread::yield(); return prime;})
-        .publish();
+        .select([](int prime) -> int {this_thread::yield(); return prime;});
 
     auto values2 = rxcpp::Range(2); // infinite (until overflow) stream of integers
     rxcpp::from(values2)
@@ -220,8 +216,7 @@ void Merge(int n)
     auto s1 = rxcpp::from(values1)
         .subscribe_on(input1)
         .where(IsPrime)
-        .select([](int prime1) -> std::tuple<const char *, int> {this_thread::yield(); return std::make_tuple("1: ", prime1);})
-        .publish();
+        .select([](int prime1) -> std::tuple<const char *, int> {this_thread::yield(); return std::make_tuple("1: ", prime1);});
 
     auto values2 = rxcpp::Range(2); // infinite (until overflow) stream of integers
     rxcpp::from(values2)
@@ -250,7 +245,7 @@ void PrintIntervals(int n) {
 
     cout << n << " Intervals of .5 second: " << endl;
     rxcpp::from(subject)
-        .zip(rxcpp::from(subject).skip(1).publish())
+        .zip(rxcpp::from(subject).skip(1))
         .select(rxcpp::MakeTupleDispatch(
             [=](Tick a, Tick b){
                 return duration_cast<milliseconds>(b.at.time_since_epoch()) - 
@@ -341,14 +336,12 @@ void run()
                             return rxcpp::from(concurrencyGroup)
                                 .select([](const item& i){
                                     return i.time;})
-                                .to_vector()
-                                .publish();}, 
+                                .to_vector();}, 
                         [](const std::shared_ptr<rxcpp::GroupedObservable<int, item>> & concurrencyGroup,
                             const std::vector<double> & times){
                                 return std::make_tuple(concurrencyGroup->Key(), times);}
                     )
-                    .to_vector()
-                    .publish();}, 
+                    .to_vector();}, 
             [](const std::shared_ptr<rxcpp::GroupedObservable<std::string, item>> & argsGroup,
                 const std::vector<std::tuple<int, std::vector<double>>> & ouputGroup){
                     return std::make_tuple(argsGroup->Key(), ouputGroup);}
