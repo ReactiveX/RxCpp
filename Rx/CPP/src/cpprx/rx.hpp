@@ -25,7 +25,7 @@ namespace detail {
     protected:
         Obj obj;
         template<class U, class V>
-        friend V rxcpp::observable(const BinderBase<U, V>& b);
+        friend V observable(const BinderBase<U, V>& b);
 
     public:
         typedef T item_type;
@@ -193,7 +193,8 @@ namespace detail {
             return      from(Concat(Iterate(std::move(sources))));
         }
 #else
-        auto concat(const Obj& source) 
+        template<class ConcatSource>
+        auto concat(const ConcatSource& source) 
             -> decltype(from(Concat(Iterate(std::vector<Obj>())))) {
             std::vector<Obj> sources;
             sources.push_back(obj);
