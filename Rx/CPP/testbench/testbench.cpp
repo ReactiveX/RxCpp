@@ -376,16 +376,23 @@ void innerScheduler() {
     auto outer = std::make_shared<Scheduler>();
     rxcpp::Scheduler::shared inner;
     std::mutex lock;
-    std::unique_lock<std::mutex> guard(lock);
     std::condition_variable wake;
     outer->Schedule([&](rxcpp::Scheduler::shared s) -> rxcpp::Disposable {
+        std::lock_guard<std::mutex> guard(lock);
         inner = s; wake.notify_one();
         return rxcpp::Disposable::Empty();});
+    {
+        std::unique_lock<std::mutex> guard(lock);
         wake.wait(guard, [&]{return !!inner;});
+    }
     inner->Schedule([&](rxcpp::Scheduler::shared s) -> rxcpp::Disposable {
+        std::lock_guard<std::mutex> guard(lock);
         inner = nullptr; wake.notify_one();
         return rxcpp::Disposable::Empty();});
+    {
+        std::unique_lock<std::mutex> guard(lock);
         wake.wait(guard, [&]{return !inner;});
+    }
     cout << "innerScheduler test succeeded" << endl;
 }
 
