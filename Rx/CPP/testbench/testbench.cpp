@@ -375,12 +375,17 @@ template<class Scheduler>
 void innerScheduler() {
     auto outer = std::make_shared<Scheduler>();
     rxcpp::Scheduler::shared inner;
+    std::mutex lock;
+    std::unique_lock<std::mutex> guard(lock);
+    std::condition_variable wake;
     outer->Schedule([&](rxcpp::Scheduler::shared s) -> rxcpp::Disposable {
-        inner = s; return rxcpp::Disposable::Empty();});
-    while(!inner);
+        inner = s; wake.notify_one();
+        return rxcpp::Disposable::Empty();});
+        wake.wait(guard, [&]{return !!inner;});
     inner->Schedule([&](rxcpp::Scheduler::shared s) -> rxcpp::Disposable {
-        inner = nullptr; return rxcpp::Disposable::Empty();});
-    while(!!inner);
+        inner = nullptr; wake.notify_one();
+        return rxcpp::Disposable::Empty();});
+        wake.wait(guard, [&]{return !inner;});
     cout << "innerScheduler test succeeded" << endl;
 }
 
