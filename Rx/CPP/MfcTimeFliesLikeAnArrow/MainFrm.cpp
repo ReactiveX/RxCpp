@@ -104,8 +104,8 @@ void CMainFrame::UserInit()
                 label->Invalidate();
 
                 // repaint early, for fluid animation
-                label->UpdateWindow();
-                //this->UpdateWindow();
+                //label->UpdateWindow();
+                this->UpdateWindow();
             }));
 
         composableDisposable.Add(std::move(s));
