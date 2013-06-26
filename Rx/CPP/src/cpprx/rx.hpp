@@ -240,8 +240,8 @@ namespace detail {
         }
         template <class U>
         auto take_until(std::shared_ptr<Observable<U>> terminus) 
-            -> decltype(from(TakeUntil<item_type>(obj, terminus))) {
-            return      from(TakeUntil<item_type>(obj, terminus));
+            -> decltype(from(TakeUntil<item_type>(obj, observable(terminus)))) {
+            return      from(TakeUntil<item_type>(obj, observable(terminus)));
         }
         template <class Integral>
         auto skip(Integral n) 
@@ -250,8 +250,8 @@ namespace detail {
         }
         template <class U>
         auto skip_until(std::shared_ptr<Observable<U>> terminus) 
-            -> decltype(from(SkipUntil<item_type>(obj, terminus))) {
-            return      from(SkipUntil<item_type>(obj, terminus));
+            -> decltype(from(SkipUntil<item_type>(obj, observable(terminus)))) {
+            return      from(SkipUntil<item_type>(obj, observable(terminus)));
         }
         template<template<class Value>class Allocator>
         auto to_vector() 
