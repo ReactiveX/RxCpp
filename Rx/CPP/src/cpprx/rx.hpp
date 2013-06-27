@@ -238,8 +238,8 @@ namespace detail {
             -> decltype(from(Take<item_type>(obj, n))) {
             return      from(Take<item_type>(obj, n));
         }
-        template <class U>
-        auto take_until(std::shared_ptr<Observable<U>> terminus) 
+        template <class TakeUntilTerminus>
+        auto take_until(const TakeUntilTerminus& terminus) 
             -> decltype(from(TakeUntil<item_type>(obj, observable(terminus)))) {
             return      from(TakeUntil<item_type>(obj, observable(terminus)));
         }
@@ -248,8 +248,8 @@ namespace detail {
             -> decltype(from(Skip<item_type>(obj, n))) {
             return      from(Skip<item_type>(obj, n));
         }
-        template <class U>
-        auto skip_until(std::shared_ptr<Observable<U>> terminus) 
+        template <class SkipUntilTerminus>
+        auto skip_until(const SkipUntilTerminus& terminus) 
             -> decltype(from(SkipUntil<item_type>(obj, observable(terminus)))) {
             return      from(SkipUntil<item_type>(obj, observable(terminus)));
         }
