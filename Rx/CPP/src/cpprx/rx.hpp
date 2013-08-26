@@ -89,11 +89,30 @@ namespace detail {
         }
     };
 
+    template<class T, class Obj>
+    class BinderConnectable
+    {
+    };
+
+    template<class T>
+    class BinderConnectable<T, std::shared_ptr<ConnectableObservable<T>>>
+    {
+    public:
+        auto ref_count()
+            -> decltype(from(RefCount(obj))) {
+                return  from(RefCount(obj));
+        }
+    };
+
     template<class Obj>
     class Binder : public BinderNested<
         typename observable_item<Obj>::type,
         Obj,
-        is_observable<typename observable_item<Obj>::type>::value>
+        is_observable<typename observable_item<Obj>::type>::value>,
+    public BinderConnectable<
+        typename observable_item<Obj>::type,
+        Obj
+        >
     {
         typedef BinderNested<
         typename observable_item<Obj>::type,
@@ -253,6 +272,23 @@ namespace detail {
             -> decltype(from(SkipUntil<item_type>(obj, observable(terminus)))) {
             return      from(SkipUntil<item_type>(obj, observable(terminus)));
         }
+        template<class MulticastSubject>
+        auto multicast(MulticastSubject subject)
+            -> decltype(from(Multicast(obj, subject))) {
+                return  from(Multicast(obj, subject));
+        }
+        auto publish()
+            -> decltype(from(Publish(obj))) {
+                return  from(Publish(obj));
+        }
+        auto publish(item_type value)
+            -> decltype(from(Publish(obj, value))) {
+                return  from(Publish(obj, value));
+        }
+        auto publish_last()
+            -> decltype(from(PublishLast(obj))) {
+                return  from(PublishLast(obj));
+        }
         template<template<class Value>class Allocator>
         auto to_vector() 
             -> decltype(from(ToStdCollection<std::vector<item_type, Allocator<item_type>>>(obj))) {
@@ -294,11 +330,19 @@ namespace detail {
         {
             return from(ObserveOnObserver<item_type>(obj, std::move(scheduler)));
         }
-        auto on_dispatcher() 
+#if RXCPP_USE_WINRT
+        auto observe_on_dispatcher()
+            -> decltype(from(ObserveOnObserver<item_type>(obj, std::static_pointer_cast<Scheduler>(winrt::CoreDispatcherScheduler::Current()))))
+        {
+            return		from(ObserveOnObserver<item_type>(obj, std::static_pointer_cast<Scheduler>(winrt::CoreDispatcherScheduler::Current())));
+        }
+#else
+        auto on_dispatcher()
         -> decltype(from(ObserveOnDispatcher<item_type>(obj)))
         {
             return from(ObserveOnDispatcher<item_type>(obj));
         }
+#endif
         template <class OnNext>
         void for_each(OnNext onNext) {
             ForEach<item_type>(obj, onNext);
@@ -422,6 +466,10 @@ namespace detail {
     template<class T>
     Binder<std::shared_ptr<Observable<T>>> from(std::shared_ptr<Observable<T>> obj) { 
         return Binder<std::shared_ptr<Observable<T>>>(std::move(obj)); }
+
+    template<class T>
+    Binder < std::shared_ptr < ConnectableObservable<T >> > from(std::shared_ptr < ConnectableObservable < T >> obj) {
+        return Binder < std::shared_ptr < ConnectableObservable<T >> >(std::move(obj)); }
 
     template<class K, class T>
     Binder<std::shared_ptr<GroupedObservable<K, T>>> from(std::shared_ptr<GroupedObservable<K, T>> obj) { 

@@ -65,6 +65,13 @@ namespace rxcpp
         virtual ~GroupedObservable() {}
     };
 
+    template <class T>
+    struct ConnectableObservable : Observable<T>
+    {
+        virtual Disposable Connect() = 0;
+        virtual ~ConnectableObservable() {}
+    };
+
     struct Scheduler : public std::enable_shared_from_this<Scheduler>
     {
         typedef std::chrono::steady_clock clock;
@@ -387,6 +394,12 @@ namespace rxcpp
     template<class T>
     class BehaviorSubject;
 
+    template<class T>
+    class AsyncSubject;
+
+    template<class Source, class Subject>
+    class ConnectableSubject;
+
     template<class K, class T>
     class GroupedSubject;
 
@@ -408,6 +421,12 @@ namespace rxcpp
     template<class T>
     struct is_observable<std::shared_ptr<BehaviorSubject<T>>> {static const bool value = true;};
 
+    template<class T>
+    struct is_observable < std::shared_ptr < AsyncSubject<T >> > {static const bool value = true; };
+
+    template<class Source, class Subject>
+    struct is_observable < std::shared_ptr < ConnectableSubject<Source, Subject >> > {static const bool value = true; };
+
     template<class K, class T>
     struct is_observable<std::shared_ptr<GroupedObservable<K, T>>> {static const bool value = true;};
 
@@ -420,6 +439,9 @@ namespace detail {
 
     template<class T>
     struct observable_item<std::shared_ptr<Observable<T>>> {typedef T type;};
+
+    template<class T>
+    struct observable_item < std::shared_ptr < ConnectableObservable<T >> > {typedef T type; };
 
     template<class K, class T>
     struct observable_item<std::shared_ptr<GroupedObservable<K, T>>> {typedef T type;};
@@ -435,6 +457,9 @@ namespace detail {
 
     template<class T>
     struct observable_observer<std::shared_ptr<Observable<T>>> {typedef std::shared_ptr<Observer<T>> type;};
+
+    template<class T>
+    struct observable_observer < std::shared_ptr < ConnectableObservable<T >> > {typedef std::shared_ptr < Observer < T >> type; };
 
     template<class K, class T>
     struct observable_observer<std::shared_ptr<GroupedObservable<K, T>>> {typedef std::shared_ptr<Observer<T>> type;};
@@ -454,6 +479,12 @@ namespace detail {
     template<class T>
     struct subject_item<std::shared_ptr<BehaviorSubject<T>>> {typedef T type;};
 
+    template<class T>
+    struct subject_item < std::shared_ptr < AsyncSubject<T >> > {typedef T type; };
+
+    template<class Source, class Subject>
+    struct subject_item < std::shared_ptr < ConnectableSubject<Source, Subject >> > : subject_item<Subject> {};
+
     template<class K, class T>
     struct subject_item<std::shared_ptr<GroupedSubject<K, T>>> {typedef T type;};
 
@@ -466,6 +497,12 @@ namespace detail {
     template<class T>
     struct subject_observer<std::shared_ptr<BehaviorSubject<T>>> {typedef std::shared_ptr<Observer<T>> type;};
 
+    template<class T>
+    struct subject_observer < std::shared_ptr < AsyncSubject<T >> > {typedef std::shared_ptr < Observer < T >> type; };
+
+    template<class Source, class Subject>
+    struct subject_observer < std::shared_ptr < ConnectableSubject<Source, Subject >> > : subject_observer<Subject> {};
+
     template<class Subject>
     struct subject_observable;
 
@@ -476,19 +513,51 @@ namespace detail {
     struct subject_observable<std::shared_ptr<BehaviorSubject<T>>> {typedef std::shared_ptr<Observable<T>> type;};
 
     template<class T>
+    struct subject_observable < std::shared_ptr < AsyncSubject<T >> > {typedef std::shared_ptr < Observable < T >> type; };
+
+    template<class Source, class Subject>
+    struct subject_observable < std::shared_ptr < ConnectableSubject<Source, Subject >> > : subject_observable<Subject> {};
+
+    template<class T>
+    std::shared_ptr<Observable<T>> observable(const std::shared_ptr < Observable < T >> &o){ return o; }
+
+    template<class K, class T>
+    std::shared_ptr<Observable<T>> observable(const std::shared_ptr < GroupedObservable < K, T >> &o){ return std::static_pointer_cast < Observable < T >> (o); }
+
+    template<class T>
+    std::shared_ptr< Observable < T >> observable(const std::shared_ptr < ConnectableObservable < T >> &o){
+        return std::static_pointer_cast < Observable < T >> (o); }
+
+    template<class T>
     std::shared_ptr<Observable<T>> observable(const std::shared_ptr<Subject<T>>& s){return std::static_pointer_cast<Observable<T>>(s);}
 
     template<class T>
     std::shared_ptr<Observable<T>> observable(const std::shared_ptr<BehaviorSubject<T>>& s){return std::static_pointer_cast<Observable<T>>(s);}
 
+    template<class T>
+    std::shared_ptr<Observable<T>> observable(const std::shared_ptr < AsyncSubject < T >> &s){ return std::static_pointer_cast < Observable < T >> (s); }
+
+    template<class Source, class Subject>
+    typename subject_observable<Subject>::type observable(const std::shared_ptr < ConnectableSubject < Source, Subject >> &s){ 
+        return std::static_pointer_cast < Observable < typename subject_item<Subject>::type >> (s); }
+
     template<class K, class T>
     std::shared_ptr<Observable<T>> observable(const std::shared_ptr<GroupedSubject<K, T>>& s){return std::static_pointer_cast<Observable<T>>(s);}
+
+    template<class T>
+    std::shared_ptr<Observer<T>> observer(const std::shared_ptr < Observer < T >> &o){ return o; }
 
     template<class T>
     std::shared_ptr<Observer<T>> observer(const std::shared_ptr<Subject<T>>& s){return std::static_pointer_cast<Observer<T>>(s);}
 
     template<class T>
     std::shared_ptr<Observer<T>> observer(const std::shared_ptr<BehaviorSubject<T>>& s){return std::static_pointer_cast<Observer<T>>(s);}
+
+    template<class T>
+    std::shared_ptr<Observer<T>> observer(const std::shared_ptr < AsyncSubject < T >> &s){ return std::static_pointer_cast < Observer < T >> (s); }
+
+    template<class Source, class Subject>
+    void observer(const std::shared_ptr < ConnectableSubject < Source, Subject >> &s); // no observer
 
     template<class K, class T>
     std::shared_ptr<Observer<T>> observer(const std::shared_ptr<GroupedSubject<K, T>>& s){return std::static_pointer_cast<Observer<T>>(s);}
