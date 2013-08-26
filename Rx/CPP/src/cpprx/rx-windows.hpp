@@ -7,7 +7,7 @@
 #define CPPRX_RX_WINDOWS_HPP
 #pragma once
 
-#if defined(WINDOWS) || defined(WIN32) || defined(_WIN32)
+#if defined(BUILDING_FOR_DESKTOP) && (defined(WINDOWS) || defined(WIN32) || defined(_WIN32))
 
 #pragma comment(lib, "user32.lib")
 

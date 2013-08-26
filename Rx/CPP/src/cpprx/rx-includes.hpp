@@ -53,6 +53,12 @@
 
 #endif
 
+#if !defined(WINAPI_FAMILY) || (WINAPI_FAMILY == WINAPI_FAMILY_DESKTOP_APP)
+#define RXCPP_USE_WINRT 0
+#else
+#define RXCPP_USE_WINRT 1
+#endif
+
 #if defined(RXCPP_FORCE_USE_VARIADIC_TEMPLATES)
 #undef RXCPP_USE_VARIADIC_TEMPLATES
 #define RXCPP_USE_VARIADIC_TEMPLATES RXCPP_FORCE_USE_VARIADIC_TEMPLATES
@@ -68,11 +74,17 @@
 #define RXCPP_USE_RTTI RXCPP_FORCE_USE_RTTI
 #endif
 
+#if defined(RXCPP_FORCE_USE_WINRT)
+#undef RXCPP_USE_WINRT
+#define RXCPP_USE_WINRT RXCPP_FORCE_USE_WINRT
+#endif
+
 #include "rx-util.hpp"
 #include "rx-base.hpp"
 #include "rx-scheduler.hpp"
 #include "rx-windows.hpp"
 #include "rx-operators.hpp"
+#include "rx-winrt.hpp"
 
 #pragma pop_macro("min")
 #pragma pop_macro("max")
