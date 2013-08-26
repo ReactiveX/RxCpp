@@ -110,6 +110,7 @@ namespace rxcpp { namespace util {
 
         maybe& operator=(const T& other) {
             set(other);
+            return *this;
         }
         maybe& operator=(const maybe& other) {
             if (const T* pother = other.get()) {
