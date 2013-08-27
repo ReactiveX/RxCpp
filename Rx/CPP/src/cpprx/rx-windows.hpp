@@ -7,7 +7,7 @@
 #define CPPRX_RX_WINDOWS_HPP
 #pragma once
 
-#if defined(BUILDING_FOR_DESKTOP) && (defined(WINDOWS) || defined(WIN32) || defined(_WIN32))
+#if (!defined(WINAPI_FAMILY) || (WINAPI_FAMILY == WINAPI_FAMILY_DESKTOP_APP)) && (defined(WINDOWS) || defined(WIN32) || defined(_WIN32))
 
 #pragma comment(lib, "user32.lib")
 
