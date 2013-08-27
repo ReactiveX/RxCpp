@@ -45,19 +45,18 @@ namespace detail {
         return b.obj;
     }
 
-    template<class T, class Obj, bool IsTObservable>
+    template<class Base, class T, class Obj, bool IsTObservable>
     class BinderNested;
 
-    template<class T, class Obj>
-    class BinderNested<T, Obj, false> : public BinderBase<T, Obj>
+    template<class Base, class T, class Obj>
+    class BinderNested<Base, T, Obj, false> : public Base
     {
     protected:
-        typedef BinderBase<T, Obj> base;
-        typedef typename base::item_type item_type;
-        using base::obj;
+        typedef typename Base::item_type item_type;
+        using Base::obj;
     public:
         static const bool is_item_observable = false;
-        BinderNested(Obj obj) : BinderBase<T, Obj>(std::move(obj))
+        BinderNested(Obj obj) : Base(std::move(obj))
         {
         }
 
@@ -65,17 +64,16 @@ namespace detail {
         void concat();
     };
 
-    template<class T, class Obj>
-    class BinderNested<T, Obj, true> : public BinderBase<T, Obj>
+    template<class Base, class T, class Obj>
+    class BinderNested<Base, T, Obj, true> : public Base
     {
     protected:
-        typedef BinderBase<T, Obj> base;
-        typedef typename base::item_type item_type;
-        using base::obj;
+        typedef typename Base::item_type item_type;
+        using Base::obj;
     public:
         static const bool is_item_observable = true;
 
-        BinderNested(Obj obj) : base(std::move(obj))
+        BinderNested(Obj obj) : Base(std::move(obj))
         {
         }
         
@@ -89,15 +87,23 @@ namespace detail {
         }
     };
 
-    template<class T, class Obj>
-    class BinderConnectable
-    {
-    };
-
-    template<class T>
-    class BinderConnectable<T, std::shared_ptr<ConnectableObservable<T>>>
+    template<class Base, class T, class Obj>
+    class BinderConnectable : public Base
     {
     public:
+        BinderConnectable(Obj obj) : Base(std::move(obj))
+        {
+        }
+    };
+
+    template<class Base, class T>
+    class BinderConnectable<Base, T, std::shared_ptr<ConnectableObservable<T>>> : public Base
+    {
+    public:
+        BinderConnectable(std::shared_ptr<ConnectableObservable<T>> obj) : Base(std::move(obj))
+        {
+        }
+
         auto ref_count()
             -> decltype(from(RefCount(obj))) {
                 return  from(RefCount(obj));
@@ -106,15 +112,21 @@ namespace detail {
 
     template<class Obj>
     class Binder : public BinderNested<
+        BinderConnectable<
+            BinderBase<typename observable_item<Obj>::type, Obj>,
+            typename observable_item<Obj>::type,
+            Obj
+        >,
         typename observable_item<Obj>::type,
         Obj,
-        is_observable<typename observable_item<Obj>::type>::value>,
-    public BinderConnectable<
-        typename observable_item<Obj>::type,
-        Obj
-        >
+        is_observable<typename observable_item<Obj>::type>::value>
     {
         typedef BinderNested<
+        BinderConnectable<
+            BinderBase<typename observable_item<Obj>::type, Obj>,
+            typename observable_item<Obj>::type,
+            Obj
+        >,
         typename observable_item<Obj>::type,
         Obj,
         is_observable<typename observable_item<Obj>::type>::value> base;
@@ -274,20 +286,20 @@ namespace detail {
         }
         template<class MulticastSubject>
         auto multicast(MulticastSubject subject)
-            -> decltype(from(Multicast(obj, subject))) {
-                return  from(Multicast(obj, subject));
+            -> decltype(from(Multicast(observable(obj), subject))) {
+                return  from(Multicast(observable(obj), subject));
         }
         auto publish()
-            -> decltype(from(Publish(obj))) {
-                return  from(Publish(obj));
+            -> decltype(from(Publish(observable(obj)))) {
+                return  from(Publish(observable(obj)));
         }
         auto publish(item_type value)
-            -> decltype(from(Publish(obj, value))) {
-                return  from(Publish(obj, value));
+            -> decltype(from(Publish(observable(obj), value))) {
+                return  from(Publish(observable(obj), value));
         }
         auto publish_last()
-            -> decltype(from(PublishLast(obj))) {
-                return  from(PublishLast(obj));
+            -> decltype(from(PublishLast(observable(obj)))) {
+                return  from(PublishLast(observable(obj)));
         }
         template<template<class Value>class Allocator>
         auto to_vector() 
