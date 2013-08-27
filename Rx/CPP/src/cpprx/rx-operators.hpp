@@ -356,6 +356,7 @@ namespace rxcpp
         public Observer<T>
     {
         std::mutex lock;
+        size_t slotCount;
         T value;
         SubjectState::type state;
         util::maybe<std::exception_ptr> error;
@@ -366,7 +367,10 @@ namespace rxcpp
             std::unique_lock<decltype(lock)> guard(lock);
             auto it = std::find(begin(observers), end(observers), toRemove);
             if (it != end(observers))
+            {
                 *it = nullptr;
+                ++slotCount;
+            }
         }
 
         BehaviorSubject();
@@ -374,7 +378,7 @@ namespace rxcpp
 
         typedef std::shared_ptr<BehaviorSubject<T>> shared;
 
-        explicit BehaviorSubject(T t) : value(std::move(t)), state(SubjectState::Forwarding) {}
+        explicit BehaviorSubject(T t) : slotCount(0), value(std::move(t)), state(SubjectState::Forwarding) {}
         
         virtual ~BehaviorSubject() {
             // putting this first means that the observers
@@ -417,28 +421,36 @@ namespace rxcpp
 
                 if (state == SubjectState::Forwarding)
                 {
-                    for(auto& o : observers)
+                    if (slotCount > 0)
                     {
-                        if (!o){
-                            o = std::move(observer);
-                            return d;
+                        for(auto& o : observers)
+                        {
+                            if (!o)
+                            {
+                                o = observer;
+                                --slotCount;
+                                break;
+                            }
                         }
                     }
-                    observers.push_back(observer);
+                    else
+                    {
+                        observers.push_back(observer);
+                    }
                 }
             }
 
             if (localState == SubjectState::Completed) {
-                observer->OnNext(localValue.get());
+                observer->OnNext(*localValue.get());
                 observer->OnCompleted();
                 return Disposable::Empty();
             }
             else if (localState == SubjectState::Error) {
-                observer->OnError(localError.get());
+                observer->OnError(*localError.get());
                 return Disposable::Empty();
             }
             else if (localState == SubjectState::Forwarding) {
-                observer->OnNext(localValue.get());
+                observer->OnNext(*localValue.get());
             }
 
             return d;
@@ -499,6 +511,7 @@ namespace rxcpp
         public Observer<T>
     {
         std::mutex lock;
+        size_t slotCount;
         util::maybe<T> value;
         SubjectState::type state;
         util::maybe<std::exception_ptr> error;
@@ -509,14 +522,17 @@ namespace rxcpp
             std::unique_lock<decltype(lock)> guard(lock);
             auto it = std::find(begin(observers), end(observers), toRemove);
             if (it != end(observers))
+            {
                 *it = nullptr;
+                ++slotCount;
+            }
         }
 
     public:
 
         typedef std::shared_ptr<AsyncSubject<T>> shared;
 
-        AsyncSubject() : value(), state(SubjectState::Forwarding) {}
+        AsyncSubject() : slotCount(0), value(), state(SubjectState::Forwarding) {}
 
         virtual ~AsyncSubject() {
             // putting this first means that the observers
@@ -558,14 +574,22 @@ namespace rxcpp
                 }
                 else if (state == SubjectState::Forwarding)
                 {
-                    for (auto& o : observers)
+                    if (slotCount > 0)
                     {
-                        if (!o){
-                            o = std::move(observer);
-                            return d;
+                        for (auto& o : observers)
+                        {
+                            if (!o)
+                            {
+                                o = observer;
+                                --slotCount;
+                                break;
+                            }
                         }
                     }
-                    observers.push_back(observer);
+                    else
+                    {
+                        observers.push_back(observer);
+                    }
                 }
             }
 
@@ -656,7 +680,9 @@ namespace rxcpp
     }
 
     template <class Source, class Subject>
-    class ConnectableSubject : ConnectableObservable<typename subject_item<Subject>::type>
+    class ConnectableSubject : 
+            public std::enable_shared_from_this<ConnectableSubject<Source, Subject>>,
+            public ConnectableObservable<typename subject_item<Subject>::type>
     {
     private:
         ConnectableSubject();
@@ -680,12 +706,13 @@ namespace rxcpp
             {
                 subscription.set(source->Subscribe(observer(subject)));
             }
-            return Disposable([]()
+            auto that = this->shared_from_this();
+            return Disposable([that]()
             {
-                if (subscription)
+                if (that->subscription)
                 {
-                    subscription->Dispose();
-                    subscription.reset();
+                    that->subscription->Dispose();
+                    that->subscription.reset();
                 }
             });
         }
@@ -1909,24 +1936,21 @@ namespace rxcpp
     template <class T>
     std::shared_ptr<ConnectableObservable<T>> Publish(const std::shared_ptr < Observable < T >> &source)
     {
-        typedef std::shared_ptr<Subject<T>> MulticastSubject;
-        auto multicastSubject = std::make_shared<MulticastSubject>();
+        auto multicastSubject = std::make_shared<Subject<T>>();
         return Multicast(source, multicastSubject);
     }
 
     template <class T, class V>
     std::shared_ptr<ConnectableObservable<T>> Publish(const std::shared_ptr < Observable < T >> &source, V value)
     {
-        typedef std::shared_ptr<BehaviorSubject<T>> MulticastSubject;
-        auto multicastSubject = std::make_shared<MulticastSubject>(value);
+        auto multicastSubject = std::make_shared<BehaviorSubject<T>>(value);
         return Multicast(source, multicastSubject);
     }
 
     template <class T>
     std::shared_ptr<ConnectableObservable<T>> PublishLast(const std::shared_ptr < Observable < T >> &source)
     {
-        typedef std::shared_ptr<AsyncSubject<T>> MulticastSubject;
-        auto multicastSubject = std::make_shared<MulticastSubject>();
+        auto multicastSubject = std::make_shared<AsyncSubject<T>>();
         return Multicast(source, multicastSubject);
     }
 
@@ -1937,7 +1961,7 @@ namespace rxcpp
     {
         struct State
         {
-            State() : refcount(0) {}
+            State() : refcount(0), subscription(Disposable::Empty()) {}
             std::mutex lock;
             size_t refcount;
             Disposable subscription;
@@ -1945,9 +1969,10 @@ namespace rxcpp
         auto state = std::make_shared<State>();
 
         return CreateObservable<T>(
-            [=](std::shared_ptr < Observer < T >> observer)
+            [=](std::shared_ptr < Observer < T >> observer) -> Disposable
         {
-            auto subscription = Subscribe(
+            auto subscription = std::make_shared<Disposable>(Disposable::Empty());
+            *subscription.get() = Subscribe(
                 source,
                 // on next
                 [=](const T& element)
@@ -1974,7 +1999,7 @@ namespace rxcpp
             }
 
             return Disposable([=](){
-                subscription.Dispose();
+                subscription->Dispose();
 
                 std::unique_lock<std::mutex> guard(state->lock);
                 if (--state->refcount == 0)
