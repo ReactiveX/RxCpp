@@ -90,6 +90,9 @@ namespace detail {
     template<class Base, class T, class Obj>
     class BinderConnectable : public Base
     {
+    protected:
+        typedef typename Base::item_type item_type;
+        using Base::obj;
     public:
         BinderConnectable(Obj obj) : Base(std::move(obj))
         {
@@ -99,6 +102,9 @@ namespace detail {
     template<class Base, class T>
     class BinderConnectable<Base, T, std::shared_ptr<ConnectableObservable<T>>> : public Base
     {
+    protected:
+        typedef typename Base::item_type item_type;
+        using Base::obj;
     public:
         BinderConnectable(std::shared_ptr<ConnectableObservable<T>> obj) : Base(std::move(obj))
         {

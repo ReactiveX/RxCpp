@@ -1961,18 +1961,18 @@ namespace rxcpp
     {
         struct State
         {
-            State() : refcount(0), subscription(Disposable::Empty()) {}
+            State() : refcount(0) {}
             std::mutex lock;
             size_t refcount;
-            Disposable subscription;
+            SerialDisposable subscription;
         };
         auto state = std::make_shared<State>();
 
         return CreateObservable<T>(
             [=](std::shared_ptr < Observer < T >> observer) -> Disposable
         {
-            auto subscription = std::make_shared<Disposable>(Disposable::Empty());
-            *subscription.get() = Subscribe(
+            SerialDisposable subscription;
+            subscription.Set(Subscribe(
                 source,
                 // on next
                 [=](const T& element)
@@ -1988,18 +1988,18 @@ namespace rxcpp
                 [=](const std::exception_ptr& error)
             {
                 observer->OnError(error);
-            });
+            }));
 
             {
                 std::unique_lock<std::mutex> guard(state->lock);
                 if (++state->refcount == 1)
                 {
-                    state->subscription = source->Connect();
+                    state->subscription.Set(source->Connect());
                 }
             }
 
             return Disposable([=](){
-                subscription->Dispose();
+                subscription.Dispose();
 
                 std::unique_lock<std::mutex> guard(state->lock);
                 if (--state->refcount == 0)
