@@ -232,6 +232,80 @@ void Merge(int n)
             }));
 }
 
+void RefCount(int n)
+{
+    auto loop = std::make_shared<rxcpp::EventLoopScheduler>();
+
+    auto values1 = rxcpp::from(rxcpp::Range(1))
+        .subscribe_on(loop)
+        .where(IsPrime)
+        .select([](int p){cout << endl << "producing: " << p << "-> "; return p;})
+        .publish()
+        .ref_count(); // infinite (until overflow) stream of prime integers
+
+    auto v1 = rxcpp::from(values1)
+        .select([](int prime1) -> std::tuple<const char *, int> {return std::make_tuple("1: ", prime1);});
+
+    auto v2 = rxcpp::from(values1)
+        .select([](int prime1) -> std::tuple<const char *, int> {return std::make_tuple("2: ", prime1);});
+
+    cout << "Merge 2 subscriptions to published primes:";
+    rxcpp::from(v1)
+        .merge(v2)
+        .take(n)
+        .for_each(rxcpp::MakeTupleDispatch(
+            [](const char* s, int p) {
+                cout << s << p << ", ";
+            }));
+
+    auto values2 = rxcpp::from(rxcpp::Range(100))
+        .subscribe_on(loop)
+        .where(IsPrime)
+        .select([](int p){cout << endl << "producing: " << p << "-> "; return p;})
+        .publish(1000)
+        .ref_count(); // infinite (until overflow) stream of prime integers
+
+    cout << endl << "Subscription 1 - published primes:" << endl;
+    rxcpp::from(values2)
+        .take(n/2)
+        .for_each(
+            [](int p) {
+                cout << p << ", ";
+            });
+
+    cout << endl << "Subscription 2 - published primes:" << endl;
+    rxcpp::from(values2)
+        .take(n/2)
+        .for_each(
+            [](int p) {
+                cout << p << ", ";
+            });
+
+    auto values3 = rxcpp::from(rxcpp::Range(200))
+        .subscribe_on(loop)
+        .where(IsPrime)
+        .select([](int p){cout << endl << "producing: " << p << "-> "; return p;})
+        .take(n/2)
+        .publish_last()
+        .ref_count(); // infinite (until overflow) stream of prime integers
+
+    cout << endl << "Subscription 1 - last published prime:";
+    rxcpp::from(values3)
+        .for_each(
+            [](int p) {
+                cout << p << ", ";
+            });
+
+    cout << endl << "Subscription 2 - last published prime:" << endl;
+    rxcpp::from(values3)
+        .for_each(
+            [](int p) {
+                cout << p << ", ";
+            });
+    cout << endl;
+}
+
+
 void PrintIntervals(int n) {
     using namespace std::chrono;
     typedef steady_clock clock;
@@ -399,6 +473,7 @@ void innerScheduler() {
 int main(int argc, char* argv[])
 {
     try {
+        RefCount(20);
         PrintIntervals(10);
         IxToRx(20);
         PrintPrimes(20);
