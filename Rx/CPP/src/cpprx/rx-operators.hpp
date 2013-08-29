@@ -182,6 +182,141 @@ namespace rxcpp
         return p;
     }
 
+
+    namespace detail
+    {
+        template<class Derived, class T>
+        class Sink : public std::enable_shared_from_this<Derived>
+        {
+            typedef std::shared_ptr<Observer<T>> SinkObserver;
+            mutable std::mutex lock;
+            mutable util::maybe<Disposable> cancel;
+
+        protected:
+            mutable SinkObserver observer;
+            
+        public:
+            Sink(SinkObserver observerArg, Disposable cancelArg) :
+                observer(std::move(observerArg))
+            {
+                cancel.set(std::move(cancelArg));
+                if (!observer)
+                {
+                    observer = std::make_shared<Observer<T>>();
+                }
+            }
+            
+            void Dispose() const
+            {
+                std::unique_lock<std::mutex> guard(lock);
+                observer = std::make_shared<Observer<T>>();
+                if (cancel)
+                {
+                    cancel->Dispose();
+                    cancel.reset();
+                }
+            }
+            
+            Disposable GetDisposable() const
+            {
+                // make sure to capture state and not 'this'.
+                // usage means that 'this' will usualy be destructed
+                // immediately
+                auto local = this->shared_from_this();
+                return Disposable([local]{
+                    local->Dispose();
+                });
+            }
+            
+            class _ : public Observer<T>
+            {
+                std::shared_ptr<Derived> that;
+            public:
+                _(std::shared_ptr<Derived> that) : that(that)
+                {}
+                
+                virtual void OnNext(const T& t)
+                {
+                    std::unique_lock<std::mutex> guard(that->lock);
+                    that->observer->OnNext(t);
+                }
+                virtual void OnCompleted()
+                {
+                    std::unique_lock<std::mutex> guard(that->lock);
+                    that->observer->OnCompleted();
+                    if (that->cancel)
+                    {
+                        that->cancel->Dispose();
+                        that->cancel.reset();
+                    }
+                }
+                virtual void OnError(const std::exception_ptr& e)
+                {
+                    std::unique_lock<std::mutex> guard(that->lock);
+                    that->observer->OnError(e);
+                    if (that->cancel)
+                    {
+                        that->cancel->Dispose();
+                        that->cancel.reset();
+                    }
+                }
+            };
+        };
+        
+        template<class Derived, class T>
+        class Producer : public std::enable_shared_from_this<Derived>, public Observable<T>
+        {
+        public:
+            typedef std::function<void(Disposable)> SetSink;
+            typedef std::function<Disposable(std::shared_ptr<Derived>, std::shared_ptr<Observer<T>>, Disposable, SetSink)> Run;
+        private:
+            Run run;
+            struct State
+            {
+                SerialDisposable sink;
+                SerialDisposable subscription;
+            };
+        public:
+            Producer(Run run) : 
+                run(std::move(run))
+            {
+            }
+
+            virtual Disposable Subscribe(std::shared_ptr<Observer<T>> observer)
+            {
+                auto state = std::make_shared<State>();
+                auto that = this->shared_from_this();
+                if (CurrentThreadScheduler::IsScheduleRequired()) {
+                    auto scheduler = std::make_shared<CurrentThreadScheduler>();
+                    scheduler->Schedule([=](Scheduler::shared) -> Disposable
+                    {
+                            state->subscription.Set(
+                                run(that, observer, state->subscription, [=](Disposable d)
+                                {
+                                    state->sink.Set(std::move(d));
+                                }));
+                            return Disposable::Empty();
+                    });
+                }
+                else
+                {
+                    state->subscription.Set(
+                        run(that, observer, state->subscription, [=](Disposable d)
+                        {
+                            state->sink.Set(std::move(d));
+                        }));
+                }
+                return Disposable([=]()
+                {
+                    state->sink.Dispose();
+                    state->subscription.Dispose();
+                });
+            }
+        };
+        
+    }
+
+    
     struct SubjectState {
         enum type {
             Invalid,
@@ -687,8 +822,8 @@ namespace rxcpp
     private:
         ConnectableSubject();
 
-        Subject subject;
         Source source;
+        Subject subject;
         util::maybe<Disposable> subscription;
         std::mutex lock;
 
@@ -709,6 +844,7 @@ namespace rxcpp
             auto that = this->shared_from_this();
             return Disposable([that]()
             {
+                std::unique_lock<std::mutex> guard(that->lock);
                 if (that->subscription)
                 {
                     that->subscription->Dispose();
@@ -1953,61 +2089,93 @@ namespace rxcpp
         auto multicastSubject = std::make_shared<AsyncSubject<T>>();
         return Multicast(source, multicastSubject);
     }
+    namespace detail
+    {
+        template<class T>
+        class RefCountObservable : public Producer<RefCountObservable<T>, T>
+        {
+            std::shared_ptr<ConnectableObservable<T>> source;
+            std::mutex lock;
+            size_t refcount;
+            util::maybe<Disposable> subscription;
+            
+            class _ : public Sink<_, T>, public Observer<T>
+            {
+                std::shared_ptr<RefCountObservable<T>> parent;
+                
+            public:
+                typedef Sink<_, T> SinkBase;
 
+                _(std::shared_ptr<RefCountObservable<T>> parent, std::shared_ptr<Observer<T>> observer, Disposable cancel) :
+                    SinkBase(std::move(observer), std::move(cancel)),
+                    parent(parent)
+                {
+                }
+                
+                Disposable Run()
+                {
+                    SerialDisposable subscription;
+                    subscription.Set(parent->source->Subscribe(this->shared_from_this()));
+
+                    std::unique_lock<std::mutex> guard(parent->lock);
+                    if (++parent->refcount == 1)
+                    {
+                        parent->subscription.set(parent->source->Connect());
+                    }
+
+                    auto local = parent;
+
+                    return Disposable([subscription, local]()
+                    {
+                        subscription.Dispose();
+                        std::unique_lock<std::mutex> guard(local->lock);
+                        if (--local->refcount == 0)
+                        {
+                            local->subscription->Dispose();
+                            local->subscription.reset();
+                        }
+                    });
+                }
+                
+                virtual void OnNext(const T& t)
+                {
+                    SinkBase::observer->OnNext(t);
+                }
+                virtual void OnCompleted()
+                {
+                    SinkBase::observer->OnCompleted();
+                    SinkBase::Dispose();
+                }
+                virtual void OnError(const std::exception_ptr& e)
+                {
+                    SinkBase::observer->OnError(e);
+                    SinkBase::Dispose();
+                }
+            };
+            
+            typedef Producer<RefCountObservable<T>, T> ProducerBase;
+        public:
+            
+            RefCountObservable(std::shared_ptr<ConnectableObservable<T>> source) :
+                ProducerBase([](std::shared_ptr<RefCountObservable<T>> that, std::shared_ptr<Observer<T>> observer, Disposable cancel, typename ProducerBase::SetSink setSink) -> Disposable
+                {
+                    auto sink = std::make_shared<_>(that, observer, std::move(cancel));
+                    setSink(sink->GetDisposable());
+                    return sink->Run();
+                }),
+                refcount(0),
+                source(std::move(source))
+            {
+                subscription.set(Disposable::Empty());
+            }
+        };
+    }
     template <class T>
     const std::shared_ptr<Observable<T>> RefCount(
         const std::shared_ptr<ConnectableObservable<T>>& source
         )
     {
-        struct State
-        {
-            State() : refcount(0) {}
-            std::mutex lock;
-            size_t refcount;
-            SerialDisposable subscription;
-        };
-        auto state = std::make_shared<State>();
-
-        return CreateObservable<T>(
-            [=](std::shared_ptr < Observer < T >> observer) -> Disposable
-        {
-            SerialDisposable subscription;
-            subscription.Set(Subscribe(
-                source,
-                // on next
-                [=](const T& element)
-            {
-                observer->OnNext(element);
-            },
-                // on completed
-                [=]
-            {
-                observer->OnCompleted();
-            },
-                // on error
-                [=](const std::exception_ptr& error)
-            {
-                observer->OnError(error);
-            }));
-
-            {
-                std::unique_lock<std::mutex> guard(state->lock);
-                if (++state->refcount == 1)
-                {
-                    state->subscription.Set(source->Connect());
-                }
-            }
-
-            return Disposable([=](){
-                subscription.Dispose();
-
-                std::unique_lock<std::mutex> guard(state->lock);
-                if (--state->refcount == 0)
-                {
-                    state->subscription.Dispose();
-                }
-            });
-        });
+        return std::make_shared<detail::RefCountObservable<T>>(source);
     }
 
     template <class T, class Integral>

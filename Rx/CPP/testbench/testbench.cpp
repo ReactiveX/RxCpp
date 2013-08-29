@@ -237,9 +237,8 @@ void RefCount(int n)
     auto loop = std::make_shared<rxcpp::EventLoopScheduler>();
 
     auto values1 = rxcpp::from(rxcpp::Range(1))
-        .subscribe_on(loop)
         .where(IsPrime)
-        .select([](int p){cout << endl << "producing: " << p << "-> "; return p;})
+        .select([](int p) -> int {cout << endl << "producing: " << p << "-> "; return p;})
         .publish()
         .ref_count(); // infinite (until overflow) stream of prime integers
 
@@ -252,6 +251,7 @@ void RefCount(int n)
     cout << "Merge 2 subscriptions to published primes:";
     rxcpp::from(v1)
         .merge(v2)
+        .subscribe_on(loop)
         .take(n)
         .for_each(rxcpp::MakeTupleDispatch(
             [](const char* s, int p) {
@@ -259,14 +259,14 @@ void RefCount(int n)
             }));
 
     auto values2 = rxcpp::from(rxcpp::Range(100))
-        .subscribe_on(loop)
         .where(IsPrime)
-        .select([](int p){cout << endl << "producing: " << p << "-> "; return p;})
+        .select([](int p) -> int {cout << endl << "producing: " << p << "-> "; return p;})
         .publish(1000)
         .ref_count(); // infinite (until overflow) stream of prime integers
 
     cout << endl << "Subscription 1 - published primes:" << endl;
     rxcpp::from(values2)
+        .subscribe_on(loop)
         .take(n/2)
         .for_each(
             [](int p) {
@@ -275,6 +275,7 @@ void RefCount(int n)
 
     cout << endl << "Subscription 2 - published primes:" << endl;
     rxcpp::from(values2)
+        .subscribe_on(loop)
         .take(n/2)
         .for_each(
             [](int p) {
@@ -282,15 +283,15 @@ void RefCount(int n)
             });
 
     auto values3 = rxcpp::from(rxcpp::Range(200))
-        .subscribe_on(loop)
         .where(IsPrime)
-        .select([](int p){cout << endl << "producing: " << p << "-> "; return p;})
+        .select([](int p) -> int {cout << endl << "producing: " << p << "-> "; return p;})
         .take(n/2)
         .publish_last()
-        .ref_count(); // infinite (until overflow) stream of prime integers
+        .ref_count(); // last of n/2 prime integers
 
     cout << endl << "Subscription 1 - last published prime:";
     rxcpp::from(values3)
+        .subscribe_on(loop)
         .for_each(
             [](int p) {
                 cout << p << ", ";
@@ -298,6 +299,7 @@ void RefCount(int n)
 
     cout << endl << "Subscription 2 - last published prime:" << endl;
     rxcpp::from(values3)
+        .subscribe_on(loop)
         .for_each(
             [](int p) {
                 cout << p << ", ";

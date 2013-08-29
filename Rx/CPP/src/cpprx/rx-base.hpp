@@ -15,9 +15,9 @@ namespace rxcpp
     template <class T>
     struct Observer
     {
-        virtual void OnNext(const T&) {};
-        virtual void OnCompleted() {};
-        virtual void OnError(const std::exception_ptr&) {};
+        virtual void OnNext(const T&) {}
+        virtual void OnCompleted() {}
+        virtual void OnError(const std::exception_ptr&) {}
 
         virtual ~Observer() {}
     };
