@@ -2157,9 +2157,9 @@ namespace rxcpp
         public:
             
             RefCountObservable(std::shared_ptr<ConnectableObservable<T>> source) :
-                ProducerBase([](std::shared_ptr<RefCountObservable<T>> that, std::shared_ptr<Observer<T>> observer, Disposable cancel, typename ProducerBase::SetSink setSink) -> Disposable
+                ProducerBase([](std::shared_ptr<RefCountObservable<T>> that, std::shared_ptr<Observer<T>> observer, Disposable&& cancel, typename ProducerBase::SetSink setSink) -> Disposable
                 {
-                    auto sink = std::make_shared<_>(that, observer, std::move(cancel));
+                    auto sink = std::shared_ptr<_>(new _(that, observer, std::move(cancel)));
                     setSink(sink->GetDisposable());
                     return sink->Run();
                 }),
