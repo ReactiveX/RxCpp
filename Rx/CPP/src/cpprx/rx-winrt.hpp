@@ -14,6 +14,7 @@ namespace rxcpp { namespace winrt {
     namespace wf = Windows::Foundation;
     namespace wuicore = Windows::UI::Core;
     namespace wuixaml = Windows::UI::Xaml;
+    namespace wuictrls = Windows::UI::Xaml::Controls;
 
     template <class TSender, class TEventArgs>
     struct EventPattern
@@ -23,9 +24,9 @@ namespace rxcpp { namespace winrt {
             eventargs(eventargs)
         {}
 
-        TSender Sender() {
+        TSender Sender() const {
             return sender;};
-        TEventArgs EventArgs() {
+        TEventArgs EventArgs() const {
             return eventargs;};
 
     private:
@@ -288,7 +289,12 @@ namespace rxcpp { namespace winrt {
             {
                 throw std::logic_error("No window current");
             }
-            return std::make_shared<CoreDispatcherScheduler>(window->Dispatcher);
+            auto d = window->Dispatcher;
+            if (d == nullptr)
+            {
+                throw std::logic_error("No dispatcher on current window");
+            }
+            return std::make_shared<CoreDispatcherScheduler>(d);
         }
 
         wuicore::CoreDispatcher^ Dispatcher() 
@@ -354,6 +360,314 @@ namespace rxcpp { namespace winrt {
         wuicore::CoreDispatcher^ dispatcher;
         wuicore::CoreDispatcherPriority priority;
     };
+
+    template<class T>
+    class ReactiveCommand : public Observable<T>
+    {
+        typedef ReactiveCommand<T> This;
+
+        std::mutex flight_lock;
+        std::shared_ptr < Subject<bool>> inflight;
+        std::shared_ptr < Subject<std::exception_ptr>> exceptions;
+        std::shared_ptr<Subject<T>> executed;
+        Scheduler::shared defaultScheduler;
+        bool allowsConcurrentExecution;
+        std::shared_ptr < Observable < bool >> isExecuting;
+        std::shared_ptr < Observable < bool >> canExecuteObservable;
+
+    public:
+        typedef std::shared_ptr<This> shared;
+
+        ReactiveCommand(std::shared_ptr < Observable < bool >> canExecute = nullptr, bool allowsConcurrentExecution = false, Scheduler::shared scheduler = nullptr, bool initialCondition = true) :
+            inflight(std::make_shared < Subject < bool >> ()),
+            exceptions(std::make_shared < Subject <std::exception_ptr>>()),
+            executed(std::make_shared < Subject < T >> ()),
+            defaultScheduler(scheduler),
+            allowsConcurrentExecution(allowsConcurrentExecution)
+        {
+            if (!canExecute)
+            {
+                canExecute = Return(true);
+            }
+            if (!defaultScheduler)
+            {
+                defaultScheduler = std::static_pointer_cast<Scheduler>(winrt::CoreDispatcherScheduler::Current());
+            }
+
+            isExecuting = observable(from(inflight)
+                .scan(0, [](int balanced, bool in) { 
+                    return in ? balanced + 1 : balanced - 1; })
+                .select([](int balanced) { 
+                    return balanced > 0; })
+                .publish(false)
+                .connect_forever()
+                .distinct_until_changed());
+
+            auto isBusy = allowsConcurrentExecution ? Return(false) : isExecuting;
+            auto canExecuteAndNotBusy = from(isBusy)
+                .combine_latest([](bool b, bool ce)
+                {
+                    return ce && !b; 
+                }, canExecute);
+
+            auto canExecuteObs = from(canExecuteAndNotBusy)
+                .publish(initialCondition)
+                .ref_count();
+
+            canExecuteObservable = observable(from(canExecuteObs)
+                .distinct_until_changed()
+                .observe_on(defaultScheduler));
+        }
+
+        template<class R>
+        std::shared_ptr<Observable<R>> RegisterAsync(std::function<std::shared_ptr<Observable<R>>(T)> f)
+        {
+            return observable(from(executed)
+                .select_many(
+                // select collection
+                [=](T t) -> std::shared_ptr<Observable<R>>
+                {
+                    return Using<R, SerialDisposable>(
+                    // resource factory
+                    [=]() -> SerialDisposable
+                    {
+                        std::unique_lock<std::mutex> guard(flight_lock);
+                        inflight->OnNext(true);
+                        SerialDisposable flight;
+                        flight.Set(ScheduledDisposable(
+                            defaultScheduler,
+                            Disposable([=]()
+                            {
+                                std::unique_lock<std::mutex> guard(flight_lock);
+                                inflight->OnNext(false);
+                            })));
+                        return flight;
+                    },
+                    // observable factory
+                    [=](SerialDisposable) -> std::shared_ptr<Observable<R>>
+                    {
+                        return f(t);
+                    });
+                })
+                .observe_on(defaultScheduler)
+                .publish()
+                .connect_forever());
+        }
+
+        template<class R>
+        std::shared_ptr<Observable<R>> RegisterAsyncFunction(std::function < R(T)> f, Scheduler::shared scheduler = nullptr)
+        {
+            auto asyncFunc = ToAsync<R, T>(f, scheduler);
+            return RegisterAsync<R>(asyncFunc);
+        }
+
+        bool AllowsConcurrentExecution()
+        {
+            return allowsConcurrentExecution;
+        }
+
+        std::shared_ptr<Observable<std::exception_ptr>> ThrownExceptions()
+        {
+            return from(exceptions).observe_on(defaultScheduler);
+        }
+
+        std::shared_ptr<Observable<bool>> IsExecuting()
+        {
+            return isExecuting;
+        }
+
+        std::shared_ptr<Observable<bool>> CanExecuteObservable()
+        {
+            return canExecuteObservable;
+        }
+
+        Disposable Subscribe(std::shared_ptr < Observer < T >> observer)
+        {
+            return from(executed)
+                .subscribe(
+                //on next
+                [=](const T& t){
+                    try
+                    {
+                        observer->OnNext(t);
+                    }
+                    catch (...)
+                    {
+                        exceptions->OnError(std::current_exception());
+                    }
+                },
+                //on completed
+                [=](){
+                    try
+                    {
+                        observer->OnCompleted();
+                    }
+                    catch (...)
+                    {
+                        exceptions->OnError(std::current_exception());
+                    }
+                },
+                //on error
+                [=](std::exception_ptr e){
+                    try
+                    {
+                        observer->OnError(e);
+                    }
+                    catch (...)
+                    {
+                        exceptions->OnError(std::current_exception());
+                    }
+                });
+        }
+
+        void Execute(T value)
+        {
+            {
+                std::unique_lock<std::mutex> guard(flight_lock);
+                inflight->OnNext(true);
+            }
+            executed->OnNext(value);
+            {
+                std::unique_lock<std::mutex> guard(flight_lock);
+                inflight->OnNext(false);
+            }
+        }
+    };
+
+    template<class T>
+    std::shared_ptr<Observable<T>> observable(std::shared_ptr < ReactiveCommand < T >> s){ return std::static_pointer_cast < Observable < T >> (s); }
+
+    template<class T>
+    Disposable BindCommand(wuictrls::Button^ button, std::shared_ptr<ReactiveCommand<T>> command)
+    {
+        typedef rxrt::EventPattern<Platform::Object^, wuixaml::RoutedEventArgs^> RoutedEventPattern;
+
+        ComposableDisposable cd;
+
+        cd.Add(from(command->CanExecuteObservable())
+            .subscribe(
+            [=](bool b)
+        {
+            button->IsEnabled = b;
+        }));
+
+        auto click = rxrt::FromEventPattern<wuixaml::RoutedEventHandler, wuixaml::RoutedEventArgs>(
+            [=](wuixaml::RoutedEventHandler^ h)
+        {
+            return button->Click += h;
+        },
+            [=](wf::EventRegistrationToken t)
+        {
+            button->Click -= t;
+        });
+
+        cd.Add(from(click)
+            .subscribe([=](RoutedEventPattern ep)
+        {
+            command->Execute(ep);
+        }));
+
+        return cd;
+    }
+
+    template <class O>
+    struct OperationPattern
+    {
+        typedef decltype(((O)nullptr)->GetDeferral()) D;
+
+        OperationPattern(O operation) :
+            operation(operation),
+            deferral(operation->GetDeferral())
+        {
+        }
+
+        O Operation() const {
+            return operation;
+        };
+        D Deferral() const {
+            return deferral;
+        };
+
+    private:
+        O operation;
+        D deferral;
+    };
+
+    namespace detail
+    {
+
+        template<class T, class SOp, class SOb>
+        auto DeferOperation(const std::shared_ptr < Observable < T >> &source, SOp sop, SOb sob, Scheduler::shared scheduler = nullptr)
+            ->      decltype(sob(*(OperationPattern<decltype(sop(*(T*) nullptr))>*)nullptr, *(T*) nullptr))
+        {
+            typedef decltype(sob(*(OperationPattern<decltype(sop(*(T*) nullptr))>*)nullptr, *(T*) nullptr)) ResultObservable;
+            typedef typename observable_item<ResultObservable>::type Result;
+            if (!scheduler)
+            {
+                scheduler = std::static_pointer_cast<Scheduler>(winrt::CoreDispatcherScheduler::Current());
+            }
+            return rx::CreateObservable<Result>(
+                [=](const std::shared_ptr < Observer < Result >> &observer)
+                {
+                    return from(source)
+                        .select_many(
+                        //select observable
+                        [=](T t) -> ResultObservable
+                        {
+                            // must take the deferral early while the event is still on the stack. 
+                            auto o = sop(t);
+                            auto op = OperationPattern<decltype(o)>(o);
+ 
+                            return Using<Result, SerialDisposable>(
+                                // resource factory
+                                [=]() -> SerialDisposable
+                                {
+                                    // return a disposable that will complete the operation
+                                    SerialDisposable scope;
+                                    scope.Set(ScheduledDisposable(
+                                        scheduler,
+                                        Disposable(
+                                        [=]()
+                                        {
+                                            op.Deferral()->Complete();
+                                        })));
+                                    return scope;
+                                },
+                                // observable factory
+                                [=](SerialDisposable)
+                                {
+                                    return sob(op, t);
+                                });
+                        })
+                        .observe_on(scheduler)
+                        .subscribe(
+                        //on next
+                        [=](Result r)
+                        {
+                            observer->OnNext(r);
+                        },
+                        //on completed
+                        [=]()
+                        {
+                            observer->OnCompleted();
+                        },
+                        //on error
+                        [=](std::exception_ptr e)
+                        {
+                            observer->OnError(e);
+                        }
+                        );
+                });
+        }
+    }
+
+    struct defer_operation {};
+    template<class T, class SOp, class SOb>
+    auto rxcpp_chain(defer_operation && , const std::shared_ptr < Observable < T >> &source, SOp sop, SOb sob, Scheduler::shared scheduler = nullptr)
+        -> decltype(detail::DeferOperation(source, sop, sob, scheduler))
+    {
+        return      detail::DeferOperation(source, sop, sob, scheduler);
+    }
 
 } }
 

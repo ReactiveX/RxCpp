@@ -789,29 +789,34 @@ namespace rxcpp
         return std::make_shared<AsyncSubject<T>>();
     }
 
-    template<class F>
-    auto ToAsync(Scheduler::shared scheduler, F && f)
-        -> std::shared_ptr<AsyncSubject<decltype(f())>>
+    template<class R, class A>
+    std::function < std::shared_ptr < Observable<R >> (A)> ToAsync(std::function <R(A)> f, Scheduler::shared scheduler = nullptr)
     {
-        typedef decltype(f()) Value;
-        auto result = CreateAsyncSubject<Value>();
-        scheduler->Schedule([=]() -> Disposable 
+        if (!scheduler)
         {
-            util::maybe<Value> value;
-            try
+            scheduler = std::make_shared<EventLoopScheduler>();
+        }
+        return [=](A a) -> std::shared_ptr < Observable<R >>
+        {
+            auto result = CreateAsyncSubject<R>();
+            scheduler->Schedule([=](Scheduler::shared) -> Disposable
             {
-                value.set(f());
-            }
-            catch (...)
-            {
-                result->OnError(std::current_exception());
+                util::maybe<R> value;
+                try
+                {
+                    value.set(f(a));
+                }
+                catch (...)
+                {
+                    result->OnError(std::current_exception());
+                    return Disposable::Empty();
+                }
+                result->OnNext(*value.get());
+                result->OnCompleted();
                 return Disposable::Empty();
-            }
-            result->OnNext(value.get());
-            result->OnCompleted();
-            return Disposable::Empty();
-        });
-        return result;
+            });
+            return result;
+        };
     }
 
     template <class Source, class Subject>
@@ -858,6 +863,136 @@ namespace rxcpp
             return subject->Subscribe(observer);
         }
     };
+
+
+    namespace detail
+    {
+        template<class T>
+        class ReturnObservable : public Producer<ReturnObservable<T>, T>
+        {
+            typedef std::shared_ptr<ReturnObservable<T>> Parent;
+            T value;
+            Scheduler::shared scheduler;
+
+            class _ : public Sink<_, T>
+            {
+                Parent parent;
+
+            public:
+                typedef Sink<_, T> SinkBase;
+
+                _(Parent parent, std::shared_ptr < Observer < T >> observer, Disposable cancel) :
+                    SinkBase(std::move(observer), std::move(cancel)),
+                    parent(parent)
+                {
+                }
+
+                Disposable Run()
+                {
+                    auto local = parent;
+                    auto that = this->shared_from_this();
+                    return parent->scheduler->Schedule(
+                        [=](Scheduler::shared) -> Disposable {
+                            that->SinkBase::observer->OnNext(local->value);
+                            that->SinkBase::observer->OnCompleted();
+                            that->SinkBase::Dispose();
+                            return Disposable::Empty();
+                    });
+                }
+            };
+
+            typedef Producer<ReturnObservable<T>, T> ProducerBase;
+        public:
+
+            ReturnObservable(T value, Scheduler::shared scheduler) :
+                ProducerBase([](Parent parent, std::shared_ptr < Observer < T >> observer, Disposable && cancel, typename ProducerBase::SetSink setSink) -> Disposable
+                {
+                    auto sink = std::shared_ptr<_>(new _(parent, observer, std::move(cancel)));
+                    setSink(sink->GetDisposable());
+                    return sink->Run();
+                }),
+                value(value)
+            {
+                if (!scheduler) 
+                { 
+                    scheduler = std::make_shared<CurrentThreadScheduler>(); 
+                }
+            }
+        };
+    }
+    template <class T>
+    const std::shared_ptr<Observable<T>> Return(
+            T value,
+            Scheduler::shared scheduler = nullptr
+        )
+    {
+        return std::make_shared<detail::ReturnObservable<T>>(std::move(value), std::move(scheduler));
+    }
+
+    namespace detail
+    {
+        template<class T>
+        class ThrowObservable : public Producer<ThrowObservable<T>, T>
+        {
+            typedef ThrowObservable<T> This;
+            typedef std::shared_ptr<This> Parent;
+
+            std::exception_ptr exception;
+            Scheduler::shared scheduler;
+
+            class _ : public Sink<_, T>
+            {
+                Parent parent;
+
+            public:
+                typedef Sink<_, T> SinkBase;
+
+                _(Parent parent, std::shared_ptr < Observer < T >> observer, Disposable cancel) :
+                    SinkBase(std::move(observer), std::move(cancel)),
+                    parent(parent)
+                {
+                }
+
+                Disposable Run()
+                {
+                    auto local = parent;
+                    auto that = this->shared_from_this();
+                    return parent->scheduler->Schedule(
+                        [=](Scheduler::shared) -> Disposable {
+                            that->SinkBase::observer->OnError(local->exception);
+                            that->SinkBase::Dispose();
+                            return Disposable::Empty();
+                    });
+                }
+            };
+
+            typedef Producer<This, T> ProducerBase;
+        public:
+
+            ThrowObservable(std::exception_ptr exception, Scheduler::shared scheduler) :
+                ProducerBase([](Parent parent, std::shared_ptr < Observer < T >> observer, Disposable && cancel, typename ProducerBase::SetSink setSink) -> Disposable
+                {
+                    auto sink = std::shared_ptr<_>(new _(parent, observer, std::move(cancel)));
+                    setSink(sink->GetDisposable());
+                    return sink->Run();
+                }),
+                exception(exception)
+            {
+                if (!scheduler)
+                {
+                    scheduler = std::make_shared<CurrentThreadScheduler>();
+                }
+            }
+        };
+    }
+    template <class T>
+    const std::shared_ptr<Observable<T>> Throw(
+        std::exception_ptr exception,
+        Scheduler::shared scheduler = nullptr
+        )
+    {
+        return std::make_shared<detail::ThrowObservable<T>>(std::move(exception), std::move(scheduler));
+    }
 
     template <class F>
     struct fix0_thunk {
@@ -1036,6 +1171,101 @@ namespace rxcpp
         });
     }
 
+    namespace detail
+    {
+        template<class T, class R>
+        class UsingObservable : public Producer<UsingObservable<T, R>, T>
+        {
+            typedef UsingObservable<T, R> This;
+            typedef std::shared_ptr<This> Parent;
+            typedef std::shared_ptr<Observable < T >> Source;
+
+        public:
+            typedef std::function<R()> ResourceFactory;
+            typedef std::function<Source(R)> ObservableFactory;
+
+        private:
+            ResourceFactory resourceFactory;
+            ObservableFactory observableFactory;
+
+            class _ : public Sink<_, T>, public Observer<T>
+            {
+                Parent parent;
+
+            public:
+                typedef Sink<_, T> SinkBase;
+
+                _(Parent parent, std::shared_ptr < Observer < T >> observer, Disposable cancel) :
+                    SinkBase(std::move(observer), std::move(cancel)),
+                    parent(parent)
+                {
+                }
+
+                Disposable Run()
+                {
+                    ComposableDisposable cd;
+                    Source source;
+                    auto disposable = Disposable::Empty();
+
+                    try
+                    {
+                        auto resource = parent->resourceFactory();
+                        disposable = resource;
+                        source = parent->observableFactory(resource);
+                    }
+                    catch (...)
+                    {
+                        cd.Add(Throw<T>(std::current_exception())->Subscribe(this->shared_from_this()));
+                        cd.Add(std::move(disposable));
+                        return cd;
+                    }
+
+                    cd.Add(source->Subscribe(this->shared_from_this()));
+                    cd.Add(std::move(disposable));
+                    return cd;
+                }
+
+                virtual void OnNext(const T& t)
+                {
+                    SinkBase::observer->OnNext(t);
+                }
+                virtual void OnCompleted()
+                {
+                    SinkBase::observer->OnCompleted();
+                    SinkBase::Dispose();
+                }
+                virtual void OnError(const std::exception_ptr& e)
+                {
+                    SinkBase::observer->OnError(e);
+                    SinkBase::Dispose();
+                }
+            };
+
+            typedef Producer<This, T> ProducerBase;
+        public:
+
+            UsingObservable(ResourceFactory resourceFactory, ObservableFactory observableFactory) :
+                ProducerBase([](Parent parent, std::shared_ptr < Observer < T >> observer, Disposable && cancel, typename ProducerBase::SetSink setSink) -> Disposable
+                {
+                    auto sink = std::shared_ptr<_>(new _(parent, observer, std::move(cancel)));
+                    setSink(sink->GetDisposable());
+                    return sink->Run();
+                }),
+                resourceFactory(resourceFactory),
+                observableFactory(observableFactory)
+            {
+            }
+        };
+    }
+    template <class T, class R>
+    const std::shared_ptr<Observable<T>> Using(
+        typename detail::UsingObservable<T, R>::ResourceFactory resourceFactory,
+        typename detail::UsingObservable<T, R>::ObservableFactory observableFactory
+        )
+    {
+        return std::make_shared<detail::UsingObservable<T, R>>(std::move(resourceFactory), std::move(observableFactory));
+    }
+
     //////////////////////////////////////////////////////////////////////
     // 
     // imperative functions
@@ -1143,7 +1373,7 @@ namespace rxcpp
                 const typename observable_item<
                     typename std::result_of<CS(const T&)>::type>::type&)>::type>>
     {
-        typedef typename std::result_of<CS(const T&)>::type C;
+        typedef typename std::decay<typename std::result_of<CS(const T&)>::type>::type C;
         typedef typename observable_item<C>::type CI;
         typedef typename std::result_of<RS(const T&, const CI&)>::type U;
 
@@ -2089,6 +2319,7 @@ namespace rxcpp
         auto multicastSubject = std::make_shared<AsyncSubject<T>>();
         return Multicast(source, multicastSubject);
     }
+
     namespace detail
     {
         template<class T>
@@ -2176,6 +2407,108 @@ namespace rxcpp
         )
     {
         return std::make_shared<detail::RefCountObservable<T>>(source);
+    }
+
+    template <class T>
+    const std::shared_ptr<Observable<T>> ConnectForever(
+        const std::shared_ptr<ConnectableObservable<T>>& source
+        )
+    {
+        source->Connect();
+        return observable(source);
+    }
+
+    namespace detail
+    {
+        template<class T, class A>
+        class ScanObservable : public Producer<ScanObservable<T, A>, A>
+        {
+            typedef ScanObservable<T, A> This;
+            typedef std::shared_ptr<This> Parent;
+            typedef std::shared_ptr<Observable<T>> Source;
+            typedef std::shared_ptr<Observer<A>> Destination;
+
+        public:
+            typedef std::function<A(A, T)> Accumulator;
+
+        private:
+
+            Source source;
+            A seed;
+            Accumulator accumulator;
+
+            class _ : public Sink<_, A>, public Observer<T>
+            {
+                Parent parent;
+                util::maybe<A> accumulation;
+
+            public:
+                typedef Sink<_, A> SinkBase;
+
+                _(Parent parent, Destination observer, Disposable cancel) :
+                    SinkBase(std::move(observer), std::move(cancel)),
+                    parent(parent)
+                {
+                }
+
+                virtual void OnNext(const T& t)
+                {
+                    try
+                    {
+                        if (accumulation)
+                        {
+                            accumulation.set(parent->accumulator(*accumulation.get(), t));
+                        }
+                        else
+                        {
+                            accumulation.set(parent->accumulator(parent->seed, t));
+                        }
+                    }
+                    catch (...)
+                    {
+                        SinkBase::observer->OnError(std::current_exception());
+                        SinkBase::Dispose();
+                        return;
+                    }
+                    SinkBase::observer->OnNext(*accumulation.get());
+                }
+                virtual void OnCompleted()
+                {
+                    SinkBase::observer->OnCompleted();
+                    SinkBase::Dispose();
+                }
+                virtual void OnError(const std::exception_ptr& e)
+                {
+                    SinkBase::observer->OnError(e);
+                    SinkBase::Dispose();
+                }
+            };
+
+            typedef Producer<This, A> ProducerBase;
+        public:
+
+            ScanObservable(Source source, A seed, Accumulator accumulator) :
+                ProducerBase([this](Parent parent, std::shared_ptr < Observer < A >> observer, Disposable && cancel, typename ProducerBase::SetSink setSink) -> Disposable
+                {
+                    auto sink = std::shared_ptr<_>(new _(parent, observer, std::move(cancel)));
+                    setSink(sink->GetDisposable());
+                    return this->source->Subscribe(sink);
+                }),
+                source(std::move(source)),
+                seed(std::move(seed)),
+                accumulator(std::move(accumulator))
+            {
+            }
+        };
+    }
+    template <class T, class A>
+    const std::shared_ptr<Observable<A>> Scan(
+        const std::shared_ptr<Observable<T>>& source,
+        A seed,
+        typename detail::ScanObservable<T, A>::Accumulator accumulator
+        )
+    {
+        return std::make_shared<detail::ScanObservable<T, A>>(std::move(source), std::move(seed), std::move(accumulator));
     }
 
     template <class T, class Integral>

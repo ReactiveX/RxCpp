@@ -114,6 +114,10 @@ namespace detail {
             -> decltype(from(RefCount(obj))) {
                 return  from(RefCount(obj));
         }
+        auto connect_forever()
+            -> decltype(from(ConnectForever(obj))) {
+                return  from(ConnectForever(obj));
+        }
     };
 
     template<class Obj>
@@ -269,6 +273,11 @@ namespace detail {
             L less)
             -> decltype(from(GroupBy<item_type>(obj, keySelector, valueSelector, less))) {
             return      from(GroupBy<item_type>(obj, keySelector, valueSelector, less));
+        }
+        template <class Seed, class A>
+        auto scan(Seed seed, A accumulator) 
+            -> decltype(from(Scan<item_type>(obj, seed, accumulator))) {
+            return      from(Scan<item_type>(obj, seed, accumulator));
         }
         template <class Integral>
         auto take(Integral n) 
