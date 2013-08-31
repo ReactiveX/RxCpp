@@ -268,21 +268,36 @@ namespace rxcpp
             std::unique_lock<std::mutex> guard(lock);
             auto local = this->shared_from_this();
             queue.push(Action([=](){
-                local->observer->OnNext(std::move(element));}));
+                std::unique_lock<std::mutex> guard(lock);
+                auto o = local->observer;
+                guard.unlock();
+                if (o){
+                    o->OnNext(std::move(element));
+                }}));
         }
         virtual void OnCompleted() 
         {
             std::unique_lock<std::mutex> guard(lock);
             auto local = this->shared_from_this();
             queue.push(Action([=](){
-                local->observer->OnCompleted();}));
+                std::unique_lock<std::mutex> guard(lock);
+                auto o = local->observer;
+                guard.unlock();
+                if (o){
+                    o->OnCompleted();
+                }}));
         }
         virtual void OnError(const std::exception_ptr& error) 
         {
             std::unique_lock<std::mutex> guard(lock);
             auto local = this->shared_from_this();
             queue.push(Action([=](){
-                local->observer->OnError(std::move(error));}));
+                std::unique_lock<std::mutex> guard(lock);
+                auto o = local->observer;
+                guard.unlock();
+                if (o){
+                    o->OnError(std::move(error));
+                }}));
         }
 
         void EnsureActive()
