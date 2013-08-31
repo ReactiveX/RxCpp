@@ -160,39 +160,12 @@ namespace rxcpp { namespace winrt {
         });
     }
 
-    template<typename F>
-    auto FromAsyncPattern(F&& start) 
-        -> std::function < std::shared_ptr < Observable< decltype(start()->GetResults()) >> ()>
+    template<typename... T, typename F>
+    auto FromAsyncPattern(F&& start)
+        -> std::function < std::shared_ptr < Observable< decltype(start((*(T*)nullptr)...)->GetResults()) >> (const T&...)>
     {
-        return [=]()
-        {
-            typedef decltype(start()->GetResults()) Result;
-            auto subject = CreateAsyncSubject<Result>();
-            auto o = start();
-            typedef typename detail::remove_ref< decltype(o->Completed)>::type Handler;
-            typedef decltype(detail::operation_interface(o)) Interface;
-            o->Completed = ref new Handler([=](Interface io, wf::AsyncStatus)
-            {
-                util::maybe<Result> value;
-                try
-                {
-                    value.set(io->GetResults());
-                }
-                catch (...)
-                {
-                    subject->OnError(std::current_exception());
-                    return;
-                }
-                subject->OnNext(*value.get());
-                subject->OnCompleted();
-            });
-            return observable(subject);
-        };
-    }
+        typedef                                          decltype(start((*(T*)nullptr)...)->GetResults()) Result;
 
-    template<typename Operation, typename Result, typename... T>
-    std::function < std::shared_ptr < Observable<Result >> (const T&...)> FromAsyncPattern(std::function<Operation^(const T&...)> start)
-    {
         return [=](const T&... t)
         {
             auto subject = CreateAsyncSubject<Result>();
