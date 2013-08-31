@@ -588,10 +588,33 @@ namespace rxcpp { namespace winrt {
             return deferral;
         };
 
+        void Dispose()
+        {
+            deferral->Complete();
+        }
+
+        operator Disposable() const
+        {
+            // make sure to capture state and not 'this'.
+            // usage means that 'this' will usualy be destructed
+            // immediately
+            auto local = deferral;
+            return Disposable([local]{
+                local->Complete();
+            });
+        }
+
     private:
         O operation;
         D deferral;
     };
+
+    template <class O>
+    OperationPattern<O> make_operation_pattern(O o) 
+    { 
+        return OperationPattern<O>(std::move(o)); 
+    }
+
 
     namespace detail
     {
@@ -615,26 +638,17 @@ namespace rxcpp { namespace winrt {
                         [=](T t) -> ResultObservable
                         {
                             // must take the deferral early while the event is still on the stack. 
-                            auto o = sop(t);
-                            auto op = OperationPattern<decltype(o)>(o);
+                            auto op = make_operation_pattern(sop(t));
+                            typedef decltype(op) OP;
  
-                            return Using<Result, SerialDisposable>(
+                            return Using<Result, OP>(
                                 // resource factory
-                                [=]() -> SerialDisposable
+                                [=]() -> OP
                                 {
-                                    // return a disposable that will complete the operation
-                                    SerialDisposable scope;
-                                    scope.Set(ScheduledDisposable(
-                                        scheduler,
-                                        Disposable(
-                                        [=]()
-                                        {
-                                            op.Deferral()->Complete();
-                                        })));
-                                    return scope;
+                                    return op;
                                 },
                                 // observable factory
-                                [=](SerialDisposable)
+                                [sob, t](OP op)
                                 {
                                     return sob(op, t);
                                 });
