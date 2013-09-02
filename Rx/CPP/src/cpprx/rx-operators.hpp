@@ -789,14 +789,17 @@ namespace rxcpp
         return std::make_shared<AsyncSubject<T>>();
     }
 
-    template<class R, class A>
-    std::function < std::shared_ptr < Observable<R >> (A)> ToAsync(std::function <R(A)> f, Scheduler::shared scheduler = nullptr)
+#if RXCPP_USE_VARIADIC_TEMPLATES
+    template<class... A, class F>
+    auto ToAsync(F f, Scheduler::shared scheduler = nullptr)
+        ->std::function < std::shared_ptr < Observable< decltype(f((*(A*)nullptr)...)) >> (const A&...)>
     {
+        typedef decltype(f((*(A*) nullptr)...)) R;
         if (!scheduler)
         {
             scheduler = std::make_shared<EventLoopScheduler>();
         }
-        return [=](A a) -> std::shared_ptr < Observable<R >>
+        return [=](const A&... a) -> std::shared_ptr < Observable<R >>
         {
             auto result = CreateAsyncSubject<R>();
             scheduler->Schedule([=](Scheduler::shared) -> Disposable
@@ -804,7 +807,7 @@ namespace rxcpp
                 util::maybe<R> value;
                 try
                 {
-                    value.set(f(a));
+                    value.set(f(a...));
                 }
                 catch (...)
                 {
@@ -818,6 +821,7 @@ namespace rxcpp
             return result;
         };
     }
+#endif
 
     template <class Source, class Subject>
     class ConnectableSubject : 
@@ -1257,12 +1261,15 @@ namespace rxcpp
             }
         };
     }
-    template <class T, class R>
-    const std::shared_ptr<Observable<T>> Using(
-        typename detail::UsingObservable<T, R>::ResourceFactory resourceFactory,
-        typename detail::UsingObservable<T, R>::ObservableFactory observableFactory
+    template <class RF, class OF>
+    auto Using(
+        RF resourceFactory,
+        OF observableFactory
         )
+        -> decltype(observableFactory(resourceFactory()))
     {
+        typedef typename observable_item<decltype(observableFactory(resourceFactory()))>::type T;
+        typedef decltype(resourceFactory()) R;
         return std::make_shared<detail::UsingObservable<T, R>>(std::move(resourceFactory), std::move(observableFactory));
     }
 
