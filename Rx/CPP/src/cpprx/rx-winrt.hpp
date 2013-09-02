@@ -362,12 +362,14 @@ namespace rxcpp { namespace winrt {
             {
                 canExecute = Return(true);
             }
+
             if (!defaultScheduler)
             {
                 defaultScheduler = std::static_pointer_cast<Scheduler>(winrt::CoreDispatcherScheduler::Current());
             }
 
             isExecuting = observable(from(inflight)
+                .observe_on(defaultScheduler)
                 .scan(0, [](int balanced, bool in) { 
                     return in ? balanced + 1 : balanced - 1; })
                 .select([](int balanced) { 
@@ -392,20 +394,21 @@ namespace rxcpp { namespace winrt {
                 .observe_on(defaultScheduler));
         }
 
-        template<class R>
-        std::shared_ptr<Observable<R>> RegisterAsync(std::function<std::shared_ptr<Observable<R>>(T)> f)
+        template<class F>
+        auto RegisterAsync(F f)
+            -> std::shared_ptr<Observable< decltype(f(*(T*) nullptr)) >>
         {
             return observable(from(executed)
                 .select_many(
                 // select collection
-                [=](T t) -> std::shared_ptr<Observable<R>>
+                [=](T t)
                 {
-                    return Using<R, SerialDisposable>(
+                    std::unique_lock<std::mutex> guard(flight_lock);
+                    inflight->OnNext(true);
+                    return Using(
                     // resource factory
                     [=]() -> SerialDisposable
                     {
-                        std::unique_lock<std::mutex> guard(flight_lock);
-                        inflight->OnNext(true);
                         SerialDisposable flight;
                         flight.Set(ScheduledDisposable(
                             defaultScheduler,
@@ -417,7 +420,7 @@ namespace rxcpp { namespace winrt {
                         return flight;
                     },
                     // observable factory
-                    [=](SerialDisposable) -> std::shared_ptr<Observable<R>>
+                    [=](SerialDisposable)
                     {
                         return f(t);
                     });
@@ -427,11 +430,12 @@ namespace rxcpp { namespace winrt {
                 .connect_forever());
         }
 
-        template<class R>
-        std::shared_ptr<Observable<R>> RegisterAsyncFunction(std::function < R(T)> f, Scheduler::shared scheduler = nullptr)
+        template<class F>
+        auto RegisterAsyncFunction(F f, Scheduler::shared scheduler = nullptr)
+             -> std::shared_ptr<Observable< decltype(f(*(T*)nullptr)) >>
         {
-            auto asyncFunc = ToAsync<R, T>(f, scheduler);
-            return RegisterAsync<R>(asyncFunc);
+            auto asyncFunc = ToAsync<T>(f, scheduler);
+            return RegisterAsync(asyncFunc);
         }
 
         bool AllowsConcurrentExecution()
@@ -614,9 +618,9 @@ namespace rxcpp { namespace winrt {
                             auto op = make_operation_pattern(sop(t));
                             typedef decltype(op) OP;
  
-                            return Using<Result, OP>(
+                            return Using(
                                 // resource factory
-                                [=]() -> OP
+                                [=]()
                                 {
                                     return op;
                                 },
