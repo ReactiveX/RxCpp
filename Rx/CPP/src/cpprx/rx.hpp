@@ -19,6 +19,9 @@ namespace detail {
     struct observable_item<Binder<Obj>> {typedef typename rxcpp::observable_item<Obj>::type type;};
 }
 
+    template<class Obj>
+    struct is_observable < Binder<Obj > > {static const bool value = true; };
+
     template<class T, class Obj>
     class BinderBase
     {
