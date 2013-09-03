@@ -32,7 +32,10 @@
 
 #if _MSC_VER > 1600 
 #define RXCPP_USE_RVALUEREF 1
-#define RXCPP_USE_VARIADIC_TEMPLATES 0
+#endif
+
+#if _MSC_VER >= 1800
+#define RXCPP_USE_VARIADIC_TEMPLATES 1
 #endif
 
 #if _CPPRTTI
