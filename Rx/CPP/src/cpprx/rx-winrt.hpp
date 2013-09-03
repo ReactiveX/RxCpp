@@ -396,7 +396,7 @@ namespace rxcpp { namespace winrt {
 
         template<class F>
         auto RegisterAsync(F f)
-            -> std::shared_ptr<Observable< decltype(f(*(T*) nullptr)) >>
+            -> decltype(f(*(T*) nullptr))
         {
             return observable(from(executed)
                 .select_many(
