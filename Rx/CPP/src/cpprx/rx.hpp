@@ -202,13 +202,14 @@ namespace detail {
 #if RXCPP_USE_VARIADIC_TEMPLATES
         template <class S, class... CombineLSource>
         auto combine_latest(S selector, const CombineLSource&... source) 
-            -> decltype(from(CombineLatest(selector, obj, observable(source)...))) {
+            -> typename std::enable_if<!is_observable<S>::value, decltype(from(CombineLatest(selector, obj, observable(source)...)))>::type {
             return      from(CombineLatest(selector, obj, observable(source)...));
         }
-        template <class... CombineL1Source>
-        auto combine_latest(const CombineL1Source&... source) 
-            -> decltype(from(CombineLatest(util::as_tuple(), obj, observable(source)...))) {
-            return      from(CombineLatest(util::as_tuple(), obj, observable(source)...));
+        template <class CombineL1Source, class... CombineL1SourceN>
+        auto combine_latest(const CombineL1Source& source, const CombineL1SourceN&... sourcen)
+            -> typename std::enable_if < is_observable<CombineL1Source>::value, 
+                decltype(from(CombineLatest(util::as_tuple(), obj, observable(source), observable(sourcen)...)))>::type {
+            return       from(CombineLatest(util::as_tuple(), obj, observable(source), observable(sourcen)...));
         }
 #else
         template <class S, class CombineLSource>
