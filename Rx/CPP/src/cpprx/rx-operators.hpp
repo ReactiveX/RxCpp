@@ -801,13 +801,14 @@ namespace rxcpp
         }
         return [=](const A&... a) -> std::shared_ptr < Observable<R >>
         {
+            auto args = std::make_tuple(a...);
             auto result = CreateAsyncSubject<R>();
             scheduler->Schedule([=](Scheduler::shared) -> Disposable
             {
                 util::maybe<R> value;
                 try
                 {
-                    value.set(f(a...));
+                    value.set(util::tuple_dispatch(f, args));
                 }
                 catch (...)
                 {
