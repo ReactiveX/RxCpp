@@ -22,9 +22,9 @@ This section describes in general what Reactive Extensions (Rx) is, and how it c
 
 ### In This Section
 
-1\. When Will You Use Rx
-2\. Installing Rx
-3\. Differences Between Versions of Rx
+1. When Will You Use Rx
+2. Installing Rx
+3. Differences Between Versions of Rx
 
 ### Related Sections
 
@@ -252,27 +252,25 @@ Compare this with the merge operator. If you run the following sample code, you 
 
 Notice that for Merge to work, all the source observable sequences need to be of the same type of Observable. The resultant sequence will be of the type Observable. If source1 produces an OnError in the middle of the sequence, then the resultant sequence will complete immediately.
 
-` auto input1 = std::make_shared();
-auto input2 = std::make_shared();
-auto output = std::make_shared();
-
-auto values1 = rxcpp::Range(1); // infinite (until overflow) stream of integers
-auto s1 = rxcpp::from(values1)
-.subscribe_on(input1)
-.select([](int data) -&gt; std::tuple { return std::make_tuple("1: ", data);});
-
-auto values2 = rxcpp::Range(1); // infinite (until overflow) stream of integers
-rxcpp::from(values2)
-.subscribe_on(input1)
-.select([](int data) -&gt; std::tuple { return std::make_tuple("2: ", data);})
-.merge(s1)
-.take(6)
-.observe_on(output)
-.for_each(rxcpp::MakeTupleDispatch(
-[](const char* s, int p) {
-cout }));
-
-`
+      auto input1 = std::make_shared();
+      auto input2 = std::make_shared();
+      auto output = std::make_shared();
+      
+      auto values1 = rxcpp::Range(1); // infinite (until overflow) stream of integers
+      auto s1 = rxcpp::from(values1)
+      .subscribe_on(input1)
+      .select([](int data) -&gt; std::tuple { return std::make_tuple("1: ", data);});
+      
+      auto values2 = rxcpp::Range(1); // infinite (until overflow) stream of integers
+      rxcpp::from(values2)
+      .subscribe_on(input1)
+      .select([](int data) -&gt; std::tuple { return std::make_tuple("2: ", data);})
+      .merge(s1)
+      .take(6)
+      .observe_on(output)
+      .for_each(rxcpp::MakeTupleDispatch(
+      [](const char* s, int p) {
+      cout }));
 
 Notice that for these combination operators to work, all the observable sequences need to be of the same type.
 
@@ -305,31 +303,30 @@ A scheduler controls when a subscription starts and when notifications are publi
 You may have already used schedulers in your Rx code without explicitly stating the type of schedulers to be used. This is because all Observable operators that deal with concurrency have multiple overloads. If you do not use the overload which takes a scheduler as an argument, Rx will pick a default scheduler by using the principle of least concurrency. This means that the scheduler which introduces the least amount of concurrency that satisfies the needs of the operator is chosen. For example, for operators returning an observable with a finite and small number of messages, Rx calls ImmediateScheduler. For operators returning a potentially large or infinite number of messages, CurrentThread is called.
 
 In the following example, the source observable sequences are each running in their own threads using EventLoopScheduler.
-
-` auto input1 = std::make_shared();
-auto input2 = std::make_shared();
-auto output = std::make_shared();
-
-auto values1 = rxcpp::Range(1); // infinite (until overflow) stream of integers
-auto s1 = rxcpp::from(values1)
-.subscribe_on(input1)
-.select([](int data) -&gt; std::tuple { return std::make_tuple("1:", data);})
-.take(3);
-
-auto values2 = rxcpp::Range(1); // infinite (until overflow) stream of integers
-auto s2 = rxcpp::from(values2)
-.subscribe_on(input2)
-.select([](int data) -&gt; std::tuple { return std::make_tuple("2:", data);})
-.take(3);
-
-rxcpp::from(s1)
-.concat(s2)
-.observe_on(output)
-.for_each(rxcpp::MakeTupleDispatch(
-[](const char* s, int p) {
-cout }));
-
-`
+      
+      auto input1 = std::make_shared();
+      auto input2 = std::make_shared();
+      auto output = std::make_shared();
+      
+      auto values1 = rxcpp::Range(1); // infinite (until overflow) stream of integers
+      auto s1 = rxcpp::from(values1)
+      .subscribe_on(input1)
+      .select([](int data) -&gt; std::tuple { return std::make_tuple("1:", data);})
+      .take(3);
+      
+      auto values2 = rxcpp::Range(1); // infinite (until overflow) stream of integers
+      auto s2 = rxcpp::from(values2)
+      .subscribe_on(input2)
+      .select([](int data) -&gt; std::tuple { return std::make_tuple("2:", data);})
+      .take(3);
+      
+      rxcpp::from(s1)
+      .concat(s2)
+      .observe_on(output)
+      .for_each(rxcpp::MakeTupleDispatch(
+      [](const char* s, int p) {
+      cout }));
+      
 
 This will queue up on the observer quickly. We can improve this code by using the observe_on operator, which allows you to specify the context that you want to use to send pushed notifications (OnNext) to observers. By default, the observe_on operator ensures that OnNext will be called as many times as possible on the current thread. You can use its overloads and redirect the OnNext outputs to a different context. In addition, you can use the subscribe_on operator to return a proxy observable that delegates actions to a specific scheduler. For example, for a UI-intensive application, you can delegate all background operations to be performed on a scheduler running in the background by using subscribe_on and passing to it a Concurrency.EventLoopScheduler.
 
@@ -349,9 +346,10 @@ When writing a custom operator, it is good practice not to leave any disposables
 
 Adding new operators to LINQ is a way to extend its capabilities. However, you can also improve code readability by wrapping existing operators into more specialized and meaningful ones.
 
-   [1]: http://msdn.microsoft.com/en-us/data/gg577609
-   [2]: http://msdn.microsoft.com/en-us/library/ff431792(VS.92).aspx
-   [3]: http://msdn.microsoft.com/en-us/library/ff707857(v=VS.92).aspx
-   [4]: http://blogs.msdn.com/b/rxteam/archive/2010/10/28/rx-for-windows-phone-7.aspx
+
+http://msdn.microsoft.com/en-us/data/gg577609
+http://msdn.microsoft.com/en-us/library/ff431792(VS.92).aspx
+http://msdn.microsoft.com/en-us/library/ff707857(v=VS.92).aspx
+http://blogs.msdn.com/b/rxteam/archive/2010/10/28/rx-for-windows-phone-7.aspx
   
   
