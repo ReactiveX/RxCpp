@@ -1,4 +1,5 @@
-# Reactive Extensions for C++ (RxCpp)
+Reactive Extensions for C++ (RxCpp)
+=====================================
 
 Reactive Extensions (Rx) is a library for composing asynchronous and event-based programs using observable sequences and LINQ-style query operators.
 
@@ -161,7 +162,7 @@ You can treat the observable sequence (such as a sequence of mouse-over events) 
 ### See Also
 
 Creating and Subscribing to Simple Observable Sequences Querying Observable Collections using LINQ Operators
-
+   
 This section describes how you can create and subscribe to an observable sequence, convert an existing C++ event into a sequence and query it.
 
 ### In This Section
