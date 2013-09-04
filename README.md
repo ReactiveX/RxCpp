@@ -4,7 +4,7 @@ Reactive Extensions (Rx) is a library for composing asynchronous and event-based
 
 Data sequences can take many forms, such as a stream of data from a file or web service, web services requests, system notifications, or a series of events such as user input.
 
-Reactive Extensions represents all these data sequences as observable sequences. An application can subscribe to these observable sequences to receive asynchronous notifications as new data arrives. The Rx library is available for application development in C%2B%2B, .NET, Ruby, Python, Silverlight, Windows Phone 7 and JavaScript. For more information on these different platforms, see Differences Between Versions of Rx topic.
+Reactive Extensions represents all these data sequences as observable sequences. An application can subscribe to these observable sequences to receive asynchronous notifications as new data arrives. The Rx library is available for application development in C++, .NET, Ruby, Python, Silverlight, Windows Phone 7 and JavaScript. For more information on these different platforms, see Differences Between Versions of Rx topic.
 
 ## Pulling vs. Pushing Data
 
@@ -41,20 +41,21 @@ In addition, if your application interacts with multiple sources of data, the co
 
 Using Rx, you can represent multiple asynchronous data streams (that come from diverse sources, e.g., stock quote, tweets, computer events, web service requests, etc.), and subscribe to the event stream using the Observer class. The Observable class maintains a list of dependent Observer threads and notifies them automatically of any state changes. You can query observable sequences using standard LINQ query operators implemented by the Rx.Observable type. Thus you can filter, aggregate, and compose on multiple events easily by using these LINQ operators. Cancellation and exceptions can also be handled gracefully by using extension methods provided by Rx.
 
-The following example shows how easy it is to implement an observable in C%2B%2B.
+The following example shows how easy it is to implement an observable in C++.
 
-` //Declare an observable
-auto values1 = rxcpp::Range(1, 10);
-rxcpp::from(values1)
-.for_each(
-[](int p) {
-cout }); `
+      //Declare an observable<br />
+      auto values1 = rxcpp::Range(1, 10);<br />
+          rxcpp::from(values1)<br />
+             .for_each(<br />
+                  [](int p) {<br />
+                      cout << p << endl;<br />
+                  });
 
 You can also use schedulers to control when the subscription starts, and when notifications are pushed to subscribers. For more information on this, see Using Schedulers for Concurrency Control.
 
 ## Filtering
 
-One drawback of the C%2B%2B event model is that your event handler is always called every time an event is raised, and events arrive exactly as they were sent out by the source. To filter out events that you are not interested in, or transform data before your handler is called, you have to add custom filter logic to your handler.
+One drawback of the C++ event model is that your event handler is always called every time an event is raised, and events arrive exactly as they were sent out by the source. To filter out events that you are not interested in, or transform data before your handler is called, you have to add custom filter logic to your handler.
 
 Take an application that detects mouse-down as an example. In the current event programming model, the application can react to the event raised by displaying a message. In Rx, such mouse-down events are treated as a stream of information about clicks. Whenever you click the mouse, information (e.g., cursor position) about this click appears in a stream, ready to be processed. In this paradigm, events (or event streams) are very similar to lists or other collections. This means that we can use techniques for working with collections to process events. For example, you can filter out those clicks that appear outside a specific area, and only display a message when the user clicks inside an area. Or you can wait a specific period of time, and inform the user the number of valid clicks during this period. Similarly, you can capture a stream of stock ticks and only respond to those ticks that have changed for a specific range during a particular time window. All these can be done easily by using LINQ-query style operators provided by Rx.
 
@@ -68,15 +69,15 @@ This topic describes where you can download the Reactive Extensions (Rx) SDK.
 
 ## To download Rx
 
-Reactive Extensions is available for different platforms such as C%2B%2B, Javascript, .NET Framework 3.5, 4.0, 4.5, Silverlight 3 and 4, as well as Windows Phone 7 &amp; 8\. You can download the libraries, as well as learn about their prerequisites at the [Rx MSDN Developer Center.][1]
+Reactive Extensions is available for different platforms such as C++, Javascript, .NET Framework 3.5, 4.0, 4.5, Silverlight 3 and 4, as well as Windows Phone 7 &amp; 8\. You can download the libraries, as well as learn about their prerequisites at the [Rx MSDN Developer Center.][1]
 
 The following topic describes the various platforms for which you can develop solutions using Reactive Extensions.
 
 To get the latest release of Rx, as well as learn about its prerequisites, please visit the [Rx MSDN Developer Center][1].
 
-## C%2B%2B
+## C++
 
-The Reactive Extensions for C%2B%2B (RxCpp) is a library for composing asynchronous and event-based programs using observable sequences and LINQ-style query operators in C%2B%2B.
+The Reactive Extensions for C++ (RxCpp) is a library for composing asynchronous and event-based programs using observable sequences and LINQ-style query operators in C++.
 
 ## Javascript
 
@@ -114,11 +115,11 @@ This section includes topics that explain how you use Rx to create and subscribe
 
 ### In This Section
 
-1\. Exploring The Major Interfaces in Rx
-2\. Creating and Querying Event Streams
-3\. Subjects
-6\. Implementing your own operators for IObservable
-7\. Using Observable Providers
+1. Exploring The Major Interfaces in Rx
+2. Creating and Querying Event Streams
+3. Subjects
+6. Implementing your own operators for IObservable
+7. Using Observable Providers
 
 This topic describes the major Reactive Extensions (Rx) interfaces used to represent observable sequences and subscribe to them.
 
@@ -134,25 +135,24 @@ Observers support three publication events, reflected by the interfaces methods.
 
 The following lists the Observable/Observer definitions.
 
-` namespace rxcpp {
-template
-struct Observer
-{
-virtual void OnNext(const T&amp;) {};
-virtual void OnCompleted() {};
-virtual void OnError(const std::exception_ptr&amp;) {};
+      namespace rxcpp {
+         template
+         struct Observer
+         {
+            virtual void OnNext(const T&amp;) {};
+            virtual void OnCompleted() {};
+            virtual void OnError(const std::exception_ptr&amp;) {};
 
-virtual ~Observer() {}
-};
-template
-struct Observable
-{
-virtual Disposable Subscribe(std::shared_ptr&gt; observer) = 0;
-virtual ~Observable() {}
-};
-}
-
-`
+            virtual ~Observer() {}
+         };
+         
+         template
+         struct Observable
+         {
+            virtual Disposable Subscribe(std::shared_ptr&gt; observer) = 0;
+            virtual ~Observable() {}
+         };
+      }
 
 Note that the OnError event returns an exception_ptr type. The example above shows passing the error to a handler function.
 
@@ -162,7 +162,7 @@ You can treat the observable sequence (such as a sequence of mouse-over events) 
 
 Creating and Subscribing to Simple Observable Sequences Querying Observable Collections using LINQ Operators
 
-This section describes how you can create and subscribe to an observable sequence, convert an existing C%2B%2B event into a sequence and query it.
+This section describes how you can create and subscribe to an observable sequence, convert an existing C++ event into a sequence and query it.
 
 ### In This Section
 
@@ -179,17 +179,17 @@ The range operator has several overloads. In our example, it creates a sequence 
 
 As soon as the subscription happens, the values are sent to the observer. The OnNext delegate then prints out the values.
 
-` auto values1 = rxcpp::Range(1, 10);
-rxcpp::from(values1)
-.for_each(
-[](int p) {
-cout }); `
+      auto values1 = rxcpp::Range(1, 10);
+      rxcpp::from(values1)
+      .for_each(
+      [](int p) {
+      cout }); 
 
 When an observer subscribes to an observable sequence, the thread calling the subscribe method can be different from the thread in which the sequence runs till completion. Therefore, the subscribe call is asynchronous in that the caller is not blocked until the observation of the sequence completes. This will be covered in more details in the Using Schedulers topic.
 
 Notice that the subscribe method returns a Disposable, so that you can unsubscribe to a sequence and dispose of it easily. When you invoke the Dispose method on the observable sequence, the observer will stop listening to the observable for data. Normally, you do not need to explicitly call Dispose unless you need to unsubscribe early, or when the source observable sequence has a longer life span than the observer. Subscriptions in Rx are designed for fire-and-forget scenarios without the usage of a finalizer. When the Disposable instance is collected by the garbage collector, Rx does not automatically dispose of the subscription. However, note that the default behavior of the Observable operators is to dispose of the subscription as soon as possible (i.e, when an OnCompleted or OnError messages is published).
 
-In addition to creating an observable sequence from scratch, you can convert existing enumerators, C%2B%2B events and asynchronous patterns into observable sequences. The other topics in this section will show you how to do this.
+In addition to creating an observable sequence from scratch, you can convert existing enumerators, C++ events and asynchronous patterns into observable sequences. The other topics in this section will show you how to do this.
 
 Notice that this topic only shows you a few operators that can create an observable sequence from scratch. To learn more about other LINQ operators, see Query Observable Collections using LINQ Operators.
 
@@ -197,21 +197,20 @@ Notice that this topic only shows you a few operators that can create an observa
 
 Using the Iterate operator, you can convert an array colection to an observable sequence and subscribe to it.
 
-` std::array a={1, 2, 3};
-auto values1 = rxcpp::Iterate(a);
+      std::array a={1, 2, 3};
+      auto values1 = rxcpp::Iterate(a);
 
-rxcpp::from(values1)
-.for_each(
-[](int p) {
-cout });
+      rxcpp::from(values1)
+      .for_each(
+      [](int p) {
+      cout });
 
-`
 
 ### See Also
 
 Query Observable Collections using LINQ Operators
 
-We have converted existing C%2B%2B events into observable sequences to subscribe to them. In this topic, we will look at the first-class nature of observable sequences as Observable objects, in which generic LINQ operators are supplied by the Rx header-only library to manipulate these objects. Most operators take an observable sequence and perform some logic on it and output another observable sequence. In addition, as you can see from our code samples, you can even chain multiple operators on a source sequence to tweak the resulting sequence to your exact requirement.
+We have converted existing C++ events into observable sequences to subscribe to them. In this topic, we will look at the first-class nature of observable sequences as Observable objects, in which generic LINQ operators are supplied by the Rx header-only library to manipulate these objects. Most operators take an observable sequence and perform some logic on it and output another observable sequence. In addition, as you can see from our code samples, you can even chain multiple operators on a source sequence to tweak the resulting sequence to your exact requirement.
 
 ## Using Different Operators
 
@@ -223,30 +222,29 @@ In this section, we will examine some of the operators that combine various obse
 
 In the following sample, we use the concat operator to combine two sequences into a single sequence and subscribe to it.
 
-` auto input1 = std::make_shared();
-auto input2 = std::make_shared();
-auto output = std::make_shared();
+      auto input1 = std::make_shared();
+      auto input2 = std::make_shared();
+      auto output = std::make_shared();
 
-auto values1 = rxcpp::Range(1); // infinite (until overflow) stream of integers
-auto s1 = rxcpp::from(values1)
-.subscribe_on(input1)
-.select([](int prime) -&gt; std::tuple { return std::make_tuple("1:", prime);})
-.take(3);
+      auto values1 = rxcpp::Range(1); // infinite (until overflow) stream of integers
+      auto s1 = rxcpp::from(values1)
+      .subscribe_on(input1)
+      .select([](int prime) ->; std::tuple { return std::make_tuple("1:", prime);})
+      .take(3);
 
-auto values2 = rxcpp::Range(1); // infinite (until overflow) stream of integers
-auto s2 = rxcpp::from(values2)
-.subscribe_on(input2)
-.select([](int prime) -&gt; std::tuple { return std::make_tuple("2:", prime);})
-.take(3);
+      auto values2 = rxcpp::Range(1); // infinite (until overflow) stream of integers
+      auto s2 = rxcpp::from(values2)
+      .subscribe_on(input2)
+      .select([](int prime) ->; std::tuple { return std::make_tuple("2:", prime);})
+      .take(3);
 
-rxcpp::from(s1)
-.concat(s2)
-.observe_on(output)
-.for_each(rxcpp::MakeTupleDispatch(
-[](const char* s, int p) {
-cout }));
+      rxcpp::from(s1)
+      .concat(s2)
+      .observe_on(output)
+      .for_each(rxcpp::MakeTupleDispatch(
+      [](const char* s, int p) {
+      cout }));
 
-`
 
 Notice that the resultant sequence is 1,2,3,1,2,3. This is because when you use the concat operator, the 2nd sequence (source2) will not be active until after the 1st sequence (source1) has finished pushing all its values. It is only after source1 has completed, then source2 will start to push values to the resultant sequence. The subscriber will then get all the values from the resultant sequence.
 
@@ -282,7 +280,7 @@ This section describes the Subject type implemented by Reactive Extensions. It a
 
 ### In This Section
 
-1\. Using Subjects
+1. Using Subjects
 
 The Subject type implements both Observable and Observer, in the sense that it is both an observer and an observable. You can use a subject to subscribe all the observers, and then subscribe the subject to a backend data source. In this way, the subject can act as a proxy for a group of subscribers and a source. You can use subjects to implement a custom observable with caching, buffering and time shifting. In addition, you can use subjects to broadcast data to multiple subscribers.
 
