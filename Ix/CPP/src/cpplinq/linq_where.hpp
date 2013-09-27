@@ -24,7 +24,7 @@ namespace cpplinq
 
             cursor(const inner_cursor& cur, const Predicate& p) : cur(cur), pred(p)
             {
-                if (!pred(cur.get())) {
+                if (!cur.empty() && !pred(cur.get())) {
                     this->inc();
                 }
             }
