@@ -59,6 +59,59 @@ void PrintPrimes(int n)
             }));
 }
 
+void Scan()
+{
+    int test = 0;
+    auto next = [&](int i) {
+        cout << "next " << test << ":" << i << endl;
+    };
+    auto complete = [&]() {
+        cout << "completed " << test << endl;
+    };
+    auto error = [&](std::exception_ptr e) {
+        try {
+            std::rethrow_exception(e);
+        }
+        catch(std::exception ex) {
+            cout << ex.what() << endl;
+        }
+    };
+
+    auto input = std::make_shared<rxcpp::ImmediateScheduler>();
+
+    auto add = [](int x, int y){return x + y;};
+
+    // Usage
+    auto obs1 = rxcpp::from(rxcpp::Empty<int>(input)).scan(add);
+    auto obs2 = rxcpp::from(rxcpp::Empty<int>(input)).scan(0, add);
+     
+    auto obs3 = rxcpp::from(rxcpp::Range(1, 3, 1, input)).scan(add);
+    auto obs4 = rxcpp::from(rxcpp::Range(1, 3, 1, input)).scan(0, add);
+
+    test = 1;
+    obs1.subscribe(next, complete, error);
+    // => completed 1
+     
+    test = 2;
+    obs2.subscribe(next, complete, error);
+    // => next 2:0 
+    // => completed 2
+     
+    test = 3;
+    obs3.subscribe(next, complete, error);
+    // => next 3:1 
+    // => next 3:3 
+    // => next 3:6 
+    // => completed 3
+     
+    test = 4;
+    obs4.subscribe(next, complete, error);
+    // => next 4:1 
+    // => next 4:3 
+    // => next 4:6 
+    // => completed 4
+}
+
 void Concat(int n)
 {
     auto input1 = std::make_shared<rxcpp::EventLoopScheduler>();
@@ -492,6 +545,8 @@ int main(int argc, char* argv[])
         innerScheduler<rxcpp::ImmediateScheduler>();
         innerScheduler<rxcpp::CurrentThreadScheduler>();
         innerScheduler<rxcpp::EventLoopScheduler>();
+
+        Scan();
 
         run();
         

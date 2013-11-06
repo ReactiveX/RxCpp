@@ -283,6 +283,11 @@ namespace detail {
             -> decltype(from(Scan<item_type>(obj, seed, accumulator))) {
             return      from(Scan<item_type>(obj, seed, accumulator));
         }
+        template <class A>
+        auto scan(A accumulator) 
+            -> decltype(from(Scan<item_type>(obj, accumulator))) {
+            return      from(Scan<item_type>(obj, accumulator));
+        }
         template <class Integral>
         auto take(Integral n) 
             -> decltype(from(Take<item_type>(obj, n))) {
