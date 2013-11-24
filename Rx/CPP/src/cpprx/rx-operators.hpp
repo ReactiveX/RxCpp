@@ -969,6 +969,7 @@ namespace rxcpp
 #include "operators/Scan.hpp"
 #include "operators/Take.hpp"
 #include "operators/Skip.hpp"
+#include "operators/DistinctUntilChanged.hpp"
 
 //////////////////////////////////////////////////////////////////////
 // 
@@ -1058,47 +1059,7 @@ namespace rxcpp
             });
     }
 
-    // removes duplicate-sequenced values. e.g. 1,2,2,3,1 ==> 1,2,3,1
-    template <class T>
-    std::shared_ptr<Observable<T>> DistinctUntilChanged(
-        const std::shared_ptr<Observable<T>>& source)
-    {   
-        return CreateObservable<T>(
-            [=](std::shared_ptr<Observer<T>> observer)
-            -> Disposable
-            {
-                struct State {
-                    State() : last(), hasValue(false) {}
-                    T last; bool hasValue;
-                };
-        
-                auto state = std::make_shared<State>();
-                state->hasValue = false;
 
-                return Subscribe(
-                    source,
-                // on next
-                    [=](const T& element)
-                    {
-                        if (!state->hasValue || !(state->last == element))
-                        {
-                            observer->OnNext(element);
-                            state->last = element;
-                            state->hasValue = true;
-                        }
-                    },
-                // on completed
-                    [=]
-                    {
-                        observer->OnCompleted();
-                    },
-                // on error
-                    [=](const std::exception_ptr& error)
-                    {
-                        observer->OnError(error);
-                    });
-            });
-    }
 
     template <class T>
     std::shared_ptr<Observable<T>> SubscribeOnObservable(
