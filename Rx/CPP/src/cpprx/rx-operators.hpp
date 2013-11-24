@@ -965,18 +965,10 @@ namespace rxcpp
 #include "operators/Multicast.hpp"
 #include "operators/Publish.hpp"
 #include "operators/RefCount.hpp"
+#include "operators/ConnectForever.hpp"
 
 namespace rxcpp
 {
-
-    template <class T>
-    const std::shared_ptr<Observable<T>> ConnectForever(
-        const std::shared_ptr<ConnectableObservable<T>>& source
-        )
-    {
-        source->Connect();
-        return observable(source);
-    }
 
     namespace detail
     {
