@@ -961,16 +961,10 @@ namespace rxcpp
 #include "operators/Merge.hpp"
 #include "operators/Where.hpp"
 #include "operators/GroupBy.hpp"
+#include "operators/Multicast.hpp"
 
 namespace rxcpp
 {
-
-    template <class T, class MulticastSubject>
-    std::shared_ptr<ConnectableObservable<T>> Multicast(const std::shared_ptr < Observable < T >> &source, const std::shared_ptr<MulticastSubject>& multicastSubject)
-    {
-        return std::static_pointer_cast<ConnectableObservable<T>>(
-            std::make_shared < ConnectableSubject < std::shared_ptr < Observable < T >> , std::shared_ptr<MulticastSubject> >> (source, multicastSubject));
-    }
 
     template <class T>
     std::shared_ptr<ConnectableObservable<T>> Publish(const std::shared_ptr < Observable < T >> &source)
