@@ -885,20 +885,6 @@ namespace rxcpp
     {
         return fix0_thunk<F>(std::move(f));
     }
-}
-
-#include "operators/Empty.hpp"
-#include "operators/Return.hpp"
-#include "operators/Throw.hpp"
-#include "operators/Range.hpp"
-#include "operators/Random.hpp"
-#include "operators/Interval.hpp"
-#include "operators/Iterate.hpp"
-#include "operators/Using.hpp"
-
-namespace rxcpp
-{
-
 
     //////////////////////////////////////////////////////////////////////
     // 
@@ -953,49 +939,25 @@ namespace rxcpp
         if (error != std::exception_ptr()) {
             std::rethrow_exception(error);}
     }
+}
+
+#include "operators/Empty.hpp"
+#include "operators/Return.hpp"
+#include "operators/Throw.hpp"
+#include "operators/Range.hpp"
+#include "operators/Random.hpp"
+#include "operators/Interval.hpp"
+#include "operators/Iterate.hpp"
+#include "operators/Using.hpp"
+#include "operators/Select.hpp"
+
+namespace rxcpp
+{
 
     //////////////////////////////////////////////////////////////////////
     // 
     // standard query operators
 
-    template <class T, class S>
-    auto Select(
-        const std::shared_ptr<Observable<T>>& source,
-        S selector
-        )
-    -> const std::shared_ptr<Observable<typename std::result_of<S(const T&)>::type>>
-    {
-        typedef typename std::result_of<S(const T&)>::type U;
-        return CreateObservable<U>(
-            [=](std::shared_ptr<Observer<U>> observer)
-            {
-                return Subscribe(
-                    source,
-                // on next
-                    [=](const T& element)
-                    {
-                        util::maybe<U> result;
-                        try {
-                            result.set(selector(element));
-                        } catch(...) {
-                            observer->OnError(std::current_exception());
-                        }
-                        if (!!result) {
-                            observer->OnNext(std::move(*result.get()));
-                        }
-                    },
-                // on completed
-                    [=]
-                    {
-                        observer->OnCompleted();
-                    },
-                // on error
-                    [=](const std::exception_ptr& error)
-                    {
-                        observer->OnError(error);
-                    });
-            });
-    }
 
     template <class T, class CS, class RS>
     auto SelectMany(
