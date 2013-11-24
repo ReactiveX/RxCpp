@@ -1,6 +1,7 @@
  // Copyright (c) Microsoft Open Technologies, Inc. All rights reserved. See License.txt in the project root for license information.
 
 #pragma once
+#include "../rx-operators.hpp"
 
 #if !defined(CPPRX_RX_OPERATORS_EMPTY_HPP)
 #define CPPRX_RX_OPERATORS_EMPTY_HPP
