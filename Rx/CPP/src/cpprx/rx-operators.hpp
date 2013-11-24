@@ -978,6 +978,7 @@ namespace rxcpp
 // shift to Scheduler
 
 #include "operators/SubscribeOnObservable.hpp"
+#include "operators/ObserveOnObserver.hpp"
 
 
 //////////////////////////////////////////////////////////////////////
@@ -1036,47 +1037,6 @@ namespace rxcpp
             });
     }
 
-
-
-    template <class T>
-    std::shared_ptr<Observable<T>> ObserveOnObserver(
-        const std::shared_ptr<Observable<T>>& source, 
-        Scheduler::shared scheduler)
-    {
-        return CreateObservable<T>(
-            [=](std::shared_ptr<Observer<T>> observerArg)
-            -> Disposable
-            {
-                std::shared_ptr<ScheduledObserver<T>> observer(
-                    new ScheduledObserver<T>(scheduler, std::move(observerArg)));
-
-                ComposableDisposable cd;
-
-                cd.Add(*observer.get());
-
-                cd.Add(Subscribe(
-                    source,
-                // on next
-                    [=](const T& element)
-                    {
-                        observer->OnNext(std::move(element));
-                        observer->EnsureActive();
-                    },
-                // on completed
-                    [=]
-                    {
-                        observer->OnCompleted();
-                        observer->EnsureActive();
-                    },
-                // on error
-                    [=](const std::exception_ptr& error)
-                    {
-                        observer->OnError(std::move(error));
-                        observer->EnsureActive();
-                    }));
-                return cd;
-            });
-    }
 
     class StdQueueDispatcher
     {
