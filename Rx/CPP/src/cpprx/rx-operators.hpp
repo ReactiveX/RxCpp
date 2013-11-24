@@ -868,15 +868,6 @@ namespace rxcpp
             return subject->Subscribe(observer);
         }
     };
-}
-
-#include "operators/Empty.hpp"
-#include "operators/Return.hpp"
-#include "operators/Throw.hpp"
-
-namespace rxcpp
-{
-
 
     template <class F>
     struct fix0_thunk {
@@ -894,57 +885,16 @@ namespace rxcpp
     {
         return fix0_thunk<F>(std::move(f));
     }
+}
 
-    template <class Integral>
-    auto Range(
-        Integral start, Integral end = std::numeric_limits<Integral>::max(), Integral step = 1,
-        Scheduler::shared scheduler = nullptr)
-        -> std::shared_ptr<Observable<Integral>>
-    {
-        if (!scheduler) {scheduler = std::make_shared<CurrentThreadScheduler>();}
-        return CreateObservable<Integral>(
-            [=](std::shared_ptr<Observer<Integral>> observer) -> Disposable
-        {
-            struct State 
-            {
-                bool cancel;
-                Integral i;
-                Integral rem;
-            };
-            auto state = std::make_shared<State>();
-            state->cancel = false;
-            state->i = start;
-            state->rem = ((end - start) + step) / step;
+#include "operators/Empty.hpp"
+#include "operators/Return.hpp"
+#include "operators/Throw.hpp"
+#include "operators/Range.hpp"
 
-            ComposableDisposable cd;
+namespace rxcpp
+{
 
-            cd.Add(Disposable([=]{
-                state->cancel = true;
-            }));
-
-            cd.Add(scheduler->Schedule(
-                fix0([=](Scheduler::shared s, std::function<Disposable(Scheduler::shared)> self) -> Disposable
-            {
-                if (state->cancel)
-                    return Disposable::Empty();
-
-                if (!state->rem)
-                {
-                    observer->OnCompleted();
-                }
-                else
-                {
-                    observer->OnNext(state->i);
-                    --state->rem; 
-                    state->i += step;
-                    return s->Schedule(std::move(self));
-                }
-                return Disposable::Empty();             
-            })));
-
-            return cd;
-        });
-    }
 
     //
     //    std::mt19937 twister;
