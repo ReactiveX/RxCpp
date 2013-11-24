@@ -953,6 +953,7 @@ namespace rxcpp
 //////////////////////////////////////////////////////////////////////
 // 
 // standard query operators
+
 #include "operators/Select.hpp"
 #include "operators/SelectMany.hpp"
 #include "operators/Concat.hpp"
@@ -962,30 +963,11 @@ namespace rxcpp
 #include "operators/Where.hpp"
 #include "operators/GroupBy.hpp"
 #include "operators/Multicast.hpp"
+#include "operators/Publish.hpp"
 
 namespace rxcpp
 {
 
-    template <class T>
-    std::shared_ptr<ConnectableObservable<T>> Publish(const std::shared_ptr < Observable < T >> &source)
-    {
-        auto multicastSubject = std::make_shared<Subject<T>>();
-        return Multicast(source, multicastSubject);
-    }
-
-    template <class T, class V>
-    std::shared_ptr<ConnectableObservable<T>> Publish(const std::shared_ptr < Observable < T >> &source, V value)
-    {
-        auto multicastSubject = std::make_shared<BehaviorSubject<T>>(value);
-        return Multicast(source, multicastSubject);
-    }
-
-    template <class T>
-    std::shared_ptr<ConnectableObservable<T>> PublishLast(const std::shared_ptr < Observable < T >> &source)
-    {
-        auto multicastSubject = std::make_shared<AsyncSubject<T>>();
-        return Multicast(source, multicastSubject);
-    }
 
     namespace detail
     {
