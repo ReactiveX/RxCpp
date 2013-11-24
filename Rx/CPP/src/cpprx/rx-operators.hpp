@@ -850,27 +850,14 @@ namespace rxcpp
     {
         return fix0_thunk<F>(std::move(f));
     }
-
-
-    template <class S>
-    Disposable Subscribe(
-        const S& source,
-        typename util::identity<std::function<void(const typename observable_item<S>::type&)>>::type onNext,
-        std::function<void()> onCompleted = nullptr,
-        std::function<void(const std::exception_ptr&)> onError = nullptr
-        )
-    {
-        auto observer = CreateObserver<typename observable_item<S>::type>(
-            std::move(onNext), std::move(onCompleted), std::move(onError));
-        
-        return source->Subscribe(observer);
-    }
 }
 
 //////////////////////////////////////////////////////////////////////
 // 
 // imperative functions
 
+#include "operators/Subscribe.hpp"
+#include "operators/ForEach.hpp"
 #include "operators/Empty.hpp"
 #include "operators/Return.hpp"
 #include "operators/Throw.hpp"
@@ -884,7 +871,6 @@ namespace rxcpp
 // 
 // standard query operators
 
-#include "operators/ForEach.hpp"
 #include "operators/Select.hpp"
 #include "operators/SelectMany.hpp"
 #include "operators/Concat.hpp"
