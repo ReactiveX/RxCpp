@@ -959,48 +959,10 @@ namespace rxcpp
 #include "operators/CombineLatest.hpp"
 #include "operators/Zip.hpp"
 #include "operators/Merge.hpp"
+#include "operators/Where.hpp"
 
 namespace rxcpp
 {
-
-    template <class T, class P>
-    const std::shared_ptr<Observable<T>> Where(
-        const std::shared_ptr<Observable<T>>& source,
-        P predicate
-        )    
-    {
-        return CreateObservable<T>(
-            [=](std::shared_ptr<Observer<T>> observer)
-            {
-                return Subscribe(
-                    source,
-                // on next
-                    [=](const T& element)
-                    {
-                        typedef decltype(predicate(element)) U;
-                        util::maybe<U> result;
-                        try {
-                            result.set(predicate(element));
-                        } catch(...) {
-                            observer->OnError(std::current_exception());
-                        }
-                        if (!!result && *result.get())
-                        {
-                            observer->OnNext(element);
-                        }
-                    },
-                // on completed
-                    [=]
-                    {
-                        observer->OnCompleted();
-                    },
-                // on error
-                    [=](const std::exception_ptr& error)
-                    {
-                        observer->OnError(error);
-                    });
-            });
-    }
 
     template <class T, class KS, class VS, class L>
     auto GroupBy(
