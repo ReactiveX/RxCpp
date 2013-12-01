@@ -17,14 +17,7 @@ namespace rxcpp
     {
         typedef Scheduler::clock clock;
         typedef Scheduler::Work Work;
-        struct QueueItem {
-            QueueItem(clock::time_point due, std::shared_ptr<Work> work)
-                : due(due)
-                , work(std::move(work))
-            {}
-            clock::time_point due;
-            std::shared_ptr<Work> work;
-        };
+        typedef ScheduledItem<clock::time_point> QueueItem;
 
     private:
         ~CurrentThreadQueue();

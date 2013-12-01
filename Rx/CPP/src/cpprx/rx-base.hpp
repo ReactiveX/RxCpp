@@ -356,6 +356,175 @@ namespace rxcpp
         }
     };
 
+    template<class Absolute>
+    struct ScheduledItem {
+        ScheduledItem(Absolute due, std::shared_ptr<Scheduler::Work> work)
+            : due(due)
+            , work(std::move(work))
+        {}
+        Absolute due;
+        std::shared_ptr<Scheduler::Work> work;
+    };
+
+    template<class Absolute, class Relative>
+    struct VirtualTimeSchedulerBase : public Scheduler
+    {
+    private:
+        VirtualTimeSchedulerBase(const VirtualTimeSchedulerBase&);
+
+        bool is_enabled;
+
+    public:
+        static void Do(Work& work, Scheduler::shared scheduler) throw()
+        {
+            if (work)
+            {
+                work(std::move(scheduler));
+            }
+        }
+
+    public:
+        VirtualTimeSchedulerBase()
+            : is_enabled(false)
+        {
+        }
+        explicit VirtualTimeSchedulerBase(Absolute initialClock)
+            : is_enabled(false)
+            , clock_now(initialClock)
+        {
+        }
+        virtual ~VirtualTimeSchedulerBase()
+        {
+        }
+
+    protected:
+        Absolute clock_now;
+
+        virtual Absolute Add(Absolute, Relative) =0;
+
+        virtual clock::time_point ToTimePoint(Absolute) =0;
+        virtual Relative ToRelative(clock::duration) =0;
+
+        virtual ScheduledItem<Absolute> GetNext() =0;
+
+    public:
+        virtual Disposable ScheduleAbsolute(Absolute, Work) =0;
+
+        virtual Disposable ScheduleRelative(Relative dueTime, Work work) {
+            auto at = Add(clock_now, dueTime);
+            return ScheduleAbsolute(at, std::move(work));
+        }
+
+        virtual clock::time_point Now() {return ToAbsolute(clock_now);}
+
+        bool IsEnabled() {return is_enabled;}
+        Absolute Clock() {return clock_now;}
+
+        using Scheduler::Schedule;
+        virtual Disposable Schedule(Work work)
+        {
+            return ScheduleAbsolute(clock_now, std::move(work));
+        }
+        
+        virtual Disposable Schedule(clock::duration due, Work work)
+        {
+            return ScheduleRelative(ToRelative(due), std::move(work));
+        }
+
+        virtual Disposable Schedule(clock::time_point due, Work work)
+        {
+            return ScheduleRelative(ToRelative(due - Now()), std::move(work));
+        }
+
+        void Start()
+        {
+            if (!is_enabled) {
+                is_enabled = true;
+                do {
+                    auto next = GetNext();
+                    if (!!next.work) {
+                        if (next.due > clock_now) {
+                            clock_now = next.due;
+                        }
+                        Do(next.work, this);
+                    }
+                    else {
+                        is_enabled = false;
+                    }
+                } while (is_enabled);
+            }
+        }
+
+        void Stop()
+        {
+            is_enabled = false;
+        }
+
+        void AdvanceTo(Absolute time)
+        {
+            if (time < clock_now) {
+                abort();
+            }
+
+            if (time == clock_now) {
+                return;
+            }
+
+            if (!is_enabled) {
+                is_enabled = true;
+                do {
+                    auto next = GetNext();
+                    if (!!next.work && next.due <= time) {
+                        if (next.due > clock_now) {
+                            clock_now = next.due;
+                        }
+                        Do(next.work, this);
+                    }
+                    else {
+                        is_enabled = false;
+                    }
+                } while (is_enabled);
+
+                clock_now = time;
+            }
+            else {
+                abort();
+            }
+        }
+
+        void AdvanceBy(Relative time)
+        {
+            auto dt = Add(clock_now, time);
+
+            if (dt < clock_now) {
+                abort();
+            }
+
+            if (dt == clock_now) {
+                return;
+            }
+
+            if (!is_enabled) {
+                AdvanceTo(dt);
+            }
+            else {
+                abort();
+            }
+        }
+
+        void Sleep(Relative time)
+        {
+            auto dt = Add(clock_now, time);
+
+            if (dt < clock_now) {
+                abort();
+            }
+
+            clock_now = dt;
+        }
+
+    };
+
     template<typename T>
     struct Notification {
         typedef std::function<void (const T&)> OnNext;
