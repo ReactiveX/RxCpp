@@ -318,18 +318,37 @@ namespace rxcpp
         }
     };
 
+    template<class Absolute>
+    class ScheduledItem {
+    public:
+        ScheduledItem(Absolute due, std::shared_ptr<Scheduler::Work> work)
+            : due(due)
+            , work(std::move(work))
+        {}
+
+        static Disposable Do(Scheduler::Work& work, Scheduler::shared scheduler) throw()
+        {
+            if (work)
+            {
+                return work(std::move(scheduler));
+            }
+            return Disposable::Empty();
+        }
+
+        Absolute due;
+        std::shared_ptr<Scheduler::Work> work;
+    };
+
     struct LocalScheduler : public Scheduler
     {
     private:
         LocalScheduler(const LocalScheduler&);
 
     public:
-        static void Do(Work& work, Scheduler::shared scheduler) throw()
+        typedef ScheduledItem<clock::time_point> QueueItem;
+        static Disposable Do(Work& work, const Scheduler::shared& scheduler) throw()
         {
-            if (work)
-            {
-                work(std::move(scheduler));
-            }
+            return QueueItem::Do(work, scheduler);
         }
 
     public:
@@ -356,16 +375,6 @@ namespace rxcpp
         }
     };
 
-    template<class Absolute>
-    struct ScheduledItem {
-        ScheduledItem(Absolute due, std::shared_ptr<Scheduler::Work> work)
-            : due(due)
-            , work(std::move(work))
-        {}
-        Absolute due;
-        std::shared_ptr<Scheduler::Work> work;
-    };
-
     template<class Absolute, class Relative>
     struct VirtualTimeSchedulerBase : public Scheduler
     {
@@ -375,15 +384,11 @@ namespace rxcpp
         bool is_enabled;
 
     public:
-        static void Do(Work& work, Scheduler::shared scheduler) throw()
+        virtual ~VirtualTimeSchedulerBase()
         {
-            if (work)
-            {
-                work(std::move(scheduler));
-            }
         }
 
-    public:
+    protected:
         VirtualTimeSchedulerBase()
             : is_enabled(false)
         {
@@ -393,11 +398,11 @@ namespace rxcpp
             , clock_now(initialClock)
         {
         }
-        virtual ~VirtualTimeSchedulerBase()
-        {
-        }
 
-    protected:
+        typedef Scheduler::clock clock;
+        typedef Scheduler::Work Work;
+        typedef ScheduledItem<Absolute> QueueItem;
+
         Absolute clock_now;
 
         virtual Absolute Add(Absolute, Relative) =0;
@@ -405,9 +410,14 @@ namespace rxcpp
         virtual clock::time_point ToTimePoint(Absolute) =0;
         virtual Relative ToRelative(clock::duration) =0;
 
-        virtual ScheduledItem<Absolute> GetNext() =0;
+        virtual QueueItem GetNext() =0;
 
     public:
+        static Disposable Do(Work& work, const Scheduler::shared& scheduler) throw()
+        {
+            return QueueItem::Do(work, scheduler);
+        }
+
         virtual Disposable ScheduleAbsolute(Absolute, Work) =0;
 
         virtual Disposable ScheduleRelative(Relative dueTime, Work work) {
@@ -442,11 +452,11 @@ namespace rxcpp
                 is_enabled = true;
                 do {
                     auto next = GetNext();
-                    if (!!next.work) {
-                        if (next.due > clock_now) {
-                            clock_now = next.due;
+                    if (!!next && !!next->work && !!*next->work) {
+                        if (next->due > clock_now) {
+                            clock_now = next->due;
                         }
-                        Do(next.work, this);
+                        Do(*next->work, shared_from_this());
                     }
                     else {
                         is_enabled = false;
@@ -474,11 +484,11 @@ namespace rxcpp
                 is_enabled = true;
                 do {
                     auto next = GetNext();
-                    if (!!next.work && next.due <= time) {
-                        if (next.due > clock_now) {
-                            clock_now = next.due;
+                    if (!!next && !!next->work && !!*next->work && next->due <= time) {
+                        if (next->due > clock_now) {
+                            clock_now = next->due;
                         }
-                        Do(next.work, this);
+                        Do(*next->work, shared_from_this());
                     }
                     else {
                         is_enabled = false;
@@ -524,6 +534,7 @@ namespace rxcpp
         }
 
     };
+
 
     template<typename T>
     struct Notification {

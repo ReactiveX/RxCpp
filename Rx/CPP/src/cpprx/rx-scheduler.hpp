@@ -574,6 +574,84 @@ namespace rxcpp
             return scheduler->Schedule(dueTime, work);
         }
     };
+
+    template<class Absolute, class Relative>
+    class VirtualTimeScheduler : public VirtualTimeSchedulerBase<Absolute, Relative>
+    {
+    private:
+        VirtualTimeScheduler(const VirtualTimeScheduler&);
+
+        typedef VirtualTimeSchedulerBase<Absolute, Relative> Base;
+
+        typedef typename Base::clock clock;
+        typedef typename Base::Work Work;
+        typedef typename Base::QueueItem QueueItem;
+
+        struct compare_work
+        {
+            bool operator()(const QueueItem& work1, const QueueItem& work2) const {
+                return work1.due > work2.due;
+            }
+        };
+        
+        typedef std::priority_queue<
+            QueueItem,
+            std::vector<QueueItem>,
+            compare_work 
+        > ScheduledWork;
+
+        ScheduledWork queue;
+
+    public:
+
+        virtual ~VirtualTimeScheduler()
+        {
+        }
+
+    protected:
+        VirtualTimeScheduler()
+        {
+        }
+        explicit VirtualTimeScheduler(Absolute initialClock)
+            : Base(initialClock)
+        {
+        }
+
+        virtual util::maybe<QueueItem> GetNext() {
+            util::maybe<QueueItem> next;
+            while (!queue.empty()) {
+                next.set(queue.top());
+                if (!next->work || !*next->work) {
+                    queue.pop();
+                }
+                else {
+                    return next;
+                }
+            }
+            return next;
+        }
+
+        Disposable ScheduleAbsolute(Absolute dueTime, Work work)
+        {
+            auto cancelable = std::make_shared<Work>(std::move(work));
+
+            auto run = [cancelable](Scheduler::shared scheduler) -> Disposable {
+                auto work = *cancelable.get();
+                *cancelable.get() = nullptr;
+                return Do(work, std::move(scheduler));
+            };
+
+            auto si = QueueItem(dueTime, std::make_shared<Work>(std::move(run)));
+            queue.push(si);
+
+            auto result = Disposable([cancelable]{
+                *cancelable.get() = nullptr;
+            });
+            return result;
+        }
+
+    };
+
 }
 
 #endif
