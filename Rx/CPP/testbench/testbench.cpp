@@ -51,6 +51,8 @@ void PrintPrimes(int n)
     auto values = rxcpp::Range(2); // infinite (until overflow) stream of integers
     rxcpp::from(values)
         .where(IsPrime)
+        .materialize()
+        .dematerialize()
         .select([](int x) { return std::make_pair(x,  x*x); })
         .take(n)
         .for_each(rxcpp::MakeTupleDispatch(

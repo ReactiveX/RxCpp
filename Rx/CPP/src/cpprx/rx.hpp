@@ -123,10 +123,43 @@ namespace detail {
         }
     };
 
+    template<class Base, class T, class Obj>
+    class BinderMaterialized : public Base
+    {
+    protected:
+        typedef typename Base::item_type item_type;
+        using Base::obj;
+    public:
+        BinderMaterialized(Obj obj) : Base(std::move(obj))
+        {
+        }
+    };
+
+    template<class Base, class T, class M>
+    class BinderMaterialized<Base, T, std::shared_ptr<Observable<std::shared_ptr<Notification<M>>>>> : public Base
+    {
+    protected:
+        typedef typename Base::item_type item_type;
+        using Base::obj;
+    public:
+        BinderMaterialized(std::shared_ptr<Observable<std::shared_ptr<Notification<M>>>> obj) : Base(std::move(obj))
+        {
+        }
+
+        auto dematerialize()
+            -> decltype(from(Dematerialize(observable(obj)))) {
+                return  from(Dematerialize(observable(obj)));
+        }
+    };
+
     template<class Obj>
     class Binder : public BinderNested<
         BinderConnectable<
-            BinderBase<typename observable_item<Obj>::type, Obj>,
+            BinderMaterialized<
+                BinderBase<typename observable_item<Obj>::type, Obj>,
+                typename observable_item<Obj>::type, 
+                Obj
+            >,
             typename observable_item<Obj>::type,
             Obj
         >,
@@ -136,7 +169,11 @@ namespace detail {
     {
         typedef BinderNested<
         BinderConnectable<
-            BinderBase<typename observable_item<Obj>::type, Obj>,
+            BinderMaterialized<
+                BinderBase<typename observable_item<Obj>::type, Obj>,
+                typename observable_item<Obj>::type, 
+                Obj
+            >,
             typename observable_item<Obj>::type,
             Obj
         >,
@@ -342,6 +379,10 @@ namespace detail {
         auto to_list() 
             -> decltype(from(ToStdCollection<std::list<item_type>>(obj))) {
             return      from(ToStdCollection<std::list<item_type>>(obj));
+        }
+        auto materialize()
+            -> decltype(from(Materialize(observable(obj)))) {
+                return  from(Materialize(observable(obj)));
         }
         auto delay(Scheduler::clock::duration due, Scheduler::shared scheduler) -> decltype(from(Delay<item_type>(obj, due, scheduler))) {
             return from(Delay<item_type>(obj, due, scheduler));

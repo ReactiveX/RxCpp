@@ -356,6 +356,90 @@ namespace rxcpp
         }
     };
 
+    template<typename T>
+    struct Notification {
+        typedef std::function<void (const T&)> OnNext;
+        typedef std::function<void ()> OnCompleted;
+        typedef std::function<void (const std::exception_ptr&)> OnError;
+
+        virtual ~Notification() {}
+
+        virtual void Accept(std::shared_ptr<Observer<T>>) =0;
+        virtual void Accept(OnNext onnext, OnCompleted oncompleted, OnError onerror) =0;
+
+    private:
+        struct OnNextNotification : public Notification<T> {
+            OnNextNotification(T value) : value(std::move(value)) {
+            }
+            virtual void Accept(std::shared_ptr<Observer<T>> o) {
+                if (!o) {
+                    abort();
+                }
+                o->OnNext(value);
+            }
+            virtual void Accept(OnNext onnext, OnCompleted oncompleted, OnError onerror) {
+                if (!onnext || !oncompleted || !onerror) {
+                    abort();
+                }
+                onnext(value);
+            }
+            const T value;
+        };
+
+        struct OnCompletedNotification : public Notification<T> {
+            OnCompletedNotification() {
+            }
+            virtual void Accept(std::shared_ptr<Observer<T>> o) {
+                if (!o) {
+                    abort();
+                }
+                o->OnCompleted();
+            }
+            virtual void Accept(OnNext onnext, OnCompleted oncompleted, OnError onerror) {
+                if (!onnext || !oncompleted || !onerror) {
+                    abort();
+                }
+                oncompleted();
+            }
+        };
+
+        struct OnErrorNotification : public Notification<T> {
+            OnErrorNotification(std::exception_ptr ep) : ep(ep) {
+            }
+            virtual void Accept(std::shared_ptr<Observer<T>> o) {
+                if (!o) {
+                    abort();
+                }
+                o->OnError(ep);
+            }
+            virtual void Accept(OnNext onnext, OnCompleted oncompleted, OnError onerror) {
+                if (!onnext || !oncompleted || !onerror) {
+                    abort();
+                }
+                onerror(ep);
+            }
+            const std::exception_ptr ep;
+        };
+
+    public:
+        static
+        std::shared_ptr<OnNextNotification> CreateOnNext(T value) {
+            return std::make_shared<OnNextNotification>(std::move(value));
+        }
+        static
+        std::shared_ptr<OnCompletedNotification> CreateOnCompleted() {
+            return std::make_shared<OnCompletedNotification>();
+        }
+        template<typename Exception>
+        static
+        std::shared_ptr<OnErrorNotification> CreateOnError(Exception&& e) {
+            std::exception_ptr ep;
+            try {throw std::forward<Exception>(e);}
+            catch (...) {ep = std::current_exception();}
+            return std::make_shared<OnErrorNotification>(ep);
+        }
+    };
+
     template<class Target>
     class TupleDispatch {
         Target target;

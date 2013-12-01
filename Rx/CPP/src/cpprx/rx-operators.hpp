@@ -889,6 +889,8 @@ namespace rxcpp
 #include "operators/DistinctUntilChanged.hpp"
 #include "operators/ToStdCollection.hpp"
 #include "operators/ToAsync.hpp"
+#include "operators/Materialize.hpp"
+#include "operators/Dematerialize.hpp"
 
 
 //////////////////////////////////////////////////////////////////////
