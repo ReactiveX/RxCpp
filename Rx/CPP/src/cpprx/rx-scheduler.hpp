@@ -658,8 +658,8 @@ namespace rxcpp
     {
     public:
         typedef VirtualTimeScheduler<long, long> Base;
-        typedef typename Base::clock clock;
-        typedef typename Base::Work Work;
+        typedef Base::clock clock;
+        typedef Base::Work Work;
         typedef std::shared_ptr<TestScheduler> shared;
 
         static const long Created = 100;
@@ -732,7 +732,7 @@ namespace rxcpp
 
         virtual long ToRelative(clock::duration d)
         {
-            return d.count();
+            return static_cast<long>(d.count());
         }
 
         using Base::Start;
