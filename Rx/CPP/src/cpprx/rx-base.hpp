@@ -810,6 +810,9 @@ namespace detail {
     struct observable_item<std::shared_ptr<Observable<T>>> {typedef T type;};
 
     template<class T>
+    struct observable_item<std::shared_ptr<TestableObservable<T>>> {typedef T type;};
+
+    template<class T>
     struct observable_item < std::shared_ptr < ConnectableObservable<T >> > {typedef T type; };
 
     template<class K, class T>
@@ -838,6 +841,9 @@ namespace detail {
 
     template<class T>
     struct observer_item<std::shared_ptr<Observer<T>>> {typedef T type;};
+
+    template<class T>
+    struct observer_item<std::shared_ptr<TestableObserver<T>>> {typedef T type;};
 
     template<class Subject>
     struct subject_item;
@@ -894,6 +900,9 @@ namespace detail {
     std::shared_ptr<Observable<T>> observable(const std::shared_ptr < GroupedObservable < K, T >> &o){ return std::static_pointer_cast < Observable < T >> (o); }
 
     template<class T>
+    std::shared_ptr<Observable<T>> observable(const std::shared_ptr < TestableObservable < T >> &o){ return std::static_pointer_cast < Observable < T >> (o); }
+
+    template<class T>
     std::shared_ptr< Observable < T >> observable(const std::shared_ptr < ConnectableObservable < T >> &o){
         return std::static_pointer_cast < Observable < T >> (o); }
 
@@ -930,6 +939,9 @@ namespace detail {
 
     template<class K, class T>
     std::shared_ptr<Observer<T>> observer(const std::shared_ptr<GroupedSubject<K, T>>& s){return std::static_pointer_cast<Observer<T>>(s);}
+
+    template<class T>
+    std::shared_ptr<Observer<T>> observer(const std::shared_ptr<TestableObserver<T>>& o){return std::static_pointer_cast<Observer<T>>(o);}
 
     template<class K, class T>
     std::shared_ptr<GroupedObservable<K, T>> grouped_observable(const std::shared_ptr<GroupedSubject<K, T>>& s){return std::static_pointer_cast<GroupedObservable<K, T>>(s);}

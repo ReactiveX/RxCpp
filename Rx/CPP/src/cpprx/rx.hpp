@@ -411,7 +411,7 @@ namespace detail {
         auto observe_on_dispatcher()
             -> decltype(from(ObserveOnObserver<item_type>(obj, std::static_pointer_cast<Scheduler>(winrt::CoreDispatcherScheduler::Current()))))
         {
-            return		from(ObserveOnObserver<item_type>(obj, std::static_pointer_cast<Scheduler>(winrt::CoreDispatcherScheduler::Current())));
+            return      from(ObserveOnObserver<item_type>(obj, std::static_pointer_cast<Scheduler>(winrt::CoreDispatcherScheduler::Current())));
         }
 #else
         auto on_dispatcher()
@@ -563,6 +563,10 @@ namespace detail {
     template<class K, class T>
     Binder<std::shared_ptr<GroupedObservable<K, T>>> from(std::shared_ptr<GroupedSubject<K, T>> obj) {
         return Binder<std::shared_ptr<GroupedObservable<K, T>>>(std::move(obj)); }
+
+    template<class T>
+    Binder<std::shared_ptr<TestableObservable<T>>> from(std::shared_ptr<TestableObservable<T>> obj) {
+        return Binder<std::shared_ptr<TestableObservable<T>>>(std::move(obj)); }
 
     template<class Obj>
     Binder<Obj> from(Binder<Obj> binder) { 
