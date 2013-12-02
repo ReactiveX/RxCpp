@@ -410,7 +410,7 @@ namespace rxcpp
         virtual clock::time_point ToTimePoint(Absolute) =0;
         virtual Relative ToRelative(clock::duration) =0;
 
-        virtual QueueItem GetNext() =0;
+        virtual util::maybe<QueueItem> GetNext() =0;
 
     public:
         static Disposable Do(Work& work, const Scheduler::shared& scheduler) throw()
@@ -425,7 +425,7 @@ namespace rxcpp
             return ScheduleAbsolute(at, std::move(work));
         }
 
-        virtual clock::time_point Now() {return ToAbsolute(clock_now);}
+        virtual clock::time_point Now() {return ToTimePoint(clock_now);}
 
         bool IsEnabled() {return is_enabled;}
         Absolute Clock() {return clock_now;}
@@ -535,21 +535,62 @@ namespace rxcpp
 
     };
 
+    template<class T>
+    class Recorded
+    {
+        long time;
+        T value;
+    public:
+        Recorded(long time, T value) : time(time), value(value) {
+        }
+        long Time() {return time;}
+        T Value() {return value;}
+    };
+
+    template<class T>
+    bool operator == (Recorded<T> lhs, Recorded<T> rhs) {
+        return lhs.Time() == rhs.Time() && lhs.Value() == rhs.Value();
+    }
+
+    class Subscription
+    {
+        long subscribe;
+        long unsubscribe;
+
+    public:
+        explicit Subscription(long subscribe) : subscribe(subscribe), unsubscribe(std::numeric_limits<long>::max()) {
+        }
+        Subscription(long subscribe, long unsubscribe) : subscribe(subscribe), unsubscribe(unsubscribe) {
+        }
+        long Subscribe() {return subscribe;}
+        long Unsubscribe() {return unsubscribe;}
+    };
+
+    bool operator == (Subscription lhs, Subscription rhs) {
+        return lhs.Subscribe() == rhs.Subscribe() && lhs.Unsubscribe() == rhs.Unsubscribe();
+    }
 
     template<typename T>
-    struct Notification {
+    struct Notification 
+    {
         typedef std::function<void (const T&)> OnNext;
         typedef std::function<void ()> OnCompleted;
         typedef std::function<void (const std::exception_ptr&)> OnError;
 
         virtual ~Notification() {}
 
+        virtual bool Equals(std::shared_ptr<Notification<T>> other) = 0;
         virtual void Accept(std::shared_ptr<Observer<T>>) =0;
         virtual void Accept(OnNext onnext, OnCompleted oncompleted, OnError onerror) =0;
 
     private:
         struct OnNextNotification : public Notification<T> {
             OnNextNotification(T value) : value(std::move(value)) {
+            }
+            virtual bool Equals(std::shared_ptr<Notification<T>> other) {
+                bool result = false;
+                other->Accept([this, &result](T value) { result = this->value == value;}, [](){}, [](std::exception_ptr){});
+                return result;
             }
             virtual void Accept(std::shared_ptr<Observer<T>> o) {
                 if (!o) {
@@ -569,6 +610,11 @@ namespace rxcpp
         struct OnCompletedNotification : public Notification<T> {
             OnCompletedNotification() {
             }
+            virtual bool Equals(std::shared_ptr<Notification<T>> other) {
+                bool result = false;
+                other->Accept([](T) {}, [&result](){result = true;}, [](std::exception_ptr){});
+                return result;
+            }
             virtual void Accept(std::shared_ptr<Observer<T>> o) {
                 if (!o) {
                     abort();
@@ -585,6 +631,12 @@ namespace rxcpp
 
         struct OnErrorNotification : public Notification<T> {
             OnErrorNotification(std::exception_ptr ep) : ep(ep) {
+            }
+            virtual bool Equals(std::shared_ptr<Notification<T>> other) {
+                bool result = false;
+                // not trying to compare exceptions
+                other->Accept([](T) {}, [](){}, [&result](std::exception_ptr){result = true;});
+                return result;
             }
             virtual void Accept(std::shared_ptr<Observer<T>> o) {
                 if (!o) {
@@ -618,6 +670,31 @@ namespace rxcpp
             catch (...) {ep = std::current_exception();}
             return std::make_shared<OnErrorNotification>(ep);
         }
+        static
+        std::shared_ptr<OnErrorNotification> CreateOnError(std::exception_ptr ep) {
+            return std::make_shared<OnErrorNotification>(ep);
+        }
+    };
+
+    template<class T>
+    bool operator == (std::shared_ptr<Notification<T>> lhs, std::shared_ptr<Notification<T>> rhs) {
+        if (!lhs && !rhs) {return true;}
+        if (!lhs || !rhs) {return false;}
+        return lhs->Equals(rhs);
+    }
+
+    template<class T>
+    struct TestableObserver : public Observer<T>
+    {
+        virtual std::vector<Recorded<std::shared_ptr<Notification<T>>>> Messages() =0;
+    };
+
+    template<class T>
+    struct TestableObservable : public Observable<T>
+    {
+        virtual std::vector<Subscription> Subscriptions() =0;
+
+        virtual std::vector<Recorded<std::shared_ptr<Notification<T>>>> Messages() =0;
     };
 
     template<class Target>

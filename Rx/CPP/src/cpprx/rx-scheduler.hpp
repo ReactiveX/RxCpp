@@ -583,8 +583,6 @@ namespace rxcpp
 
         typedef VirtualTimeSchedulerBase<Absolute, Relative> Base;
 
-        typedef typename Base::clock clock;
-        typedef typename Base::Work Work;
         typedef typename Base::QueueItem QueueItem;
 
         struct compare_work
@@ -603,6 +601,8 @@ namespace rxcpp
         ScheduledWork queue;
 
     public:
+        typedef typename Base::clock clock;
+        typedef typename Base::Work Work;
 
         virtual ~VirtualTimeScheduler()
         {
@@ -633,15 +633,17 @@ namespace rxcpp
 
         Disposable ScheduleAbsolute(Absolute dueTime, Work work)
         {
-            auto cancelable = std::make_shared<Work>(std::move(work));
+            auto cancelable = std::make_shared<Work>();
 
-            auto run = [cancelable](Scheduler::shared scheduler) -> Disposable {
-                auto work = *cancelable.get();
+            auto run = [cancelable, work](Scheduler::shared scheduler) -> Disposable {
+                auto local = work;
                 *cancelable.get() = nullptr;
-                return Do(work, std::move(scheduler));
+                return Base::Do(local, std::move(scheduler));
             };
+            
+            *cancelable.get() = run;
 
-            auto si = QueueItem(dueTime, std::make_shared<Work>(std::move(run)));
+            auto si = QueueItem(dueTime, cancelable);
             queue.push(si);
 
             auto result = Disposable([cancelable]{
@@ -651,6 +653,287 @@ namespace rxcpp
         }
 
     };
+
+    class TestScheduler : public VirtualTimeScheduler<long, long>
+    {
+    public:
+        typedef VirtualTimeScheduler<long, long> Base;
+        typedef typename Base::clock clock;
+        typedef typename Base::Work Work;
+        typedef std::shared_ptr<TestScheduler> shared;
+
+        static const long Created = 100;
+        static const long Subscribed = 200;
+        static const long Disposed = 1000;
+
+        template<class T>
+        struct Messages 
+        {
+            typedef Recorded<std::shared_ptr<Notification<T>>> RecordedT;
+
+            static 
+            RecordedT OnNext(long ticks, T value)
+            {
+                return RecordedT(ticks, Notification<T>::CreateOnNext(value));
+            }
+
+            static 
+            RecordedT OnCompleted(long ticks)
+            {
+                return RecordedT(ticks, Notification<T>::CreateOnCompleted());
+            }
+
+            static 
+            RecordedT OnError(long ticks, std::exception_ptr ep)
+            {
+                return RecordedT(ticks, Notification<T>::CreateOnError(ep));
+            }
+
+            template<class Exception>
+            static 
+            RecordedT OnError(long ticks, Exception e)
+            {
+                return RecordedT(ticks, Notification<T>::CreateOnError(e));
+            }
+
+            static 
+            Subscription Subscribe(long subscribe, long unsubscribe)
+            {
+                return Subscription(subscribe, unsubscribe);
+            }
+
+        private:
+            ~Messages();
+        };
+
+        virtual Disposable ScheduleAbsolute(long dueTime, Work work)
+        {
+            if (dueTime <= Base::clock_now)
+                dueTime = Base::clock_now + 1;
+
+            return Base::ScheduleAbsolute(dueTime, std::move(work));
+        }
+
+        virtual long Add(long absolute, long relative)
+        {
+            return absolute + relative;
+        }
+
+        virtual clock::time_point ToTimePoint(long absolute)
+        {
+            return clock::time_point(clock::duration(absolute));
+        }
+
+        virtual long ToRelative(clock::duration d)
+        {
+            return d.count();
+        }
+
+        using Base::Start;
+
+        template<class T>
+        std::shared_ptr<TestableObserver<T>> Start(std::function<std::shared_ptr<Observable<T>>()> create, long created, long subscribed, long disposed)
+        {
+            auto observer = CreateObserver<T>();
+
+            struct State 
+            {
+                std::shared_ptr<Observable<T>> source;
+                SerialDisposable subscription;
+                std::shared_ptr<TestableObserver<T>> observer;
+            };
+            auto state = std::make_shared<State>();
+
+            state->observer = observer;
+
+            ScheduleAbsolute(created, [create, state](Scheduler::shared scheduler) -> Disposable { 
+                state->source = create(); return Disposable::Empty(); });
+            ScheduleAbsolute(subscribed, [state](Scheduler::shared scheduler) -> Disposable { 
+                state->subscription.Set(state->source->Subscribe(state->observer)); return Disposable::Empty(); });
+            ScheduleAbsolute(disposed, [state](Scheduler::shared scheduler) -> Disposable { 
+                state->subscription.Dispose(); return Disposable::Empty(); });
+
+            Start();
+
+            return observer;
+        }
+
+        template<class T>
+        std::shared_ptr<TestableObserver<T>> Start(std::function<std::shared_ptr<Observable<T>>()> create, long disposed)
+        {
+            return Start(create, Created, Subscribed, disposed);
+        }
+
+        template<class T>
+        std::shared_ptr<TestableObserver<T>> Start(std::function<std::shared_ptr<Observable<T>>()> create)
+        {
+            return Start(create, Created, Subscribed, Disposed);
+        }
+
+        template<class T>
+        std::shared_ptr<TestableObservable<T>> CreateHotObservable(std::vector<Recorded<std::shared_ptr<Notification<T>>>> messages);
+
+        template<class T>
+        std::shared_ptr<TestableObservable<T>> CreateColdObservable(std::vector<Recorded<std::shared_ptr<Notification<T>>>> messages);
+
+        template<class T>
+        std::shared_ptr<TestableObserver<T>> CreateObserver();
+    };
+
+    template<class T>
+    class MockObserver : public TestableObserver<T>
+    {
+        typedef Notification<T> NotificationT;
+        typedef Recorded<std::shared_ptr<Notification<T>>> RecordedT;
+
+        TestScheduler::shared scheduler;
+        std::vector<RecordedT> messages;
+
+    public:
+        MockObserver(TestScheduler::shared scheduler)
+            : scheduler(scheduler)
+        {
+        }
+
+        virtual void OnNext(const T& value)
+        {
+            messages.push_back(RecordedT(scheduler->Clock(), NotificationT::CreateOnNext(value)));
+        }
+
+        virtual void OnError(const std::exception_ptr& exception)
+        {
+            messages.push_back(RecordedT(scheduler->Clock(), NotificationT::CreateOnError(exception)));
+        }
+
+        virtual void OnCompleted()
+        {
+            messages.push_back(RecordedT(scheduler->Clock(), NotificationT::CreateOnCompleted()));
+        }
+
+        std::vector<RecordedT> Messages()
+        {
+            return messages;
+        }
+    };
+
+    template<class T>
+    std::shared_ptr<TestableObserver<T>> TestScheduler::CreateObserver()
+    {
+        return std::make_shared<MockObserver<T>>(std::static_pointer_cast<TestScheduler>(shared_from_this()));
+    }
+
+    template<class T>
+    class ColdObservable : public TestableObservable<T>, public std::enable_shared_from_this<ColdObservable<T>>
+    {
+        TestScheduler::shared scheduler;
+        typedef Recorded<std::shared_ptr<Notification<T>>> RecordedT;
+        std::vector<RecordedT> messages;
+        std::vector<Subscription> subscriptions;
+
+    public:
+
+        ColdObservable(TestScheduler::shared scheduler, std::vector<RecordedT> messages)
+            : scheduler(scheduler)
+            , messages(std::move(messages))
+        {
+        }
+
+        template<class Iterator>
+        ColdObservable(TestScheduler::shared scheduler, Iterator begin, Iterator end)
+            : scheduler(scheduler)
+            , messages(begin, end)
+        {
+        }
+
+        virtual Disposable Subscribe(std::shared_ptr<Observer<T>> observer)
+        {
+            subscriptions.push_back(Subscription(scheduler->Clock()));
+            auto index = subscriptions.size() - 1;
+
+            ComposableDisposable d;
+
+            for (auto& message : messages) {
+                auto notification = message.Value();
+                d.Add(scheduler->ScheduleRelative(message.Time(), [notification, observer](Scheduler::shared) -> Disposable { 
+                    notification->Accept(observer); return Disposable::Empty(); 
+                }));
+            }
+
+            auto sharedThis = this->shared_from_this();
+            return Disposable([sharedThis, index, d]() {
+                sharedThis->subscriptions[index] = Subscription(sharedThis->subscriptions[index].Subscribe(), sharedThis->scheduler->Clock());
+                d.Dispose();
+            });
+        }
+
+        virtual std::vector<Subscription> Subscriptions() {
+            return subscriptions;
+        }
+
+        virtual std::vector<Recorded<std::shared_ptr<Notification<T>>>> Messages() {
+            return messages;
+        }
+    };
+
+    template<class T>
+    std::shared_ptr<TestableObservable<T>> TestScheduler::CreateColdObservable(std::vector<Recorded<std::shared_ptr<Notification<T>>>> messages)
+    {
+        return std::make_shared<ColdObservable<T>>(std::static_pointer_cast<TestScheduler>(shared_from_this()), std::move(messages));
+    }
+
+    template<class T>
+    class HotObservable : public TestableObservable<T>, public std::enable_shared_from_this<HotObservable<T>>
+    {
+        TestScheduler::shared scheduler;
+        typedef Recorded<std::shared_ptr<Notification<T>>> RecordedT;
+        std::vector<RecordedT> messages;
+        std::vector<Subscription> subscriptions;
+        std::vector<std::shared_ptr<Observer<T>>> observers;
+
+    public:
+
+        HotObservable(TestScheduler::shared scheduler, std::vector<RecordedT> messages)
+            : scheduler(scheduler)
+            , messages(messages)
+        {
+            for (auto& message : messages) {
+                auto notification = message.Value();
+                scheduler->ScheduleAbsolute(message.Time(), [this, notification](Scheduler::shared) -> Disposable {
+                    for (auto& observer : this->observers) {
+                        notification->Accept(observer);
+                    }
+                    return Disposable::Empty();
+                });
+            }
+        }
+
+        virtual Disposable Subscribe(std::shared_ptr<Observer<T>> observer)
+        {
+            observers.push_back(observer);
+            subscriptions.push_back(Subscription(scheduler->Clock()));
+            auto index = subscriptions.size() - 1;
+
+            auto sharedThis = this->shared_from_this();
+            return Disposable([sharedThis, index, observer]() {
+                sharedThis->observers.erase(std::find(sharedThis->observers.begin(), sharedThis->observers.end(), observer));
+                sharedThis->subscriptions[index] = Subscription(sharedThis->subscriptions[index].Subscribe(), sharedThis->scheduler->Clock());
+            });
+        }
+
+        virtual std::vector<Subscription> Subscriptions() {
+            return subscriptions;
+        }
+
+        virtual std::vector<Recorded<std::shared_ptr<Notification<T>>>> Messages() {
+            return messages;
+        }
+    };
+
+    template<class T>
+    std::shared_ptr<TestableObservable<T>> TestScheduler::CreateHotObservable(std::vector<Recorded<std::shared_ptr<Notification<T>>>> messages)
+    {
+        return std::make_shared<HotObservable<T>>(std::static_pointer_cast<TestScheduler>(shared_from_this()), std::move(messages));
+    }
 
 }
 
