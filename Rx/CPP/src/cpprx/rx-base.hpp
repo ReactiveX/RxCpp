@@ -391,6 +391,7 @@ namespace rxcpp
     protected:
         VirtualTimeSchedulerBase()
             : is_enabled(false)
+            , clock_now(0)
         {
         }
         explicit VirtualTimeSchedulerBase(Absolute initialClock)
@@ -543,13 +544,19 @@ namespace rxcpp
     public:
         Recorded(long time, T value) : time(time), value(value) {
         }
-        long Time() {return time;}
-        T Value() {return value;}
+        long Time() const {return time;}
+        const T& Value() const {return value;}
     };
 
     template<class T>
     bool operator == (Recorded<T> lhs, Recorded<T> rhs) {
         return lhs.Time() == rhs.Time() && lhs.Value() == rhs.Value();
+    }
+
+    template<class T>
+    std::ostream& operator<< (std::ostream& out, const Recorded<T>& r) {
+        out << "@" << r.Time() << "-" << r.Value();
+        return out;
     }
 
     class Subscription
@@ -562,12 +569,17 @@ namespace rxcpp
         }
         Subscription(long subscribe, long unsubscribe) : subscribe(subscribe), unsubscribe(unsubscribe) {
         }
-        long Subscribe() {return subscribe;}
-        long Unsubscribe() {return unsubscribe;}
+        long Subscribe() const {return subscribe;}
+        long Unsubscribe() const {return unsubscribe;}
     };
 
     bool operator == (Subscription lhs, Subscription rhs) {
         return lhs.Subscribe() == rhs.Subscribe() && lhs.Unsubscribe() == rhs.Unsubscribe();
+    }
+
+    std::ostream& operator<< (std::ostream& out, const Subscription& s) {
+        out << s.Subscribe() << "-" << s.Unsubscribe();
+        return out;
     }
 
     template<typename T>
@@ -579,6 +591,7 @@ namespace rxcpp
 
         virtual ~Notification() {}
 
+        virtual void Out(std::ostream& out) =0;
         virtual bool Equals(std::shared_ptr<Notification<T>> other) = 0;
         virtual void Accept(std::shared_ptr<Observer<T>>) =0;
         virtual void Accept(OnNext onnext, OnCompleted oncompleted, OnError onerror) =0;
@@ -586,6 +599,9 @@ namespace rxcpp
     private:
         struct OnNextNotification : public Notification<T> {
             OnNextNotification(T value) : value(std::move(value)) {
+            }
+            virtual void Out(std::ostream& out) {
+                out << "OnNext( " << value << ")";
             }
             virtual bool Equals(std::shared_ptr<Notification<T>> other) {
                 bool result = false;
@@ -610,6 +626,9 @@ namespace rxcpp
         struct OnCompletedNotification : public Notification<T> {
             OnCompletedNotification() {
             }
+            virtual void Out(std::ostream& out) {
+                out << "OnCompleted()";
+            }
             virtual bool Equals(std::shared_ptr<Notification<T>> other) {
                 bool result = false;
                 other->Accept([](T) {}, [&result](){result = true;}, [](std::exception_ptr){});
@@ -631,6 +650,9 @@ namespace rxcpp
 
         struct OnErrorNotification : public Notification<T> {
             OnErrorNotification(std::exception_ptr ep) : ep(ep) {
+            }
+            virtual void Out(std::ostream& out) {
+                out << "OnError()";
             }
             virtual bool Equals(std::shared_ptr<Notification<T>> other) {
                 bool result = false;
@@ -681,6 +703,12 @@ namespace rxcpp
         if (!lhs && !rhs) {return true;}
         if (!lhs || !rhs) {return false;}
         return lhs->Equals(rhs);
+    }
+
+    template<class T>
+    std::ostream& operator<< (std::ostream& out, const std::shared_ptr<Notification<T>>& n) {
+        n->Out(out);
+        return out;
     }
 
     template<class T>

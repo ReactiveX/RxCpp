@@ -702,6 +702,12 @@ namespace rxcpp
                 return Subscription(subscribe, unsubscribe);
             }
 
+            template<class Item, size_t size>
+            static 
+            auto ToVector(const Item (&arr) [size]) -> std::vector<Item> {
+                return std::vector<Item>(std::begin(arr), std::end(arr));
+            }
+
         private:
             ~Messages();
         };
