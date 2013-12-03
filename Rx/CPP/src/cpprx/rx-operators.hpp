@@ -13,18 +13,24 @@ namespace rxcpp
     // 
     // constructors
     template <class T>
-    struct CreatedAutoDetachObserver : public Observer<T>
+    struct CreatedAutoDetachObserver : public Observer<T>, public std::enable_shared_from_this<CreatedAutoDetachObserver<T>>
     {
         std::shared_ptr<Observer<T>> observer;
+        std::atomic<bool> isStopped;
         SerialDisposable disposable;
         
         virtual ~CreatedAutoDetachObserver() {
-            clear();
+        }
+
+        CreatedAutoDetachObserver() 
+            : isStopped(false)
+        {
         }
 
         virtual void OnNext(const T& element)
         {
-            if (observer) {
+            auto keepAlive = this->shared_from_this();
+            if (!isStopped) {
                 RXCPP_UNWIND(disposer, [&](){
                     disposable.Dispose();
                 });
@@ -34,33 +40,25 @@ namespace rxcpp
         }
         virtual void OnCompleted() 
         {
-            if (observer) {
+            auto keepAlive = this->shared_from_this();
+            if (!isStopped.exchange(true)) {
                 RXCPP_UNWIND(disposer, [&](){
                     disposable.Dispose();
                 });
-                std::shared_ptr<Observer<T>> final;
-                using std::swap;
-                swap(final, observer);
-                final->OnCompleted();
+                observer->OnCompleted();
                 disposer.dismiss();
             }
         }
         virtual void OnError(const std::exception_ptr& error) 
         {
-            if (observer) {
+            auto keepAlive = this->shared_from_this();
+            if (!isStopped.exchange(true)) {
                 RXCPP_UNWIND(disposer, [&](){
                     disposable.Dispose();
                 });
-                std::shared_ptr<Observer<T>> final;
-                using std::swap;
-                swap(final, observer);
-                final->OnError(error);
+                observer->OnError(error);
                 disposer.dismiss();
             }
-        }
-        void clear() 
-        {
-            observer = nullptr;
         }
     };
 
@@ -127,7 +125,6 @@ namespace rxcpp
         std::function<void(const std::exception_ptr&)> onError;
         
         virtual ~CreatedObserver() {
-            clear();
         }
 
         virtual void OnNext(const T& element)
@@ -141,29 +138,15 @@ namespace rxcpp
         {
             if(onCompleted)
             {
-                std::function<void()> final;
-                using std::swap;
-                swap(final, onCompleted);
-                clear();
-                final();
+                onCompleted();
             }
         }
         virtual void OnError(const std::exception_ptr& error) 
         {
             if(onError)
             {
-                std::function<void(const std::exception_ptr&)> final;
-                using std::swap;
-                swap(final, onError);
-                clear();
-                final(error);
+                onError(error);
             }
-        }
-        void clear() 
-        {
-            onNext = nullptr;
-            onCompleted = nullptr;
-            onError = nullptr;
         }
     };
 
@@ -189,7 +172,6 @@ namespace rxcpp
         class Sink : public std::enable_shared_from_this<Derived>
         {
             typedef std::shared_ptr<Observer<T>> SinkObserver;
-            mutable std::mutex lock;
             mutable util::maybe<Disposable> cancel;
 
         protected:
@@ -208,7 +190,6 @@ namespace rxcpp
             
             void Dispose() const
             {
-                std::unique_lock<std::mutex> guard(lock);
                 observer = std::make_shared<Observer<T>>();
                 if (cancel)
                 {
@@ -227,40 +208,6 @@ namespace rxcpp
                     local->Dispose();
                 });
             }
-            
-            class _ : public Observer<T>
-            {
-                std::shared_ptr<Derived> that;
-            public:
-                _(std::shared_ptr<Derived> that) : that(that)
-                {}
-                
-                virtual void OnNext(const T& t)
-                {
-                    std::unique_lock<std::mutex> guard(that->lock);
-                    that->observer->OnNext(t);
-                }
-                virtual void OnCompleted()
-                {
-                    std::unique_lock<std::mutex> guard(that->lock);
-                    that->observer->OnCompleted();
-                    if (that->cancel)
-                    {
-                        that->cancel->Dispose();
-                        that->cancel.reset();
-                    }
-                }
-                virtual void OnError(const std::exception_ptr& e)
-                {
-                    std::unique_lock<std::mutex> guard(that->lock);
-                    that->observer->OnError(e);
-                    if (that->cancel)
-                    {
-                        that->cancel->Dispose();
-                        that->cancel.reset();
-                    }
-                }
-            };
         };
         
         template<class Derived, class T>
