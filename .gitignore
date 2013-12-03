@@ -105,5 +105,5 @@ Desktop.ini
 ## CMake
 ############
 
-projects/CMake/*
+projects/*
 !projects/CMake/CMakelists.txt
