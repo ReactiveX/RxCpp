@@ -565,19 +565,19 @@ namespace rxcpp
         long unsubscribe;
 
     public:
-        explicit Subscription(long subscribe) : subscribe(subscribe), unsubscribe(std::numeric_limits<long>::max()) {
+        explicit inline Subscription(long subscribe) : subscribe(subscribe), unsubscribe(std::numeric_limits<long>::max()) {
         }
-        Subscription(long subscribe, long unsubscribe) : subscribe(subscribe), unsubscribe(unsubscribe) {
+        inline Subscription(long subscribe, long unsubscribe) : subscribe(subscribe), unsubscribe(unsubscribe) {
         }
-        long Subscribe() const {return subscribe;}
-        long Unsubscribe() const {return unsubscribe;}
+        inline long Subscribe() const {return subscribe;}
+        inline long Unsubscribe() const {return unsubscribe;}
     };
 
-    bool operator == (Subscription lhs, Subscription rhs) {
+    inline bool operator == (Subscription lhs, Subscription rhs) {
         return lhs.Subscribe() == rhs.Subscribe() && lhs.Unsubscribe() == rhs.Unsubscribe();
     }
 
-    std::ostream& operator<< (std::ostream& out, const Subscription& s) {
+    inline std::ostream& operator<< (std::ostream& out, const Subscription& s) {
         out << s.Subscribe() << "-" << s.Unsubscribe();
         return out;
     }

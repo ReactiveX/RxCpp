@@ -42,44 +42,47 @@ namespace rxcpp
         };
 
     private:
-        RXCPP_THREAD_LOCAL static ThreadLocalQueue* threadLocalQueue;
+        static ThreadLocalQueue*& threadLocalQueue() {
+            RXCPP_THREAD_LOCAL static ThreadLocalQueue* queue;
+            return queue;
+        }
         
     public:
 
         static Scheduler::shared GetScheduler() { 
-            return !!threadLocalQueue ? threadLocalQueue->scheduler : Scheduler::shared(); 
+            return !!threadLocalQueue() ? threadLocalQueue()->scheduler : Scheduler::shared(); 
         }
         static bool empty() {
-            if (!threadLocalQueue) {
+            if (!threadLocalQueue()) {
                 throw std::logic_error("this thread does not have a queue!");
             }
-            return threadLocalQueue->queue.empty();
+            return threadLocalQueue()->queue.empty();
         }
         static ScheduledWork::const_reference top() {
-            if (!threadLocalQueue) {
+            if (!threadLocalQueue()) {
                 throw std::logic_error("this thread does not have a queue!");
             }
-            return threadLocalQueue->queue.top();
+            return threadLocalQueue()->queue.top();
         }
         static void pop() {
-            if (!threadLocalQueue) {
+            if (!threadLocalQueue()) {
                 throw std::logic_error("this thread does not have a queue!");
             }
-            threadLocalQueue->queue.pop();
+            threadLocalQueue()->queue.pop();
         }
         static void push(QueueItem item) {
-            if (!threadLocalQueue) {
+            if (!threadLocalQueue()) {
                 throw std::logic_error("this thread does not have a queue!");
             }
-            threadLocalQueue->queue.push(std::move(item));
+            threadLocalQueue()->queue.push(std::move(item));
         }
         static void EnsureQueue(Scheduler::shared scheduler) {
-            if (!!threadLocalQueue) {
+            if (!!threadLocalQueue()) {
                 throw std::logic_error("this thread already has a queue!");
             }
             // create and publish new queue
-            threadLocalQueue = new ThreadLocalQueue();
-            threadLocalQueue->scheduler = scheduler;
+            threadLocalQueue() = new ThreadLocalQueue();
+            threadLocalQueue()->scheduler = scheduler;
         }
         static std::unique_ptr<ThreadLocalQueue> CreateQueue(Scheduler::shared scheduler) {
             std::unique_ptr<ThreadLocalQueue> result(new ThreadLocalQueue());
@@ -87,25 +90,23 @@ namespace rxcpp
             return result;
         }
         static void SetQueue(ThreadLocalQueue* queue) {
-            if (!!threadLocalQueue) {
+            if (!!threadLocalQueue()) {
                 throw std::logic_error("this thread already has a queue!");
             }
             // create and publish new queue
-            threadLocalQueue = queue;
+            threadLocalQueue() = queue;
         }
         static void DestroyQueue(ThreadLocalQueue* queue) {
             delete queue;
         }
         static void DestroyQueue() {
-            if (!threadLocalQueue) {
+            if (!threadLocalQueue()) {
                 throw std::logic_error("this thread does not have a queue!");
             }
-            DestroyQueue(threadLocalQueue);
-            threadLocalQueue = nullptr;
+            DestroyQueue(threadLocalQueue());
+            threadLocalQueue() = nullptr;
         }
     };
-    // static 
-    RXCPP_SELECT_ANY RXCPP_THREAD_LOCAL CurrentThreadQueue::ThreadLocalQueue* CurrentThreadQueue::threadLocalQueue = nullptr;
 
     struct CurrentThreadScheduler : public LocalScheduler
     {
