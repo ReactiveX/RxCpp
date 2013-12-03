@@ -108,6 +108,7 @@ namespace rxcpp
                     [=](const Item& element)
                     {
                         std::unique_lock<std::mutex> guard(state->lock);
+                        if (state->isStopped) {return;}
                         std::get<Index>(state->queues).second.push(element);
                         Next next(state, observer, cd);
                         util::tuple_dispatch(next, state->queues);
@@ -116,6 +117,7 @@ namespace rxcpp
                     [=]
                     {
                         std::unique_lock<std::mutex> guard(state->lock);
+                        if (state->isStopped) {return;}
                         std::get<Index>(state->queues).first = true;
                         Next next(state, observer, cd);
                         util::tuple_dispatch(next, state->queues);
@@ -124,6 +126,7 @@ namespace rxcpp
                     [=](const std::exception_ptr& error)
                     {
                         std::unique_lock<std::mutex> guard(state->lock);
+                        if (state->isStopped) {return;}
                         observer->OnError(error);
                         cd.Dispose();
                     }));
@@ -158,10 +161,12 @@ namespace rxcpp
             typedef std::tuple_size<Sources> SourcesSize;
             explicit State(S selector) 
                 : selector(std::move(selector))
+                , isStopped(false)
             {}
             std::mutex lock;
             S selector;
             Queues queues;
+            bool isStopped;
         };
         Sources sources(source...);
         // bug on osx prevents using make_shared 
@@ -170,6 +175,7 @@ namespace rxcpp
             [=](std::shared_ptr<Observer<result_type>> observer) -> Disposable
             {
                 ComposableDisposable cd;
+                cd.Add(Disposable([state](){state->isStopped = true;}));
                 detail::ZipSubscriber<0, State::SourcesSize::value, State>::subscribe(cd, observer, state, sources);
                 return cd;
             });
