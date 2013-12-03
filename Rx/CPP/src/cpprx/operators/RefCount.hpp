@@ -83,8 +83,8 @@ namespace rxcpp
                     setSink(sink->GetDisposable());
                     return sink->Run();
                 }),
-                refcount(0),
-                source(std::move(source))
+                source(std::move(source)),
+                refcount(0)
             {
                 subscription.set(Disposable::Empty());
             }
