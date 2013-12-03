@@ -23,35 +23,24 @@ namespace rxcpp
                 // on next
                     [=](const typename std::tuple_element<Index, Latest>::type& element)
                     {
-                        auto local = state;
-                        std::unique_lock<std::mutex> guard(local->lock);
-                        std::get<Index>(local->latest) = element;
-                        if (!std::get<Index>(local->latestValid)) {
-                            std::get<Index>(local->latestValid) = true;
-                            --local->pendingFirst;
+                        std::unique_lock<std::mutex> guard(state->lock);
+                        if (state->done) {return;}
+                        std::get<Index>(state->latest) = element;
+                        if (!std::get<Index>(state->latestValid)) {
+                            std::get<Index>(state->latestValid) = true;
+                            --state->pendingFirst;
                         }
-                        if (local->pendingFirst == 0) {
-                            Latest args = local->latest;
-                            typedef decltype(util::tuple_dispatch(local->selector, args)) U;
+                        if (state->pendingFirst == 0) {
+                            Latest args = state->latest;
+                            typedef decltype(util::tuple_dispatch(state->selector, args)) U;
                             util::maybe<U> result;
                             try {
-                                result.set(util::tuple_dispatch(local->selector, args));
+                                result.set(util::tuple_dispatch(state->selector, args));
                             } catch(...) {
                                 observer->OnError(std::current_exception());
                             }
                             if (!!result) {
-                                ++state->pendingIssue;
-                                {
-                                    RXCPP_UNWIND_AUTO([&](){guard.lock();});
-                                    guard.unlock();
-                                    observer->OnNext(std::move(*result.get()));
-                                }
-                                --state->pendingIssue;
-                            }
-                            if (state->done && state->pendingIssue == 0) {
-                                guard.unlock();
-                                observer->OnCompleted();
-                                cd.Dispose();
+                                observer->OnNext(std::move(*result.get()));
                             }
                         }
                     },
@@ -59,19 +48,17 @@ namespace rxcpp
                     [=]
                     {
                         std::unique_lock<std::mutex> guard(state->lock);
-                        --state->pendingComplete;
-                        if (state->pendingComplete == 0) {
-                            state->done = true;
-                            if (state->pendingIssue == 0) {
-                                guard.unlock();
-                                observer->OnCompleted();
-                                cd.Dispose();
-                            }
-                        }
+                        if (state->done) {return;}
+                        state->done = true;
+                        observer->OnCompleted();
+                        cd.Dispose();
                     },
                 // on error
                     [=](const std::exception_ptr& error)
                     {
+                        std::unique_lock<std::mutex> guard(state->lock);
+                        if (state->done) {return;}
+                        state->done = true;
                         observer->OnError(error);
                         cd.Dispose();
                     }));
@@ -109,16 +96,12 @@ namespace rxcpp
             explicit State(S selector) 
                 : latestValid()
                 , pendingFirst(SourcesSize::value)
-                , pendingIssue(0)
-                , pendingComplete(SourcesSize::value)
                 , done(false)
                 , selector(std::move(selector))
             {}
             std::mutex lock;
             LatestValid latestValid;
             size_t pendingFirst;
-            size_t pendingIssue;
-            size_t pendingComplete;
             bool done;
             S selector;
             Latest latest;
@@ -130,6 +113,7 @@ namespace rxcpp
             [=](std::shared_ptr<Observer<result_type>> observer) -> Disposable
             {
                 ComposableDisposable cd;
+                cd.Add(Disposable([state](){state->done = true;}));
                 detail::CombineLatestSubscriber<0, State::SourcesSize::value, State>::subscribe(cd, observer, state, sources);
                 return cd;
             });
@@ -155,16 +139,12 @@ namespace rxcpp
             explicit State(S selector) 
                 : latestValid()
                 , pendingFirst(SourcesSize::value)
-                , pendingIssue(0)
-                , pendingComplete(SourcesSize::value)
                 , done(false)
                 , selector(std::move(selector))
             {}
             std::mutex lock;
             LatestValid latestValid;
             size_t pendingFirst;
-            size_t pendingIssue;
-            size_t pendingComplete;
             bool done;
             S selector;
             Latest latest;
@@ -176,6 +156,7 @@ namespace rxcpp
             [=](std::shared_ptr<Observer<result_type>> observer) -> Disposable
             {
                 ComposableDisposable cd;
+                cd.Add(Disposable([state](){state->done = true;}));
                 detail::CombineLatestSubscriber<0, State::SourcesSize::value, State>::subscribe(cd, observer, state, sources);
                 return cd;
             });
