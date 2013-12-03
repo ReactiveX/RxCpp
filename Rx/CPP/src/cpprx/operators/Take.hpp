@@ -9,56 +9,82 @@
 namespace rxcpp
 {
 
+    namespace detail
+    {
+        template<class T, class Integral>
+        class TakeObservable : public Producer<TakeObservable<T, Integral>, T>
+        {
+            typedef std::shared_ptr<TakeObservable<T, Integral>> Parent;
+
+            std::shared_ptr<Observable<T>> source;
+            Integral count;
+
+            class _ : public Sink<_, T>, public Observer<T>
+            {
+                Parent parent;
+                Integral remaining;
+
+            public:
+                typedef Sink<_, T> SinkBase;
+
+                _(Parent parent, std::shared_ptr < Observer < T >> observer, Disposable cancel) :
+                    SinkBase(std::move(observer), std::move(cancel)),
+                    parent(parent),
+                    remaining(parent->count)
+                {
+                }
+
+                virtual void OnNext(const T& t)
+                {
+                    if (remaining > 0)
+                    {
+                        --remaining;
+                        SinkBase::observer->OnNext(t);
+
+                        if (remaining == 0)
+                        {
+                            SinkBase::observer->OnCompleted();
+                            SinkBase::Dispose();
+                        }
+                    }
+                }
+                virtual void OnCompleted()
+                {
+                    SinkBase::observer->OnCompleted();
+                    SinkBase::Dispose();
+                }
+                virtual void OnError(const std::exception_ptr& e)
+                {
+                    SinkBase::observer->OnError(e);
+                    SinkBase::Dispose();
+                }
+            };
+
+            typedef Producer<TakeObservable<T, Integral>, T> ProducerBase;
+        public:
+
+            TakeObservable(const std::shared_ptr<Observable<T>>& source, Integral count) :
+                ProducerBase([this](Parent parent, std::shared_ptr < Observer < T >> observer, Disposable && cancel, typename ProducerBase::SetSink setSink) -> Disposable
+                {
+                    auto sink = std::shared_ptr<_>(new _(parent, observer, std::move(cancel)));
+                    setSink(sink->GetDisposable());
+                    return this->source->Subscribe(sink);
+                }),
+                source(source),
+                count(count)
+            {
+            }
+        };
+    }
     template <class T, class Integral>
     std::shared_ptr<Observable<T>> Take(
         const std::shared_ptr<Observable<T>>& source,
         Integral n 
-        )    
+    )
     {
-        return CreateObservable<T>(
-            [=](std::shared_ptr<Observer<T>> observer)
-            -> Disposable
-            {
-                // keep count of remaining calls received OnNext and count of OnNext calls issued.
-                auto remaining = std::make_shared<std::tuple<std::atomic<Integral>, std::atomic<Integral>>>(n, n);
-
-                ComposableDisposable cd;
-
-                cd.Add(Subscribe(
-                    source,
-                // on next
-                    [=](const T& element)
-                    {
-                        auto local = --std::get<0>(*remaining);
-                        RXCPP_UNWIND_AUTO([&](){
-                            if (local >= 0){
-                                // all elements received
-                                if (--std::get<1>(*remaining) == 0) {
-                                    // all elements passed on to observer.
-                                    observer->OnCompleted();
-                                    cd.Dispose();}}});
-
-                        if (local >= 0) {
-                            observer->OnNext(element);
-                        } 
-                    },
-                // on completed
-                    [=]
-                    {
-                        if (std::get<1>(*remaining) == 0 && std::get<0>(*remaining) <= 0) {
-                            observer->OnCompleted();
-                            cd.Dispose();
-                        }
-                    },
-                // on error
-                    [=](const std::exception_ptr& error)
-                    {
-                        observer->OnError(error);
-                        cd.Dispose();
-                    }));
-                return cd;
-            });
+        return std::make_shared<detail::TakeObservable<T, Integral>>(source, n);
     }
+
 
     template <class T, class U>
     std::shared_ptr<Observable<T>> TakeUntil(
