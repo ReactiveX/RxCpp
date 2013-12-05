@@ -18,6 +18,56 @@ using namespace std;
 
 bool IsPrime(int x);
 
+struct Count {
+    Count() : subscriptions(0), nexts(0), completions(0), errors(0), disposals(0) {}
+    std::atomic<int> subscriptions;
+    std::atomic<int> nexts;
+    std::atomic<int> completions;
+    std::atomic<int> errors;
+    std::atomic<int> disposals;
+};
+template <class T>
+std::shared_ptr<rxcpp::Observable<T>> Record(
+    const std::shared_ptr<rxcpp::Observable<T>>& source,
+    Count* count
+)
+{
+    return rxcpp::CreateObservable<T>(
+      [=](std::shared_ptr<rxcpp::Observer<T>> observer) -> rxcpp::Disposable
+      {
+          ++count->subscriptions;
+          rxcpp::ComposableDisposable cd;
+          cd.Add(rxcpp::Disposable([=](){
+              ++count->disposals;}));
+          cd.Add(rxcpp::Subscribe(
+              source,
+              // on next
+              [=](T element)
+              {
+                  ++count->nexts;
+                  observer->OnNext(std::move(element));
+              },
+              // on completed
+              [=]
+              {
+                  ++count->completions;
+                  observer->OnCompleted();
+              },
+              // on error
+              [=](const std::exception_ptr& error)
+              {
+                  ++count->errors;
+                  observer->OnError(error);
+              }));
+          return cd;
+      });
+}
+struct record {};
+template<class T>
+rxcpp::Binder<std::shared_ptr<rxcpp::Observable<T>>> rxcpp_chain(record&&, const std::shared_ptr<rxcpp::Observable<T>>& source, Count* count) {
+    return rxcpp::from(Record(source, count));
+}
+
 vector<int> vector_range(int start, int end)
 {
     vector<int> v;
@@ -27,6 +77,8 @@ vector<int> vector_range(int start, int end)
 }
 
 void IxToRx(int n) {
+    Count sourcecount, takencount, observedcount;
+
     std::cout << "IxToRx: first " << n << " primes squared" << endl;
     auto values = vector_range(2, n * 10);
 
@@ -34,15 +86,22 @@ void IxToRx(int n) {
         .where(IsPrime)
         .select([](int x) { return std::make_pair(x,  x*x); });
 
-    auto input = std::make_shared<rxcpp::ImmediateScheduler>();
     auto output = std::make_shared<rxcpp::EventLoopScheduler>();
-    rxcpp::from(Iterate(primes, input))
+    rxcpp::from(rxcpp::Iterate(primes))
+        .template chain<record>(&sourcecount)
         .take(n)
+        .template chain<record>(&takencount)
         .observe_on(output)
+        .template chain<record>(&observedcount)
         .for_each(rxcpp::MakeTupleDispatch(
             [](int p, int s) {
                 cout << p << " =square=> " << s << endl;
             }));
+
+    cout << "location: subscriptions, nexts, completions, errors, disposals" << endl;
+    cout << "sourcecount:   " << sourcecount.subscriptions << ", " << sourcecount.nexts << ", " << sourcecount.completions << ", " << sourcecount.errors << ", " << sourcecount.disposals << endl;
+    cout << "takencount:    " << takencount.subscriptions << ", " << takencount.nexts << ", " << takencount.completions << ", " << takencount.errors << ", " << takencount.disposals << endl;
+    cout << "observedcount: " << observedcount.subscriptions << ", " << observedcount.nexts << ", " << observedcount.completions << ", " << observedcount.errors << ", " << observedcount.disposals << endl;
 }
 
 void PrintPrimes(int n)
@@ -170,53 +229,7 @@ void Combine(int n)
             }));
 }
 
-struct Count {
-    Count() : nexts(0), completions(0), errors(0), disposals(0) {}
-    std::atomic<int> nexts;
-    std::atomic<int> completions;
-    std::atomic<int> errors;
-    std::atomic<int> disposals;
-};
-template <class T>
-std::shared_ptr<rxcpp::Observable<T>> Record(
-    const std::shared_ptr<rxcpp::Observable<T>>& source,
-    Count* count
-    )
-{
-    return rxcpp::CreateObservable<T>(
-        [=](std::shared_ptr<rxcpp::Observer<T>> observer) -> rxcpp::Disposable
-        {
-            rxcpp::ComposableDisposable cd;
-            cd.Add(rxcpp::Disposable([=](){
-                ++count->disposals;}));
-            cd.Add(rxcpp::Subscribe(
-                source,
-            // on next
-                [=](T element)
-                {
-                    ++count->nexts;
-                    observer->OnNext(std::move(element));
-                },
-            // on completed
-                [=]
-                {
-                    ++count->completions;
-                    observer->OnCompleted();
-                },
-            // on error
-                [=](const std::exception_ptr& error)
-                {
-                    ++count->errors;
-                    observer->OnError(error);
-                }));
-            return cd;
-        });
-}
-struct record {};
-template<class T>
-rxcpp::Binder<std::shared_ptr<rxcpp::Observable<T>>> rxcpp_chain(record&&, const std::shared_ptr<rxcpp::Observable<T>>& source, Count* count) {
-    return rxcpp::from(Record(source, count));
-}
+
 
 template<class InputScheduler, class OutputScheduler>
 void Zip(int n)
@@ -251,12 +264,12 @@ void Zip(int n)
                 cout << p2 << " =zipped=> " << p1 << endl;
             }));
 
-    cout << "location: nexts, completions, errors, disposals" << endl;
-    cout << "s1count:" << s1count.nexts << ", " << s1count.completions << ", " << s1count.errors << ", " << s1count.disposals << endl;
-    cout << "s2count:" << s2count.nexts << ", " << s2count.completions << ", " << s2count.errors << ", " << s2count.disposals << endl;
-    cout << "zipcount:" << zipcount.nexts << ", " << zipcount.completions << ", " << zipcount.errors << ", " << zipcount.disposals << endl;
-    cout << "takecount:" << takecount.nexts << ", " << takecount.completions << ", " << takecount.errors << ", " << takecount.disposals << endl;
-    cout << "outputcount:" << outputcount.nexts << ", " << outputcount.completions << ", " << outputcount.errors << ", " << outputcount.disposals << endl;
+    cout << "location: subscriptions, nexts, completions, errors, disposals" << endl;
+    cout << "s1count:     " << s1count.subscriptions << ", " << s1count.nexts << ", " << s1count.completions << ", " << s1count.errors << ", " << s1count.disposals << endl;
+    cout << "s2count:     " << s2count.subscriptions << ", " << s2count.nexts << ", " << s2count.completions << ", " << s2count.errors << ", " << s2count.disposals << endl;
+    cout << "zipcount:    " << zipcount.subscriptions << ", " << zipcount.nexts << ", " << zipcount.completions << ", " << zipcount.errors << ", " << zipcount.disposals << endl;
+    cout << "takecount:   " << takecount.subscriptions << ", " << takecount.nexts << ", " << takecount.completions << ", " << takecount.errors << ", " << takecount.disposals << endl;
+    cout << "outputcount: " << outputcount.subscriptions << ", " << outputcount.nexts << ", " << outputcount.completions << ", " << outputcount.errors << ", " << outputcount.disposals << endl;
 }
 
 void Merge(int n)
@@ -551,7 +564,6 @@ int main(int argc, char* argv[])
         Scan();
 
         run();
-        
     } catch (exception& e) {
         cerr << "exception: " << e.what() << endl;
     }
