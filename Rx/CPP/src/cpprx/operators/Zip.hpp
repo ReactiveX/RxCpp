@@ -199,10 +199,12 @@ namespace rxcpp
             typedef std::tuple_size<Sources> SourcesSize;
             explicit State(S selector) 
                 : selector(std::move(selector))
+                , isStopped(false)
             {}
             std::mutex lock;
             S selector;
             Queues queues;
+            bool isStopped;
         };
         Sources sources(source1, source2);
         // bug on osx prevents using make_shared 
