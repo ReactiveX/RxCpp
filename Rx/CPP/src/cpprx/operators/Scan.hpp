@@ -85,7 +85,7 @@ namespace rxcpp
             ScanObservable(Source source, util::maybe<A> seed, Accumulator accumulator, Seeder seeder) :
                 ProducerBase([this](Parent parent, std::shared_ptr < Observer < A >> observer, Disposable && cancel, typename ProducerBase::SetSink setSink) -> Disposable
                 {
-                    auto sink = std::shared_ptr<_>(new _(parent, observer, std::move(cancel)));
+                    auto sink = std::shared_ptr<ScanObservable::_>(new ScanObservable::_(parent, observer, std::move(cancel)));
                     setSink(sink->GetDisposable());
                     return this->source->Subscribe(sink);
                 }),

@@ -52,7 +52,7 @@ namespace rxcpp
             ThrowObservable(std::exception_ptr exception, Scheduler::shared scheduler) :
                 ProducerBase([](Parent parent, std::shared_ptr < Observer < T >> observer, Disposable && cancel, typename ProducerBase::SetSink setSink) -> Disposable
                 {
-                    auto sink = std::shared_ptr<_>(new _(parent, observer, std::move(cancel)));
+                    auto sink = std::shared_ptr<ThrowObservable::_>(new ThrowObservable::_(parent, observer, std::move(cancel)));
                     setSink(sink->GetDisposable());
                     return sink->Run();
                 }),

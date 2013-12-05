@@ -63,7 +63,7 @@ namespace rxcpp
             WhereObservable(const std::shared_ptr<Observable<T>>& source, Predicate predicate) :
                 ProducerBase([this](Parent parent, std::shared_ptr < Observer < T >> observer, Disposable && cancel, typename ProducerBase::SetSink setSink) -> Disposable
                 {
-                    auto sink = std::shared_ptr<_>(new _(parent, observer, std::move(cancel)));
+                    auto sink = std::shared_ptr<WhereObservable::_>(new WhereObservable::_(parent, observer, std::move(cancel)));
                     setSink(sink->GetDisposable());
                     return this->source->Subscribe(sink);
                 }),

@@ -51,7 +51,7 @@ namespace rxcpp
             ReturnObservable(T value, Scheduler::shared scheduler) :
                 ProducerBase([](Parent parent, std::shared_ptr < Observer < T >> observer, Disposable && cancel, typename ProducerBase::SetSink setSink) -> Disposable
                 {
-                    auto sink = std::shared_ptr<_>(new _(parent, observer, std::move(cancel)));
+                    auto sink = std::shared_ptr<ReturnObservable::_>(new ReturnObservable::_(parent, observer, std::move(cancel)));
                     setSink(sink->GetDisposable());
                     return sink->Run();
                 }),
