@@ -35,8 +35,8 @@ namespace rxcpp
             if (!isStopped) {
                 auto keepAlive = this->shared_from_this();
                 RXCPP_UNWIND(disposer, [&](){
-                    isStopped = true;
-                    disposable.Dispose();
+                    this->isStopped = true;
+                    this->disposable.Dispose();
                 });
                 observer->OnNext(element);
                 disposer.dismiss();
@@ -47,7 +47,7 @@ namespace rxcpp
             if (!isStopped.exchange(true)) {
                 auto keepAlive = this->shared_from_this();
                 RXCPP_UNWIND(disposer, [&](){
-                    disposable.Dispose();
+                    this->disposable.Dispose();
                 });
                 observer->OnCompleted();
             }
@@ -57,7 +57,7 @@ namespace rxcpp
             if (!isStopped.exchange(true)) {
                 auto keepAlive = this->shared_from_this();
                 RXCPP_UNWIND(disposer, [&](){
-                    disposable.Dispose();
+                    this->disposable.Dispose();
                 });
                 observer->OnError(error);
             }
@@ -107,7 +107,7 @@ namespace rxcpp
                 scheduler->Schedule(
                    [=](Scheduler::shared) -> Disposable {
                         try {
-                            autoDetachObserver->disposable.Set(subscribe(autoDetachObserver));
+                            autoDetachObserver->disposable.Set(this->subscribe(autoDetachObserver));
                         } catch (...) {
                             autoDetachObserver->OnError(std::current_exception());
                         }   
@@ -259,7 +259,7 @@ namespace rxcpp
                     scheduler->Schedule([=](Scheduler::shared) -> Disposable
                     {
                             state->subscription.Set(
-                                run(that, observer, state->subscription, [=](Disposable d)
+                                this->run(that, observer, state->subscription, [=](Disposable d)
                                 {
                                     state->sink.Set(std::move(d));
                                 }));

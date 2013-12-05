@@ -309,21 +309,21 @@ namespace rxcpp
         {
             std::unique_lock<std::mutex> guard(lock);
             queue.push(Action([=](){
-                    observer->OnNext(std::move(element));
+                    this->observer->OnNext(std::move(element));
                 }));
         }
         virtual void OnCompleted() 
         {
             std::unique_lock<std::mutex> guard(lock);
             queue.push(Action([=](){
-                    observer->OnCompleted();
+                    this->observer->OnCompleted();
                 }));
         }
         virtual void OnError(const std::exception_ptr& error) 
         {
             std::unique_lock<std::mutex> guard(lock);
             queue.push(Action([=](){
-                    observer->OnError(std::move(error));
+                    this->observer->OnError(std::move(error));
                 }));
         }
 
