@@ -16,10 +16,13 @@ namespace rxcpp
     struct CreatedAutoDetachObserver : public Observer<T>, public std::enable_shared_from_this<CreatedAutoDetachObserver<T>>
     {
         std::shared_ptr<Observer<T>> observer;
-        std::atomic<bool> isStopped;
-        SerialDisposable disposable;
+        mutable std::atomic<bool> isStopped;
+        mutable SerialDisposable disposable;
         
         virtual ~CreatedAutoDetachObserver() {
+            if (!isStopped) {
+                abort();
+            }
         }
 
         CreatedAutoDetachObserver() 
@@ -29,9 +32,10 @@ namespace rxcpp
 
         virtual void OnNext(const T& element)
         {
-            auto keepAlive = this->shared_from_this();
             if (!isStopped) {
+                auto keepAlive = this->shared_from_this();
                 RXCPP_UNWIND(disposer, [&](){
+                    isStopped = true;
                     disposable.Dispose();
                 });
                 observer->OnNext(element);
@@ -40,25 +44,36 @@ namespace rxcpp
         }
         virtual void OnCompleted() 
         {
-            auto keepAlive = this->shared_from_this();
             if (!isStopped.exchange(true)) {
+                auto keepAlive = this->shared_from_this();
                 RXCPP_UNWIND(disposer, [&](){
                     disposable.Dispose();
                 });
                 observer->OnCompleted();
-                disposer.dismiss();
             }
         }
         virtual void OnError(const std::exception_ptr& error) 
         {
-            auto keepAlive = this->shared_from_this();
             if (!isStopped.exchange(true)) {
+                auto keepAlive = this->shared_from_this();
                 RXCPP_UNWIND(disposer, [&](){
                     disposable.Dispose();
                 });
                 observer->OnError(error);
-                disposer.dismiss();
             }
+        }
+
+        void Dispose() const {
+            isStopped = true;
+            disposable.Dispose();
+        }
+        operator Disposable() const
+        {
+            // make sure to capture state and not 'this'.
+            auto local = this->shared_from_this();
+            return Disposable([local]{
+                local->Dispose();
+            });
         }
     };
 
@@ -99,15 +114,15 @@ namespace rxcpp
                         return Disposable::Empty();
                    }
                 );
-                return autoDetachObserver->disposable;
+                return *autoDetachObserver;
             }
             try {
                 autoDetachObserver->disposable.Set(subscribe(autoDetachObserver));
-                return autoDetachObserver->disposable;
+                return *autoDetachObserver;
             } catch (...) {
                 autoDetachObserver->OnError(std::current_exception());
             }   
-            return Disposable::Empty();
+            return *autoDetachObserver;
         }
     };
 

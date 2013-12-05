@@ -76,7 +76,79 @@ namespace rxcpp
     {
         typedef std::chrono::steady_clock clock;
         typedef std::shared_ptr<Scheduler> shared;
-        typedef std::function<Disposable(shared)> Work;
+
+        class Work {
+            struct bool_r{}; 
+            static bool_r bool_true(){return bool_r();}
+            typedef decltype(&bool_true) bool_type;
+
+            struct State
+            {
+                typedef std::function<Disposable(shared)> F;
+                F work;
+                bool disposed;
+                inline void Dispose() {
+                    disposed = true;
+                }
+            };
+            std::shared_ptr<State> state;
+
+            template<int, bool sameType>
+            struct assign 
+            {
+                void operator()(const std::shared_ptr<State>& state, State::F fn) {
+                    state->work = std::move(fn);
+                }
+            };
+
+            template<int dummy>
+            struct assign<dummy, true>
+            {
+                void operator()(std::shared_ptr<State>& state, const Work& o) {
+                    state = o.state;
+                }
+                void operator()(std::shared_ptr<State>& state, Work&& o) {
+                    state = std::move(o.state);
+                }
+            };
+        public:
+            Work()
+                : state(std::make_shared<State>())
+            {
+                state->disposed = false;
+            }
+            template<class Fn>
+            Work(Fn&& fn)
+                : state(std::make_shared<State>())
+            {
+                assign<1, std::is_same<Work, typename std::decay<Fn>::type>::value>()(state, std::forward<Fn>(fn));
+                state->disposed = false;
+            }
+            template<class Fn>
+            Work& operator=(Fn&& fn)
+            {
+                assign<1, std::is_same<Work, typename std::decay<Fn>::type>::value>()(state, std::forward<Fn>(fn));
+                return *this;
+            }            
+            inline Disposable operator()(shared s) {
+                if (!state->disposed) {
+                    return state->work(s);
+                } 
+                return Disposable::Empty();
+            }
+            inline operator bool_type() const {return (!state->disposed && !!state->work) ? &bool_true : nullptr;}
+            inline void Dispose() const {
+                state->Dispose();
+            }
+            inline operator Disposable() const
+            {
+                // make sure to capture state and not 'this'.
+                auto local = state;
+                return Disposable([local]{
+                    local->Dispose();
+                });
+            }
+        };
 
         shared get() {return shared_from_this();}
 
@@ -321,7 +393,7 @@ namespace rxcpp
     template<class Absolute>
     class ScheduledItem {
     public:
-        ScheduledItem(Absolute due, std::shared_ptr<Scheduler::Work> work)
+        ScheduledItem(Absolute due, Scheduler::Work work)
             : due(due)
             , work(std::move(work))
         {}
@@ -336,7 +408,7 @@ namespace rxcpp
         }
 
         Absolute due;
-        std::shared_ptr<Scheduler::Work> work;
+        Scheduler::Work work;
     };
 
     struct LocalScheduler : public Scheduler
@@ -453,11 +525,11 @@ namespace rxcpp
                 is_enabled = true;
                 do {
                     auto next = GetNext();
-                    if (!!next && !!next->work && !!*next->work) {
+                    if (!!next && !!next->work) {
                         if (next->due > clock_now) {
                             clock_now = next->due;
                         }
-                        Do(*next->work, shared_from_this());
+                        Do(next->work, shared_from_this());
                     }
                     else {
                         is_enabled = false;
@@ -485,11 +557,11 @@ namespace rxcpp
                 is_enabled = true;
                 do {
                     auto next = GetNext();
-                    if (!!next && !!next->work && !!*next->work && next->due <= time) {
+                    if (!!next && !!next->work && next->due <= time) {
                         if (next->due > clock_now) {
                             clock_now = next->due;
                         }
-                        Do(*next->work, shared_from_this());
+                        Do(next->work, shared_from_this());
                     }
                     else {
                         is_enabled = false;

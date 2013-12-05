@@ -54,31 +54,31 @@ namespace rxcpp
         }
         static bool empty() {
             if (!threadLocalQueue()) {
-                throw std::logic_error("this thread does not have a queue!");
+                abort();
             }
             return threadLocalQueue()->queue.empty();
         }
         static ScheduledWork::const_reference top() {
             if (!threadLocalQueue()) {
-                throw std::logic_error("this thread does not have a queue!");
+                abort();
             }
             return threadLocalQueue()->queue.top();
         }
         static void pop() {
             if (!threadLocalQueue()) {
-                throw std::logic_error("this thread does not have a queue!");
+                abort();
             }
             threadLocalQueue()->queue.pop();
         }
         static void push(QueueItem item) {
             if (!threadLocalQueue()) {
-                throw std::logic_error("this thread does not have a queue!");
+                abort();
             }
             threadLocalQueue()->queue.push(std::move(item));
         }
         static void EnsureQueue(Scheduler::shared scheduler) {
             if (!!threadLocalQueue()) {
-                throw std::logic_error("this thread already has a queue!");
+                abort();
             }
             // create and publish new queue
             threadLocalQueue() = new ThreadLocalQueue();
@@ -91,9 +91,9 @@ namespace rxcpp
         }
         static void SetQueue(ThreadLocalQueue* queue) {
             if (!!threadLocalQueue()) {
-                throw std::logic_error("this thread already has a queue!");
+                abort();
             }
-            // create and publish new queue
+            // publish new queue
             threadLocalQueue() = queue;
         }
         static void DestroyQueue(ThreadLocalQueue* queue) {
@@ -101,7 +101,7 @@ namespace rxcpp
         }
         static void DestroyQueue() {
             if (!threadLocalQueue()) {
-                throw std::logic_error("this thread does not have a queue!");
+                abort();
             }
             DestroyQueue(threadLocalQueue());
             threadLocalQueue() = nullptr;
@@ -130,12 +130,10 @@ namespace rxcpp
             using LocalScheduler::Schedule;
             virtual Disposable Schedule(clock::time_point dueTime, Work work)
             {
-                auto cancelable = std::make_shared<Work>(std::move(work));
+                CurrentThreadQueue::push(CurrentThreadQueue::QueueItem(dueTime, work));
 
-                CurrentThreadQueue::push(CurrentThreadQueue::QueueItem(dueTime, cancelable));
-
-                return Disposable([cancelable]{
-                    *cancelable.get() = nullptr;});
+                // work is disposable
+                return work;
             }
         };
 
@@ -162,14 +160,12 @@ namespace rxcpp
 
             // take ownership
 
-            auto cancelable = std::make_shared<Work>(std::move(work));
-
             CurrentThreadQueue::EnsureQueue(std::make_shared<Derecurser>());
             RXCPP_UNWIND_AUTO([]{
                 CurrentThreadQueue::DestroyQueue();
             });
 
-            CurrentThreadQueue::push(CurrentThreadQueue::QueueItem(dueTime, std::move(cancelable)));
+            CurrentThreadQueue::push(CurrentThreadQueue::QueueItem(dueTime, std::move(work)));
 
             // loop until queue is empty
             for (
@@ -179,8 +175,8 @@ namespace rxcpp
                  )
             {
                 // dispatch work
-                auto work = std::move(*CurrentThreadQueue::top().work.get());
-                *CurrentThreadQueue::top().work.get() = nullptr;
+                auto work = CurrentThreadQueue::top().work;
+
                 CurrentThreadQueue::pop();
                 
                 Do(work, get());
@@ -197,8 +193,15 @@ namespace rxcpp
     private:
         ImmediateScheduler(const ImmediateScheduler&);
         
+        mutable std::mutex lock;
+        mutable bool hasFaulted;
+        mutable bool isAquired;
+        mutable CurrentThreadQueue::ThreadLocalQueue* queue;
     public:
         ImmediateScheduler()
+            : hasFaulted(false)
+            , isAquired(false)
+            , queue(nullptr)
         {
         }
         virtual ~ImmediateScheduler()
@@ -208,10 +211,61 @@ namespace rxcpp
         using LocalScheduler::Schedule;
         virtual Disposable Schedule(clock::time_point dueTime, Work work)
         {
-            auto ct = std::make_shared<CurrentThreadScheduler>();
-            std::this_thread::sleep_until(dueTime);
-            Do(work, ct);
-            return Disposable::Empty();
+            auto item = CurrentThreadQueue::QueueItem(dueTime, std::move(work));
+            bool isOwner = false;
+
+            {
+                std::unique_lock<std::mutex> guard(lock);
+                if (!hasFaulted && !queue && !isAquired)
+                {
+                    queue = CurrentThreadQueue::CreateQueue(this->shared_from_this()).release();
+                    isOwner = !isAquired;
+                    isAquired = true;
+                }
+            }
+
+            if (isOwner) 
+            {
+                RXCPP_UNWIND_AUTO([&](){
+                    std::unique_lock<std::mutex> guard(lock);
+                    CurrentThreadQueue::DestroyQueue(queue);
+                    queue = nullptr;
+                    isAquired = false;
+                });
+
+                for(;;) 
+                {
+                    std::this_thread::sleep_until(item.due);
+                    try 
+                    {
+                        Do(item.work, queue->scheduler);
+                    }
+                    catch (...)
+                    {
+                        std::unique_lock<std::mutex> guard(lock);
+                        while (!queue->queue.empty()) {queue->queue.pop();}
+                        hasFaulted = true;
+                        throw;
+                    }
+
+                    {
+                        std::unique_lock<std::mutex> guard(lock);
+                        if (queue->queue.empty())
+                        {
+                            break;
+                        }
+                        item = std::move(queue->queue.top());
+                        queue->queue.pop();
+                    }
+                }
+                return Disposable::Empty();
+            }
+            else
+            {
+                std::unique_lock<std::mutex> guard(lock);
+                queue->queue.push(item);
+                return item.work;
+            }
         }
     };
     
@@ -223,30 +277,24 @@ namespace rxcpp
         typedef std::function<void()> Action;
 
         Scheduler::shared scheduler;
-        std::atomic<size_t> trampoline;
         mutable std::shared_ptr<Observer<T>> observer;
         mutable SerialDisposable sd;
         mutable std::queue<Action> queue;
         mutable std::mutex lock;
+        mutable bool hasFaulted;
+        mutable bool isAquired;
 
     public:
         ScheduledObserver(Scheduler::shared scheduler, std::shared_ptr<Observer<T>> observer)
             : scheduler(std::move(scheduler))
-            , trampoline(0)
             , observer(std::move(observer))
+            , hasFaulted(false)
+            , isAquired(false)
         {
         }
 
         void Dispose() const
         {
-            SerialDisposable sd;
-            {
-                std::unique_lock<std::mutex> guard(lock);
-                while (!queue.empty()) {queue.pop();}
-                using std::swap;
-                swap(sd, this->sd);
-                observer= nullptr;
-            }
             sd.Dispose();
         }
         operator Disposable() const
@@ -260,86 +308,83 @@ namespace rxcpp
         virtual void OnNext(const T& element)
         {
             std::unique_lock<std::mutex> guard(lock);
-            auto local = this->shared_from_this();
             queue.push(Action([=](){
-                std::unique_lock<std::mutex> guard(lock);
-                auto o = local->observer;
-                guard.unlock();
-                if (o){
-                    o->OnNext(std::move(element));
-                }}));
+                    observer->OnNext(std::move(element));
+                }));
         }
         virtual void OnCompleted() 
         {
             std::unique_lock<std::mutex> guard(lock);
-            auto local = this->shared_from_this();
             queue.push(Action([=](){
-                std::unique_lock<std::mutex> guard(lock);
-                auto o = local->observer;
-                guard.unlock();
-                if (o){
-                    o->OnCompleted();
-                }}));
+                    observer->OnCompleted();
+                }));
         }
         virtual void OnError(const std::exception_ptr& error) 
         {
             std::unique_lock<std::mutex> guard(lock);
-            auto local = this->shared_from_this();
             queue.push(Action([=](){
-                std::unique_lock<std::mutex> guard(lock);
-                auto o = local->observer;
-                guard.unlock();
-                if (o){
-                    o->OnError(std::move(error));
-                }}));
+                    observer->OnError(std::move(error));
+                }));
         }
 
         void EnsureActive()
         {
-            RXCPP_UNWIND_AUTO([&]{--trampoline;});
-            if (++trampoline == 1)
+            bool isOwner = false;
+
             {
-                // this is decremented when no further work is scheduled
-                ++trampoline;
+                std::unique_lock<std::mutex> guard(lock);
+                if (!hasFaulted && !queue.empty())
+                {
+                    isOwner = !isAquired;
+                    isAquired = true;
+                }
+            }
+
+            if (isOwner)
+            {
                 auto keepAlive = this->shared_from_this();
                 sd.Set(scheduler->Schedule(
                     [keepAlive](Scheduler::shared sched){
                         return keepAlive->Run(sched);}));
             }
         }
+
     private:
         Disposable Run(Scheduler::shared sched)
         {
             auto keepAlive = this->shared_from_this();
 
-            std::unique_lock<std::mutex> guard(lock);
-
-            if(!queue.empty())
+            Action action;
             {
-                auto& item = queue.front();
-                
-                // dispatch action
-                auto action = std::move(item);
-                item = nullptr;
-                queue.pop();
-                    
-                RXCPP_UNWIND_AUTO([&]{guard.lock();});
-                guard.unlock();
+                std::unique_lock<std::mutex> guard(lock);
+                if(!queue.empty())
+                {
+                    action = std::move(queue.front());
+                    queue.pop();
+                }
+                else
+                {
+                    isAquired = false;
+                    return Disposable::Empty();
+                }
+            }
+
+            try 
+            {
                 action();
             }
-
-            if(!queue.empty())
+            catch (...)
             {
-                guard.unlock();
-                sd.Set(sched->Schedule(
-                    [keepAlive](Scheduler::shared sched){
-                        return keepAlive->Run(sched);}));
-                return sd;
+                std::unique_lock<std::mutex> guard(lock);
+                while (!queue.empty()) {queue.pop();}
+                hasFaulted = true;
+                throw;
             }
 
-            // only decrement when no further work is scheduled
-            --trampoline;
-            return Disposable::Empty();
+            sd.Set(sched->Schedule(
+                [keepAlive](Scheduler::shared sched){
+                    return keepAlive->Run(sched);}));
+            return sd;
         }
     };
 
@@ -353,14 +398,14 @@ namespace rxcpp
         private:
             Derecurser(const Derecurser&);
 
-            std::atomic<size_t> trampoline;
+            mutable bool isAquired;
             mutable std::mutex lock;
             mutable std::condition_variable wake;
             CurrentThreadQueue::ThreadLocalQueue* queue;
 
         public:
             Derecurser()
-                : trampoline(0)
+                : isAquired(false)
             {
             }
             virtual ~Derecurser()
@@ -375,38 +420,40 @@ namespace rxcpp
             typedef std::tuple<util::maybe<std::thread>, Disposable> EnsureThreadResult;
             EnsureThreadResult EnsureThread(Factory& factory, Scheduler::shared owner, clock::time_point dueTime, Work work)
             {
+                bool isOwner = false;
                 EnsureThreadResult result(util::maybe<std::thread>(), Disposable::Empty());
 
-                auto cancelable = std::make_shared<Work>(std::move(work));
-                std::get<1>(result) = Disposable([cancelable]{
-                    *cancelable.get() = nullptr;});
+                // work is disposable
+                std::get<1>(result) = work;
 
                 std::unique_lock<std::mutex> guard(lock);
-                RXCPP_UNWIND(unwindTrampoline, [&]{
-                    --trampoline;});
 
-                if (++trampoline == 1)
+                if (!isAquired)
                 {
                     RXCPP_UNWIND(unwindQueue, [&](){
                         CurrentThreadQueue::DestroyQueue(queue); queue = nullptr;});
                     queue = CurrentThreadQueue::CreateQueue(owner).release();
 
-                    queue->queue.push(CurrentThreadQueue::QueueItem(dueTime, std::move(cancelable)));
+                    queue->queue.push(CurrentThreadQueue::QueueItem(dueTime, std::move(work)));
 
                     auto local = std::static_pointer_cast<Derecurser>(shared_from_this());
                     auto localQueue = queue;
                     std::get<0>(result).set(factory([local, localQueue]{
                                local->Run(localQueue);}));
 
-                    // trampoline and queue lifetime is now owned by the thread
-                    unwindTrampoline.dismiss();
+                    isOwner = !isAquired;
+                    isAquired = true;
+
+                    // queue lifetime is now owned by the thread
                     unwindQueue.dismiss();
                 }
-                else
+
+                if (!isOwner)
                 {
-                    queue->queue.push(CurrentThreadQueue::QueueItem(dueTime, std::move(cancelable)));
+                    queue->queue.push(CurrentThreadQueue::QueueItem(dueTime, std::move(work)));
                     wake.notify_one();
                 }
+
                 return std::move(result);
             }
 
@@ -414,20 +461,22 @@ namespace rxcpp
             void Run(CurrentThreadQueue::ThreadLocalQueue* queue) {
                 auto keepAlive = shared_from_this();
                 {
-                    RXCPP_UNWIND_AUTO([&]{
-                        --trampoline;});
-
                     std::unique_lock<std::mutex> guard(lock);
 
-                    CurrentThreadQueue::SetQueue(queue);
+                    RXCPP_UNWIND_AUTO([&]{
+                        isAquired = false;});
+
                     RXCPP_UNWIND(unwindQueue, [&](){
                         CurrentThreadQueue::DestroyQueue(); 
                         queue = nullptr;});
+
+                    CurrentThreadQueue::SetQueue(queue);
+
 #if 0
                     auto start = queue->scheduler->Now();
                     auto ms = std::chrono::milliseconds(1);
 #endif
-                    while(!CurrentThreadQueue::empty() || trampoline > 1)
+                    while(!CurrentThreadQueue::empty())
                     {
                         auto now = queue->scheduler->Now();
 #if 0
@@ -448,12 +497,12 @@ namespace rxcpp
                             OutputDebugString(out.str().c_str());}
 #endif
                             wake.wait(guard, [&](){
-                                return !CurrentThreadQueue::empty() || trampoline == 1;});
+                                return !CurrentThreadQueue::empty();});
                             continue;
                         }
 
                         auto item = &CurrentThreadQueue::top();
-                        if (!item->work || !*item->work.get()) {
+                        if (!item->work) {
 #if 0
                             {std::wstringstream out;
                             out << L"eventloop (pop disposed work) pending: " << std::boolalpha << CurrentThreadQueue::empty() 
@@ -490,8 +539,8 @@ namespace rxcpp
                         OutputDebugString(out.str().c_str());}
 #endif                        
                         // dispatch work
-                        auto work = std::move(*item->work.get());
-                        *item->work.get() = nullptr;
+                        auto work = item->work;
+
                         CurrentThreadQueue::pop();
                         
                         RXCPP_UNWIND_AUTO([&]{
@@ -622,7 +671,7 @@ namespace rxcpp
             util::maybe<QueueItem> next;
             while (!queue.empty()) {
                 next.set(queue.top());
-                if (!next->work || !*next->work) {
+                if (!next->work) {
                     queue.pop();
                 }
                 else {
@@ -634,23 +683,20 @@ namespace rxcpp
 
         Disposable ScheduleAbsolute(Absolute dueTime, Work work)
         {
-            auto cancelable = std::make_shared<Work>();
+            Work cancelable;
 
             auto run = [cancelable, work](Scheduler::shared scheduler) -> Disposable {
                 auto local = work;
-                *cancelable.get() = nullptr;
+                cancelable.Dispose();
                 return Base::Do(local, std::move(scheduler));
             };
             
-            *cancelable.get() = run;
+            cancelable = run;
 
             auto si = QueueItem(dueTime, cancelable);
             queue.push(si);
 
-            auto result = Disposable([cancelable]{
-                *cancelable.get() = nullptr;
-            });
-            return result;
+            return cancelable;
         }
 
     };
