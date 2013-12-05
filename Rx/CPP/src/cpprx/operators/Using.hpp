@@ -11,16 +11,16 @@ namespace rxcpp
 
     namespace detail
     {
-        template<class T, class R>
-        class UsingObservable : public Producer<UsingObservable<T, R>, T>
+        template<class T, class R, class ScopedObservable>
+        class UsingObservable : public Producer<UsingObservable<T, R, ScopedObservable>, T>
         {
-            typedef UsingObservable<T, R> This;
+            typedef UsingObservable<T, R, ScopedObservable> This;
             typedef std::shared_ptr<This> Parent;
-            typedef std::shared_ptr<Observable < T >> Source;
+            typedef typename std::decay<ScopedObservable>::type Source;
 
         public:
             typedef std::function<R()> ResourceFactory;
-            typedef std::function<Source(R)> ObservableFactory;
+            typedef std::function<ScopedObservable(R)> ObservableFactory;
 
         private:
             ResourceFactory resourceFactory;
@@ -29,6 +29,7 @@ namespace rxcpp
             class _ : public Sink<_, T>, public Observer<T>
             {
                 Parent parent;
+                Source source;
 
             public:
                 typedef Sink<_, T> SinkBase;
@@ -42,7 +43,6 @@ namespace rxcpp
                 Disposable Run()
                 {
                     ComposableDisposable cd;
-                    Source source;
                     auto disposable = Disposable::Empty();
 
                     try
@@ -85,7 +85,7 @@ namespace rxcpp
             UsingObservable(ResourceFactory resourceFactory, ObservableFactory observableFactory) :
                 ProducerBase([](Parent parent, std::shared_ptr < Observer < T >> observer, Disposable && cancel, typename ProducerBase::SetSink setSink) -> Disposable
                 {
-                    auto sink = std::shared_ptr<_>(new _(parent, observer, std::move(cancel)));
+                    auto sink = std::shared_ptr<UsingObservable::_>(new UsingObservable::_(parent, observer, std::move(cancel)));
                     setSink(sink->GetDisposable());
                     return sink->Run();
                 }),
@@ -102,9 +102,10 @@ namespace rxcpp
         )
         -> decltype(observableFactory(resourceFactory()))
     {
-        typedef typename observable_item<decltype(observableFactory(resourceFactory()))>::type T;
+        typedef decltype(observableFactory(resourceFactory())) ScopedObservable;
+        typedef typename observable_item<ScopedObservable>::type T;
         typedef decltype(resourceFactory()) R;
-        return std::make_shared<detail::UsingObservable<T, R>>(std::move(resourceFactory), std::move(observableFactory));
+        return std::make_shared<detail::UsingObservable<T, R, ScopedObservable>>(std::move(resourceFactory), std::move(observableFactory));
     }
 }
 
