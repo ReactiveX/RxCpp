@@ -31,7 +31,7 @@ namespace rxcpp
                             --state->pendingFirst;
                         }
                         if (state->pendingFirst == 0) {
-                            Latest args = state->latest;
+                            auto args = state->latest;
                             typedef decltype(util::tuple_dispatch(state->selector, args)) U;
                             util::maybe<U> result;
                             try {
