@@ -952,7 +952,8 @@ namespace rxcpp
             for (auto& message : messages) {
                 auto notification = message.Value();
                 scheduler->ScheduleAbsolute(message.Time(), [this, notification](Scheduler::shared) -> Disposable {
-                    for (auto& observer : this->observers) {
+                    auto local = this->observers;
+                    for (auto& observer : local) {
                         notification->Accept(observer);
                     }
                     return Disposable::Empty();

@@ -189,6 +189,9 @@ namespace rxcpp
             typedef std::shared_ptr<Observer<T>> SinkObserver;
             mutable util::maybe<Disposable> cancel;
 
+            // need to prevent disposed observer from being 
+            // deleted since it may still be in use on the stack 
+            mutable SinkObserver expired;
         protected:
             mutable SinkObserver observer;
             
@@ -205,7 +208,10 @@ namespace rxcpp
             
             void Dispose() const
             {
-                observer = std::make_shared<Observer<T>>();
+                expired = std::make_shared<Observer<T>>();
+                using std::swap;
+                swap(observer, expired);
+
                 if (cancel)
                 {
                     cancel->Dispose();
@@ -782,7 +788,7 @@ namespace rxcpp
             return Disposable([that]()
             {
                 std::unique_lock<std::mutex> guard(that->lock);
-                if (that->subscription)
+                if (!!that->subscription)
                 {
                     that->subscription->Dispose();
                     that->subscription.reset();
