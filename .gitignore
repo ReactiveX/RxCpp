@@ -106,4 +106,4 @@ Desktop.ini
 ############
 
 projects/*
-!projects/CMake/CMakelists.txt
+!projects/CMake/CMakeLists.txt

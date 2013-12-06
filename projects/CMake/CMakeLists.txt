@@ -17,10 +17,28 @@ get_filename_component(RXCPP_DIR "${CMAKE_CURRENT_SOURCE_DIR}" PATH)
 get_filename_component(RXCPP_DIR "${RXCPP_DIR}" PATH)
 set(TEST_DIR ${RXCPP_DIR}/Rx/CPP/test)
 
-include_directories(${RXCPP_DIR}/Ix/CPP/src ${RXCPP_DIR}/Rx/CPP/src)
+include_directories(${RXCPP_DIR}/ext/catch/include ${RXCPP_DIR}/Ix/CPP/src ${RXCPP_DIR}/Rx/CPP/src)
+
+# define the sources of the self test
+set(TEST_SOURCES
+    ${TEST_DIR}/test.cpp
+    ${TEST_DIR}/operators/Publish.cpp
+    ${TEST_DIR}/operators/Where.cpp
+)
+add_executable(rxcpp_test ${TEST_SOURCES})
 
 # define the sources of testbench
 set(TESTBENCH_SOURCES
     ${RXCPP_DIR}/Rx/CPP/testbench/testbench.cpp
 )
 add_executable(testbench ${TESTBENCH_SOURCES})
+
+# configure unit tests via CTest
+enable_testing()
+add_test(NAME RunTests COMMAND rxcpp_test)
+
+add_test(NAME ListTests COMMAND rxcpp_test --list-tests)
+set_tests_properties(ListTests PROPERTIES PASS_REGULAR_EXPRESSION "[0-9]+ test cases")
+
+add_test(NAME ListTags COMMAND rxcpp_test --list-tags)
+set_tests_properties(ListTags PROPERTIES PASS_REGULAR_EXPRESSION "[0-9]+ tags")
