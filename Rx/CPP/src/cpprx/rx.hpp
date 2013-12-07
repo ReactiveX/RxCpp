@@ -240,16 +240,24 @@ namespace detail {
         }
 #endif //RXCPP_USE_VARIADIC_TEMPLATES
 #if RXCPP_USE_VARIADIC_TEMPLATES
-        template <class S, class... CombineLSource>
-        auto combine_latest(S selector, const CombineLSource&... source) 
-            -> typename std::enable_if<!is_observable<S>::value, decltype(from(CombineLatest(selector, obj, observable(source)...)))>::type {
-            return      from(CombineLatest(selector, obj, observable(source)...));
+    private:
+        struct selector_tag{};
+        struct source_tag{};
+        template <class CombineSelector, class... CombineSelectorSources>
+        auto combine_latest_detail(selector_tag&&, CombineSelector&& selector, const CombineSelectorSources&... sources)
+            -> decltype(from(CombineLatest(std::forward<CombineSelector>(selector), obj, observable(sources)...))) {
+            return      from(CombineLatest(std::forward<CombineSelector>(selector), obj, observable(sources)...));
         }
-        template <class CombineL1Source, class... CombineL1SourceN>
-        auto combine_latest(const CombineL1Source& source, const CombineL1SourceN&... sourcen)
-            -> typename std::enable_if < is_observable<CombineL1Source>::value, 
-                decltype(from(CombineLatest(util::as_tuple(), obj, observable(source), observable(sourcen)...)))>::type {
-            return       from(CombineLatest(util::as_tuple(), obj, observable(source), observable(sourcen)...));
+        template <class... CombineSourceSources>
+        auto combine_latest_detail(source_tag&&, const CombineSourceSources&... sources)
+            -> decltype(from(CombineLatest(util::as_tuple(), obj, observable(sources)...))) {
+            return      from(CombineLatest(util::as_tuple(), obj, observable(sources)...));
+        }
+    public:
+        template <class CombineSourceOrSelector, class... CombineSourceN>
+        auto combine_latest(CombineSourceOrSelector&& sourceOrSelector, const CombineSourceN&... sourcen)
+            -> decltype(from(combine_latest_detail(typename std::conditional<is_observable<typename std::decay<CombineSourceOrSelector>::type>::value, source_tag, selector_tag>::type(), std::forward<CombineSourceOrSelector>(sourceOrSelector), std::forward<CombineSourceN>(sourcen)...))) {
+            return      from(combine_latest_detail(typename std::conditional<is_observable<typename std::decay<CombineSourceOrSelector>::type>::value, source_tag, selector_tag>::type(), std::forward<CombineSourceOrSelector>(sourceOrSelector), std::forward<CombineSourceN>(sourcen)...));
         }
 #else
         template <class S, class CombineLSource>
