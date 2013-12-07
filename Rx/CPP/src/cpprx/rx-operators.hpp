@@ -827,6 +827,7 @@ namespace rxcpp
 #include "operators/Subscribe.hpp"
 #include "operators/ForEach.hpp"
 #include "operators/Empty.hpp"
+#include "operators/Never.hpp"
 #include "operators/Return.hpp"
 #include "operators/Throw.hpp"
 #include "operators/Range.hpp"
