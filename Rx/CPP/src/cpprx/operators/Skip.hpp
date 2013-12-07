@@ -88,7 +88,7 @@ namespace rxcpp
                 cd.Add(Subscribe(
                     terminus,
                 // on next
-                    [=](const T& element)
+                    [=](const U& element)
                     {
                         state->skipState = SkipState::Taking;
                     },
