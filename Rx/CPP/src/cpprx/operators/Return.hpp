@@ -60,7 +60,7 @@ namespace rxcpp
             {
                 if (!scheduler) 
                 { 
-                    this->scheduler = std::make_shared<CurrentThreadScheduler>(); 
+                    this->scheduler = std::make_shared<ImmediateScheduler>(); 
                 }
             }
         };
