@@ -256,8 +256,8 @@ namespace detail {
     public:
         template <class CombineSourceOrSelector, class... CombineSourceN>
         auto combine_latest(CombineSourceOrSelector&& sourceOrSelector, const CombineSourceN&... sourcen)
-            -> decltype(from(combine_latest_detail(typename std::conditional<is_observable<typename std::decay<CombineSourceOrSelector>::type>::value, source_tag, selector_tag>::type(), std::forward<CombineSourceOrSelector>(sourceOrSelector), std::forward<CombineSourceN>(sourcen)...))) {
-            return      from(combine_latest_detail(typename std::conditional<is_observable<typename std::decay<CombineSourceOrSelector>::type>::value, source_tag, selector_tag>::type(), std::forward<CombineSourceOrSelector>(sourceOrSelector), std::forward<CombineSourceN>(sourcen)...));
+            -> decltype(from(combine_latest_detail(typename std::conditional<is_observable<typename std::decay<CombineSourceOrSelector>::type>::value, source_tag, selector_tag>::type(), std::forward<CombineSourceOrSelector>(sourceOrSelector), sourcen...))) {
+            return      from(combine_latest_detail(typename std::conditional<is_observable<typename std::decay<CombineSourceOrSelector>::type>::value, source_tag, selector_tag>::type(), std::forward<CombineSourceOrSelector>(sourceOrSelector), sourcen...));
         }
 #else
         template <class S, class CombineLSource>
