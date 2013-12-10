@@ -1,0 +1,31 @@
+nuget {
+    nuspec {
+        id = rxcpp;
+        version : 2.2.1.0;
+        title: Reactive Extensions for C++;
+        authors: {Microsoft Open Technologies Inc.};
+        owners: {Microsoft Open Technologies Inc.};
+        licenseUrl: "http://rxcpp.codeplex.com/license";
+        projectUrl: "https://rxcpp.codeplex.com/";
+        iconUrl: "http://download-codeplex.sec.s-msft.com/Download?ProjectName=rx&DownloadId=604538&Build=20828";
+        requireLicenseAcceptance:false;
+        summary: "The Reactive Extensions (Rx) asynchronous programming library";
+        description: @"The Reactive Extensions (Rx) is a library for composing asynchronous and event-based programs using observable sequences and operators. Operators are the asynchronous form of standard library algorithms and they operate on Observables instead of iterators. Using Rx, developers represent asynchronous data streams with Observables, query asynchronous data streams using operators, and parameterize the concurrency in the asynchronous data streams using Schedulers.";
+        releaseNotes: "This release has many new operators and schedulers. Also some preliminary ssupprot for MVVM in WinRT.";
+        copyright: Copyright 2013;
+        tags: { RXCPP, RXC++, RX, native, MSOpenTech};
+    };
+
+    files {
+
+        #defines {
+            SDK_RX   = ..\..\;
+        }
+        include: { "${SDK_RX}Rx\CPP\src\**\*", "${SDK_RX}Ix\CPP\src\**\*" };
+        docs: {  ${SDK_RX}Readme.html };
+    }
+    
+    targets {
+        Defines += HAS_RXCPP;
+    }
+}
