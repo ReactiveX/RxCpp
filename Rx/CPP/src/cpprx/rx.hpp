@@ -399,9 +399,6 @@ namespace detail {
             -> decltype(from(Throttle<item_type>(obj, due, scheduler))) {
             return      from(Throttle<item_type>(obj, due, scheduler));
         }
-        auto limit_window(int milliseconds) -> decltype(from(LimitWindow<item_type>(obj, milliseconds))) {
-            return from(LimitWindow<item_type>(obj, milliseconds));
-        }
         auto distinct_until_changed() -> decltype(from(DistinctUntilChanged<item_type>(obj))) {
             return from(DistinctUntilChanged<item_type>(obj));
         }

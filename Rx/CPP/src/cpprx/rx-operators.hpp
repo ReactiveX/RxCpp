@@ -879,54 +879,6 @@ namespace rxcpp
 
 namespace rxcpp
 {
-
-    // no more than one event ever 'milliseconds'
-    // TODO: oops, this is not the right definition for throttle.
-    template <class T>
-    std::shared_ptr<Observable<T>> LimitWindow(
-        const std::shared_ptr<Observable<T>>& source,
-        int milliseconds)
-    {
-        if (milliseconds == 0)
-            return source;
-        
-        return CreateObservable<T>(
-            [=](std::shared_ptr<Observer<T>> observer)
-            -> Disposable
-            {
-                struct State {
-                    std::chrono::steady_clock::time_point dueTime;
-                };
-        
-                auto state = std::make_shared<State>();
-
-                return Subscribe(
-                    source,
-                // on next
-                    [=](const T& element)
-                    {
-                        auto now = std::chrono::steady_clock::now();
-
-                        if (now >= state->dueTime)
-                        {
-                            observer->OnNext(element);
-                            state->dueTime = now + std::chrono::duration<int, std::milli>(milliseconds);
-                        }
-                    },
-                // on completed
-                    [=]
-                    {
-                        observer->OnCompleted();
-                    },
-                // on error
-                    [=](const std::exception_ptr& error)
-                    {
-                        observer->OnError(error);
-                    });
-            });
-    }
-
-
     class StdQueueDispatcher
     {
         mutable std::queue<std::function<void()>> pending;
