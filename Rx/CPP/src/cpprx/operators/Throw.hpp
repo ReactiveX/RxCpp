@@ -65,14 +65,39 @@ namespace rxcpp
                 }
             }
         };
+
+        struct throw_ptr_tag{};
+        struct throw_instance_tag{};
+
+        template <class T>
+        std::shared_ptr<Observable<T>> Throw(
+            throw_ptr_tag&&,
+            std::exception_ptr exception,
+            Scheduler::shared scheduler = nullptr
+            )
+        {
+            return std::make_shared<detail::ThrowObservable<T>>(std::move(exception), std::move(scheduler));
+        }
+
+        template <class T, class E>
+        std::shared_ptr<Observable<T>> Throw(
+            throw_instance_tag&&,
+            E e,
+            Scheduler::shared scheduler = nullptr
+            )
+        {
+            std::exception_ptr exception;
+            try {throw e;} catch(...) {exception = std::current_exception();}
+            return std::make_shared<detail::ThrowObservable<T>>(std::move(exception), std::move(scheduler));
+        }
     }
-    template <class T>
-    const std::shared_ptr<Observable<T>> Throw(
-        std::exception_ptr exception,
+    template <class T, class E>
+    std::shared_ptr<Observable<T>> Throw(
+        E e,
         Scheduler::shared scheduler = nullptr
         )
     {
-        return std::make_shared<detail::ThrowObservable<T>>(std::move(exception), std::move(scheduler));
+        return detail::Throw<T>(typename std::conditional<std::is_same<std::exception_ptr, typename std::decay<E>::type>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::forward<E>(e), std::move(scheduler));
     }
 }
 
