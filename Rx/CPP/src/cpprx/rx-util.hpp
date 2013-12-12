@@ -132,6 +132,13 @@ namespace rxcpp { namespace util {
     template<class T>
     struct reveal_type {private: reveal_type();};
 
+
+    template<class T>
+    auto find_clock(T, int) -> std::chrono::steady_clock;
+    template<class T>
+    auto find_clock(T, ...) -> std::chrono::monotonic_clock;
+    typedef decltype(find_clock(0, 0)) scheduler_clock;
+
 #if RXCPP_USE_VARIADIC_TEMPLATES
     template <int... Indices> 
     struct tuple_indices;

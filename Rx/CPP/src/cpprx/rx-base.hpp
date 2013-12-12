@@ -74,7 +74,7 @@ namespace rxcpp
 
     struct Scheduler : public std::enable_shared_from_this<Scheduler>
     {
-        typedef std::chrono::steady_clock clock;
+        typedef util::scheduler_clock clock;
         typedef std::shared_ptr<Scheduler> shared;
 
         class Work {
