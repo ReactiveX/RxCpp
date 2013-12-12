@@ -75,6 +75,19 @@ namespace rxcpp
                 local->Dispose();
             });
         }
+
+        bool Fail(const std::exception_ptr& error) 
+        {
+            if (!isStopped.exchange(true)) {
+                auto keepAlive = this->shared_from_this();
+                RXCPP_UNWIND(disposer, [&](){
+                    this->disposable.Dispose();
+                });
+                observer->OnError(error);
+                return true;
+            }
+            return false;
+        }
     };
 
     template <class T>
@@ -109,7 +122,9 @@ namespace rxcpp
                         try {
                             autoDetachObserver->disposable.Set(this->subscribe(autoDetachObserver));
                         } catch (...) {
-                            autoDetachObserver->OnError(std::current_exception());
+                            if (!autoDetachObserver->Fail(std::current_exception())) {
+                                throw;
+                            }
                         }   
                         return Disposable::Empty();
                    }
@@ -120,7 +135,9 @@ namespace rxcpp
                 autoDetachObserver->disposable.Set(subscribe(autoDetachObserver));
                 return *autoDetachObserver;
             } catch (...) {
-                autoDetachObserver->OnError(std::current_exception());
+                if (!autoDetachObserver->Fail(std::current_exception())) {
+                    throw;
+                }
             }   
             return *autoDetachObserver;
         }
