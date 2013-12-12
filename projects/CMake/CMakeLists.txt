@@ -23,8 +23,9 @@ include_directories(${RXCPP_DIR}/ext/catch/include ${RXCPP_DIR}/Ix/CPP/src ${RXC
 set(TEST_SOURCES
     ${TEST_DIR}/test.cpp
     ${TEST_DIR}/operators/Return.cpp
-    ${TEST_DIR}/operators/Publish.cpp
+    ${TEST_DIR}/operators/Select.cpp
     ${TEST_DIR}/operators/Where.cpp
+    ${TEST_DIR}/operators/Publish.cpp
 )
 add_executable(rxcpp_test ${TEST_SOURCES})
 
