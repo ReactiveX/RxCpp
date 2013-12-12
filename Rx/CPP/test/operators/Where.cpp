@@ -8,21 +8,21 @@ bool IsPrime(int x)
     if (x < 2) return false;
     for (int i = 2; i <= x/2; ++i)
     {
-        if (x % i == 0) 
+        if (x % i == 0)
             return false;
     }
     return true;
 }
 
 SCENARIO("where stops on completion", "[where][filter][operators]"){
-    GIVEN("a test hot observable of longs"){
+    GIVEN("a test hot observable of ints"){
         auto scheduler = std::make_shared<rx::TestScheduler>();
-        typedef rx::TestScheduler::Messages<long> m;
+        typedef rx::TestScheduler::Messages<int> m;
 
         long invoked = 0;
 
         auto xs = scheduler->CreateHotObservable(
-            []() { 
+            []() {
                 m::RecordedT messages[] = {
                     m::OnNext(110, 1),
                     m::OnNext(180, 2),
@@ -44,12 +44,12 @@ SCENARIO("where stops on completion", "[where][filter][operators]"){
             }()
             );
 
-        WHEN("filtered to longs that are primes"){
+        WHEN("filtered to ints that are primes"){
 
-            auto res = scheduler->Start<long>(
+            auto res = scheduler->Start<int>(
                 [xs, &invoked]() {
                     return rx::observable(rx::from(xs)
-                        .where([&invoked](long x) {
+                        .where([&invoked](int x) {
                             invoked++;
                             return IsPrime(x);
                         }));
@@ -86,14 +86,14 @@ SCENARIO("where stops on completion", "[where][filter][operators]"){
 }
 
 SCENARIO("where stops on disposal", "[where][filter][operators]"){
-    GIVEN("a test hot observable of longs"){
+    GIVEN("a test hot observable of ints"){
         auto scheduler = std::make_shared<rx::TestScheduler>();
-        typedef rx::TestScheduler::Messages<long> m;
+        typedef rx::TestScheduler::Messages<int> m;
 
         long invoked = 0;
 
         auto xs = scheduler->CreateHotObservable(
-            []() { 
+            []() {
                 m::RecordedT messages[] = {
                     m::OnNext(110, 1),
                     m::OnNext(180, 2),
@@ -112,12 +112,12 @@ SCENARIO("where stops on disposal", "[where][filter][operators]"){
             }()
             );
 
-        WHEN("filtered to longs that are primes"){
+        WHEN("filtered to ints that are primes"){
 
-            auto res = scheduler->Start<long>(
+            auto res = scheduler->Start<int>(
                 [xs, &invoked]() {
                     return rx::observable(rx::from(xs)
-                        .where([&invoked](long x) {
+                        .where([&invoked](int x) {
                             invoked++;
                             return IsPrime(x);
                         }));
@@ -153,16 +153,16 @@ SCENARIO("where stops on disposal", "[where][filter][operators]"){
 }
 
 SCENARIO("where stops on error", "[where][filter][operators]"){
-    GIVEN("a test hot observable of longs"){
+    GIVEN("a test hot observable of ints"){
         auto scheduler = std::make_shared<rx::TestScheduler>();
-        typedef rx::TestScheduler::Messages<long> m;
+        typedef rx::TestScheduler::Messages<int> m;
 
         long invoked = 0;
 
         std::exception ex;
 
         auto xs = scheduler->CreateHotObservable(
-            [ex]() { 
+            [ex]() {
                 m::RecordedT messages[] = {
                     m::OnNext(110, 1),
                     m::OnNext(180, 2),
@@ -184,12 +184,12 @@ SCENARIO("where stops on error", "[where][filter][operators]"){
             }()
             );
 
-        WHEN("filtered to longs that are primes"){
+        WHEN("filtered to ints that are primes"){
 
-            auto res = scheduler->Start<long>(
+            auto res = scheduler->Start<int>(
                 [xs, &invoked]() {
                     return rx::observable(rx::from(xs)
-                        .where([&invoked](long x) {
+                        .where([&invoked](int x) {
                             invoked++;
                             return IsPrime(x);
                         }));
@@ -226,16 +226,16 @@ SCENARIO("where stops on error", "[where][filter][operators]"){
 }
 
 SCENARIO("where stops on throw from predicate", "[where][filter][operators]"){
-    GIVEN("a test hot observable of longs"){
+    GIVEN("a test hot observable of ints"){
         auto scheduler = std::make_shared<rx::TestScheduler>();
-        typedef rx::TestScheduler::Messages<long> m;
+        typedef rx::TestScheduler::Messages<int> m;
 
         long invoked = 0;
 
         std::exception ex;
 
         auto xs = scheduler->CreateHotObservable(
-            []() { 
+            []() {
                 m::RecordedT messages[] = {
                     m::OnNext(110, 1),
                     m::OnNext(180, 2),
@@ -257,12 +257,12 @@ SCENARIO("where stops on throw from predicate", "[where][filter][operators]"){
             }()
             );
 
-        WHEN("filtered to longs that are primes"){
+        WHEN("filtered to ints that are primes"){
 
-            auto res = scheduler->Start<long>(
+            auto res = scheduler->Start<int>(
                 [ex, xs, &invoked]() {
                     return rx::observable(rx::from(xs)
-                        .where([ex, &invoked](long x) {
+                        .where([ex, &invoked](int x) {
                             invoked++;
                             if (x > 5) {
                                 throw ex;
@@ -300,14 +300,14 @@ SCENARIO("where stops on throw from predicate", "[where][filter][operators]"){
 }
 
 SCENARIO("where stops on dispose from predicate", "[where][filter][operators]"){
-    GIVEN("a test hot observable of longs"){
+    GIVEN("a test hot observable of ints"){
         auto scheduler = std::make_shared<rx::TestScheduler>();
-        typedef rx::TestScheduler::Messages<long> m;
+        typedef rx::TestScheduler::Messages<int> m;
 
         long invoked = 0;
 
         auto xs = scheduler->CreateHotObservable(
-            []() { 
+            []() {
                 m::RecordedT messages[] = {
                     m::OnNext(110, 1),
                     m::OnNext(180, 2),
@@ -329,17 +329,17 @@ SCENARIO("where stops on dispose from predicate", "[where][filter][operators]"){
             }()
         );
 
-        auto res = scheduler->CreateObserver<long>();
+        auto res = scheduler->CreateObserver<int>();
 
         rx::SerialDisposable d;
-        std::shared_ptr<rx::Observable<long>> ys;
+        std::shared_ptr<rx::Observable<int>> ys;
 
-        WHEN("filtered to longs that are primes"){
+        WHEN("filtered to ints that are primes"){
 
-            scheduler->ScheduleAbsolute(rx::TestScheduler::Created, 
-                [&invoked, &d, &ys, &xs](rx::Scheduler::shared) { 
+            scheduler->ScheduleAbsolute(rx::TestScheduler::Created,
+                [&invoked, &d, &ys, &xs](rx::Scheduler::shared) {
                     ys = rx::observable(rx::from(xs)
-                        .where([&invoked, &d](long x) {
+                        .where([&invoked, &d](int x) {
                             invoked++;
                             if (x == 8)
                                 d.Dispose();
@@ -348,13 +348,13 @@ SCENARIO("where stops on dispose from predicate", "[where][filter][operators]"){
                     return rx::Disposable::Empty();
                 });
 
-            scheduler->ScheduleAbsolute(rx::TestScheduler::Subscribed, [&d, &ys, &res](rx::Scheduler::shared) { 
+            scheduler->ScheduleAbsolute(rx::TestScheduler::Subscribed, [&d, &ys, &res](rx::Scheduler::shared) {
                 d.Set(ys->Subscribe(res));
                 return rx::Disposable::Empty();
             });
 
-            scheduler->ScheduleAbsolute(rx::TestScheduler::Disposed, [&d](rx::Scheduler::shared) { 
-                d.Dispose(); 
+            scheduler->ScheduleAbsolute(rx::TestScheduler::Disposed, [&d](rx::Scheduler::shared) {
+                d.Dispose();
                 return rx::Disposable::Empty();
             });
 
