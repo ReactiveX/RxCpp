@@ -70,7 +70,7 @@ namespace rxcpp
         struct throw_instance_tag{};
 
         template <class T>
-        std::shared_ptr<Observable<T>> Throw(
+        std::shared_ptr<Observable<T>> make_throw(
             throw_ptr_tag&&,
             std::exception_ptr exception,
             Scheduler::shared scheduler = nullptr
@@ -80,7 +80,7 @@ namespace rxcpp
         }
 
         template <class T, class E>
-        std::shared_ptr<Observable<T>> Throw(
+        std::shared_ptr<Observable<T>> make_throw(
             throw_instance_tag&&,
             E e,
             Scheduler::shared scheduler = nullptr
@@ -97,7 +97,7 @@ namespace rxcpp
         Scheduler::shared scheduler = nullptr
         )
     {
-        return detail::Throw<T>(typename std::conditional<std::is_same<std::exception_ptr, typename std::decay<E>::type>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::forward<E>(e), std::move(scheduler));
+        return detail::make_throw<T>(typename std::conditional<std::is_same<std::exception_ptr, typename std::decay<E>::type>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::forward<E>(e), std::move(scheduler));
     }
 }
 
