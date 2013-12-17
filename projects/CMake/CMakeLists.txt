@@ -24,6 +24,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/test.cpp
     ${TEST_DIR}/operators/Return.cpp
     ${TEST_DIR}/operators/Select.cpp
+    ${TEST_DIR}/operators/SelectMany.cpp
     ${TEST_DIR}/operators/Where.cpp
     ${TEST_DIR}/operators/Publish.cpp
 )
