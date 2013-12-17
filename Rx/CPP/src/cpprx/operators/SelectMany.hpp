@@ -28,127 +28,89 @@ namespace rxcpp
             -> Disposable
             {
                 struct State {
-                    size_t subscribed;
-                    bool cancel;
+                    std::atomic<int> count;
                     std::mutex lock;
+                    ComposableDisposable group;
                 };
                 auto state = std::make_shared<State>();
-                state->cancel = false;
-                state->subscribed = 0;
+                state->count = 0;
 
-                ComposableDisposable cd;
+                SerialDisposable sourceDisposable;
+                state->group.Add(sourceDisposable);
 
-                cd.Add(Disposable([=]{ 
-                    std::unique_lock<std::mutex> guard(state->lock);
-                    state->cancel = true; })
-                );
-
-                ++state->subscribed;
-                cd.Add(Subscribe(
+                ++state->count;
+                sourceDisposable.Set(Subscribe(
                     source,
                 // on next
                     [=](const T& sourceElement)
                     {
-                        bool cancel = false;
-                        {
+                        util::maybe<C> collection;
+                        try {
+                            collection.set(collectionSelector(sourceElement));
+                        } catch(...) {
                             std::unique_lock<std::mutex> guard(state->lock);
-                            cancel = state->cancel;
-                            if (!cancel) ++state->subscribed;
+                            observer->OnError(std::current_exception());
+                            state->group.Dispose();
+                            return;
                         }
-                        if (!cancel) {
-                            util::maybe<C> collection;
-                            try {
-                                collection.set(collectionSelector(sourceElement));
-                            } catch(...) {
-                                bool cancel = false;
-                                {
+
+                        SerialDisposable inner;
+                        state->group.Add(inner);
+
+                        ++state->count;
+                        inner.Set(Subscribe(
+                            *collection.get(),
+                        // on next
+                            [=](const CI& collectionElement)
+                            {
+                                util::maybe<U> result;
+                                try {
+                                    result.set(resultSelector(sourceElement, collectionElement));
+                                } catch(...) {
                                     std::unique_lock<std::mutex> guard(state->lock);
-                                    cancel = state->cancel;
-                                }
-                                if (!cancel) {
                                     observer->OnError(std::current_exception());
+                                    state->group.Dispose();
                                 }
-                                cd.Dispose();
-                            }
-                            if (!!collection) {
-                                cd.Add(Subscribe(
-                                    *collection.get(),
-                                // on next
-                                    [=](const CI& collectionElement)
-                                    {
-                                        bool cancel = false;
-                                        {
-                                            std::unique_lock<std::mutex> guard(state->lock);
-                                            cancel = state->cancel;
-                                        }
-                                        if (!cancel) {
-                                            util::maybe<U> result;
-                                            try {
-                                                result.set(resultSelector(sourceElement, collectionElement));
-                                            } catch(...) {
-                                                observer->OnError(std::current_exception());
-                                                cd.Dispose();
-                                            }
-                                            if (!!result) {
-                                                observer->OnNext(std::move(*result.get()));
-                                            }
-                                        }
-                                    },
-                                // on completed
-                                    [=]
-                                    {
-                                        bool cancel = false;
-                                        bool finished = false;
-                                        {
-                                            std::unique_lock<std::mutex> guard(state->lock);
-                                            finished = (--state->subscribed) == 0;
-                                            cancel = state->cancel;
-                                        }
-                                        if (!cancel && finished)
-                                            observer->OnCompleted(); 
-                                    },
-                                // on error
-                                    [=](const std::exception_ptr& error)
-                                    {
-                                        bool cancel = false;
-                                        {
-                                            std::unique_lock<std::mutex> guard(state->lock);
-                                            --state->subscribed;
-                                            cancel = state->cancel;
-                                        }
-                                        if (!cancel)
-                                            observer->OnError(error);
-                                        cd.Dispose();
-                                    }));
-                            }
-                        }
+                                std::unique_lock<std::mutex> guard(state->lock);
+                                observer->OnNext(std::move(*result.get()));
+                            },
+                        // on completed
+                            [=]
+                            {
+                                inner.Dispose();
+                                if (0 == --state->count) {
+                                    std::unique_lock<std::mutex> guard(state->lock);
+                                    observer->OnCompleted();
+                                    state->group.Dispose();
+                                }
+                            },
+                        // on error
+                            [=](const std::exception_ptr& error)
+                            {
+                                std::unique_lock<std::mutex> guard(state->lock);
+                                observer->OnError(error);
+                                state->group.Dispose();
+                            }));
                     },
                 // on completed
                     [=]
                     {
-                        bool cancel = false;
-                        bool finished = false;
-                        {
+                        if (0 == --state->count) {
                             std::unique_lock<std::mutex> guard(state->lock);
-                            finished = (--state->subscribed) == 0;
-                            cancel = state->cancel;
+                            observer->OnCompleted();
+                            state->group.Dispose();
+                        } else {
+                            sourceDisposable.Dispose();
                         }
-                        if (!cancel && finished)
-                            observer->OnCompleted(); 
                     },
                 // on error
                     [=](const std::exception_ptr& error)
                     {
-                        bool cancel = false;
-                        {
-                            std::unique_lock<std::mutex> guard(state->lock);
-                            --state->subscribed;
-                            cancel = state->cancel;
-                        }
-                        if (!cancel)
-                            observer->OnError(error);
+                        std::unique_lock<std::mutex> guard(state->lock);
+                        observer->OnError(error);
+                        state->group.Dispose();
                     }));
-                return cd;
+                return state->group;
             });
     }
 }
