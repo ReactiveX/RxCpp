@@ -9,7 +9,7 @@
 namespace rxcpp
 {
     //////////////////////////////////////////////////////////////////////
-    // 
+    //
     // Abstract interfaces
 
     template <class T>
@@ -29,14 +29,14 @@ namespace rxcpp
         typedef std::function<void()> dispose_type;
         dispose_type dispose;
     public:
-        explicit Disposable(dispose_type disposearg) 
+        explicit Disposable(dispose_type disposearg)
             : dispose(std::move(disposearg)) {
             disposearg = nullptr;}
-        Disposable(Disposable&& other) 
+        Disposable(Disposable&& other)
             : dispose(std::move(other.dispose)) {
             other.dispose = nullptr; }
         Disposable& operator=(Disposable other) {
-            swap(other); 
+            swap(other);
             return *this;
         }
         void Dispose()
@@ -78,7 +78,7 @@ namespace rxcpp
         typedef std::shared_ptr<Scheduler> shared;
 
         class Work {
-            struct bool_r{}; 
+            struct bool_r{};
             static bool_r bool_true(){return bool_r();}
             typedef decltype(&bool_true) bool_type;
 
@@ -94,10 +94,18 @@ namespace rxcpp
             std::shared_ptr<State> state;
 
             template<int, bool sameType>
-            struct assign 
+            struct assign
             {
-                void operator()(const std::shared_ptr<State>& state, State::F fn) {
+                void operator()(std::shared_ptr<State>& state, State::F fn) {
+                    if (!state) {
+                        state = std::make_shared<State>();
+                    }
                     state->work = std::move(fn);
+                }
+                void operator()(std::shared_ptr<State>& state, std::nullptr_t) {
+                    if (state) {
+                        state->work = nullptr;
+                    }
                 }
             };
 
@@ -129,11 +137,11 @@ namespace rxcpp
             {
                 assign<1, std::is_same<Work, typename std::decay<Fn>::type>::value>()(state, std::forward<Fn>(fn));
                 return *this;
-            }            
+            }
             inline Disposable operator()(shared s) {
                 if (!state->disposed) {
                     return state->work(s);
-                } 
+                }
                 return Disposable::Empty();
             }
             inline operator bool_type() const {return (!state->disposed && !!state->work) ? &bool_true : nullptr;}
@@ -161,10 +169,10 @@ namespace rxcpp
     };
 
     //////////////////////////////////////////////////////////////////////
-    // 
+    //
     // disposables
 
-    
+
     // reference handle type for a container for composing disposables
     class ComposableDisposable
     {
@@ -175,7 +183,7 @@ namespace rxcpp
             std::vector<shared_disposable> disposables;
             std::mutex lock;
             bool isDisposed;
-            
+
             State() : isDisposed(false)
             {
             }
@@ -199,11 +207,11 @@ namespace rxcpp
                 }
                 return s;
             }
-            void Remove(weak_disposable w) 
+            void Remove(weak_disposable w)
             {
                 std::unique_lock<decltype(lock)> guard(lock);
                 auto s = w.lock();
-                if (s) 
+                if (s)
                 {
                     auto end = std::end(disposables);
                     auto it = std::find(std::begin(disposables), end, s);
@@ -222,16 +230,16 @@ namespace rxcpp
                     isDisposed = true;
                     auto v = std::move(disposables);
                     guard.unlock();
-                    
+
                     std::for_each(v.begin(), v.end(),
-                                  [](shared_disposable& d) { 
+                                  [](shared_disposable& d) {
                                     d->Dispose(); });
                 }
             }
         };
-        
+
         mutable std::shared_ptr<State> state;
-        
+
     public:
 
         ComposableDisposable()
@@ -272,8 +280,8 @@ namespace rxcpp
         {
             Scheduler::shared scheduler;
             Disposable disposable;
-            
-            State(Scheduler::shared scheduler, Disposable disposable) 
+
+            State(Scheduler::shared scheduler, Disposable disposable)
                 : scheduler(std::move(scheduler))
                 , disposable(std::move(disposable))
             {
@@ -290,13 +298,13 @@ namespace rxcpp
                 }
             }
         };
-        
+
         std::shared_ptr<State> state;
-        
+
         ScheduledDisposable();
     public:
 
-        ScheduledDisposable(Scheduler::shared scheduler, Disposable disposable) 
+        ScheduledDisposable(Scheduler::shared scheduler, Disposable disposable)
             : state(new State(std::move(scheduler), std::move(disposable)))
         {
         }
@@ -332,7 +340,7 @@ namespace rxcpp
 
     class SerialDisposable
     {
-        struct State 
+        struct State
         {
             mutable Disposable disposable;
             mutable bool disposed;
@@ -341,10 +349,10 @@ namespace rxcpp
             State() : disposable(Disposable::Empty()), disposed(false) {}
 
             void Set(Disposable disposeArg) const
-            { 
+            {
                 std::unique_lock<decltype(lock)> guard(lock);
                 if (!disposed) {
-                    using std::swap; 
+                    using std::swap;
                     swap(disposable, disposeArg);
                 }
                 guard.unlock();
@@ -361,12 +369,12 @@ namespace rxcpp
                 }
             }
         };
-        
+
         mutable std::shared_ptr<State> state;
-        
+
     public:
 
-        SerialDisposable() 
+        SerialDisposable()
             : state(std::make_shared<State>())
         {
         }
@@ -439,7 +447,7 @@ namespace rxcpp
             clock::time_point dueTime = clock::now();
             return Schedule(dueTime, std::move(work));
         }
-        
+
         virtual Disposable Schedule(clock::duration due, Work work)
         {
             clock::time_point dueTime = clock::now() + due;
@@ -508,7 +516,7 @@ namespace rxcpp
         {
             return ScheduleAbsolute(clock_now, std::move(work));
         }
-        
+
         virtual Disposable Schedule(clock::duration due, Work work)
         {
             return ScheduleRelative(ToRelative(due), std::move(work));
@@ -655,7 +663,7 @@ namespace rxcpp
     }
 
     template<typename T>
-    struct Notification 
+    struct Notification
     {
         typedef std::function<void (const T&)> OnNext;
         typedef std::function<void ()> OnCompleted;
@@ -804,11 +812,11 @@ namespace rxcpp
         TupleDispatch(Target target) : target(std::move(target)) {
         }
         template<class Tuple>
-        auto operator()(const Tuple& tuple) 
+        auto operator()(const Tuple& tuple)
             -> decltype(util::tuple_dispatch(target, tuple)) {
             return      util::tuple_dispatch(target, tuple);}
         template<class Tuple>
-        auto operator()(const Tuple& tuple) const 
+        auto operator()(const Tuple& tuple) const
             -> decltype(util::tuple_dispatch(target, tuple))  {
         return          util::tuple_dispatch(target, tuple);}
     };
@@ -818,13 +826,13 @@ namespace rxcpp
     return TupleDispatch<Target>(std::forward<Target>(target));}
 
     template<class Tuple, class Target>
-    auto DispatchTuple(Tuple&& tuple, Target&& target) -> 
+    auto DispatchTuple(Tuple&& tuple, Target&& target) ->
         decltype(util::tuple_dispatch(std::forward<Target>(target), std::forward<Tuple>(tuple))) {
         return   util::tuple_dispatch(std::forward<Target>(target), std::forward<Tuple>(tuple));}
 
 #if RXCPP_USE_VARIADIC_TEMPLATES
     template<class T>
-    auto TieTuple(T&& t) -> 
+    auto TieTuple(T&& t) ->
         decltype(util::tuple_tie(std::forward<T>(t))) {
         return   util::tuple_tie(std::forward<T>(t));}
 #endif //RXCPP_USE_VARIADIC_TEMPLATES
@@ -988,7 +996,7 @@ namespace detail {
     std::shared_ptr<Observable<T>> observable(const std::shared_ptr < AsyncSubject < T >> &s){ return std::static_pointer_cast < Observable < T >> (s); }
 
     template<class Source, class Subject>
-    typename subject_observable<Subject>::type observable(const std::shared_ptr < ConnectableSubject < Source, Subject >> &s){ 
+    typename subject_observable<Subject>::type observable(const std::shared_ptr < ConnectableSubject < Source, Subject >> &s){
         return std::static_pointer_cast < Observable < typename subject_item<Subject>::type >> (s); }
 
     template<class K, class T>
