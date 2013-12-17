@@ -121,7 +121,7 @@ namespace rxcpp
                 cd.Add(Subscribe(
                     terminus,
                 // on next
-                    [=](const U& element)
+                    [=](const U& )
                     {
                         state->terminusState = TerminusState::Terminated;
                     },
@@ -131,7 +131,7 @@ namespace rxcpp
                         state->terminusState = TerminusState::Terminated;
                     },
                 // on error
-                    [=](const std::exception_ptr& error)
+                    [=](const std::exception_ptr& )
                     {
                         state->terminusState = TerminusState::Terminated;
                     }));
