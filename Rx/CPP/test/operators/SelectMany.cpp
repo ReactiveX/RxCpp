@@ -219,11 +219,11 @@ SCENARIO("select_many inner error", "[select_many][map][operators]"){
         auto ys = scheduler->CreateColdObservable(
             []() {
                 ms::RecordedT messages[] = {
-                    ms::OnNext(50, "foo"),
-                    ms::OnNext(100, "bar"),
-                    ms::OnNext(150, "baz"),
-                    ms::OnNext(200, "qux"),
-                    ms::OnError(300, std::exception())
+                    ms::OnNext(55, "foo"),
+                    ms::OnNext(104, "bar"),
+                    ms::OnNext(153, "baz"),
+                    ms::OnNext(202, "qux"),
+                    ms::OnError(301, std::exception())
                 };
                 return ms::ToVector(messages);
             }()
@@ -240,15 +240,15 @@ SCENARIO("select_many inner error", "[select_many][map][operators]"){
 
             THEN("the output contains strings repeated for each int"){
                 ms::RecordedT items[] = {
-                    ms::OnNext(350, "foo"),
-                    ms::OnNext(400, "bar"),
-                    ms::OnNext(450, "foo"),
-                    ms::OnNext(450, "baz"),
-                    ms::OnNext(500, "bar"),
-                    ms::OnNext(500, "qux"),
-                    ms::OnNext(550, "baz"),
-                    ms::OnNext(550, "foo"),
-                    ms::OnError(600, std::exception())
+                    ms::OnNext(355, "foo"),
+                    ms::OnNext(404, "bar"),
+                    ms::OnNext(453, "baz"),
+                    ms::OnNext(455, "foo"),
+                    ms::OnNext(502, "qux"),
+                    ms::OnNext(504, "bar"),
+                    ms::OnNext(553, "baz"),
+                    ms::OnNext(555, "foo"),
+                    ms::OnError(601, std::exception())
                 };
                 auto required = ms::ToVector(items);
                 auto actual = res->Messages();
@@ -257,7 +257,7 @@ SCENARIO("select_many inner error", "[select_many][map][operators]"){
 
             THEN("there was one subscription and one unsubscription to the ints"){
                 rx::Subscription items[] = {
-                    m::Subscribe(200, 600)
+                    m::Subscribe(200, 601)
                 };
                 auto required = m::ToVector(items);
                 auto actual = xs->Subscriptions();
@@ -266,11 +266,12 @@ SCENARIO("select_many inner error", "[select_many][map][operators]"){
 
             THEN("there were four subscription and unsubscription to the strings"){
                 rx::Subscription items[] = {
-                    ms::Subscribe(300, 600),
-                    ms::Subscribe(400, 600),
-                    ms::Subscribe(500, 600)
+                    ms::Subscribe(300, 601),
+                    ms::Subscribe(400, 601),
+                    ms::Subscribe(500, 601),
+                    ms::Subscribe(600, 601)
                 };
-                auto required = m::ToVector(items);
+                auto required = ms::ToVector(items);
                 auto actual = ys->Subscriptions();
                 REQUIRE(required == actual);
             }
