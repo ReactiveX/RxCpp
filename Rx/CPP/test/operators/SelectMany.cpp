@@ -120,11 +120,11 @@ SCENARIO("select_many source never ends", "[select_many][map][operators]"){
         auto ys = scheduler->CreateColdObservable(
             []() {
                 ms::RecordedT messages[] = {
-                    ms::OnNext(50, "foo"),
-                    ms::OnNext(100, "bar"),
-                    ms::OnNext(150, "baz"),
-                    ms::OnNext(200, "qux"),
-                    ms::OnCompleted(250)
+                    ms::OnNext(55, "foo"),
+                    ms::OnNext(104, "bar"),
+                    ms::OnNext(153, "baz"),
+                    ms::OnNext(202, "qux"),
+                    ms::OnCompleted(251)
                 };
                 return ms::ToVector(messages);
             }()
@@ -141,28 +141,27 @@ SCENARIO("select_many source never ends", "[select_many][map][operators]"){
 
             THEN("the output contains strings repeated for each int"){
                 ms::RecordedT items[] = {
-                    ms::OnNext(350, "foo"),
-                    ms::OnNext(400, "bar"),
-                    ms::OnNext(450, "baz"),
-                    ms::OnNext(450, "foo"),
-                    ms::OnNext(500, "bar"),
-                    ms::OnNext(500, "qux"),
-                    ms::OnNext(550, "baz"),
-                    ms::OnNext(550, "foo"),
-                    ms::OnNext(600, "qux"),
-                    ms::OnNext(600, "bar"),
-                    ms::OnNext(650, "baz"),
-                    ms::OnNext(650, "foo"),
-                    ms::OnNext(700, "qux"),
-                    ms::OnNext(700, "bar"),
-                    ms::OnNext(750, "baz"),
-                    ms::OnNext(750, "foo"),
-                    ms::OnNext(800, "qux"),
-                    ms::OnNext(800, "bar"),
-                    ms::OnNext(850, "baz"),
-                    ms::OnNext(900, "qux"),
-                    ms::OnNext(950, "foo"),
-                    ms::OnNext(1000, "bar")
+                    ms::OnNext(355, "foo"),
+                    ms::OnNext(404, "bar"),
+                    ms::OnNext(453, "baz"),
+                    ms::OnNext(455, "foo"),
+                    ms::OnNext(502, "qux"),
+                    ms::OnNext(504, "bar"),
+                    ms::OnNext(553, "baz"),
+                    ms::OnNext(555, "foo"),
+                    ms::OnNext(602, "qux"),
+                    ms::OnNext(604, "bar"),
+                    ms::OnNext(653, "baz"),
+                    ms::OnNext(655, "foo"),
+                    ms::OnNext(702, "qux"),
+                    ms::OnNext(704, "bar"),
+                    ms::OnNext(753, "baz"),
+                    ms::OnNext(755, "foo"),
+                    ms::OnNext(802, "qux"),
+                    ms::OnNext(804, "bar"),
+                    ms::OnNext(853, "baz"),
+                    ms::OnNext(902, "qux"),
+                    ms::OnNext(955, "foo")
                 };
                 auto required = ms::ToVector(items);
                 auto actual = res->Messages();
@@ -180,11 +179,11 @@ SCENARIO("select_many source never ends", "[select_many][map][operators]"){
 
             THEN("there were four subscription and unsubscription to the strings"){
                 rx::Subscription items[] = {
-                    ms::Subscribe(300, 550),
-                    ms::Subscribe(400, 650),
-                    ms::Subscribe(500, 750),
-                    ms::Subscribe(600, 850),
-                    ms::Subscribe(700, 950),
+                    ms::Subscribe(300, 551),
+                    ms::Subscribe(400, 651),
+                    ms::Subscribe(500, 751),
+                    ms::Subscribe(600, 851),
+                    ms::Subscribe(700, 951),
                     ms::Subscribe(900, 1000)
                 };
                 auto required = m::ToVector(items);
