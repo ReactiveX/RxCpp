@@ -494,7 +494,7 @@ namespace rxcpp
         virtual util::maybe<QueueItem> GetNext() =0;
 
     public:
-        static Disposable Do(Work& work, const Scheduler::shared& scheduler) throw()
+        static Disposable Do(Work& work, const Scheduler::shared& scheduler)
         {
             return QueueItem::Do(work, scheduler);
         }
