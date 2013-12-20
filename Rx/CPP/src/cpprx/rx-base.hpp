@@ -406,7 +406,7 @@ namespace rxcpp
             , work(std::move(work))
         {}
 
-        static Disposable Do(Scheduler::Work& work, Scheduler::shared scheduler) throw()
+        static Disposable Do(Scheduler::Work& work, Scheduler::shared scheduler)
         {
             if (work)
             {
@@ -426,7 +426,7 @@ namespace rxcpp
 
     public:
         typedef ScheduledItem<clock::time_point> QueueItem;
-        static Disposable Do(Work& work, const Scheduler::shared& scheduler) throw()
+        static Disposable Do(Work& work, const Scheduler::shared& scheduler)
         {
             return QueueItem::Do(work, scheduler);
         }

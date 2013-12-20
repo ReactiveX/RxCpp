@@ -15,7 +15,7 @@
 #include <Windows.h>
 
 namespace rxcpp { namespace win32 {
- 
+
 
 #if !defined(OBSERVE_ON_DISPATCHER_OP)
 #define OBSERVE_ON_DISPATCHER_OP rxcpp::win32::ObserveOnDispatcherOp
@@ -51,7 +51,7 @@ namespace rxcpp { namespace win32 {
 
                 if (!RegisterClass(&wndclass))
                     throw std::exception("error");
-                
+
             }
             HWND CreateWindow_()
             {
@@ -71,7 +71,7 @@ namespace rxcpp { namespace win32 {
                     return DefWindowProc(hwnd, message, wParam, lParam);
                 }
             }
-            static WindowClass& Instance() { 
+            static WindowClass& Instance() {
                 static WindowClass instance;
                 return instance;
             }
@@ -103,7 +103,7 @@ namespace rxcpp { namespace win32 {
                 return work1.first > work2.first;
             }
         };
-        
+
         struct Queue;
 
         typedef std::pair<Scheduler::shared, Work> Item;
@@ -112,10 +112,10 @@ namespace rxcpp { namespace win32 {
         typedef std::priority_queue<
             PriorityItem,
             std::vector<PriorityItem>,
-            compare_work 
+            compare_work
         > ScheduledWork;
 
-        struct Queue 
+        struct Queue
         {
             Queue() : exit(false), window(NULL) {}
             bool exit;
@@ -143,7 +143,7 @@ namespace rxcpp { namespace win32 {
                 wndclass.lpszClassName = className();
 
                 RegisterClassW(&wndclass);
-                
+
                 std::unique_ptr<WindowClass> that(new WindowClass);
                 that->queue = queue;
 
@@ -156,7 +156,7 @@ namespace rxcpp { namespace win32 {
 
             static const int WM_USER_DISPATCH = WM_USER + 1;
 
-            static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+            static LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam) throw()
             {
                 WindowClass* windowClass = reinterpret_cast<WindowClass*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
                 switch (message)
@@ -190,10 +190,10 @@ namespace rxcpp { namespace win32 {
                             }
 
                             if (!windowClass->queue->scheduledWork.empty())
-                            {                
+                            {
                                 auto& item = windowClass->queue->scheduledWork.top();
                                 auto now = item.second.get()->first->Now();
-                
+
                                 // wait until the work is due
                                 if(now < item.first)
                                 {
@@ -204,7 +204,7 @@ namespace rxcpp { namespace win32 {
                                     }
                                     std::this_thread::sleep_until(item.first);
                                 }
-                
+
                                 // dispatch work
                                 auto work = std::move(item.second.get()->second);
                                 auto scheduler = std::move(item.second.get()->first);
@@ -230,7 +230,7 @@ namespace rxcpp { namespace win32 {
 
                         if (destroy)
                         {
-                            DestroyWindow(window); 
+                            DestroyWindow(window);
                         }
                     }
                     return 0;

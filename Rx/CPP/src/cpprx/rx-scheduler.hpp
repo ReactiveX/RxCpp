@@ -10,7 +10,7 @@ namespace rxcpp
 {
 
     //////////////////////////////////////////////////////////////////////
-    // 
+    //
     // schedulers
 
     struct CurrentThreadQueue
@@ -21,18 +21,18 @@ namespace rxcpp
 
     private:
         ~CurrentThreadQueue();
-        
+
         struct compare_work
         {
             bool operator()(const QueueItem& work1, const QueueItem& work2) const {
                 return work1.due > work2.due;
             }
         };
-        
+
         typedef std::priority_queue<
             QueueItem,
             std::vector<QueueItem>,
-            compare_work 
+            compare_work
         > ScheduledWork;
 
     public:
@@ -46,11 +46,11 @@ namespace rxcpp
             RXCPP_THREAD_LOCAL static ThreadLocalQueue* queue;
             return queue;
         }
-        
+
     public:
 
-        static Scheduler::shared GetScheduler() { 
-            return !!threadLocalQueue() ? threadLocalQueue()->scheduler : Scheduler::shared(); 
+        static Scheduler::shared GetScheduler() {
+            return !!threadLocalQueue() ? threadLocalQueue()->scheduler : Scheduler::shared();
         }
         static bool empty() {
             if (!threadLocalQueue()) {
@@ -126,7 +126,7 @@ namespace rxcpp
             }
 
             static bool IsScheduleRequired() { return false; }
-        
+
             using LocalScheduler::Schedule;
             virtual Disposable Schedule(clock::time_point dueTime, Work work)
             {
@@ -146,13 +146,13 @@ namespace rxcpp
         }
 
         static bool IsScheduleRequired() { return !CurrentThreadQueue::GetScheduler(); }
-        
+
         using LocalScheduler::Schedule;
         virtual Disposable Schedule(clock::time_point dueTime, Work work)
         {
             auto localScheduler = CurrentThreadQueue::GetScheduler();
             // check ownership
-            if (!!localScheduler) 
+            if (!!localScheduler)
             {
                 // already has an owner - delegate
                 return localScheduler->Schedule(dueTime, std::move(work));
@@ -178,9 +178,9 @@ namespace rxcpp
                 auto work = CurrentThreadQueue::top().work;
 
                 CurrentThreadQueue::pop();
-                
+
                 Do(work, get());
-                
+
                 if (CurrentThreadQueue::empty()) {break;}
             }
 
@@ -192,7 +192,7 @@ namespace rxcpp
     {
     private:
         ImmediateScheduler(const ImmediateScheduler&);
-        
+
         mutable std::mutex lock;
         mutable bool hasFaulted;
         mutable bool isAquired;
@@ -224,7 +224,7 @@ namespace rxcpp
                 }
             }
 
-            if (isOwner) 
+            if (isOwner)
             {
                 RXCPP_UNWIND_AUTO([&](){
                     std::unique_lock<std::mutex> guard(lock);
@@ -233,10 +233,10 @@ namespace rxcpp
                     isAquired = false;
                 });
 
-                for(;;) 
+                for(;;)
                 {
                     std::this_thread::sleep_until(item.due);
-                    try 
+                    try
                     {
                         Do(item.work, queue->scheduler);
                     }
@@ -268,10 +268,10 @@ namespace rxcpp
             }
         }
     };
-    
+
     template<class T>
-    class ScheduledObserver : 
-        public Observer<T>, 
+    class ScheduledObserver :
+        public Observer<T>,
         public std::enable_shared_from_this<ScheduledObserver<T>>
     {
         typedef std::function<void()> Action;
@@ -312,14 +312,14 @@ namespace rxcpp
                     this->observer->OnNext(std::move(element));
                 }));
         }
-        virtual void OnCompleted() 
+        virtual void OnCompleted()
         {
             std::unique_lock<std::mutex> guard(lock);
             queue.push(Action([=](){
                     this->observer->OnCompleted();
                 }));
         }
-        virtual void OnError(const std::exception_ptr& error) 
+        virtual void OnError(const std::exception_ptr& error)
         {
             std::unique_lock<std::mutex> guard(lock);
             queue.push(Action([=](){
@@ -369,7 +369,7 @@ namespace rxcpp
                 }
             }
 
-            try 
+            try
             {
                 action();
             }
@@ -416,7 +416,7 @@ namespace rxcpp
             typedef std::function<std::thread(RunLoop)> Factory;
 
             static bool IsScheduleRequired() { return false; }
-        
+
             typedef std::tuple<util::maybe<std::thread>, Disposable> EnsureThreadResult;
             EnsureThreadResult EnsureThread(Factory& factory, Scheduler::shared owner, clock::time_point dueTime, Work work)
             {
@@ -438,7 +438,7 @@ namespace rxcpp
 
                     auto local = std::static_pointer_cast<Derecurser>(shared_from_this());
                     auto localQueue = queue;
-                    std::get<0>(result).set(factory([local, localQueue]{
+                    std::get<0>(result).set(factory([local, localQueue] {
                                local->Run(localQueue);}));
 
                     isOwner = !isAquired;
@@ -458,7 +458,7 @@ namespace rxcpp
             }
 
         private:
-            void Run(CurrentThreadQueue::ThreadLocalQueue* queue) {
+            void Run(CurrentThreadQueue::ThreadLocalQueue* queue) throw() {
                 auto keepAlive = shared_from_this();
                 {
                     std::unique_lock<std::mutex> guard(lock);
@@ -467,35 +467,15 @@ namespace rxcpp
                         isAquired = false;});
 
                     RXCPP_UNWIND(unwindQueue, [&](){
-                        CurrentThreadQueue::DestroyQueue(); 
+                        CurrentThreadQueue::DestroyQueue();
                         queue = nullptr;});
 
                     CurrentThreadQueue::SetQueue(queue);
 
-#if 0
-                    auto start = queue->scheduler->Now();
-                    auto ms = std::chrono::milliseconds(1);
-#endif
                     while(!CurrentThreadQueue::empty())
                     {
                         auto now = queue->scheduler->Now();
-#if 0
-                        {std::wstringstream out;
-                        out << L"eventloop (run) pending: " << std::boolalpha << CurrentThreadQueue::empty() 
-                            << L", now: " << ((now - start) / ms);
-                            if (!CurrentThreadQueue::empty()) {
-                                out << L", due: " << ((CurrentThreadQueue::top().due - start) / ms);}
-                        out << std::endl;
-                        OutputDebugString(out.str().c_str());}
-#endif
                         if (CurrentThreadQueue::empty()) {
-#if 0
-                            {std::wstringstream out;
-                            out << L"eventloop (wait for work) pending: " << std::boolalpha << CurrentThreadQueue::empty() 
-                                << L", now: " << ((now - start) / ms);
-                            out << std::endl;
-                            OutputDebugString(out.str().c_str());}
-#endif
                             wake.wait(guard, [&](){
                                 return !CurrentThreadQueue::empty();});
                             continue;
@@ -503,46 +483,19 @@ namespace rxcpp
 
                         auto item = &CurrentThreadQueue::top();
                         if (!item->work) {
-#if 0
-                            {std::wstringstream out;
-                            out << L"eventloop (pop disposed work) pending: " << std::boolalpha << CurrentThreadQueue::empty() 
-                                << L", now: " << ((now - start) / ms);
-                                if (!CurrentThreadQueue::empty()) {
-                                    out << L", due: " << ((CurrentThreadQueue::top().due - start) / ms);}
-                            out << std::endl;
-                            OutputDebugString(out.str().c_str());}
-#endif
                             CurrentThreadQueue::pop(); continue;}
-                        
+
                         // wait until the work is due
                         if (now < item->due)
                         {
-#if 0
-                            {std::wstringstream out;
-                            out << L"eventloop (wait for due) pending: " << std::boolalpha << CurrentThreadQueue::empty() 
-                                << L", now: " << ((now - start) / ms);
-                                if (!CurrentThreadQueue::empty()) {
-                                    out << L", due: " << ((CurrentThreadQueue::top().due - start) / ms);}
-                            out << std::endl;
-                            OutputDebugString(out.str().c_str());}
-#endif
                             wake.wait_until(guard, item->due);
                             continue;
                         }
-#if 0
-                        {std::wstringstream out;
-                        out << L"eventloop (dispatch) pending: " << std::boolalpha << CurrentThreadQueue::empty() 
-                            << L", now: " << ((now - start) / ms);
-                            if (!CurrentThreadQueue::empty()) {
-                                out << L", due: " << ((CurrentThreadQueue::top().due - start) / ms);}
-                        out << std::endl;
-                        OutputDebugString(out.str().c_str());}
-#endif                        
                         // dispatch work
                         auto work = item->work;
 
                         CurrentThreadQueue::pop();
-                        
+
                         RXCPP_UNWIND_AUTO([&]{
                             guard.lock();});
                         guard.unlock();
@@ -566,7 +519,7 @@ namespace rxcpp
             };
         }
         template<class Factory>
-        EventLoopScheduler(Factory factoryarg) 
+        EventLoopScheduler(Factory factoryarg)
             : factory(std::move(factoryarg))
             , derecurser(std::make_shared<Derecurser>())
         {
@@ -579,7 +532,7 @@ namespace rxcpp
         }
 
         static bool IsScheduleRequired() { return !CurrentThreadQueue::GetScheduler(); }
-        
+
         using LocalScheduler::Schedule;
         virtual Disposable Schedule(clock::time_point dueTime, Work work)
         {
@@ -595,18 +548,18 @@ namespace rxcpp
             return std::move(std::get<1>(maybeThread));
         }
     };
-    
+
     struct NewThreadScheduler : public LocalScheduler
     {
     public:
         typedef std::function<std::thread(std::function<void()>)> Factory;
     private:
         NewThreadScheduler(const NewThreadScheduler&);
-        
+
         Factory factory;
     public:
-        
-        
+
+
         NewThreadScheduler() : factory([](std::function<void()> start){return std::thread(std::move(start));})
         {
         }
@@ -616,7 +569,7 @@ namespace rxcpp
         virtual ~NewThreadScheduler()
         {
         }
-        
+
         using LocalScheduler::Schedule;
         virtual Disposable Schedule(clock::time_point dueTime, Work work)
         {
@@ -641,11 +594,11 @@ namespace rxcpp
                 return work1.due > work2.due;
             }
         };
-        
+
         typedef std::priority_queue<
             QueueItem,
             std::vector<QueueItem>,
-            compare_work 
+            compare_work
         > ScheduledWork;
 
         ScheduledWork queue;
@@ -690,7 +643,7 @@ namespace rxcpp
                 cancelable.Dispose();
                 return Base::Do(local, std::move(scheduler));
             };
-            
+
             cancelable = run;
 
             auto si = QueueItem(dueTime, cancelable);
@@ -714,43 +667,43 @@ namespace rxcpp
         static const long Disposed = 1000;
 
         template<class T>
-        struct Messages 
+        struct Messages
         {
             typedef Recorded<std::shared_ptr<Notification<T>>> RecordedT;
 
-            static 
+            static
             RecordedT OnNext(long ticks, T value)
             {
                 return RecordedT(ticks, Notification<T>::CreateOnNext(value));
             }
 
-            static 
+            static
             RecordedT OnCompleted(long ticks)
             {
                 return RecordedT(ticks, Notification<T>::CreateOnCompleted());
             }
 
-            static 
+            static
             RecordedT OnError(long ticks, std::exception_ptr ep)
             {
                 return RecordedT(ticks, Notification<T>::CreateOnError(ep));
             }
 
             template<class Exception>
-            static 
+            static
             RecordedT OnError(long ticks, Exception e)
             {
                 return RecordedT(ticks, Notification<T>::CreateOnError(e));
             }
 
-            static 
+            static
             Subscription Subscribe(long subscribe, long unsubscribe)
             {
                 return Subscription(subscribe, unsubscribe);
             }
 
             template<class Item, size_t size>
-            static 
+            static
             auto ToVector(const Item (&arr) [size]) -> std::vector<Item> {
                 return std::vector<Item>(std::begin(arr), std::end(arr));
             }
@@ -789,7 +742,7 @@ namespace rxcpp
         {
             auto observer = CreateObserver<T>();
 
-            struct State 
+            struct State
             {
                 std::shared_ptr<Observable<T>> source;
                 SerialDisposable subscription;
@@ -799,11 +752,11 @@ namespace rxcpp
 
             state->observer = observer;
 
-            ScheduleAbsolute(created, [create, state](Scheduler::shared scheduler) -> Disposable { 
+            ScheduleAbsolute(created, [create, state](Scheduler::shared scheduler) -> Disposable {
                 state->source = create(); return Disposable::Empty(); });
-            ScheduleAbsolute(subscribed, [state](Scheduler::shared scheduler) -> Disposable { 
+            ScheduleAbsolute(subscribed, [state](Scheduler::shared scheduler) -> Disposable {
                 state->subscription.Set(state->source->Subscribe(state->observer)); return Disposable::Empty(); });
-            ScheduleAbsolute(disposed, [state](Scheduler::shared scheduler) -> Disposable { 
+            ScheduleAbsolute(disposed, [state](Scheduler::shared scheduler) -> Disposable {
                 state->subscription.Dispose(); return Disposable::Empty(); });
 
             Start();
@@ -907,8 +860,8 @@ namespace rxcpp
 
             for (auto& message : messages) {
                 auto notification = message.Value();
-                d.Add(scheduler->ScheduleRelative(message.Time(), [notification, observer](Scheduler::shared) -> Disposable { 
-                    notification->Accept(observer); return Disposable::Empty(); 
+                d.Add(scheduler->ScheduleRelative(message.Time(), [notification, observer](Scheduler::shared) -> Disposable {
+                    notification->Accept(observer); return Disposable::Empty();
                 }));
             }
 
