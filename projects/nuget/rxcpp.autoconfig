@@ -1,7 +1,7 @@
 nuget {
     nuspec {
         id = rxcpp;
-        version : 1.0.1;
+        version : 1.0.2;
         title: Reactive Extensions for C++;
         authors: {Microsoft Open Technologies Inc.};
         owners: {Microsoft Open Technologies Inc.};
