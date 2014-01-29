@@ -28,6 +28,8 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/SelectMany.cpp
     ${TEST_DIR}/operators/Where.cpp
     ${TEST_DIR}/operators/Publish.cpp
+    ${TEST_DIR}/v2/subscriptions/observer.cpp
+    ${TEST_DIR}/v2/subscriptions/subscription.cpp
 )
 add_executable(rxcpp_test ${TEST_SOURCES})
 
