@@ -591,7 +591,6 @@ namespace detail {
                             static_observer<T, OnNext, detail::OnErrorEmpty, detail::OnCompletedEmpty>(std::move(n), detail::OnErrorEmpty(), detail::OnCompletedEmpty()));
     }
 
-#if 1
     template<class T = void, class B = void>
     class observable;
 
@@ -724,6 +723,25 @@ namespace detail {
             return make_subscription(o);
         }
 
+        template<class OnNext>
+        auto subscribe(OnNext n)
+            -> typename std::enable_if<!is_observer<OnNext>::value,
+                decltype(make_subscription(make_observer<T>(std::move(n))))>::type {
+            return subscribe(make_observer<T>(std::move(n)));
+        }
+
+        template<class OnNext, class OnError>
+        auto subscribe(OnNext n, OnError e)
+            -> decltype(make_subscription(make_observer<T>(std::move(n), std::move(e)))) {
+            return subscribe(make_observer<T>(std::move(n), std::move(e)));
+        }
+
+        template<class OnNext, class OnError, class OnCompleted>
+        auto subscribe(OnNext n, OnError e, OnCompleted c)
+            -> decltype(make_subscription(make_observer<T>(std::move(n), std::move(e), std::move(c)))) {
+            return subscribe(make_observer<T>(std::move(n), std::move(e), std::move(c)));
+        }
+
         template<class Predicate>
         observable<T, rxo::filter<T, observable, Predicate>> filter(Predicate p) {
             return observable<T, rxo::filter<T, observable, Predicate>>(*this, std::move(p));
@@ -742,7 +760,6 @@ namespace detail {
             return observable<T, rxs::range<T>>(start, count, step);
         }
     };
-#endif
 
 }
 #endif

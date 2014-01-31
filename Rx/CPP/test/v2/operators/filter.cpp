@@ -22,10 +22,10 @@ SCENARIO("filter", "[filter][operators][traits]"){
             THEN("a subscription only observes primes"){
                 auto s = rx::observable<>::range(1, 100, 1)
                     .filter(IsPrime)
-                    .subscribe(rx::make_observer<int>([](int t) {
+                    .subscribe([](int t) {
                         const auto prime = IsPrime(t) ? t : -1;
                         REQUIRE( t == prime );
-                    }));
+                    });
             }
         }
     }
