@@ -21,7 +21,7 @@ namespace rxcpp {
     class is_subscription
     {
         template<class C>
-        static typename C::subscription_tag check(int); 
+        static typename C::subscription_tag check(int);
         template<class C>
         static void check(...);
     public:
@@ -32,7 +32,7 @@ namespace rxcpp {
     {
         typedef std::function<void()> unsubscribe_call_type;
         unsubscribe_call_type unsubscribe_call;
-        dynamic_subscription() 
+        dynamic_subscription()
         {
         }
     public:
@@ -50,7 +50,7 @@ namespace rxcpp {
                 i.unsubscribe();})
         {
         }
-        dynamic_subscription(unsubscribe_call_type s) 
+        dynamic_subscription(unsubscribe_call_type s)
             : unsubscribe_call(std::move(s))
         {
         }
@@ -64,7 +64,7 @@ namespace rxcpp {
     {
         typedef Unsubscribe unsubscribe_call_type;
         unsubscribe_call_type unsubscribe_call;
-        static_subscription() 
+        static_subscription()
         {
         }
     public:
@@ -76,7 +76,7 @@ namespace rxcpp {
             : unsubscribe_call(std::move(o.unsubscribe_call))
         {
         }
-        static_subscription(unsubscribe_call_type s) 
+        static_subscription(unsubscribe_call_type s)
             : unsubscribe_call(std::move(s))
         {
         }
@@ -120,19 +120,19 @@ namespace rxcpp {
         void unsubscribe() const {
         }
     };
-    inline auto make_subscription() 
+    inline auto make_subscription()
         ->      subscription<void> {
         return  subscription<void>();
     }
     template<class I>
-    auto make_subscription(I i) 
-        -> typename std::enable_if<is_subscription<I>::value, 
+    auto make_subscription(I i)
+        -> typename std::enable_if<is_subscription<I>::value,
                 subscription<I>>::type {
         return  subscription<I>(std::move(i));
     }
     template<class Unsubscribe>
-    auto make_subscription(Unsubscribe u) 
-        -> typename std::enable_if<!is_subscription<Unsubscribe>::value, 
+    auto make_subscription(Unsubscribe u)
+        -> typename std::enable_if<!is_subscription<Unsubscribe>::value,
                 subscription<   static_subscription<Unsubscribe>>>::type {
         return  subscription<   static_subscription<Unsubscribe>>(
                                 static_subscription<Unsubscribe>(std::move(u)));
@@ -279,7 +279,7 @@ namespace rxcpp {
     struct observer_base : public observer_root<T>
     {
     private:
-        subscription_type s;
+        mutable subscription_type s;
 
         observer_base();
     public:
@@ -303,16 +303,16 @@ namespace rxcpp {
             using std::swap;
             swap(s, o.s);
         }
-        bool is_subscribed() {
+        bool is_subscribed() const {
             return s.is_subscribed();
         }
-        weak_subscription add(dynamic_subscription ds) {
+        weak_subscription add(dynamic_subscription ds) const {
             return s.add(std::move(ds));
         }
-        void remove(weak_subscription ws) {
+        void remove(weak_subscription ws) const {
             s.remove(ws);
         }
-        void unsubscribe() {
+        void unsubscribe() const {
             s.unsubscribe();
         }
     };
@@ -321,23 +321,23 @@ namespace rxcpp {
     {
         void swap(observer_base&) {
         }
-        bool is_subscribed() {
+        bool is_subscribed() const {
             return false;
         }
-        weak_subscription add(dynamic_subscription ds) {
+        weak_subscription add(dynamic_subscription ds) const {
             ds.unsubscribe();
             return weak_subscription();
         }
-        void remove(weak_subscription) {
+        void remove(weak_subscription) const {
         }
-        void unsubscribe() {
+        void unsubscribe() const {
         }
     };
     template<class T>
     class is_observer
     {
         template<class C>
-        static typename C::observer_tag check(int); 
+        static typename C::observer_tag check(int);
         template<class C>
         static void check(...);
     public:
@@ -347,11 +347,11 @@ namespace rxcpp {
 namespace detail {
     struct OnErrorEmpty
     {
-        void operator()(std::exception_ptr&&){}
+        void operator()(std::exception_ptr) const {}
     };
     struct OnCompletedEmpty
     {
-        void operator()(){}
+        void operator()() const {}
     };
 }
 
@@ -412,17 +412,17 @@ namespace detail {
             swap(oncompleted, o.oncompleted);
         }
 
-        void on_next(T t) {
+        void on_next(T t) const {
             if (onnext) {
                 onnext(std::move(t));
             }
         }
-        void on_error(std::exception_ptr e) {
+        void on_error(std::exception_ptr e) const {
             if (onerror) {
                 onerror(e);
             }
         }
-        void on_completed() {
+        void on_completed() const {
             if (oncompleted) {
                 oncompleted();
             }
@@ -486,13 +486,13 @@ namespace detail {
             swap(oncompleted, o.oncompleted);
         }
 
-        void on_next(T t) {
+        void on_next(T t) const {
             onnext(std::move(t));
         }
-        void on_error(std::exception_ptr e) {
+        void on_error(std::exception_ptr e) const {
             onerror(e);
         }
-        void on_completed() {
+        void on_completed() const {
             oncompleted();
         }
     };
@@ -505,40 +505,40 @@ namespace detail {
         inner_t;
         inner_t inner;
     public:
-        ~observer() 
+        ~observer()
         {
         }
         observer(inner_t inner)
             : inner(std::move(inner))
         {
         }
-        void on_next(T t) {
+        void on_next(T t) const {
             if (is_subscribed()) {
                 inner.on_next(std::move(t));
             }
         }
-        void on_error(std::exception_ptr e) {
+        void on_error(std::exception_ptr e) const {
             if (is_subscribed()) {
                 inner.on_error(e);
             }
             unsubscribe();
         }
-        void on_completed() {
+        void on_completed() const {
             if (is_subscribed()) {
                 inner.on_completed();
             }
             unsubscribe();
         }
-        bool is_subscribed() {
+        bool is_subscribed() const {
             return inner.is_subscribed();
         }
-        weak_subscription add(dynamic_subscription ds) {
+        weak_subscription add(dynamic_subscription ds) const {
             return inner.add(std::move(ds));
         }
-        void remove(weak_subscription ws) {
+        void remove(weak_subscription ws) const {
             inner.remove(ws);
         }
-        void unsubscribe() {
+        void unsubscribe() const {
             inner.unsubscribe();
         }
     };
@@ -549,11 +549,11 @@ namespace detail {
         observer()
         {
         }
-        void on_next(T&&) {
+        void on_next(T&&) const {
         }
-        void on_error(std::exception_ptr) {
+        void on_error(std::exception_ptr) const {
         }
-        void on_completed() {
+        void on_completed() const {
         }
     };
     template<class T>
@@ -585,40 +585,161 @@ namespace detail {
     }
     template<class T, class OnNext>
     auto make_observer(OnNext n)
-        -> typename std::enable_if<!is_observer<OnNext>::value,  
+        -> typename std::enable_if<!is_observer<OnNext>::value,
                 observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, detail::OnCompletedEmpty>>>::type {
         return  observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, detail::OnCompletedEmpty>>(
                             static_observer<T, OnNext, detail::OnErrorEmpty, detail::OnCompletedEmpty>(std::move(n), detail::OnErrorEmpty(), detail::OnCompletedEmpty()));
     }
 
-#if 0
-    template <class T>
+#if 1
+    template<class T = void, class B = void>
+    class observable;
+
+    namespace operators
+    {
+        struct tag_operator {};
+        template<class T>
+        struct operator_base
+        {
+            typedef T value_type;
+            typedef tag_operator operator_tag;
+        };
+        template<class T>
+        class is_operator
+        {
+            template<class C>
+            static typename C::operator_tag check(int);
+            template<class C>
+            static void check(...);
+        public:
+            static const bool value = std::is_same<decltype(check<T>(0)), tag_operator>::value;
+        };
+
+        template<class T, class Observable, class Predicate>
+        struct filter : public operator_base<T>
+        {
+            Observable source;
+            Predicate test;
+            filter(Observable o, Predicate p)
+                : source(std::move(o))
+                , test(std::move(p))
+            {}
+            template<class I>
+            void on_subscribe(observer<T, I> o) {
+                o.add(source.subscribe(make_observer<T>(
+                // on_next
+                    [this, o](T t) {
+                        bool filtered = false;
+                        try {
+                           filtered = !this->test(t);
+                        } catch(...) {
+                            o.on_error(std::current_exception());
+                            o.unsubscribe();
+                        }
+                        if (!filtered) {
+                            o.on_next(std::move(t));
+                        }
+                    },
+                // on_error
+                    [o](std::exception_ptr e) {
+                        o.on_error(e);
+                    },
+                // on_completed
+                    [o]() {
+                        o.on_completed();
+                    }
+                )));
+            }
+        };
+
+    }
+    namespace rxo=operators;
+
+    namespace sources
+    {
+        struct tag_source {};
+        template<class T>
+        struct source_base
+        {
+            typedef T value_type;
+            typedef tag_source source_tag;
+        };
+        template<class T>
+        class is_source
+        {
+            template<class C>
+            static typename C::source_tag check(int);
+            template<class C>
+            static void check(...);
+        public:
+            static const bool value = std::is_same<decltype(check<T>(0)), tag_source>::value;
+        };
+
+        template<class T>
+        struct range : public source_base<T>
+        {
+            struct state_type
+            {
+                T next;
+                size_t remaining;
+                ptrdiff_t step;
+            };
+            state_type init;
+            range(T b, size_t c, ptrdiff_t s)
+            {
+                init.next = b;
+                init.remaining = c;
+                init.step = s;
+            }
+            template<class I>
+            void on_subscribe(observer<T, I> o) {
+                auto state = std::make_shared<state_type>(init);
+                auto s = make_subscription();
+                for (;state->remaining != 0; --state->remaining) {
+                    o.on_next(state->next);
+                    state->next = static_cast<T>(state->step + state->next);
+                }
+                o.on_completed();
+            }
+        };
+    }
+    namespace rxs=sources;
+
+    template<class T, class B>
     class observable
+        : public B
     {
     public:
+        static_assert(rxo::is_operator<B>::value || rxs::is_source<B>::value, "observable must wrap an operator or source");
+
+        template<class... A>
+        observable(A&&... a)
+            : B(std::forward<A>(a)...)
+        {}
+
+        template<class I>
+        auto subscribe(observer<T, I> o)
+            -> decltype(make_subscription(o)) {
+            B::on_subscribe(o);
+            return make_subscription(o);
+        }
+
+        template<class Predicate>
+        observable<T, rxo::filter<T, observable, Predicate>> filter(Predicate p) {
+            return observable<T, rxo::filter<T, observable, Predicate>>(*this, std::move(p));
+        }
+    };
+
+    // observable<> has static methods to construct observable sources and adaptors.
+    // observable<> is not constructable
+    template<>
+    class observable<void, void>
+    {
         ~observable();
-
-        observable(const observable& o)
-            : onsubscribe(o.onsubscribe)
-        {
-        }
-        observable(observable&& o)
-            : onsubscribe(std::move(o.onsubscribe))
-        {
-        }
-
-        observable(on_subscribe_t os)
-            : onsubscribe(std::move(os))
-        {
-        }
-
-        static observable create(on_subscribe_t os) {
-            return observable(std::move(os));
-        }
-        static observable create(const subscribe_t& s) {
-            return observable([s](observer<T> o){
-                o.add(s(o));
-            });
+    public:
+        template<class T>
+        static observable<T, rxs::range<T>> range(T start = 0, size_t count = std::numeric_limits<size_t>::max(), ptrdiff_t step = 1) {
+            return observable<T, rxs::range<T>>(start, count, step);
         }
     };
 #endif
