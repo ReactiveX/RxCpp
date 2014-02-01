@@ -594,115 +594,196 @@ namespace detail {
     template<class T = void, class B = void>
     class observable;
 
-    namespace operators
+namespace operators
+{
+    struct tag_operator {};
+    template<class T>
+    struct operator_base
     {
-        struct tag_operator {};
-        template<class T>
-        struct operator_base
-        {
-            typedef T value_type;
-            typedef tag_operator operator_tag;
-        };
-        template<class T>
-        class is_operator
-        {
-            template<class C>
-            static typename C::operator_tag check(int);
-            template<class C>
-            static void check(...);
-        public:
-            static const bool value = std::is_same<decltype(check<T>(0)), tag_operator>::value;
-        };
+        typedef T value_type;
+        typedef tag_operator operator_tag;
+    };
+    template<class T>
+    class is_operator
+    {
+        template<class C>
+        static typename C::operator_tag check(int);
+        template<class C>
+        static void check(...);
+    public:
+        static const bool value = std::is_same<decltype(check<T>(0)), tag_operator>::value;
+    };
 
-        template<class T, class Observable, class Predicate>
-        struct filter : public operator_base<T>
-        {
-            Observable source;
-            Predicate test;
-            filter(Observable o, Predicate p)
-                : source(std::move(o))
-                , test(std::move(p))
-            {}
-            template<class I>
-            void on_subscribe(observer<T, I> o) {
-                o.add(source.subscribe(make_observer<T>(
-                // on_next
-                    [this, o](T t) {
-                        bool filtered = false;
-                        try {
-                           filtered = !this->test(t);
-                        } catch(...) {
-                            o.on_error(std::current_exception());
-                            o.unsubscribe();
-                        }
-                        if (!filtered) {
-                            o.on_next(std::move(t));
-                        }
-                    },
-                // on_error
-                    [o](std::exception_ptr e) {
-                        o.on_error(e);
-                    },
-                // on_completed
-                    [o]() {
-                        o.on_completed();
+namespace detail {
+    template<class Observer>
+    class subscribe_to_observer_factory
+    {
+        Observer observer;
+    public:
+        subscribe_to_observer_factory(Observer o) : observer(std::move(o)) {}
+        template<class Observable>
+        auto operator()(Observable source)
+            -> decltype(source.subscribe(std::move(observer))) {
+            return      source.subscribe(std::move(observer));
+        }
+    };
+    template<class OnNext, class OnError, class OnCompleted>
+    class subscribe_factory
+    {
+        OnNext onnext;
+        OnError onerror;
+        OnCompleted oncompleted;
+    public:
+        subscribe_factory(OnNext n, OnError e, OnCompleted c)
+            : onnext(std::move(n))
+            , onerror(std::move(e))
+            , oncompleted(std::move(c))
+        {}
+        template<class Observable>
+        auto operator()(Observable source)
+            -> decltype(source.subscribe(std::move(onnext), std::move(onerror), std::move(oncompleted))) {
+            return      source.subscribe(std::move(onnext), std::move(onerror), std::move(oncompleted));
+        }
+    };
+}
+    template<class Observer>
+    auto subscribe(Observer o)
+        -> typename std::enable_if<is_observer<Observer>::value,
+                detail::subscribe_to_observer_factory<Observer>>::type {
+        return  detail::subscribe_to_observer_factory<Observer>(std::move(o));
+    }
+
+    template<class OnNext>
+    auto subscribe(OnNext n)
+        -> typename std::enable_if<!is_observer<OnNext>::value,
+                detail::subscribe_factory<OnNext, rxcpp::detail::OnErrorEmpty, rxcpp::detail::OnCompletedEmpty>>::type {
+        return  detail::subscribe_factory<OnNext, rxcpp::detail::OnErrorEmpty, rxcpp::detail::OnCompletedEmpty>(std::move(n), rxcpp::detail::OnErrorEmpty(), rxcpp::detail::OnCompletedEmpty());
+    }
+
+    template<class OnNext, class OnError>
+    auto subscribe(OnNext n, OnError e)
+        ->      detail::subscribe_factory<OnNext, OnError, rxcpp::detail::OnCompletedEmpty> {
+        return  detail::subscribe_factory<OnNext, OnError, rxcpp::detail::OnCompletedEmpty>(std::move(n), std::move(e), rxcpp::detail::OnCompletedEmpty());
+    }
+
+    template<class OnNext, class OnError, class OnCompleted>
+    auto subscribe(OnNext n, OnError e, OnCompleted c)
+        ->      detail::subscribe_factory<OnNext, OnError, OnCompleted> {
+        return  detail::subscribe_factory<OnNext, OnError, OnCompleted>(std::move(n), std::move(e), std::move(c));
+    }
+
+namespace detail {
+
+    template<class T, class Observable, class Predicate>
+    struct filter : public operator_base<T>
+    {
+        Observable source;
+        Predicate test;
+        filter(Observable o, Predicate p)
+            : source(std::move(o))
+            , test(std::move(p))
+        {}
+        template<class I>
+        void on_subscribe(observer<T, I> o) {
+            o.add(source.subscribe(make_observer<T>(
+            // on_next
+                [this, o](T t) {
+                    bool filtered = false;
+                    try {
+                       filtered = !this->test(t);
+                    } catch(...) {
+                        o.on_error(std::current_exception());
+                        o.unsubscribe();
                     }
-                )));
-            }
-        };
-
-    }
-    namespace rxo=operators;
-
-    namespace sources
-    {
-        struct tag_source {};
-        template<class T>
-        struct source_base
-        {
-            typedef T value_type;
-            typedef tag_source source_tag;
-        };
-        template<class T>
-        class is_source
-        {
-            template<class C>
-            static typename C::source_tag check(int);
-            template<class C>
-            static void check(...);
-        public:
-            static const bool value = std::is_same<decltype(check<T>(0)), tag_source>::value;
-        };
-
-        template<class T>
-        struct range : public source_base<T>
-        {
-            struct state_type
-            {
-                T next;
-                size_t remaining;
-                ptrdiff_t step;
-            };
-            state_type init;
-            range(T b, size_t c, ptrdiff_t s)
-            {
-                init.next = b;
-                init.remaining = c;
-                init.step = s;
-            }
-            template<class I>
-            void on_subscribe(observer<T, I> o) {
-                auto state = std::make_shared<state_type>(init);
-                auto s = make_subscription();
-                for (;state->remaining != 0; --state->remaining) {
-                    o.on_next(state->next);
-                    state->next = static_cast<T>(state->step + state->next);
+                    if (!filtered) {
+                        o.on_next(std::move(t));
+                    }
+                },
+            // on_error
+                [o](std::exception_ptr e) {
+                    o.on_error(e);
+                },
+            // on_completed
+                [o]() {
+                    o.on_completed();
                 }
-                o.on_completed();
-            }
-        };
+            )));
+        }
+    };
+    template<class Predicate>
+    class filter_factory
+    {
+        Predicate predicate;
+    public:
+        filter_factory(Predicate p) : predicate(std::move(p)) {}
+        template<class Observable>
+        auto operator()(Observable source)
+            ->      observable<typename Observable::value_type, filter<typename Observable::value_type, Observable, Predicate>> {
+            return  observable<typename Observable::value_type, filter<typename Observable::value_type, Observable, Predicate>>(source, std::move(predicate));
+        }
+    };
+}
+    template<class Predicate>
+    auto filter(Predicate p)
+        ->      detail::filter_factory<Predicate> {
+        return  detail::filter_factory<Predicate>(std::move(p));
     }
-    namespace rxs=sources;
+
+}
+namespace rxo=operators;
+
+namespace sources
+{
+    struct tag_source {};
+    template<class T>
+    struct source_base
+    {
+        typedef T value_type;
+        typedef tag_source source_tag;
+    };
+    template<class T>
+    class is_source
+    {
+        template<class C>
+        static typename C::source_tag check(int);
+        template<class C>
+        static void check(...);
+    public:
+        static const bool value = std::is_same<decltype(check<T>(0)), tag_source>::value;
+    };
+
+namespace detail
+{
+    template<class T>
+    struct range : public source_base<T>
+    {
+        struct state_type
+        {
+            T next;
+            size_t remaining;
+            ptrdiff_t step;
+        };
+        state_type init;
+        range(T b, size_t c, ptrdiff_t s)
+        {
+            init.next = b;
+            init.remaining = c;
+            init.step = s;
+        }
+        template<class I>
+        void on_subscribe(observer<T, I> o) {
+            auto state = std::make_shared<state_type>(init);
+            auto s = make_subscription();
+            for (;state->remaining != 0; --state->remaining) {
+                o.on_next(state->next);
+                state->next = static_cast<T>(state->step + state->next);
+            }
+            o.on_completed();
+        }
+    };
+}
+}
+namespace rxs=sources;
 
     template<class T, class B>
     class observable
@@ -743,8 +824,9 @@ namespace detail {
         }
 
         template<class Predicate>
-        observable<T, rxo::filter<T, observable, Predicate>> filter(Predicate p) {
-            return observable<T, rxo::filter<T, observable, Predicate>>(*this, std::move(p));
+        auto filter(Predicate p)
+            ->      observable<T, rxo::detail::filter<T, observable, Predicate>> {
+            return  observable<T, rxo::detail::filter<T, observable, Predicate>>(*this, std::move(p));
         }
     };
 
@@ -756,10 +838,17 @@ namespace detail {
         ~observable();
     public:
         template<class T>
-        static observable<T, rxs::range<T>> range(T start = 0, size_t count = std::numeric_limits<size_t>::max(), ptrdiff_t step = 1) {
-            return observable<T, rxs::range<T>>(start, count, step);
+        static auto range(T start = 0, size_t count = std::numeric_limits<size_t>::max(), ptrdiff_t step = 1)
+            ->      observable<T, rxs::detail::range<T>> {
+            return  observable<T, rxs::detail::range<T>>(start, count, step);
         }
     };
+
+    template<class T, class B, class OperatorFactory>
+    auto operator >> (observable<T, B> source, OperatorFactory&& op)
+        -> decltype(op(source)){
+        return      op(source);
+    }
 
 }
 #endif
