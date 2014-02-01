@@ -719,7 +719,8 @@ namespace detail {
         template<class Observable>
         auto operator()(Observable source)
             ->      observable<typename Observable::value_type, filter<typename Observable::value_type, Observable, Predicate>> {
-            return  observable<typename Observable::value_type, filter<typename Observable::value_type, Observable, Predicate>>(source, std::move(predicate));
+            return  observable<typename Observable::value_type, filter<typename Observable::value_type, Observable, Predicate>>(
+                                                                filter<typename Observable::value_type, Observable, Predicate>(source, std::move(predicate)));
         }
     };
 }
@@ -785,22 +786,26 @@ namespace detail
 }
 namespace rxs=sources;
 
-    template<class T, class B>
+    template<class T, class SourceOperator>
     class observable
-        : public B
     {
+        SourceOperator source_operator;
     public:
-        static_assert(rxo::is_operator<B>::value || rxs::is_source<B>::value, "observable must wrap an operator or source");
+        typedef T value_type;
 
-        template<class... A>
-        observable(A&&... a)
-            : B(std::forward<A>(a)...)
+        static_assert(rxo::is_operator<SourceOperator>::value || rxs::is_source<SourceOperator>::value, "observable must wrap an operator or source");
+
+        explicit observable(const SourceOperator& o)
+            : source_operator(o)
+        {}
+        explicit observable(SourceOperator&& o)
+            : source_operator(std::move(o))
         {}
 
         template<class I>
         auto subscribe(observer<T, I> o)
             -> decltype(make_subscription(o)) {
-            B::on_subscribe(o);
+            source_operator.on_subscribe(o);
             return make_subscription(o);
         }
 
@@ -825,8 +830,9 @@ namespace rxs=sources;
 
         template<class Predicate>
         auto filter(Predicate p)
-            ->      observable<T, rxo::detail::filter<T, observable, Predicate>> {
-            return  observable<T, rxo::detail::filter<T, observable, Predicate>>(*this, std::move(p));
+            ->      observable<T,   rxo::detail::filter<T, observable, Predicate>> {
+            return  observable<T,   rxo::detail::filter<T, observable, Predicate>>(
+                                    rxo::detail::filter<T, observable, Predicate>(*this, std::move(p)));
         }
     };
 
@@ -839,13 +845,14 @@ namespace rxs=sources;
     public:
         template<class T>
         static auto range(T start = 0, size_t count = std::numeric_limits<size_t>::max(), ptrdiff_t step = 1)
-            ->      observable<T, rxs::detail::range<T>> {
-            return  observable<T, rxs::detail::range<T>>(start, count, step);
+            ->      observable<T,   rxs::detail::range<T>> {
+            return  observable<T,   rxs::detail::range<T>>(
+                                    rxs::detail::range<T>(start, count, step));
         }
     };
 
-    template<class T, class B, class OperatorFactory>
-    auto operator >> (observable<T, B> source, OperatorFactory&& op)
+    template<class T, class SourceOperator, class OperatorFactory>
+    auto operator >> (observable<T, SourceOperator> source, OperatorFactory&& op)
         -> decltype(op(source)){
         return      op(source);
     }
