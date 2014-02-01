@@ -279,6 +279,9 @@ namespace rxcpp {
     struct observer_base : public observer_root<T>
     {
     private:
+        typedef typename observer_root<T>::subscription_type subscription_type;
+        typedef typename observer_root<T>::weak_subscription weak_subscription;
+
         mutable subscription_type s;
 
         observer_base();
@@ -319,6 +322,8 @@ namespace rxcpp {
     template<class T>
     struct observer_base<T, void> : public observer_root<T>
     {
+        typedef typename observer_root<T>::weak_subscription weak_subscription;
+
         void swap(observer_base&) {
         }
         bool is_subscribed() const {
@@ -373,28 +378,28 @@ namespace detail {
         {
         }
         dynamic_observer(composite_subscription cs, on_next_t n = nullptr, on_error_t e = nullptr, on_completed_t c = nullptr)
-            : observer_base(std::move(cs))
+            : observer_base<T, int>(std::move(cs))
             , onnext(std::move(n))
             , onerror(std::move(e))
             , oncompleted(std::move(c))
         {
         }
         dynamic_observer(on_next_t n, on_error_t e = nullptr, on_completed_t c = nullptr)
-            : observer_base(composite_subscription())
+            : observer_base<T, int>(composite_subscription())
             , onnext(std::move(n))
             , onerror(std::move(e))
             , oncompleted(std::move(c))
         {
         }
         dynamic_observer(const dynamic_observer& o)
-            : observer_base(o)
+            : observer_base<T, int>(o)
             , onnext(o.onnext)
             , onerror(o.onerror)
             , oncompleted(o.oncompleted)
         {
         }
         dynamic_observer(dynamic_observer&& o)
-            : observer_base(std::move(o))
+            : observer_base<T, int>(std::move(o))
             , onnext(std::move(o.onnext))
             , onerror(std::move(o.onerror))
             , oncompleted(std::move(o.oncompleted))
@@ -406,7 +411,7 @@ namespace detail {
         }
         void swap(dynamic_observer& o) {
             using std::swap;
-            observer_base::swap(o);
+            observer_base<T, int>::swap(o);
             swap(onnext, o.onnext);
             swap(onerror, o.onerror);
             swap(oncompleted, o.oncompleted);
@@ -447,28 +452,28 @@ namespace detail {
         {
         }
         static_observer(composite_subscription cs, on_next_t n = nullptr, on_error_t e = nullptr, on_completed_t c = nullptr)
-            : observer_base(std::move(cs))
+            : observer_base<T, int>(std::move(cs))
             , onnext(std::move(n))
             , onerror(std::move(e))
             , oncompleted(std::move(c))
         {
         }
         static_observer(on_next_t n, on_error_t e = nullptr, on_completed_t c = nullptr)
-            : observer_base(composite_subscription())
+            : observer_base<T, int>(composite_subscription())
             , onnext(std::move(n))
             , onerror(std::move(e))
             , oncompleted(std::move(c))
         {
         }
         static_observer(const static_observer& o)
-            : observer_base(o)
+            : observer_base<T, int>(o)
             , onnext(o.onnext)
             , onerror(o.onerror)
             , oncompleted(o.oncompleted)
         {
         }
         static_observer(static_observer&& o)
-            : observer_base(std::move(o))
+            : observer_base<T, int>(std::move(o))
             , onnext(std::move(o.onnext))
             , onerror(std::move(o.onerror))
             , oncompleted(std::move(o.oncompleted))
@@ -480,7 +485,7 @@ namespace detail {
         }
         void swap(static_observer& o) {
             using std::swap;
-            observer_base::swap(o);
+            observer_base<T, int>::swap(o);
             swap(onnext, o.onnext);
             swap(onerror, o.onerror);
             swap(oncompleted, o.oncompleted);
@@ -500,8 +505,9 @@ namespace detail {
     template<class T, class I>
     class observer : public observer_root<T>
     {
-        typedef
-            typename std::conditional<is_observer<I>::value, I, dynamic_observer<T>>::type
+        typedef typename observer_root<T>::weak_subscription weak_subscription;
+        typedef typename std::conditional<is_observer<I>::value, I, dynamic_observer<T>>::type
+        
         inner_t;
         inner_t inner;
     public:
