@@ -25,7 +25,7 @@ namespace rxcpp {
         template<class C>
         static void check(...);
     public:
-        static const bool value = std::is_same<decltype(check<T>(0)), tag_subscription>::value;
+        static const bool value = std::is_convertible<decltype(check<T>(0)), tag_subscription>::value;
     };
 
     class dynamic_subscription : public subscription_base
@@ -341,7 +341,7 @@ namespace rxcpp {
         template<class C>
         static void check(...);
     public:
-        static const bool value = std::is_same<decltype(check<T>(0)), tag_observer>::value;
+        static const bool value = std::is_convertible<decltype(check<T>(0)), tag_observer>::value;
     };
 
 namespace detail {
@@ -611,7 +611,7 @@ namespace operators
         template<class C>
         static void check(...);
     public:
-        static const bool value = std::is_same<decltype(check<T>(0)), tag_operator>::value;
+        static const bool value = std::is_convertible<decltype(check<T>(0)), tag_operator>::value;
     };
 
 namespace detail {
@@ -679,10 +679,17 @@ namespace detail {
     {
         Observable source;
         Predicate test;
+
+        template<class CT, class CP>
+        static auto check(int) -> decltype((*(CP*)nullptr)(*(CT*)nullptr));
+        template<class CT, class CP>
+        static void check(...);
         filter(Observable o, Predicate p)
             : source(std::move(o))
             , test(std::move(p))
-        {}
+        {
+            static_assert(std::is_convertible<decltype(check<T, Predicate>(0)), bool>::value, "filter Predicate must be a function with the signature bool(T)");
+        }
         template<class I>
         void on_subscribe(observer<T, I> o) {
             o.add(source.subscribe(make_observer<T>(
@@ -750,7 +757,7 @@ namespace sources
         template<class C>
         static void check(...);
     public:
-        static const bool value = std::is_same<decltype(check<T>(0)), tag_source>::value;
+        static const bool value = std::is_convertible<decltype(check<T>(0)), tag_source>::value;
     };
 
 namespace detail
