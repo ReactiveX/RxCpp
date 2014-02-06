@@ -1,6 +1,7 @@
 #include "rxcpp/rx.hpp"
 namespace rx=rxcpp;
 namespace rxo=rxcpp::operators;
+namespace rxs=rxcpp::sources;
 
 #include "catch.hpp"
 
@@ -36,7 +37,7 @@ SCENARIO("filter operators", "[filter][operators][traits]"){
     GIVEN("given a range of ints from 1 to 100"){
         WHEN("filtered to primes"){
             THEN("a subscription only observes primes"){
-                auto s = rx::observable<>::range(1, 100, 1)
+                auto s = rxs::range(1, 100, 1)
                     >> rxo::filter(IsPrime)
                     >> rxo::subscribe([](int t) {
                         const auto prime = IsPrime(t) ? t : -1;
