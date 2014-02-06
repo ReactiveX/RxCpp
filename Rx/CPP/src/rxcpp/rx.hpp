@@ -279,14 +279,13 @@ namespace rxcpp {
     struct observer_base : public observer_root<T>
     {
     private:
-        typedef typename observer_root<T>::subscription_type subscription_type;
-        typedef typename observer_root<T>::weak_subscription weak_subscription;
+        typedef observer_base this_type;
 
-        mutable subscription_type s;
+        mutable typename this_type::subscription_type s;
 
         observer_base();
     public:
-        observer_base(subscription_type s)
+        observer_base(typename this_type::subscription_type s)
             : s(std::move(s))
         {
         }
@@ -309,10 +308,10 @@ namespace rxcpp {
         bool is_subscribed() const {
             return s.is_subscribed();
         }
-        weak_subscription add(dynamic_subscription ds) const {
+        typename this_type::weak_subscription add(dynamic_subscription ds) const {
             return s.add(std::move(ds));
         }
-        void remove(weak_subscription ws) const {
+        void remove(typename this_type::weak_subscription ws) const {
             s.remove(ws);
         }
         void unsubscribe() const {
@@ -322,18 +321,20 @@ namespace rxcpp {
     template<class T>
     struct observer_base<T, void> : public observer_root<T>
     {
-        typedef typename observer_root<T>::weak_subscription weak_subscription;
+    private:
+        typedef observer_base this_type;
 
+    public:
         void swap(observer_base&) {
         }
         bool is_subscribed() const {
             return false;
         }
-        weak_subscription add(dynamic_subscription ds) const {
+        typename this_type::weak_subscription add(dynamic_subscription ds) const {
             ds.unsubscribe();
-            return weak_subscription();
+            return typename this_type::weak_subscription();
         }
-        void remove(weak_subscription) const {
+        void remove(typename this_type::weak_subscription) const {
         }
         void unsubscribe() const {
         }
@@ -369,6 +370,8 @@ namespace detail {
         typedef std::function<void()> on_completed_t;
 
     private:
+        typedef observer_base<T, int> base_type;
+
         on_next_t onnext;
         on_error_t onerror;
         on_completed_t oncompleted;
@@ -378,28 +381,28 @@ namespace detail {
         {
         }
         dynamic_observer(composite_subscription cs, on_next_t n = nullptr, on_error_t e = nullptr, on_completed_t c = nullptr)
-            : observer_base<T, int>(std::move(cs))
+            : base_type(std::move(cs))
             , onnext(std::move(n))
             , onerror(std::move(e))
             , oncompleted(std::move(c))
         {
         }
         dynamic_observer(on_next_t n, on_error_t e = nullptr, on_completed_t c = nullptr)
-            : observer_base<T, int>(composite_subscription())
+            : base_type(composite_subscription())
             , onnext(std::move(n))
             , onerror(std::move(e))
             , oncompleted(std::move(c))
         {
         }
         dynamic_observer(const dynamic_observer& o)
-            : observer_base<T, int>(o)
+            : base_type(o)
             , onnext(o.onnext)
             , onerror(o.onerror)
             , oncompleted(o.oncompleted)
         {
         }
         dynamic_observer(dynamic_observer&& o)
-            : observer_base<T, int>(std::move(o))
+            : base_type(std::move(o))
             , onnext(std::move(o.onnext))
             , onerror(std::move(o.onerror))
             , oncompleted(std::move(o.oncompleted))
@@ -505,9 +508,9 @@ namespace detail {
     template<class T, class I>
     class observer : public observer_root<T>
     {
-        typedef typename observer_root<T>::weak_subscription weak_subscription;
+        typedef observer this_type;
         typedef typename std::conditional<is_observer<I>::value, I, dynamic_observer<T>>::type
-        
+
         inner_t;
         inner_t inner;
     public:
@@ -538,10 +541,10 @@ namespace detail {
         bool is_subscribed() const {
             return inner.is_subscribed();
         }
-        weak_subscription add(dynamic_subscription ds) const {
+        typename this_type::weak_subscription add(dynamic_subscription ds) const {
             return inner.add(std::move(ds));
         }
-        void remove(weak_subscription ws) const {
+        void remove(typename this_type::weak_subscription ws) const {
             inner.remove(ws);
         }
         void unsubscribe() const {
