@@ -28,11 +28,17 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/SelectMany.cpp
     ${TEST_DIR}/operators/Where.cpp
     ${TEST_DIR}/operators/Publish.cpp
+)
+add_executable(rxcpp_test ${TEST_SOURCES})
+
+# define the sources of the self test
+set(TEST_SOURCES
+    ${TEST_DIR}/test.cpp
     ${TEST_DIR}/v2/subscriptions/observer.cpp
     ${TEST_DIR}/v2/subscriptions/subscription.cpp
     ${TEST_DIR}/v2/operators/filter.cpp
 )
-add_executable(rxcpp_test ${TEST_SOURCES})
+add_executable(rxcppv2_test ${TEST_SOURCES})
 
 # define the sources of testbench
 set(TESTBENCH_SOURCES
@@ -42,6 +48,7 @@ add_executable(testbench ${TESTBENCH_SOURCES})
 
 # configure unit tests via CTest
 enable_testing()
+
 add_test(NAME RunTests COMMAND rxcpp_test)
 
 add_test(NAME ListTests COMMAND rxcpp_test --list-tests)
@@ -49,3 +56,11 @@ set_tests_properties(ListTests PROPERTIES PASS_REGULAR_EXPRESSION "[0-9]+ test c
 
 add_test(NAME ListTags COMMAND rxcpp_test --list-tags)
 set_tests_properties(ListTags PROPERTIES PASS_REGULAR_EXPRESSION "[0-9]+ tags")
+
+add_test(NAME RunTestsV2 COMMAND rxcppv2_test)
+
+add_test(NAME ListTestsV2 COMMAND rxcppv2_test --list-tests)
+set_tests_properties(ListTestsV2 PROPERTIES PASS_REGULAR_EXPRESSION "[0-9]+ test cases")
+
+add_test(NAME ListTagsV2 COMMAND rxcppv2_test --list-tags)
+set_tests_properties(ListTagsV2 PROPERTIES PASS_REGULAR_EXPRESSION "[0-9]+ tags")
