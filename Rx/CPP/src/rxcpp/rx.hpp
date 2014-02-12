@@ -18,7 +18,30 @@ private:
     template<class I>
     auto detail_subscribe(observer<T, I> o, tag_observer&&)
         -> decltype(make_subscription(o)) {
-        source_operator.on_subscribe(o);
+
+        auto subscriber = [=]() {
+            try {
+                source_operator.on_subscribe(o);
+            }
+            catch(...) {
+                if (!o.is_subscribed()) {
+                    throw;
+                }
+                o.on_error(std::current_exception());
+                o.unsubscribe();
+            }
+        };
+
+        if (rxsc::current_thread::is_schedule_required()) {
+            auto sc = rxsc::make_current_thread();
+            sc->schedule([=](rxsc::action, rxsc::scheduler) {
+                subscriber();
+                return rxsc::make_action_empty();
+            });
+        } else {
+            subscriber();
+        }
+
         return make_subscription(o);
     }
 
@@ -58,6 +81,7 @@ public:
         -> decltype(make_subscription(make_observer<T>(std::move(n), std::move(e), std::move(c)))) {
         return subscribe(make_observer<T>(std::move(n), std::move(e), std::move(c)));
     }
+
     template<class Predicate>
     auto filter(Predicate p)
         ->      observable<T,   rxo::detail::filter<T, observable, Predicate>> {
@@ -74,10 +98,10 @@ class observable<void, void>
     ~observable();
 public:
     template<class T>
-    static auto range(T start = 0, size_t count = std::numeric_limits<size_t>::max(), ptrdiff_t step = 1)
+    static auto range(T start = 0, size_t count = std::numeric_limits<size_t>::max(), ptrdiff_t step = 1, rxsc::scheduler sc = rxsc::make_current_thread())
         ->      observable<T,   rxs::detail::range<T>> {
         return  observable<T,   rxs::detail::range<T>>(
-                                rxs::detail::range<T>(start, count, step));
+                                rxs::detail::range<T>(start, count, step, sc));
     }
 };
 

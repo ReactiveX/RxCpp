@@ -37,7 +37,7 @@
 // some configuration macros
 #if defined(_MSC_VER)
 
-#if _MSC_VER > 1600 
+#if _MSC_VER > 1600
 #define RXCPP_USE_RVALUEREF 1
 #endif
 
@@ -89,8 +89,10 @@
 #define RXCPP_USE_WINRT RXCPP_FORCE_USE_WINRT
 #endif
 
+#include "rx-util.hpp"
 #include "rx-subscription.hpp"
 #include "rx-observer.hpp"
+#include "rx-scheduler.hpp"
 #include "rx-operators.hpp"
 #include "rx-sources.hpp"
 

@@ -21,33 +21,47 @@ struct range : public source_base<T>
         T next;
         size_t remaining;
         ptrdiff_t step;
+        rxsc::scheduler sc;
     };
     state_type init;
-    range(T b, size_t c, ptrdiff_t s)
+    range(T b, size_t c, ptrdiff_t s, rxsc::scheduler sc)
     {
         init.next = b;
         init.remaining = c;
         init.step = s;
+        init.sc = sc;
     }
     template<class I>
     void on_subscribe(observer<T, I> o) {
         auto state = std::make_shared<state_type>(init);
-        auto s = make_subscription();
-        for (;state->remaining != 0; --state->remaining) {
+        state->sc->schedule([=](rxsc::action that, rxsc::scheduler){
+            if (state->remaining == 0) {
+                o.on_completed();
+                // o is unsubscribed
+            }
+            if (!o.is_subscribed()) {
+                // terminate loop
+                return rxsc::make_action_empty();
+            }
+
+            // send next value
+            --state->remaining;
             o.on_next(state->next);
             state->next = static_cast<T>(state->step + state->next);
-        }
-        o.on_completed();
+
+            // tail recurse this same action to continue loop
+            return that;
+        });
     }
 };
 
 }
 
 template<class T>
-auto range(T start = 0, size_t count = std::numeric_limits<size_t>::max(), ptrdiff_t step = 1)
+auto range(T start = 0, size_t count = std::numeric_limits<size_t>::max(), ptrdiff_t step = 1, rxsc::scheduler sc = rxsc::make_current_thread())
     ->      observable<T,   detail::range<T>> {
     return  observable<T,   detail::range<T>>(
-                            detail::range<T>(start, count, step));
+                            detail::range<T>(start, count, step, sc));
 }
 
 }

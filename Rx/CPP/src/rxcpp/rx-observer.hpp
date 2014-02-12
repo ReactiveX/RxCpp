@@ -267,17 +267,27 @@ public:
     }
     void on_next(T t) const {
         if (is_subscribed()) {
+            RXCPP_UNWIND(unsubscriber, [this](){
+                this->unsubscribe();
+            });
             inner.on_next(std::move(t));
+            unsubscriber.dismiss();
         }
     }
     void on_error(std::exception_ptr e) const {
         if (is_subscribed()) {
+            RXCPP_UNWIND_AUTO([this](){
+                this->unsubscribe();
+            });
             inner.on_error(e);
         }
         unsubscribe();
     }
     void on_completed() const {
         if (is_subscribed()) {
+            RXCPP_UNWIND_AUTO([this](){
+                this->unsubscribe();
+            });
             inner.on_completed();
         }
         unsubscribe();
