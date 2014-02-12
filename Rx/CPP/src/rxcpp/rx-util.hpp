@@ -19,7 +19,7 @@
 #if defined(_MSC_VER)
 #define RXCPP_SELECT_ANY __declspec(selectany)
 #else
-#define RXCPP_SELECT_ANY 
+#define RXCPP_SELECT_ANY __attribute__((weak))
 #endif
 #endif
 
