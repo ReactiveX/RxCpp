@@ -353,6 +353,11 @@ auto make_observer(OnNext n)
     return  observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, detail::OnCompletedEmpty>>(
                         static_observer<T, OnNext, detail::OnErrorEmpty, detail::OnCompletedEmpty>(std::move(n), detail::OnErrorEmpty(), detail::OnCompletedEmpty()));
 }
+template<class T>
+auto make_observer_dynamic(typename dynamic_observer<T>::on_next_t n, typename dynamic_observer<T>::on_error_t e = nullptr, typename dynamic_observer<T>::on_completed_t c = nullptr)
+    ->      observer<T, dynamic_observer<T>> {
+    return  observer<T, dynamic_observer<T>>(dynamic_observer<T>(std::move(n), std::move(e), std::move(c)));
+}
 
 }
 
