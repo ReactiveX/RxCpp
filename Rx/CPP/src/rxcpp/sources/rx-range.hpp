@@ -34,7 +34,7 @@ struct range : public source_base<T>
     template<class I>
     void on_subscribe(observer<T, I> o) {
         auto state = std::make_shared<state_type>(init);
-        state->sc->schedule([=](rxsc::action that, rxsc::scheduler){
+        state->sc->schedule(o.get_subscription(), [=](rxsc::action that, rxsc::scheduler){
             if (state->remaining == 0) {
                 o.on_completed();
                 // o is unsubscribed

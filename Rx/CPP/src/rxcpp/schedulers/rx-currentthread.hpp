@@ -172,6 +172,10 @@ public:
     }
 
     virtual void schedule(clock::time_point when, action a) {
+        if (!a->is_subscribed()) {
+            return;
+        }
+
         auto sc = queue::get_scheduler();
         // check ownership
         if (!!sc)
@@ -200,11 +204,8 @@ public:
 
             queue::pop();
 
-            for (;;) {
+            while (a->is_subscribed()) {
                 a = (*a)(sc);
-                if (!a->is_subscribed()) {
-                    break;
-                }
                 if (!queue::empty()) {
                     // take proper place in line
                     sc->schedule(std::move(a));

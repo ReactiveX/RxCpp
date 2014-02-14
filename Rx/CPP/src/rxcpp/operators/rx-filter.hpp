@@ -31,7 +31,8 @@ struct filter : public operator_base<T>
     }
     template<class I>
     void on_subscribe(observer<T, I> o) {
-        o.add(source.subscribe(make_observer<T>(
+        o.add(source.subscribe(
+            o.get_subscription(),
         // on_next
             [this, o](T t) {
                 bool filtered = false;
@@ -53,7 +54,7 @@ struct filter : public operator_base<T>
             [o]() {
                 o.on_completed();
             }
-        )));
+        ));
     }
 };
 

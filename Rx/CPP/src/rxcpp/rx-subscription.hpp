@@ -139,10 +139,10 @@ public:
     typedef std::shared_ptr<dynamic_subscription> shared_subscription;
     typedef std::weak_ptr<dynamic_subscription> weak_subscription;
 private:
-    struct state_t
+    struct state_t : public std::enable_shared_from_this<state_t>
     {
         std::vector<shared_subscription> subscriptions;
-        std::mutex lock;
+        std::recursive_mutex lock;
         bool issubscribed;
 
         state_t()

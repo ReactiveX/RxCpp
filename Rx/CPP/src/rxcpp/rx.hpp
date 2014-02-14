@@ -19,6 +19,10 @@ private:
     auto detail_subscribe(observer<T, I> o, tag_observer&&)
         -> decltype(make_subscription(o)) {
 
+        if (!o.is_subscribed()) {
+            return make_subscription(o);
+        }
+
         auto subscriber = [=]() {
             try {
                 source_operator.on_subscribe(o);
@@ -45,11 +49,35 @@ private:
         return make_subscription(o);
     }
 
-    struct tag_onnext {};
+    struct tag_function {};
     template<class OnNext>
-    auto detail_subscribe(OnNext n, tag_onnext&&)
-        -> decltype(make_subscription(make_observer<T>(std::move(n)))) {
-        return subscribe(make_observer<T>(std::move(n)));
+    auto detail_subscribe(OnNext n, tag_function&&)
+        -> decltype(make_subscription(  make_observer<T>(std::move(n)))) {
+        return subscribe(               make_observer<T>(std::move(n)));
+    }
+
+    template<class OnNext, class OnError>
+    auto detail_subscribe(OnNext n, OnError e, tag_function&&)
+        -> decltype(make_subscription(  make_observer<T>(std::move(n), std::move(e)))) {
+        return subscribe(               make_observer<T>(std::move(n), std::move(e)));
+    }
+
+    template<class OnNext, class OnError, class OnCompleted>
+    auto detail_subscribe(OnNext n, OnError e, OnCompleted c, tag_function&&)
+        -> decltype(make_subscription(  make_observer<T>(std::move(n), std::move(e), std::move(c)))) {
+        return subscribe(               make_observer<T>(std::move(n), std::move(e), std::move(c)));
+    }
+
+    template<class OnNext>
+    auto detail_subscribe(composite_subscription cs, OnNext n, tag_subscription&&)
+        -> decltype(make_subscription(  make_observer<T>(std::move(cs), std::move(n)))) {
+        return subscribe(               make_observer<T>(std::move(cs), std::move(n)));
+    }
+
+    template<class OnNext, class OnError>
+    auto detail_subscribe(composite_subscription cs, OnNext n, OnError e, tag_subscription&&)
+        -> decltype(make_subscription(  make_observer<T>(std::move(cs), std::move(n), std::move(e)))) {
+        return subscribe(               make_observer<T>(std::move(cs), std::move(n), std::move(e)));
     }
 
 public:
@@ -66,20 +94,26 @@ public:
 
     template<class Arg>
     auto subscribe(Arg a)
-        -> decltype(detail_subscribe(std::move(a), typename std::conditional<is_observer<Arg>::value, tag_observer, tag_onnext>::type())) {
-        return      detail_subscribe(std::move(a), typename std::conditional<is_observer<Arg>::value, tag_observer, tag_onnext>::type());
+        -> decltype(detail_subscribe(std::move(a), typename std::conditional<is_observer<Arg>::value, tag_observer, tag_function>::type())) {
+        return      detail_subscribe(std::move(a), typename std::conditional<is_observer<Arg>::value, tag_observer, tag_function>::type());
     }
 
-    template<class OnNext, class OnError>
-    auto subscribe(OnNext n, OnError e)
-        -> decltype(make_subscription(make_observer<T>(std::move(n), std::move(e)))) {
-        return subscribe(make_observer<T>(std::move(n), std::move(e)));
+    template<class Arg1, class Arg2>
+    auto subscribe(Arg1 a1, Arg2 a2)
+        -> decltype(detail_subscribe(std::move(a1), std::move(a2), typename std::conditional<is_subscription<Arg1>::value, tag_subscription, tag_function>::type())) {
+        return      detail_subscribe(std::move(a1), std::move(a2), typename std::conditional<is_subscription<Arg1>::value, tag_subscription, tag_function>::type());
+    }
+
+    template<class Arg1, class Arg2, class Arg3>
+    auto subscribe(Arg1 a1, Arg2 a2, Arg3 a3)
+        -> decltype(detail_subscribe(std::move(a1), std::move(a2), std::move(a3), typename std::conditional<is_subscription<Arg1>::value, tag_subscription, tag_function>::type())) {
+        return      detail_subscribe(std::move(a1), std::move(a2), std::move(a3), typename std::conditional<is_subscription<Arg1>::value, tag_subscription, tag_function>::type());
     }
 
     template<class OnNext, class OnError, class OnCompleted>
-    auto subscribe(OnNext n, OnError e, OnCompleted c)
-        -> decltype(make_subscription(make_observer<T>(std::move(n), std::move(e), std::move(c)))) {
-        return subscribe(make_observer<T>(std::move(n), std::move(e), std::move(c)));
+    auto subscribe(composite_subscription cs, OnNext n, OnError e, OnCompleted c)
+        -> decltype(make_subscription(  make_observer<T>(std::move(cs), std::move(n), std::move(e), std::move(c)))) {
+        return subscribe(               make_observer<T>(std::move(cs), std::move(n), std::move(e), std::move(c)));
     }
 
     template<class Predicate>
