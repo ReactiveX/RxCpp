@@ -9,14 +9,67 @@
 
 namespace rxcpp {
 
+template<class T>
+struct dynamic_observable
+    : public rxs::source_base<T>
+{
+    struct state_type
+        : public std::enable_shared_from_this<state_type>
+    {
+        typedef std::function<void(observer<T, dynamic_observer<T>>)> onsubscribe_type;
+
+        onsubscribe_type on_subscribe;
+    };
+    std::shared_ptr<state_type> state;
+
+    dynamic_observable()
+    {
+    }
+
+    template<class Source>
+    explicit dynamic_observable(Source source)
+        : state(std::make_shared<state_type>())
+    {
+        state->on_subscribe = [source](observer<T, dynamic_observer<T>> o) mutable {
+            source.on_subscribe(std::move(o));
+        };
+    }
+
+    void on_subscribe(observer<T, dynamic_observer<T>> o) const {
+        state->on_subscribe(std::move(o));
+    }
+
+    template<class Observer>
+    typename std::enable_if<!std::is_same<typename std::decay<Observer>::type, observer<T, dynamic_observer<T>>>::value, void>::type
+    on_subscribe(Observer o) const {
+        auto so = std::make_shared<Observer>(o);
+        state->on_subscribe(make_observer_dynamic<T>(
+        // on_next
+            [so](T t){
+                so->on_next(t);
+            },
+        // on_error
+            [so](std::exception_ptr e){
+                so->on_error(e);
+            },
+        // on_completed
+            [so](){
+                so->on_completed();
+            }));
+    }
+};
+
 template<class T, class SourceOperator>
 class observable
 {
-    SourceOperator source_operator;
+    mutable SourceOperator source_operator;
 
 private:
+    template<class U, class SO>
+    friend class observable;
+
     template<class I>
-    auto detail_subscribe(observer<T, I> o, tag_observer&&)
+    auto detail_subscribe(observer<T, I> o, tag_observer&&) const
         -> decltype(make_subscription(o)) {
 
         if (!o.is_subscribed()) {
@@ -51,31 +104,31 @@ private:
 
     struct tag_function {};
     template<class OnNext>
-    auto detail_subscribe(OnNext n, tag_function&&)
+    auto detail_subscribe(OnNext n, tag_function&&) const
         -> decltype(make_subscription(  make_observer<T>(std::move(n)))) {
         return subscribe(               make_observer<T>(std::move(n)));
     }
 
     template<class OnNext, class OnError>
-    auto detail_subscribe(OnNext n, OnError e, tag_function&&)
+    auto detail_subscribe(OnNext n, OnError e, tag_function&&) const
         -> decltype(make_subscription(  make_observer<T>(std::move(n), std::move(e)))) {
         return subscribe(               make_observer<T>(std::move(n), std::move(e)));
     }
 
     template<class OnNext, class OnError, class OnCompleted>
-    auto detail_subscribe(OnNext n, OnError e, OnCompleted c, tag_function&&)
+    auto detail_subscribe(OnNext n, OnError e, OnCompleted c, tag_function&&) const
         -> decltype(make_subscription(  make_observer<T>(std::move(n), std::move(e), std::move(c)))) {
         return subscribe(               make_observer<T>(std::move(n), std::move(e), std::move(c)));
     }
 
     template<class OnNext>
-    auto detail_subscribe(composite_subscription cs, OnNext n, tag_subscription&&)
+    auto detail_subscribe(composite_subscription cs, OnNext n, tag_subscription&&) const
         -> decltype(make_subscription(  make_observer<T>(std::move(cs), std::move(n)))) {
         return subscribe(               make_observer<T>(std::move(cs), std::move(n)));
     }
 
     template<class OnNext, class OnError>
-    auto detail_subscribe(composite_subscription cs, OnNext n, OnError e, tag_subscription&&)
+    auto detail_subscribe(composite_subscription cs, OnNext n, OnError e, tag_subscription&&) const
         -> decltype(make_subscription(  make_observer<T>(std::move(cs), std::move(n), std::move(e)))) {
         return subscribe(               make_observer<T>(std::move(cs), std::move(n), std::move(e)));
     }
@@ -85,39 +138,65 @@ public:
 
     static_assert(rxo::is_operator<SourceOperator>::value || rxs::is_source<SourceOperator>::value, "observable must wrap an operator or source");
 
+    observable()
+    {
+    }
+
     explicit observable(const SourceOperator& o)
         : source_operator(o)
-    {}
+    {
+    }
     explicit observable(SourceOperator&& o)
         : source_operator(std::move(o))
+    {
+    }
+
+    // implicit conversion between observables of the same value_type
+    template<class SO>
+    observable(const observable<T, SO>& o)
+        : source_operator(o.source_operator)
     {}
 
+#if 0
+    template<class I>
+    void on_subscribe(observer<T, I> o) const {
+        source_operator.on_subscribe(o);
+    }
+#endif
+
+    //
+    // performs type-forgetting conversion
+    //
+    observable<T, dynamic_observable<T>> as_dynamic() {
+        return *this;
+    }
+
     template<class Arg>
-    auto subscribe(Arg a)
+    auto subscribe(Arg a) const
         -> decltype(detail_subscribe(std::move(a), typename std::conditional<is_observer<Arg>::value, tag_observer, tag_function>::type())) {
         return      detail_subscribe(std::move(a), typename std::conditional<is_observer<Arg>::value, tag_observer, tag_function>::type());
     }
 
     template<class Arg1, class Arg2>
-    auto subscribe(Arg1 a1, Arg2 a2)
+    auto subscribe(Arg1 a1, Arg2 a2) const
         -> decltype(detail_subscribe(std::move(a1), std::move(a2), typename std::conditional<is_subscription<Arg1>::value, tag_subscription, tag_function>::type())) {
         return      detail_subscribe(std::move(a1), std::move(a2), typename std::conditional<is_subscription<Arg1>::value, tag_subscription, tag_function>::type());
     }
 
     template<class Arg1, class Arg2, class Arg3>
-    auto subscribe(Arg1 a1, Arg2 a2, Arg3 a3)
+    auto subscribe(Arg1 a1, Arg2 a2, Arg3 a3) const
         -> decltype(detail_subscribe(std::move(a1), std::move(a2), std::move(a3), typename std::conditional<is_subscription<Arg1>::value, tag_subscription, tag_function>::type())) {
         return      detail_subscribe(std::move(a1), std::move(a2), std::move(a3), typename std::conditional<is_subscription<Arg1>::value, tag_subscription, tag_function>::type());
     }
 
     template<class OnNext, class OnError, class OnCompleted>
-    auto subscribe(composite_subscription cs, OnNext n, OnError e, OnCompleted c)
+    auto subscribe(composite_subscription cs, OnNext n, OnError e, OnCompleted c) const
         -> decltype(make_subscription(  make_observer<T>(std::move(cs), std::move(n), std::move(e), std::move(c)))) {
         return subscribe(               make_observer<T>(std::move(cs), std::move(n), std::move(e), std::move(c)));
     }
 
     template<class Predicate>
-    auto filter(Predicate p)
+    auto filter(Predicate p) const
         ->      observable<T,   rxo::detail::filter<T, observable, Predicate>> {
         return  observable<T,   rxo::detail::filter<T, observable, Predicate>>(
                                 rxo::detail::filter<T, observable, Predicate>(*this, std::move(p)));

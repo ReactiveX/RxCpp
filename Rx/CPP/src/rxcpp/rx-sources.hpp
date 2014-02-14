@@ -27,7 +27,7 @@ class is_source
     template<class C>
     static void check(...);
 public:
-    static const bool value = std::is_convertible<decltype(check<T>(0)), tag_source>::value;
+    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_source>::value;
 };
 
 }

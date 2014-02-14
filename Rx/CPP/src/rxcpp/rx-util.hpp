@@ -30,6 +30,13 @@
 
 namespace rxcpp {
 
+namespace util {
+
+template<class T, size_t size>
+std::vector<T> to_vector(const T (&arr) [size]) {
+    return std::vector<T>(std::begin(arr), std::end(arr));
+}
+
 namespace detail {
 
 template<typename Function>
@@ -69,6 +76,9 @@ private:
 }
 
 }
+namespace rxu=util;
+
+}
 
 #define RXCPP_UNWIND(Name, Function) \
     RXCPP_UNWIND_EXPLICIT(uwfunc_ ## Name, Name, Function)
@@ -78,6 +88,6 @@ private:
 
 #define RXCPP_UNWIND_EXPLICIT(FunctionName, UnwinderName, Function) \
     auto FunctionName = (Function); \
-    rxcpp::detail::unwinder<decltype(FunctionName)> UnwinderName(std::addressof(FunctionName))
+    rxcpp::util::detail::unwinder<decltype(FunctionName)> UnwinderName(std::addressof(FunctionName))
 
 #endif

@@ -30,12 +30,12 @@ public:
 
 template<class T>
 bool operator == (recorded<T> lhs, recorded<T> rhs) {
-    return lhs.Time() == rhs.Time() && lhs.Value() == rhs.Value();
+    return lhs.time() == rhs.time() && lhs.value() == rhs.value();
 }
 
 template<class T>
 std::ostream& operator<< (std::ostream& out, const recorded<T>& r) {
-    out << "@" << r.Time() << "-" << r.Value();
+    out << "@" << r.time() << "-" << r.value();
     return out;
 }
 
@@ -103,16 +103,13 @@ private:
         }
         virtual bool equals(const typename base::type& other) const {
             bool result = false;
-            other->accept(make_observer_dynamic([this, &result](T value) {
+            other->accept(make_observer_dynamic<T>([this, &result](T value) {
                     result = this->value == value;
                 }));
             return result;
         }
         virtual void accept(const typename base::observer_type& o) const {
-            if (!o) {
-                abort();
-            }
-            o->on_next(value);
+            o.on_next(value);
         }
         const T value;
     };
@@ -134,16 +131,13 @@ private:
         virtual bool equals(const typename base::type& other) const {
             bool result = false;
             // not trying to compare exceptions
-            other->accept(make_observer_dynamic(nullptr, [&result](std::exception_ptr){
+            other->accept(make_observer_dynamic<T>(nullptr, [&result](std::exception_ptr){
                 result = true;
             }));
             return result;
         }
         virtual void accept(const typename base::observer_type& o) const {
-            if (!o) {
-                abort();
-            }
-            o->on_error(ep);
+            o.on_error(ep);
         }
         const std::exception_ptr ep;
     };
@@ -156,16 +150,13 @@ private:
         }
         virtual bool equals(const typename base::type& other) const {
             bool result = false;
-            other->Accept(make_observer_dynamic(nullptr, nullptr, [&result](){
+            other->accept(make_observer_dynamic<T>(nullptr, nullptr, [&result](){
                 result = true;
             }));
             return result;
         }
         virtual void accept(const typename base::observer_type& o) const {
-            if (!o) {
-                abort();
-            }
-            o->on_completed();
+            o.on_completed();
         }
     };
 

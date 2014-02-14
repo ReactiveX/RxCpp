@@ -17,7 +17,7 @@ template<class Absolute, class Relative>
 struct virtual_time_base : public scheduler_base
 {
 private:
-    typedef virtual_time_base this_type;
+    typedef virtual_time_base<Absolute, Relative> this_type;
     virtual_time_base(const virtual_time_base&);
 
     bool isenabled;
@@ -44,12 +44,12 @@ protected:
 
     absolute clock_now;
 
-    typedef time_action<typename this_type::clock_type::time_point> item_type;
+    typedef time_action<long> item_type;
 
     virtual absolute add(absolute, relative) =0;
 
-    virtual typename this_type::clock_type::time_point to_time_point(absolute) =0;
-    virtual relative to_relative(typename this_type::clock_type::duration) =0;
+    virtual typename scheduler_base::clock_type::time_point to_time_point(absolute) =0;
+    virtual relative to_relative(typename scheduler_base::clock_type::duration) =0;
 
     virtual item_type top() =0;
     virtual void pop() =0;
@@ -58,9 +58,21 @@ protected:
 public:
     virtual void schedule_absolute(absolute, action) =0;
 
-    virtual void schedule_relative(relative dueTime, action a) {
-        auto at = add(clock_now, dueTime);
+    template<class F>
+    typename std::enable_if<!std::is_same<typename std::decay<F>::type, action>::value, void>::type 
+    schedule_absolute(absolute when, F f) {
+        schedule_absolute(when, make_action(f));
+    }
+
+    virtual void schedule_relative(relative when, action a) {
+        auto at = add(clock_now, when);
         return schedule_absolute(at, std::move(a));
+    }
+
+    template<class F>
+    typename std::enable_if<!std::is_same<typename std::decay<F>::type, action>::value, void>::type 
+    schedule_relative(relative when, F f) {
+        schedule_relative(when, make_action(f));
     }
 
     bool is_enabled() {return isenabled;}
@@ -78,7 +90,7 @@ public:
                         clock_now = next.when;
                     }
                     auto a = (*next.a)(shared_from_this());
-                    if (a.subscribed()) {
+                    if (a->is_subscribed()) {
                         schedule(a);
                     }
                 }
@@ -229,6 +241,9 @@ protected:
     virtual bool empty() {
         return queue.empty();
     }
+
+    using base::schedule_absolute;
+    using base::schedule_relative;
 
     virtual void schedule_absolute(typename base::absolute when, action a)
     {
