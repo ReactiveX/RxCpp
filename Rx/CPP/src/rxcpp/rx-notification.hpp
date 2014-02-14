@@ -17,7 +17,7 @@ class recorded
     long t;
     T v;
 public:
-    recorded(long t, T v) 
+    recorded(long t, T v)
         : t(t), v(v) {
     }
     long time() const {
@@ -45,10 +45,10 @@ class subscription
     long u;
 
 public:
-    explicit inline subscription(long s) 
+    explicit inline subscription(long s)
         : s(s), u(std::numeric_limits<long>::max()) {
     }
-    inline subscription(long s, long u) 
+    inline subscription(long s, long u)
         : s(s), u(u) {
     }
     inline long subscribe() const {
@@ -71,7 +71,7 @@ inline std::ostream& operator<< (std::ostream& out, const subscription& s) {
 namespace detail {
 
 template<typename T>
-struct notification_base 
+struct notification_base
     : public std::enable_shared_from_this<notification_base<T>>
 {
     typedef observer<T, dynamic_observer<T>> observer_type;
@@ -101,14 +101,14 @@ private:
         virtual void out(std::ostream& out) const {
             out << "on_next( " << value << ")";
         }
-        virtual bool equals(const base::type& other) const {
+        virtual bool equals(const typename base::type& other) const {
             bool result = false;
-            other->accept(make_observer_dynamic([this, &result](T value) { 
+            other->accept(make_observer_dynamic([this, &result](T value) {
                     result = this->value == value;
                 }));
             return result;
         }
-        virtual void accept(const base::observer_type& o) const {
+        virtual void accept(const typename base::observer_type& o) const {
             if (!o) {
                 abort();
             }
@@ -131,7 +131,7 @@ private:
             }
             out << ")";
         }
-        virtual bool equals(const base::type& other) const {
+        virtual bool equals(const typename base::type& other) const {
             bool result = false;
             // not trying to compare exceptions
             other->accept(make_observer_dynamic(nullptr, [&result](std::exception_ptr){
@@ -139,7 +139,7 @@ private:
             }));
             return result;
         }
-        virtual void accept(const base::observer_type& o) const {
+        virtual void accept(const typename base::observer_type& o) const {
             if (!o) {
                 abort();
             }
@@ -154,14 +154,14 @@ private:
         virtual void out(std::ostream& out) const {
             out << "on_completed()";
         }
-        virtual bool equals(const base::type& other) const {
+        virtual bool equals(const typename base::type& other) const {
             bool result = false;
             other->Accept(make_observer_dynamic(nullptr, nullptr, [&result](){
                 result = true;
             }));
             return result;
         }
-        virtual void accept(const base::observer_type& o) const {
+        virtual void accept(const typename base::observer_type& o) const {
             if (!o) {
                 abort();
             }
@@ -204,8 +204,8 @@ public:
     static
     type make_on_error(Exception&& e) {
         return make_on_error(typename std::conditional<
-            std::is_same<typename std::decay<Exception>::type, std::exception_ptr>::value, 
-                exception_ptr_tag, exception_tag>::type(), 
+            std::is_same<typename std::decay<Exception>::type, std::exception_ptr>::value,
+                exception_ptr_tag, exception_tag>::type(),
             std::forward<Exception>(e));
     }
 };

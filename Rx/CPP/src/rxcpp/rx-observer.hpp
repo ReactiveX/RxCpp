@@ -140,7 +140,7 @@ public:
     }
     void swap(dynamic_observer& o) {
         using std::swap;
-        observer_base<T, int>::swap(o);
+        observer_base<T>::swap(o);
         swap(onnext, o.onnext);
         swap(onerror, o.onerror);
         swap(oncompleted, o.oncompleted);
@@ -214,7 +214,7 @@ public:
     }
     void swap(static_observer& o) {
         using std::swap;
-        observer_base<T, int>::swap(o);
+        observer_base<T>::swap(o);
         swap(onnext, o.onnext);
         swap(onerror, o.onerror);
         swap(oncompleted, o.oncompleted);
@@ -331,19 +331,8 @@ auto make_observer()
 namespace detail {
 
 struct tag_require_observer {};
-template<class T>
-auto make_observer(T, tag_require_observer&&)
-    ->      observer<void**, void> {
-    static_assert(false, "this overload of make_observer requires an observer");
-}
 
 struct tag_require_function {};
-
-template<class T, class OnNext>
-auto make_observer(OnNext n, tag_require_function&&)
-    ->      observer<T, void> {
-    static_assert(false, "this overload of make_observer requires an on_next function");
-}
 
 template<class I>
 auto make_observer(I i, tag_observer&&)
