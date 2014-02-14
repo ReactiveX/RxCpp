@@ -33,6 +33,57 @@ public:
 }
 namespace rxs=sources;
 
+template<class T>
+struct dynamic_observable
+    : public rxs::source_base<T>
+{
+    struct state_type
+        : public std::enable_shared_from_this<state_type>
+    {
+        typedef std::function<void(observer<T, dynamic_observer<T>>)> onsubscribe_type;
+
+        onsubscribe_type on_subscribe;
+    };
+    std::shared_ptr<state_type> state;
+
+    dynamic_observable()
+    {
+    }
+
+    template<class Source>
+    explicit dynamic_observable(Source source)
+        : state(std::make_shared<state_type>())
+    {
+        state->on_subscribe = [source](observer<T, dynamic_observer<T>> o) mutable {
+            source.on_subscribe(std::move(o));
+        };
+    }
+
+    void on_subscribe(observer<T, dynamic_observer<T>> o) const {
+        state->on_subscribe(std::move(o));
+    }
+
+    template<class Observer>
+    typename std::enable_if<!std::is_same<typename std::decay<Observer>::type, observer<T, dynamic_observer<T>>>::value, void>::type
+    on_subscribe(Observer o) const {
+        auto so = std::make_shared<Observer>(o);
+        state->on_subscribe(make_observer_dynamic<T>(
+            so->get_subscription(),
+        // on_next
+            [so](T t){
+                so->on_next(t);
+            },
+        // on_error
+            [so](std::exception_ptr e){
+                so->on_error(e);
+            },
+        // on_completed
+            [so](){
+                so->on_completed();
+            }));
+    }
+};
+
 }
 
 #include "sources/rx-range.hpp"

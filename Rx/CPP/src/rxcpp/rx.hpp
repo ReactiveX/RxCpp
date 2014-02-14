@@ -5,60 +5,22 @@
 #if !defined(RXCPP_RX_HPP)
 #define RXCPP_RX_HPP
 
-#include "rx-includes.hpp"
-
 namespace rxcpp {
 
 template<class T>
-struct dynamic_observable
-    : public rxs::source_base<T>
-{
-    struct state_type
-        : public std::enable_shared_from_this<state_type>
-    {
-        typedef std::function<void(observer<T, dynamic_observer<T>>)> onsubscribe_type;
+struct dynamic_observable;
 
-        onsubscribe_type on_subscribe;
-    };
-    std::shared_ptr<state_type> state;
+template<
+    class T = void,
+    class SourceObservable = std::conditional<std::is_same<T, void>::value,
+        void, dynamic_observable<T>>::type>
+class observable;
 
-    dynamic_observable()
-    {
-    }
+}
 
-    template<class Source>
-    explicit dynamic_observable(Source source)
-        : state(std::make_shared<state_type>())
-    {
-        state->on_subscribe = [source](observer<T, dynamic_observer<T>> o) mutable {
-            source.on_subscribe(std::move(o));
-        };
-    }
+#include "rx-includes.hpp"
 
-    void on_subscribe(observer<T, dynamic_observer<T>> o) const {
-        state->on_subscribe(std::move(o));
-    }
-
-    template<class Observer>
-    typename std::enable_if<!std::is_same<typename std::decay<Observer>::type, observer<T, dynamic_observer<T>>>::value, void>::type
-    on_subscribe(Observer o) const {
-        auto so = std::make_shared<Observer>(o);
-        state->on_subscribe(make_observer_dynamic<T>(
-            so->get_subscription(),
-        // on_next
-            [so](T t){
-                so->on_next(t);
-            },
-        // on_error
-            [so](std::exception_ptr e){
-                so->on_error(e);
-            },
-        // on_completed
-            [so](){
-                so->on_completed();
-            }));
-    }
-};
+namespace rxcpp {
 
 template<class T, class SourceOperator>
 class observable
@@ -196,12 +158,14 @@ public:
         return subscribe(               make_observer<T>(std::move(cs), std::move(n), std::move(e), std::move(c)));
     }
 
+#if RXCPP_USE_OBSERVABLE_MEMBERS
     template<class Predicate>
     auto filter(Predicate p) const
         ->      observable<T,   rxo::detail::filter<T, observable, Predicate>> {
         return  observable<T,   rxo::detail::filter<T, observable, Predicate>>(
                                 rxo::detail::filter<T, observable, Predicate>(*this, std::move(p)));
     }
+#endif
 };
 
 // observable<> has static methods to construct observable sources and adaptors.

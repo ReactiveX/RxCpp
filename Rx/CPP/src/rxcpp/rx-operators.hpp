@@ -9,11 +9,6 @@
 
 namespace rxcpp {
 
-
-template<class T = void, class B = void>
-class observable;
-
-
 namespace operators {
 
 

@@ -94,8 +94,8 @@
 #include "rx-observer.hpp"
 #include "rx-notification.hpp"
 #include "rx-scheduler.hpp"
-#include "rx-operators.hpp"
 #include "rx-sources.hpp"
+#include "rx-operators.hpp"
 
 #pragma pop_macro("min")
 #pragma pop_macro("max")

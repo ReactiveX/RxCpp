@@ -127,6 +127,25 @@ auto subscribe(composite_subscription cs, OnNext n, OnError e, OnCompleted c)
     return  detail::subscribe_factory<OnNext, OnError, OnCompleted>(std::move(cs), std::move(n), std::move(e), std::move(c));
 }
 
+namespace detail {
+
+class dynamic_factory
+{
+public:
+    template<class Observable>
+    auto operator()(Observable source)
+        ->      observable<typename Observable::value_type, dynamic_observable<typename Observable::value_type>> {
+        return  observable<typename Observable::value_type, dynamic_observable<typename Observable::value_type>>(source);
+    }
+};
+
+}
+
+inline auto as_dynamic()
+    ->      detail::dynamic_factory {
+    return  detail::dynamic_factory();
+}
+
 }
 
 }
