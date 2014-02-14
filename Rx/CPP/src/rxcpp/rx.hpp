@@ -5,19 +5,6 @@
 #if !defined(RXCPP_RX_HPP)
 #define RXCPP_RX_HPP
 
-namespace rxcpp {
-
-template<class T>
-struct dynamic_observable;
-
-template<
-    class T = void,
-    class SourceObservable = std::conditional<std::is_same<T, void>::value,
-        void, dynamic_observable<T>>::type>
-class observable;
-
-}
-
 #include "rx-includes.hpp"
 
 namespace rxcpp {

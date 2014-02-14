@@ -90,6 +90,7 @@
 #endif
 
 #include "rx-util.hpp"
+#include "rx-predef.hpp"
 #include "rx-subscription.hpp"
 #include "rx-observer.hpp"
 #include "rx-notification.hpp"
