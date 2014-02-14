@@ -17,7 +17,7 @@ struct action_queue
 {
     typedef action_queue this_type;
 
-    typedef scheduler_base::clock clock;
+    typedef scheduler_base::clock_type clock;
     typedef time_action<clock::time_point> item_type;
 
 private:
@@ -72,6 +72,9 @@ public:
     static void push(item_type item) {
         if (!current_thread_queue()) {
             abort();
+        }
+        if (!item.a->is_subscribed()) {
+            return;
         }
         current_thread_queue()->queue.push(std::move(item));
     }
@@ -132,19 +135,19 @@ private:
         {
         }
 
-        virtual clock::time_point now() {
-            return clock::now();
+        virtual clock_type::time_point now() {
+            return clock_type::now();
         }
 
         virtual void schedule(action a) {
             queue::push(queue::item_type(now(), std::move(a)));
         }
 
-        virtual void schedule(clock::duration when, action a) {
+        virtual void schedule(clock_type::duration when, action a) {
             queue::push(queue::item_type(now() + when, std::move(a)));
         }
 
-        virtual void schedule(clock::time_point when, action a) {
+        virtual void schedule(clock_type::time_point when, action a) {
             queue::push(queue::item_type(when, std::move(a)));
         }
     };
@@ -159,19 +162,19 @@ public:
 
     static bool is_schedule_required() { return !queue::get_scheduler(); }
 
-    virtual clock::time_point now() {
-        return clock::now();
+    virtual clock_type::time_point now() {
+        return clock_type::now();
     }
 
     virtual void schedule(action a) {
         schedule(now(), std::move(a));
     }
 
-    virtual void schedule(clock::duration when, action a) {
+    virtual void schedule(clock_type::duration when, action a) {
         schedule(now() + when, std::move(a));
     }
 
-    virtual void schedule(clock::time_point when, action a) {
+    virtual void schedule(clock_type::time_point when, action a) {
         if (!a->is_subscribed()) {
             return;
         }

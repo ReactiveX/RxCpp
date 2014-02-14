@@ -224,6 +224,7 @@ std::ostream& operator<< (std::ostream& out, const std::shared_ptr<detail::notif
 }
 
 }
+namespace rxn=notifications;
 
 }
 

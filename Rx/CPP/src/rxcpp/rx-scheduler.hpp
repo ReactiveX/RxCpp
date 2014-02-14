@@ -102,32 +102,32 @@ class scheduler_base
     typedef scheduler_base this_type;
 
 public:
-    typedef std::chrono::steady_clock clock;
+    typedef std::chrono::steady_clock clock_type;
 
     virtual ~scheduler_base() {}
 
-    virtual clock::time_point now() = 0;
+    virtual clock_type::time_point now() = 0;
 
     virtual void schedule(action a) = 0;
-    virtual void schedule(clock::duration when, action a) = 0;
-    virtual void schedule(clock::time_point when, action a) = 0;
+    virtual void schedule(clock_type::duration when, action a) = 0;
+    virtual void schedule(clock_type::time_point when, action a) = 0;
 
     inline void schedule(action_type::function_type f){
         return schedule(make_action(std::move(f)));
     }
-    inline void schedule(clock::duration when, action_type::function_type f){
+    inline void schedule(clock_type::duration when, action_type::function_type f){
         return schedule(when, make_action(std::move(f)));
     }
-    inline void schedule(clock::time_point when, action_type::function_type f){
+    inline void schedule(clock_type::time_point when, action_type::function_type f){
         return schedule(when, make_action(std::move(f)));
     }
     inline void schedule(action_type::subscription_type s, action_type::function_type f){
         return schedule(make_action(std::move(s), std::move(f)));
     }
-    inline void schedule(clock::duration when, action_type::subscription_type s, action_type::function_type f){
+    inline void schedule(clock_type::duration when, action_type::subscription_type s, action_type::function_type f){
         return schedule(when, make_action(std::move(s), std::move(f)));
     }
-    inline void schedule(clock::time_point when, action_type::subscription_type s, action_type::function_type f){
+    inline void schedule(clock_type::time_point when, action_type::subscription_type s, action_type::function_type f){
         return schedule(when, make_action(std::move(s), std::move(f)));
     }
 };
@@ -154,5 +154,6 @@ namespace rxsc=schedulers;
 }
 
 #include "schedulers/rx-currentthread.hpp"
+#include "schedulers/rx-virtualtime.hpp"
 
 #endif
