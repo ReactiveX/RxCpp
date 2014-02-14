@@ -234,11 +234,11 @@ protected:
     {
         // use a separate subscription here so that a's subscription is not affected
         auto run = make_action([a](action that, scheduler sc) {
-            if (that.is_subscribed()) {
-                that.unsubscribe(); // unsubscribe() run, not a;
+            if (that->is_subscribed()) {
+                that->unsubscribe(); // unsubscribe() run, not a;
                 (*a)(sc);
             }
-            return make_action();
+            return make_action_empty();
         });
         queue.push(item_type(when, run));
     }
