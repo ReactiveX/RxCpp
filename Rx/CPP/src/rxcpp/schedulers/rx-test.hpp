@@ -90,35 +90,37 @@ public:
         -> rxt::testable_observer<T>
     {
         struct state_type
+            : public std::enable_shared_from_this<state_type>
         {
             typedef decltype(createSource()) source_type;
-            typedef typename source_type::value_type value_type;
 
-            explicit state_type(rxt::testable_observer<value_type> o)
-                : observer(o)
+            std::unique_ptr<source_type> source;
+            rxt::testable_observer<T> o;
+
+            explicit state_type(rxt::testable_observer<T> o)
+                : source()
+                , o(o)
             {
             }
-            std::unique_ptr<source_type> source;
-            rxt::testable_observer<value_type> observer;
         };
-        auto state = std::make_shared<state_type>(make_observer<T>());
+        std::shared_ptr<state_type> state(new state_type(this->make_observer<T>()));
 
         schedule_absolute(created, make_action([createSource, state](action, scheduler) {
             state->source.reset(new typename state_type::source_type(createSource()));
             return make_action_empty();
         }));
         schedule_absolute(subscribed, make_action([state](action, scheduler) {
-            state->source->subscribe(state->observer);
+            state->source->subscribe(state->o);
             return make_action_empty();
         }));
         schedule_absolute(unsubscribed, make_action([state](action, scheduler) {
-            state->observer.unsubscribe();
+            state->o.unsubscribe();
             return make_action_empty();
         }));
 
         start();
 
-        return state->observer;
+        return state->o;
     }
 
     template<class T, class F>
@@ -246,7 +248,7 @@ public:
 
         for (auto& message : mv) {
             auto n = message.value();
-            scheduler->schedule_relative(message.time(), make_action([n, o](action, scheduler) {
+            sc->schedule_relative(message.time(), make_action([n, o](action, scheduler) {
                 n->accept(o);
                 return make_action_empty();
             }));

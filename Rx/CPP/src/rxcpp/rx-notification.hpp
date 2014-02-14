@@ -11,34 +11,6 @@ namespace rxcpp {
 
 namespace notifications {
 
-template<class T>
-class recorded
-{
-    long t;
-    T v;
-public:
-    recorded(long t, T v)
-        : t(t), v(v) {
-    }
-    long time() const {
-        return t;
-    }
-    const T& value() const {
-        return v;
-    }
-};
-
-template<class T>
-bool operator == (recorded<T> lhs, recorded<T> rhs) {
-    return lhs.time() == rhs.time() && lhs.value() == rhs.value();
-}
-
-template<class T>
-std::ostream& operator<< (std::ostream& out, const recorded<T>& r) {
-    out << "@" << r.time() << "-" << r.value();
-    return out;
-}
-
 class subscription
 {
     long s;
@@ -98,8 +70,8 @@ private:
     struct on_next_notification : public base {
         on_next_notification(T value) : value(std::move(value)) {
         }
-        virtual void out(std::ostream& out) const {
-            out << "on_next( " << value << ")";
+        virtual void out(std::ostream& os) const {
+            os << "on_next( " << value << ")";
         }
         virtual bool equals(const typename base::type& other) const {
             bool result = false;
@@ -117,16 +89,16 @@ private:
     struct on_error_notification : public base {
         on_error_notification(std::exception_ptr ep) : ep(ep) {
         }
-        virtual void out(std::ostream& out) const {
-            out << "on_error(";
+        virtual void out(std::ostream& os) const {
+            os << "on_error(";
             try {
                 std::rethrow_exception(ep);
             } catch (const std::exception& e) {
-                out << e.what();
+                os << e.what();
             } catch (...) {
-                out << "<not derived from std::exception>";
+                os << "<not derived from std::exception>";
             }
-            out << ")";
+            os << ")";
         }
         virtual bool equals(const typename base::type& other) const {
             bool result = false;
@@ -145,8 +117,8 @@ private:
     struct on_completed_notification : public base {
         on_completed_notification() {
         }
-        virtual void out(std::ostream& out) const {
-            out << "on_completed()";
+        virtual void out(std::ostream& os) const {
+            os << "on_completed()";
         }
         virtual bool equals(const typename base::type& other) const {
             bool result = false;
@@ -209,8 +181,37 @@ bool operator == (const std::shared_ptr<detail::notification_base<T>>& lhs, cons
 }
 
 template<class T>
-std::ostream& operator<< (std::ostream& out, const std::shared_ptr<detail::notification_base<T>>& n) {
-    n->out(out);
+std::ostream& operator<< (std::ostream& os, const std::shared_ptr<detail::notification_base<T>>& n) {
+    n->out(os);
+    return os;
+}
+
+
+template<class T>
+class recorded
+{
+    long t;
+    T v;
+public:
+    recorded(long t, T v)
+        : t(t), v(v) {
+    }
+    long time() const {
+        return t;
+    }
+    const T& value() const {
+        return v;
+    }
+};
+
+template<class T>
+bool operator == (recorded<T> lhs, recorded<T> rhs) {
+    return lhs.time() == rhs.time() && lhs.value() == rhs.value();
+}
+
+template<class T>
+std::ostream& operator<< (std::ostream& out, const recorded<T>& r) {
+    out << "@" << r.time() << "-" << r.value();
     return out;
 }
 
