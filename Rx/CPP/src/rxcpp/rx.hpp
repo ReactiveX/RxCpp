@@ -44,6 +44,7 @@ struct dynamic_observable
     on_subscribe(Observer o) const {
         auto so = std::make_shared<Observer>(o);
         state->on_subscribe(make_observer_dynamic<T>(
+            so->get_subscription(),
         // on_next
             [so](T t){
                 so->on_next(t);

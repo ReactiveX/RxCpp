@@ -40,6 +40,7 @@ struct test_source
     on_subscribe(Observer o) const {
         auto so = std::make_shared<Observer>(o);
         ts->on_subscribe(make_observer_dynamic<T>(
+            so->get_subscription(),
         // on_next
             [so](T t){
                 so->on_next(t);
