@@ -134,8 +134,8 @@ class dynamic_factory
 public:
     template<class Observable>
     auto operator()(Observable source)
-        ->      observable<typename Observable::value_type, dynamic_observable<typename Observable::value_type>> {
-        return  observable<typename Observable::value_type, dynamic_observable<typename Observable::value_type>>(source);
+        ->      observable<typename Observable::value_type> {
+        return  observable<typename Observable::value_type>(source);
     }
 };
 

@@ -46,7 +46,7 @@ template<typename T>
 struct notification_base
     : public std::enable_shared_from_this<notification_base<T>>
 {
-    typedef observer<T, dynamic_observer<T>> observer_type;
+    typedef observer<T> observer_type;
     typedef std::shared_ptr<notification_base<T>> type;
 
     virtual ~notification_base() {}

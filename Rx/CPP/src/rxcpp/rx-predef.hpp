@@ -10,6 +10,12 @@
 namespace rxcpp {
 
 template<class T>
+class dynamic_observer;
+
+template<class T, class I = dynamic_observer<T>>
+class observer;
+
+template<class T>
 struct dynamic_observable;
 
 template<

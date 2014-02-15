@@ -117,7 +117,7 @@ public:
     //
     // performs type-forgetting conversion
     //
-    observable<T, dynamic_observable<T>> as_dynamic() {
+    observable<T> as_dynamic() {
         return *this;
     }
 

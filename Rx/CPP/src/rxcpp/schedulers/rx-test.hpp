@@ -175,7 +175,7 @@ public:
     typename test::shared sc;
     std::vector<recorded_type> m;
 
-    virtual void on_subscribe(observer<T, dynamic_observer<T>>) const {
+    virtual void on_subscribe(observer<T>) const {
         abort();
     }
     virtual std::vector<rxn::subscription> subscriptions() const {
@@ -242,7 +242,7 @@ public:
     {
     }
 
-    virtual void on_subscribe(observer<T, dynamic_observer<T>> o) const {
+    virtual void on_subscribe(observer<T> o) const {
         sv.push_back(rxn::subscription(sc->clock()));
         auto index = sv.size() - 1;
 
@@ -283,7 +283,7 @@ class hot_observable
     typedef hot_observable<T> this_type;
     typename test::shared sc;
     typedef rxn::recorded<typename rxn::notification<T>::type> recorded_type;
-    typedef observer<T, dynamic_observer<T>> observer_type;
+    typedef observer<T> observer_type;
     mutable std::vector<recorded_type> mv;
     mutable std::vector<rxn::subscription> sv;
     mutable std::vector<observer_type> observers;

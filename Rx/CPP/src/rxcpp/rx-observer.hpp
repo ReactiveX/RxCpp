@@ -235,9 +235,8 @@ template<class T, class I>
 class observer : public observer_root<T>
 {
     typedef observer this_type;
-    typedef typename std::conditional<is_observer<I>::value, I, dynamic_observer<T>>::type
+    typedef typename std::conditional<is_observer<I>::value, I, dynamic_observer<T>>::type inner_t;
 
-    inner_t;
     inner_t inner;
 public:
     ~observer()
@@ -411,14 +410,14 @@ auto make_observer(composite_subscription cs, OnNext n, OnError e, OnCompleted c
 
 template<class T>
 auto make_observer_dynamic(typename dynamic_observer<T>::on_next_t n, typename dynamic_observer<T>::on_error_t e = nullptr, typename dynamic_observer<T>::on_completed_t c = nullptr)
-    ->      observer<T, dynamic_observer<T>> {
-    return  observer<T, dynamic_observer<T>>(dynamic_observer<T>(std::move(n), std::move(e), std::move(c)));
+    ->      observer<T> {
+    return  observer<T>(dynamic_observer<T>(std::move(n), std::move(e), std::move(c)));
 }
 
 template<class T>
 auto make_observer_dynamic(composite_subscription cs, typename dynamic_observer<T>::on_next_t n, typename dynamic_observer<T>::on_error_t e = nullptr, typename dynamic_observer<T>::on_completed_t c = nullptr)
-    ->      observer<T, dynamic_observer<T>> {
-    return  observer<T, dynamic_observer<T>>(dynamic_observer<T>(std::move(cs), std::move(n), std::move(e), std::move(c)));
+    ->      observer<T> {
+    return  observer<T>(dynamic_observer<T>(std::move(cs), std::move(n), std::move(e), std::move(c)));
 }
 
 }
