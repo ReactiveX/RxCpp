@@ -34,7 +34,7 @@ public:
 namespace rxs=sources;
 
 template<class T>
-struct dynamic_observable
+class dynamic_observable
     : public rxs::source_base<T>
 {
     struct state_type
@@ -46,17 +46,31 @@ struct dynamic_observable
     };
     std::shared_ptr<state_type> state;
 
+    template<class SO>
+    void construct(SO so, rxs::tag_source&&) {
+        state->on_subscribe = [so](observer<T> o) mutable {
+            so.on_subscribe(std::move(o));
+        };
+    }
+
+    struct tag_function {};
+    template<class F>
+    void construct(F&& f, tag_function&&) {
+        state->on_subscribe = std::forward<F>(f);
+    }
+
+public:
+
     dynamic_observable()
     {
     }
 
-    template<class Source>
-    explicit dynamic_observable(Source source)
+    template<class SOF>
+    explicit dynamic_observable(SOF&& sof)
         : state(std::make_shared<state_type>())
     {
-        state->on_subscribe = [source](observer<T> o) mutable {
-            source.on_subscribe(std::move(o));
-        };
+        construct(std::forward<SOF>(sof),
+            typename std::conditional<rxs::is_source<SOF>::value || rxo::is_operator<SOF>::value, rxs::tag_source, tag_function>::type());
     }
 
     void on_subscribe(observer<T> o) const {
@@ -83,6 +97,11 @@ struct dynamic_observable
             }));
     }
 };
+
+template<class T, class Source>
+observable<T> make_dynamic_observable(Source&& s) {
+    return observable<T>(dynamic_observable<T>(std::forward<Source>(s)));
+}
 
 }
 

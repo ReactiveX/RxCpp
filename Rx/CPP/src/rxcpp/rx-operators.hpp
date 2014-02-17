@@ -11,7 +11,6 @@ namespace rxcpp {
 
 namespace operators {
 
-
 struct tag_operator {};
 template<class T>
 struct operator_base
@@ -27,7 +26,7 @@ class is_operator
     template<class C>
     static void check(...);
 public:
-    static const bool value = std::is_convertible<decltype(check<T>(0)), tag_operator>::value;
+    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_operator>::value;
 };
 
 }

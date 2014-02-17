@@ -7,6 +7,7 @@ namespace rxu=rxcpp::util;
 namespace rxo=rxcpp::operators;
 namespace rxs=rxcpp::sources;
 namespace rxsc=rxcpp::schedulers;
+namespace rxsub=rxcpp::subjects;
 namespace rxn=rxcpp::notifications;
 
 #include "rxcpp/rx-test.hpp"
@@ -25,6 +26,53 @@ bool IsPrime(int x)
     }
     return true;
 }
+}
+
+SCENARIO("subject test", "[subject][subjects]"){
+    GIVEN("a subject"){
+        WHEN("multicasting a million ints"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
+
+            const int onnextcalls = 10000000;
+
+            for (int n = 0; n < 10; n++)
+            {
+                rxsub::subject<int> sub;
+
+                for (int i = 0; i < n; i++) {
+                    sub.get_observable().subscribe([](int){});
+                }
+
+                auto start = clock::now();
+                rxs::range<int>(0, onnextcalls).subscribe(sub.get_observer());
+                auto finish = clock::now();
+                auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
+                       duration_cast<milliseconds>(start.time_since_epoch());
+                std::cout << "range: " << n << " subscribed, " << onnextcalls << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+            }
+
+            for (int n = 0; n < 10; n++)
+            {
+                rxsub::subject<int> sub;
+
+                for (int i = 0; i < n; i++) {
+                    sub.get_observable().subscribe([](int){});
+                }
+
+                auto start = clock::now();
+                auto o = sub.get_observer();
+                for (int i = 0; i < onnextcalls; i++) {
+                    o.on_next(i);
+                }
+                o.on_completed();
+                auto finish = clock::now();
+                auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
+                       duration_cast<milliseconds>(start.time_since_epoch());
+                std::cout << "loop : " << n << " subscribed, " << onnextcalls << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+            }
+        }
+    }
 }
 
 SCENARIO("filter stops on completion", "[filter][operators]"){

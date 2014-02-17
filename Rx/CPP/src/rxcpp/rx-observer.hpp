@@ -27,8 +27,10 @@ private:
 
     mutable typename this_type::subscription_type s;
 
-    observer_base();
 public:
+    observer_base()
+    {
+    }
     observer_base(typename this_type::subscription_type s)
         : s(std::move(s))
     {
@@ -237,6 +239,21 @@ class observer : public observer_root<T>
     typedef observer this_type;
     typedef typename std::conditional<is_observer<I>::value, I, dynamic_observer<T>>::type inner_t;
 
+    struct detacher
+    {
+        ~detacher()
+        {
+            if (that) {
+                that->unsubscribe();
+            }
+        }
+        detacher(const observer<T,I>* that)
+            : that(that)
+        {
+        }
+        const observer<T,I>* that;
+    };
+
     inner_t inner;
 public:
     ~observer()
@@ -248,28 +265,24 @@ public:
     }
     void on_next(T t) const {
         if (is_subscribed()) {
-            RXCPP_UNWIND(unsubscriber, [this](){
-                this->unsubscribe();
-            });
+            detacher protect(this);
             inner.on_next(std::move(t));
-            unsubscriber.dismiss();
+            protect.that = nullptr;
         }
     }
     void on_error(std::exception_ptr e) const {
         if (is_subscribed()) {
-            RXCPP_UNWIND_AUTO([this](){
-                this->unsubscribe();
-            });
+            detacher protect(this);
             inner.on_error(e);
+            protect.that = nullptr;
         }
         unsubscribe();
     }
     void on_completed() const {
         if (is_subscribed()) {
-            RXCPP_UNWIND_AUTO([this](){
-                this->unsubscribe();
-            });
+            detacher protect(this);
             inner.on_completed();
+            protect.that = nullptr;
         }
         unsubscribe();
     }
