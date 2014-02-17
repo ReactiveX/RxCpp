@@ -24,6 +24,9 @@ template<
         void, dynamic_observable<T>>::type>
 class observable;
 
+template<class T, class Source>
+observable<T> make_dynamic_observable(Source&&);
+
 }
 
 #endif

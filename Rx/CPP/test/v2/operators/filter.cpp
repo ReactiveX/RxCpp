@@ -45,11 +45,15 @@ SCENARIO("subject test", "[subject][subjects]"){
                 }
 
                 auto start = clock::now();
-                rxs::range<int>(0, onnextcalls).subscribe(sub.get_observer());
+                auto o = sub.get_observer();
+                for (int i = 0; i < onnextcalls; i++) {
+                    o.on_next(i);
+                }
+                o.on_completed();
                 auto finish = clock::now();
                 auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
                        duration_cast<milliseconds>(start.time_since_epoch());
-                std::cout << "range: " << n << " subscribed, " << onnextcalls << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+                std::cout << "loop : " << n << " subscribed, " << onnextcalls << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
             }
 
             for (int n = 0; n < 10; n++)
@@ -61,16 +65,13 @@ SCENARIO("subject test", "[subject][subjects]"){
                 }
 
                 auto start = clock::now();
-                auto o = sub.get_observer();
-                for (int i = 0; i < onnextcalls; i++) {
-                    o.on_next(i);
-                }
-                o.on_completed();
+                rxs::range<int>(0, onnextcalls).subscribe(sub.get_observer());
                 auto finish = clock::now();
                 auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
                        duration_cast<milliseconds>(start.time_since_epoch());
-                std::cout << "loop : " << n << " subscribed, " << onnextcalls << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+                std::cout << "range: " << n << " subscribed, " << onnextcalls << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
             }
+
         }
     }
 }

@@ -39,6 +39,7 @@ class multicast_observer
 
     struct state_type
     {
+        virtual ~state_type(){}
         virtual void spin_until_unused() const =0;
         virtual void add(observer<T> observer, machine_type& m) const =0;
         virtual void on_next(T t, machine_type& m) const =0;
@@ -103,7 +104,7 @@ class multicast_observer
             }
         };
 
-        casting(list_type existing, observer<T> observer) 
+        casting(list_type existing, observer<T> observer)
             : observers(existing)
         {
             observers.push_back(observer);
