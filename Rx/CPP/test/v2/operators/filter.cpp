@@ -44,8 +44,9 @@ SCENARIO("subject test", "[subject][subjects]"){
                     sub.get_observable().subscribe([](int){});
                 }
 
-                auto start = clock::now();
                 auto o = sub.get_observer();
+
+                auto start = clock::now();
                 for (int i = 0; i < onnextcalls; i++) {
                     o.on_next(i);
                 }
@@ -64,8 +65,10 @@ SCENARIO("subject test", "[subject][subjects]"){
                     sub.get_observable().subscribe([](int){});
                 }
 
+                auto o = sub.get_observer();
+
                 auto start = clock::now();
-                rxs::range<int>(0, onnextcalls).subscribe(sub.get_observer());
+                rxs::range<int>(0, onnextcalls).subscribe(o);
                 auto finish = clock::now();
                 auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
                        duration_cast<milliseconds>(start.time_since_epoch());

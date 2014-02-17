@@ -40,7 +40,6 @@ class multicast_observer
     struct state_type
     {
         virtual ~state_type(){}
-        virtual void spin_until_unused() const =0;
         virtual void add(observer<T> observer, machine_type& m) const =0;
         virtual void on_next(T t, machine_type& m) const =0;
         virtual void on_error(std::exception_ptr e, machine_type& m) const =0;
@@ -54,8 +53,6 @@ class multicast_observer
         errored(std::exception_ptr e)
             : e(e)
         {
-        }
-        virtual void spin_until_unused() const {
         }
         virtual void add(observer<T> observer, machine_type&) const {
             observer.on_error(e);
@@ -71,8 +68,6 @@ class multicast_observer
     struct completed
         : public state_type
     {
-        virtual void spin_until_unused() const {
-        }
         virtual void add(observer<T> observer, machine_type&) const {
             observer.on_completed();
         }
@@ -89,99 +84,92 @@ class multicast_observer
     {
         mutable std::atomic<int> count;
         mutable list_type observers;
+        mutable std::unique_ptr<state_type> that;
+
 
         struct scoped_count
         {
-            std::atomic<int>& c;
+            const casting& c;
             ~scoped_count()
             {
-                --c;
+                if (--c.count == 0) {
+                    c.that.reset();
+                }
             }
-            scoped_count(std::atomic<int>& c)
-                : c(c)
+            scoped_count(const casting* c)
+                : c(*c)
             {
-                ++c;
+                ++this->c.count;
             }
         };
 
-        casting(list_type existing, observer<T> observer)
-            : observers(existing)
+        casting(list_type& existing, observer<T> o)
         {
-            observers.push_back(observer);
+            observers.reserve(existing.size() + 1);
+            std::copy_if(
+                existing.begin(), existing.end(),
+                std::inserter(observers, observers.end()),
+                [](observer<T>& o){
+                    return o.is_subscribed();
+                });
+            observers.push_back(o);
         }
 
-        virtual void spin_until_unused() const {
-            while(count != 0);
-        }
         virtual void add(observer<T> observer, machine_type& m) const {
-            std::unique_ptr<state_type> that;
-            {
-                scoped_count track(count);
-                std::unique_lock<std::recursive_mutex> guard(m.replace_lock);
-                std::unique_ptr<state_type> next(new casting(observers, observer));
-                state_type* compare = const_cast<casting*>(this);
-                if (!m.state.compare_exchange_strong(compare, next.get())) {
-                    compare->add(observer, m);
-                    return;
-                }
-                that.reset(compare);
-                next.release();
+            scoped_count track(this);
+            std::unique_lock<std::recursive_mutex> guard(m.replace_lock);
+            std::unique_ptr<state_type> next(new casting(observers, observer));
+            state_type* compare = const_cast<casting*>(this);
+            if (!m.state.compare_exchange_strong(compare, next.get())) {
+                compare->add(observer, m);
+                return;
             }
-            that->spin_until_unused();
+            that.reset(compare);
+            next.release();
         }
         virtual void on_next(T t, machine_type& m) const {
-            scoped_count track(count);
+            scoped_count track(this);
             for (auto& o : observers) {
                 o.on_next(std::move(t));
             }
         }
         virtual void on_error(std::exception_ptr e, machine_type& m) const {
-            std::unique_ptr<state_type> that;
-            {
-                scoped_count track(count);
-                std::unique_lock<std::recursive_mutex> guard(m.replace_lock);
-                std::unique_ptr<state_type> next(new errored(e));
-                state_type* compare = const_cast<casting*>(this);
-                if (!m.state.compare_exchange_strong(compare, next.get())) {
-                    compare->on_error(e, m);
-                    return;
-                }
-                that.reset(compare);
-                next.release();
-                guard.unlock();
-                for (auto& o : observers) {
-                    o.on_error(std::move(e));
-                }
+            scoped_count track(this);
+            std::unique_lock<std::recursive_mutex> guard(m.replace_lock);
+            std::unique_ptr<state_type> next(new errored(e));
+            state_type* compare = const_cast<casting*>(this);
+            if (!m.state.compare_exchange_strong(compare, next.get())) {
+                compare->on_error(e, m);
+                return;
             }
-            that->spin_until_unused();
+            that.reset(compare);
+            next.release();
+            guard.unlock();
+            for (auto& o : observers) {
+                o.on_error(std::move(e));
+            }
         }
         virtual void on_completed(machine_type& m) const {
-            std::unique_ptr<state_type> that;
-            {
-                scoped_count track(count);
-                std::unique_lock<std::recursive_mutex> guard(m.replace_lock);
-                std::unique_ptr<state_type> next(new completed());
-                state_type* compare = const_cast<casting*>(this);
-                if (!m.state.compare_exchange_strong(compare, next.get())) {
-                    compare->on_completed(m);
-                    return;
-                }
-                that.reset(compare);
-                next.release();
-                guard.unlock();
-                for (auto& o : observers) {
-                    o.on_completed();
-                }
+            scoped_count track(this);
+            std::unique_lock<std::recursive_mutex> guard(m.replace_lock);
+            std::unique_ptr<state_type> next(new completed());
+            state_type* compare = const_cast<casting*>(this);
+            if (!m.state.compare_exchange_strong(compare, next.get())) {
+                compare->on_completed(m);
+                return;
             }
-            that->spin_until_unused();
+            that.reset(compare);
+            next.release();
+            guard.unlock();
+            for (auto& o : observers) {
+                o.on_completed();
+            }
         }
     };
 
     struct empty
         : public state_type
     {
-        virtual void spin_until_unused() const {
-        }
         virtual void add(observer<T> observer, machine_type& m) const {
             list_type none;
             std::unique_ptr<state_type> that;
