@@ -41,7 +41,7 @@ class multicast_observer
         {
         }
         std::atomic<int> completers;
-        std::recursive_mutex lock;
+        std::mutex lock;
         typename mode::type current;
         std::exception_ptr error;
     };
@@ -51,13 +51,14 @@ class multicast_observer
     {
         ~completer_type()
         {
-            std::unique_lock<std::recursive_mutex> guard(state->lock);
             if (--state->completers == 0) {
+                std::unique_lock<std::mutex> guard(state->lock);
                 switch(state->current) {
                 case mode::Casting:
                     break;
                 case mode::Errored:
                     {
+                        guard.unlock();
                         for (auto& o : observers) {
                             o.on_error(state->error);
                         }
@@ -65,6 +66,7 @@ class multicast_observer
                     break;
                 case mode::Completed:
                     {
+                        guard.unlock();
                         for (auto& o : observers) {
                             o.on_completed();
                         }
@@ -124,7 +126,7 @@ public:
     {
     }
     void add(observer<T> o) const {
-        std::unique_lock<std::recursive_mutex> guard(b->state->lock);
+        std::unique_lock<std::mutex> guard(b->state->lock);
         switch (b->state->current) {
         case mode::Casting:
             {
@@ -135,12 +137,17 @@ public:
             break;
         case mode::Completed:
             {
+                guard.unlock();
                 o.on_completed();
+                return;
             }
             break;
         case mode::Errored:
             {
-                o.on_error(b->state->error);
+                auto e = b->state->error;
+                guard.unlock();
+                o.on_error(e);
+                return;
             }
             break;
         default:
@@ -150,7 +157,7 @@ public:
     void on_next(T t) const {
         std::shared_ptr<completer_type> c;
         {
-            std::unique_lock<std::recursive_mutex> guard(b->state->lock);
+            std::unique_lock<std::mutex> guard(b->state->lock);
             if (!b->completer) {
                 return;
             }
@@ -161,18 +168,22 @@ public:
         }
     }
     void on_error(std::exception_ptr e) const {
-        std::unique_lock<std::recursive_mutex> guard(b->state->lock);
+        std::unique_lock<std::mutex> guard(b->state->lock);
         if (b->state->current == mode::Casting) {
             b->state->error = e;
             b->state->current = mode::Errored;
-            b->completer.reset();
+            auto c = std::move(b->completer);
+            guard.unlock();
+            // destruct completer outside the lock
         }
     }
     void on_completed() const {
-        std::unique_lock<std::recursive_mutex> guard(b->state->lock);
+        std::unique_lock<std::mutex> guard(b->state->lock);
         if (b->state->current == mode::Casting) {
             b->state->current = mode::Completed;
-            b->completer.reset();
+            auto c = std::move(b->completer);
+            guard.unlock();
+            // destruct completer outside the lock
         }
     }
 };

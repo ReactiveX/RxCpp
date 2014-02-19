@@ -215,14 +215,12 @@ public:
         return subscribe(               make_observer<T>(std::move(cs), std::move(n), std::move(e), std::move(c)));
     }
 
-#if RXCPP_USE_OBSERVABLE_MEMBERS
     template<class Predicate>
     auto filter(Predicate p) const
         ->      observable<T,   rxo::detail::filter<T, observable, Predicate>> {
         return  observable<T,   rxo::detail::filter<T, observable, Predicate>>(
                                 rxo::detail::filter<T, observable, Predicate>(*this, std::move(p)));
     }
-#endif
 };
 
 // observable<> has static methods to construct observable sources and adaptors.
