@@ -35,7 +35,7 @@ SCENARIO("subject test", "[subject][subjects]"){
             using namespace std::chrono;
             typedef steady_clock clock;
 
-            const int onnextcalls = 100000000;
+            const int onnextcalls = 10000000;
 
             {
                 int c = 0;
@@ -83,9 +83,13 @@ SCENARIO("subject test", "[subject][subjects]"){
                 auto c = std::make_shared<int>(0);
                 rxsub::subject<int> sub;
 
+#if RXCPP_SUBJECT_TEST_ASYNC
+                std::vector<std::future<int>> f(n);
+#endif
+
                 for (int i = 0; i < n; i++) {
 #if RXCPP_SUBJECT_TEST_ASYNC
-                    std::async([sub, c]() {
+                    f[i] = std::async([sub, c]() {
                         auto source = sub.get_observable();
                         auto subscription = sub.get_observer();
                         while(subscription.is_subscribed()) {
@@ -97,6 +101,7 @@ SCENARIO("subject test", "[subject][subjects]"){
                                 cs.unsubscribe();
                             });
                         }
+                        return 0;
                     });
 #else
                     sub.get_observable().subscribe([c](int){++(*c);});
@@ -121,9 +126,13 @@ SCENARIO("subject test", "[subject][subjects]"){
                 auto c = std::make_shared<int>(0);
                 rxsub::subject<int> sub;
 
+#if RXCPP_SUBJECT_TEST_ASYNC
+                std::vector<std::future<int>> f(n);
+#endif
+
                 for (int i = 0; i < n; i++) {
 #if RXCPP_SUBJECT_TEST_ASYNC
-                    std::async([sub, c]() {
+                    f[i] = std::async([sub, c]() {
                         while(sub.get_observer().is_subscribed()) {
                             std::this_thread::sleep_for(std::chrono::milliseconds(50));
                             rx::composite_subscription cs;
@@ -132,6 +141,7 @@ SCENARIO("subject test", "[subject][subjects]"){
                                 cs.unsubscribe();
                             });
                         }
+                        return 0;
                     });
 #else
                     sub.get_observable().subscribe([c](int){++(*c);});
