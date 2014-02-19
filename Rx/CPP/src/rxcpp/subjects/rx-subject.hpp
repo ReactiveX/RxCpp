@@ -13,212 +13,170 @@ namespace subjects {
 
 namespace detail {
 
-
 template<class T>
 class multicast_observer
     : public observer_base<T>
 {
     typedef observer_base<T> base;
-    typedef std::vector<observer<T>> list_type;
+    typedef observer<T> observer_type;
+    typedef std::vector<observer_type> list_type;
 
-    struct state_type;
-
-    struct machine_type
+    struct mode
     {
-        ~machine_type()
-        {
-            delete state.exchange(nullptr);
-        }
-        machine_type(std::unique_ptr<state_type> state)
-            : state(state.release())
-        {
-        }
-        mutable std::recursive_mutex replace_lock;
-        mutable std::atomic<state_type*> state;
+        enum type {
+            Invalid = 0,
+            Casting,
+            Completed,
+            Errored
+        };
     };
+
+    struct completer_type;
 
     struct state_type
+        : public std::enable_shared_from_this<state_type>
     {
-        virtual ~state_type(){}
-        virtual void add(observer<T> observer, machine_type& m) const =0;
-        virtual void on_next(T t, machine_type& m) const =0;
-        virtual void on_error(std::exception_ptr e, machine_type& m) const =0;
-        virtual void on_completed(machine_type& m) const =0;
-    };
-
-    struct errored
-        : public state_type
-    {
-        std::exception_ptr e;
-        errored(std::exception_ptr e)
-            : e(e)
+        state_type()
+            : current(mode::Casting)
         {
         }
-        virtual void add(observer<T> observer, machine_type&) const {
-            observer.on_error(e);
-        }
-        virtual void on_next(T, machine_type&) const {
-        }
-        virtual void on_error(std::exception_ptr, machine_type&) const {
-        }
-        virtual void on_completed(machine_type&) const {
-        }
+        std::atomic<int> completers;
+        std::recursive_mutex lock;
+        typename mode::type current;
+        std::exception_ptr error;
     };
 
-    struct completed
-        : public state_type
+    struct completer_type
+        : public std::enable_shared_from_this<completer_type>
     {
-        virtual void add(observer<T> observer, machine_type&) const {
-            observer.on_completed();
-        }
-        virtual void on_next(T, machine_type&) const {
-        }
-        virtual void on_error(std::exception_ptr, machine_type&) const {
-        }
-        virtual void on_completed(machine_type&) const {
-        }
-    };
-
-    struct casting
-        : public state_type
-    {
-        mutable std::atomic<int> count;
-        mutable list_type observers;
-        mutable std::unique_ptr<state_type> that;
-
-
-        struct scoped_count
+        ~completer_type()
         {
-            const casting& c;
-            ~scoped_count()
-            {
-                if (--c.count == 0) {
-                    c.that.reset();
+            std::unique_lock<std::recursive_mutex> guard(state->lock);
+            if (--state->completers == 0) {
+                switch(state->current) {
+                case mode::Casting:
+                    break;
+                case mode::Errored:
+                    {
+                        for (auto& o : observers) {
+                            o.on_error(state->error);
+                        }
+                    }
+                    break;
+                case mode::Completed:
+                    {
+                        for (auto& o : observers) {
+                            o.on_completed();
+                        }
+                    }
+                    break;
+                default:
+                    abort();
                 }
             }
-            scoped_count(const casting* c)
-                : c(*c)
-            {
-                ++this->c.count;
-            }
-        };
-
-        casting(list_type& existing, observer<T> o)
+        }
+        completer_type(std::shared_ptr<state_type> s, const std::shared_ptr<const completer_type>& old, observer_type o)
+            : state(s)
         {
-            observers.reserve(existing.size() + 1);
-            std::copy_if(
-                existing.begin(), existing.end(),
-                std::inserter(observers, observers.end()),
-                [](observer<T>& o){
-                    return o.is_subscribed();
-                });
+            ++state->completers;
+            if (old) {
+                observers.reserve(old->observers.size() + 1);
+                std::copy_if(
+                    old->observers.begin(), old->observers.end(),
+                    std::inserter(observers, observers.end()),
+                    [](const observer<T>& o){
+                        return o.is_subscribed();
+                    });
+            }
             observers.push_back(o);
         }
-
-        virtual void add(observer<T> observer, machine_type& m) const {
-            scoped_count track(this);
-            std::unique_lock<std::recursive_mutex> guard(m.replace_lock);
-            std::unique_ptr<state_type> next(new casting(observers, observer));
-            state_type* compare = const_cast<casting*>(this);
-            if (!m.state.compare_exchange_strong(compare, next.get())) {
-                compare->add(observer, m);
-                return;
-            }
-            that.reset(compare);
-            next.release();
-        }
-        virtual void on_next(T t, machine_type& m) const {
-            scoped_count track(this);
-            for (auto& o : observers) {
-                o.on_next(std::move(t));
-            }
-        }
-        virtual void on_error(std::exception_ptr e, machine_type& m) const {
-            scoped_count track(this);
-            std::unique_lock<std::recursive_mutex> guard(m.replace_lock);
-            std::unique_ptr<state_type> next(new errored(e));
-            state_type* compare = const_cast<casting*>(this);
-            if (!m.state.compare_exchange_strong(compare, next.get())) {
-                compare->on_error(e, m);
-                return;
-            }
-            that.reset(compare);
-            next.release();
-            guard.unlock();
-            for (auto& o : observers) {
-                o.on_error(std::move(e));
-            }
-        }
-        virtual void on_completed(machine_type& m) const {
-            scoped_count track(this);
-            std::unique_lock<std::recursive_mutex> guard(m.replace_lock);
-            std::unique_ptr<state_type> next(new completed());
-            state_type* compare = const_cast<casting*>(this);
-            if (!m.state.compare_exchange_strong(compare, next.get())) {
-                compare->on_completed(m);
-                return;
-            }
-            that.reset(compare);
-            next.release();
-            guard.unlock();
-            for (auto& o : observers) {
-                o.on_completed();
-            }
-        }
+        std::shared_ptr<state_type> state;
+        list_type observers;
     };
 
-    struct empty
-        : public state_type
+    // this type exists to prevent a circular ref between state and completer
+    struct binder_type
+        : public std::enable_shared_from_this<binder_type>
     {
-        virtual void add(observer<T> observer, machine_type& m) const {
-            list_type none;
-            std::unique_ptr<state_type> that;
-            {
-                std::unique_lock<std::recursive_mutex> guard(m.replace_lock);
-                std::unique_ptr<state_type> next(new casting(none, observer));
-                state_type* compare = const_cast<empty*>(this);
-                if (!m.state.compare_exchange_strong(compare, next.get())) {
-                    compare->add(observer, m);
-                    return;
-                }
-                that.reset(compare);
-                next.release();
-            }
+        binder_type()
+            : state(std::make_shared<state_type>())
+        {
         }
-        virtual void on_next(T, machine_type&) const {
-        }
-        virtual void on_error(std::exception_ptr, machine_type&) const {
-        }
-        virtual void on_completed(machine_type&) const {
-        }
+
+        std::shared_ptr<state_type> state;
+
+        // must only be accessed under state->lock
+        mutable std::shared_ptr<const completer_type> completer;
     };
 
-    typedef std::shared_ptr<machine_type> shared;
-    shared machine;
+    std::shared_ptr<binder_type> b;
+
+
 
 public:
     multicast_observer()
-        : machine(std::make_shared<machine_type>(std::unique_ptr<state_type>(new empty())))
+        : b(std::make_shared<binder_type>())
     {
     }
     multicast_observer(composite_subscription cs)
         : observer_base<T>(std::move(cs))
-        , machine(std::make_shared<machine_type>(std::unique_ptr<state_type>(new empty())))
+        , b(std::make_shared<binder_type>())
     {
     }
-    void add(observer<T> observer) const {
-        machine->state.load()->add(observer, *machine);
+    void add(observer<T> o) const {
+        std::unique_lock<std::recursive_mutex> guard(b->state->lock);
+        switch (b->state->current) {
+        case mode::Casting:
+            {
+                if (o.is_subscribed()) {
+                    b->completer = std::make_shared<const completer_type>(b->state, b->completer, o);
+                }
+            }
+            break;
+        case mode::Completed:
+            {
+                o.on_completed();
+            }
+            break;
+        case mode::Errored:
+            {
+                o.on_error(b->state->error);
+            }
+            break;
+        default:
+            abort();
+        }
     }
     void on_next(T t) const {
-        machine->state.load()->on_next(std::move(t), *machine);
+        std::shared_ptr<const completer_type> c;
+        {
+            std::unique_lock<std::recursive_mutex> guard(b->state->lock);
+            if (!b->completer) {
+                return;
+            }
+            c = b->completer;
+        }
+        for (auto& o : c->observers) {
+            o.on_next(std::move(t));
+        }
     }
     void on_error(std::exception_ptr e) const {
-        machine->state.load()->on_error(std::move(e), *machine);
+        std::unique_lock<std::recursive_mutex> guard(b->state->lock);
+        if (b->state->current == mode::Casting) {
+            b->state->error = e;
+            b->state->current = mode::Errored;
+            b->completer.reset();
+        }
     }
     void on_completed() const {
-        machine->state.load()->on_completed(*machine);
+        std::unique_lock<std::recursive_mutex> guard(b->state->lock);
+        if (b->state->current == mode::Casting) {
+            b->state->current = mode::Completed;
+            b->completer.reset();
+        }
     }
 };
+
 
 }
 
