@@ -80,7 +80,7 @@ SCENARIO("subject test", "[subject][subjects]"){
 
             for (int n = 0; n < 10; n++)
             {
-                auto c = std::make_shared<int>();
+                auto c = std::make_shared<int>(0);
                 rxsub::subject<int> sub;
 
                 for (int i = 0; i < n; i++) {
@@ -118,7 +118,7 @@ SCENARIO("subject test", "[subject][subjects]"){
 
             for (int n = 0; n < 10; n++)
             {
-                auto c = std::make_shared<int>();
+                auto c = std::make_shared<int>(0);
                 rxsub::subject<int> sub;
 
                 for (int i = 0; i < n; i++) {

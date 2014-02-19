@@ -75,7 +75,7 @@ class multicast_observer
                 }
             }
         }
-        completer_type(std::shared_ptr<state_type> s, const std::shared_ptr<const completer_type>& old, observer_type o)
+        completer_type(std::shared_ptr<state_type> s, const std::shared_ptr<completer_type>& old, observer_type o)
             : state(s)
         {
             ++state->completers;
@@ -106,7 +106,7 @@ class multicast_observer
         std::shared_ptr<state_type> state;
 
         // must only be accessed under state->lock
-        mutable std::shared_ptr<const completer_type> completer;
+        mutable std::shared_ptr<completer_type> completer;
     };
 
     std::shared_ptr<binder_type> b;
@@ -129,7 +129,7 @@ public:
         case mode::Casting:
             {
                 if (o.is_subscribed()) {
-                    b->completer = std::make_shared<const completer_type>(b->state, b->completer, o);
+                    b->completer = std::make_shared<completer_type>(b->state, b->completer, o);
                 }
             }
             break;
@@ -148,7 +148,7 @@ public:
         }
     }
     void on_next(T t) const {
-        std::shared_ptr<const completer_type> c;
+        std::shared_ptr<completer_type> c;
         {
             std::unique_lock<std::recursive_mutex> guard(b->state->lock);
             if (!b->completer) {
