@@ -22,6 +22,7 @@ include_directories(${RXCPP_DIR}/ext/catch/include ${RXCPP_DIR}/Ix/CPP/src ${RXC
 # define the sources of the self test
 set(TEST_SOURCES
     ${TEST_DIR}/test.cpp
+    ${TEST_DIR}/operators/Merge.cpp
     ${TEST_DIR}/operators/Return.cpp
     ${TEST_DIR}/operators/Select.cpp
     ${TEST_DIR}/operators/SelectMany.cpp
