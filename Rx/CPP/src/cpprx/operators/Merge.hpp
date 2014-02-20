@@ -62,7 +62,9 @@ namespace rxcpp
     {
         typedef MergeSource result_type;
         typedef decltype(std::make_tuple(firstSource, otherSource...)) Sources;
-        struct State {
+        struct State 
+            : std::enable_shared_from_this<State> 
+        {
             typedef Sources Sources;
             typedef result_type result_type;
             typedef std::tuple_size<Sources> SourcesSize;
@@ -72,11 +74,11 @@ namespace rxcpp
             std::atomic<size_t> pendingComplete;
         };
         Sources sources(firstSource, otherSource...);
-        // bug on osx prevents using make_shared
-        std::shared_ptr<State> state(new State());
         return CreateObservable<result_type>(
             [=](std::shared_ptr<Observer<result_type>> observer) -> Disposable
             {
+	        // bug on osx prevents using make_shared
+	        std::shared_ptr<State> state(new State());
                 ComposableDisposable cd;
                 detail::MergeSubscriber<0, State::SourcesSize::value, State>::subscribe(cd, observer, state, sources);
                 return cd;
@@ -91,7 +93,9 @@ namespace rxcpp
     {
         typedef MergeSource result_type;
         typedef decltype(std::make_tuple(firstSource, otherSource)) Sources;
-        struct State {
+        struct State
+            : std::enable_shared_from_this<State> 
+        {
             typedef Sources Sources;
             typedef result_type result_type;
             typedef std::tuple_size<Sources> SourcesSize;
@@ -101,11 +105,11 @@ namespace rxcpp
             std::atomic<size_t> pendingComplete;
         };
         Sources sources(firstSource, otherSource);
-        // bug on osx prevents using make_shared
-        std::shared_ptr<State> state(new State());
         return CreateObservable<result_type>(
             [=](std::shared_ptr<Observer<result_type>> observer) -> Disposable
             {
+	        // bug on osx prevents using make_shared
+	        std::shared_ptr<State> state(new State());
                 ComposableDisposable cd;
                 detail::MergeSubscriber<0, State::SourcesSize::value, State>::subscribe(cd, observer, state, sources);
                 return cd;
