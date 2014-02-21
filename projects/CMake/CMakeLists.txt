@@ -37,6 +37,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/v2/subscriptions/observer.cpp
     ${TEST_DIR}/v2/subscriptions/subscription.cpp
     ${TEST_DIR}/v2/operators/filter.cpp
+    ${TEST_DIR}/v2/subjects/subject.cpp
 )
 add_executable(rxcppv2_test ${TEST_SOURCES})
 

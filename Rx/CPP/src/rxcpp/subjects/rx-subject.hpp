@@ -40,6 +40,7 @@ class multicast_observer
             : current(mode::Casting)
         {
         }
+        std::atomic<bool> has_observers;
         std::atomic<int> completers;
         std::mutex lock;
         typename mode::type current;
@@ -75,11 +76,13 @@ class multicast_observer
                 default:
                     abort();
                 }
+                state->has_observers.exchange(false);
             }
         }
         completer_type(std::shared_ptr<state_type> s, const std::shared_ptr<completer_type>& old, observer_type o)
             : state(s)
         {
+            state->has_observers.exchange(true);
             ++state->completers;
             if (old) {
                 observers.reserve(old->observers.size() + 1);
@@ -125,6 +128,11 @@ public:
         , b(std::make_shared<binder_type>())
     {
     }
+
+    bool has_observers() const {
+        return b->state->has_observers;
+    }
+
     void add(observer<T> o) const {
         std::unique_lock<std::mutex> guard(b->state->lock);
         switch (b->state->current) {
@@ -155,16 +163,18 @@ public:
         }
     }
     void on_next(T t) const {
-        std::shared_ptr<completer_type> c;
-        {
-            std::unique_lock<std::mutex> guard(b->state->lock);
-            if (!b->completer) {
-                return;
+        if (has_observers()) {
+            std::shared_ptr<completer_type> c;
+            {
+                std::unique_lock<std::mutex> guard(b->state->lock);
+                if (!b->completer) {
+                    return;
+                }
+                c = b->completer;
             }
-            c = b->completer;
-        }
-        for (auto& o : c->observers) {
-            o.on_next(std::move(t));
+            for (auto& o : c->observers) {
+                o.on_next(std::move(t));
+            }
         }
     }
     void on_error(std::exception_ptr e) const {
@@ -203,6 +213,10 @@ public:
     subject(composite_subscription cs)
         : s(std::move(cs))
     {
+    }
+
+    bool has_observers() const {
+        return s.has_observers();
     }
 
     observer<T, detail::multicast_observer<T>> get_observer() const {
