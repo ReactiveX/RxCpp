@@ -316,7 +316,7 @@ SCENARIO("where stops on error", "[where][filter][operators]"){
 
         long invoked = 0;
 
-        std::exception ex;
+        std::exception ex("filter on_error from source");
 
         auto xs = sc->make_hot_observable(
             [ex]() {
@@ -401,7 +401,7 @@ SCENARIO("where stops on throw from predicate", "[where][filter][operators]"){
 
         long invoked = 0;
 
-        std::exception ex;
+        std::exception ex("filter predicate error");
 
         auto xs = sc->make_hot_observable(
             []() {
