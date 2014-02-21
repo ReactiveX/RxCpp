@@ -253,6 +253,13 @@ public:
                                 rxo::detail::filter<T, observable, Predicate>(*this, std::move(p)));
     }
 
+    template<class Selector>
+    auto map(Selector s) const
+        ->      observable<typename rxo::detail::map<observable, Selector>::value_type, rxo::detail::map<observable, Selector>> {
+        return  observable<typename rxo::detail::map<observable, Selector>::value_type, rxo::detail::map<observable, Selector>>(
+                                                                                        rxo::detail::map<observable, Selector>(*this, std::move(s)));
+    }
+
     template<class OperatorFactory>
     auto op(OperatorFactory&& of) const
         -> decltype(of(*(this_type*)nullptr)) {

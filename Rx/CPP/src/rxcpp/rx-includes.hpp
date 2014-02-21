@@ -42,6 +42,7 @@
 #endif
 
 #if _MSC_VER >= 1800
+#pragma warning(disable: 4348) // false positives on : redefinition of default parameter : parameter 2
 #define RXCPP_USE_VARIADIC_TEMPLATES 1
 #endif
 

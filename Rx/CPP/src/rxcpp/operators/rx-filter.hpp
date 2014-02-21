@@ -40,7 +40,6 @@ struct filter : public operator_base<T>
                    filtered = !this->test(t);
                 } catch(...) {
                     o.on_error(std::current_exception());
-                    o.unsubscribe();
                 }
                 if (!filtered) {
                     o.on_next(std::move(t));

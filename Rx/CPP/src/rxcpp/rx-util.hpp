@@ -39,6 +39,132 @@ std::vector<T> to_vector(const T (&arr) [size]) {
 
 namespace detail {
 
+template <class T>
+class maybe
+{
+    bool is_set;
+    typename std::aligned_storage<sizeof(T), std::alignment_of<T>::value>::type
+        storage;
+public:
+    maybe()
+    : is_set(false)
+    {
+    }
+
+    maybe(T value)
+    : is_set(false)
+    {
+        new (reinterpret_cast<T*>(&storage)) T(value);
+        is_set = true;
+    }
+
+    maybe(const maybe& other)
+    : is_set(false)
+    {
+        if (other.is_set) {
+            new (reinterpret_cast<T*>(&storage)) T(*other.get());
+            is_set = true;
+        }
+    }
+    maybe(maybe&& other)
+    : is_set(false)
+    {
+        if (other.is_set) {
+            new (reinterpret_cast<T*>(&storage)) T(std::move(*other.get()));
+            is_set = true;
+            other.reset();
+        }
+    }
+
+    ~maybe()
+    {
+        reset();
+    }
+
+    typedef T value_type;
+    typedef T* iterator;
+    typedef const T* const_iterator;
+
+    bool empty() const {
+        return !is_set;
+    }
+
+    size_t size() const {
+        return is_set ? 1 : 0;
+    }
+
+    iterator begin() {
+        return reinterpret_cast<T*>(&storage);
+    }
+    const_iterator begin() const {
+        return reinterpret_cast<T*>(&storage);
+    }
+
+    iterator end() {
+        return reinterpret_cast<T*>(&storage) + size();
+    }
+    const_iterator end() const {
+        return reinterpret_cast<T*>(&storage) + size();
+    }
+
+    T* operator->() {
+        if (!is_set) abort();
+        return reinterpret_cast<T*>(&storage);
+    }
+    const T* operator->() const {
+        if (!is_set) abort();
+        return reinterpret_cast<T*>(&storage);
+    }
+
+    T& operator*() {
+        if (!is_set) abort();
+        return *reinterpret_cast<T*>(&storage);
+    }
+    const T& operator*() const {
+        if (!is_set) abort();
+        return *reinterpret_cast<T*>(&storage);
+    }
+
+    T& value() {
+        if (!is_set) abort();
+        return *reinterpret_cast<T*>(&storage);
+    }
+    const T& value() const {
+        if (!is_set) abort();
+        return *reinterpret_cast<T*>(&storage);
+    }
+
+    void reset()
+    {
+        if (is_set) {
+            is_set = false;
+            reinterpret_cast<T*>(&storage)->~T();
+        }
+    }
+
+    void reset(T value) {
+        if (is_set) {
+            *reinterpret_cast<T*>(&storage) = std::move(value);
+        } else {
+            new (reinterpret_cast<T*>(&storage)) T(std::move(value));
+            is_set = true;
+        }
+    }
+
+    maybe& operator=(const T& other) {
+        set(other);
+        return *this;
+    }
+    maybe& operator=(const maybe& other) {
+        if (const T* pother = other.get()) {
+            set(*pother);
+        } else {
+            reset();
+        }
+        return *this;
+    }
+};
+
 template<typename Function>
 class unwinder
 {
