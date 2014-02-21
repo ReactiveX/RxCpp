@@ -259,7 +259,7 @@ SCENARIO("subject - finite source", "[subject][subjects]"){
             m::on_completed(630),
             m::on_next(640, 9),
             m::on_completed(650),
-            m::on_error(660, std::exception("error on unsubscribed stream"))
+            m::on_error(660, std::runtime_error("error on unsubscribed stream"))
         };
         auto xs = sc->make_hot_observable(messages);
 
@@ -341,7 +341,7 @@ SCENARIO("subject - on_error in source", "[subject][subjects]"){
         auto sc = std::make_shared<rxsc::test>();
         typedef rxsc::test::messages<int> m;
 
-        std::exception ex("subject on_error in stream");
+        std::runtime_error ex("subject on_error in stream");
 
         m::recorded_type messages[] = {
             m::on_next(70, 1),
@@ -354,7 +354,7 @@ SCENARIO("subject - on_error in source", "[subject][subjects]"){
             m::on_error(630, ex),
             m::on_next(640, 9),
             m::on_completed(650),
-            m::on_error(660, std::exception("error on unsubscribed stream"))
+            m::on_error(660, std::runtime_error("error on unsubscribed stream"))
         };
         auto xs = sc->make_hot_observable(messages);
 

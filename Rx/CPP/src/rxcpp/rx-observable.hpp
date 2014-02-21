@@ -39,6 +39,14 @@ class dynamic_observable
     };
     std::shared_ptr<state_type> state;
 
+    void construct(const dynamic_observable<T>& o, rxs::tag_source&&) {
+        state = o.state;
+    }
+
+    void construct(dynamic_observable<T>&& o, rxs::tag_source&&) {
+        state = std::move(o.state);
+    }
+
     template<class SO>
     void construct(SO so, rxs::tag_source&&) {
         state->on_subscribe = [so](observer<T> o) mutable {
@@ -197,13 +205,6 @@ public:
     // implicit conversion between observables of the same value_type
     template<class SO>
     observable(observable<T, SO>&& o)
-        : source_operator(std::move(o.source_operator))
-    {}
-
-    observable(const observable<T, SourceOperator>& o)
-        : source_operator(o.source_operator)
-    {}
-    observable(observable<T, SourceOperator>&& o)
         : source_operator(std::move(o.source_operator))
     {}
 

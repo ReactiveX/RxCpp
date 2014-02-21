@@ -205,7 +205,7 @@ private:
         }
         template<class Arg1, class Arg2>
         Arg2 operator()(const Arg1&, Arg2 a2) {
-            static_assert(detail::is_on_next_of<T, Arg2>::value || std::is_same<Arg2, nullptr_t>::value,
+            static_assert(detail::is_on_next_of<T, Arg2>::value || std::is_same<Arg2, std::nullptr_t>::value,
                 "Function supplied for on_next must be a function with the signature void(T);");
             return std::move(a2);
         }
@@ -215,13 +215,13 @@ private:
     {
         template<class Arg1>
         Arg1 operator()(Arg1 a1) {
-            static_assert(detail::is_on_next_of<T, Arg1>::value || std::is_same<Arg1, nullptr_t>::value,
+            static_assert(detail::is_on_next_of<T, Arg1>::value || std::is_same<Arg1, std::nullptr_t>::value,
                 "Function supplied for on_next must be a function with the signature void(T);");
             return std::move(a1);
         }
         template<class Arg1, class Arg2>
         Arg operator()(Arg1 a1, const Arg2&) {
-            static_assert(detail::is_on_next_of<T, Arg1>::value || std::is_same<Arg1, nullptr_t>::value,
+            static_assert(detail::is_on_next_of<T, Arg1>::value || std::is_same<Arg1, std::nullptr_t>::value,
                 "Function supplied for on_next must be a function with the signature void(T);");
             return std::move(a1);
         }
@@ -250,7 +250,7 @@ private:
         }
         template<class Arg1, class Arg2>
         Arg2 operator()(const Arg1&, Arg2 a2) {
-            static_assert(detail::is_on_error<Arg2>::value || std::is_same<Arg2, nullptr_t>::value,
+            static_assert(detail::is_on_error<Arg2>::value || std::is_same<Arg2, std::nullptr_t>::value,
                 "Function supplied for on_error must be a function with the signature void(std::exception_ptr);");
             return std::move(a2);
         }
@@ -264,13 +264,13 @@ private:
         }
         template<class Arg1, class Arg2>
         Arg1 operator()(Arg1 a1, const Arg2&) {
-            static_assert(detail::is_on_error<Arg1>::value || std::is_same<Arg1, nullptr_t>::value,
+            static_assert(detail::is_on_error<Arg1>::value || std::is_same<Arg1, std::nullptr_t>::value,
                 "Function supplied for on_error must be a function with the signature void(std::exception_ptr);");
             return std::move(a1);
         }
     };
 
-    template<class Arg, class Tag = resolve_tag<Arg>::type>
+    template<class Arg, class Tag = typename resolve_tag<Arg>::type>
     struct resolve_oncompleted;
     template<class Arg>
     struct resolve_oncompleted<Arg, tag_this_type>
@@ -293,7 +293,7 @@ private:
         }
         template<class Arg1, class Arg2>
         Arg2 operator()(const Arg1&, Arg2 a2) {
-            static_assert(detail::is_on_completed<Arg2>::value || std::is_same<Arg2, nullptr_t>::value,
+            static_assert(detail::is_on_completed<Arg2>::value || std::is_same<Arg2, std::nullptr_t>::value,
                 "Function supplied for on_completed must be a function with the signature void();");
             return std::move(a2);
         }
@@ -307,7 +307,7 @@ private:
         }
         template<class Arg1, class Arg2>
         Arg1 operator()(Arg1 a1, const Arg2&) {
-            static_assert(detail::is_on_completed<Arg1>::value || std::is_same<Arg1, nullptr_t>::value,
+            static_assert(detail::is_on_completed<Arg1>::value || std::is_same<Arg1, std::nullptr_t>::value,
                 "Function supplied for on_completed must be a function with the signature void();");
             return std::move(a1);
         }
@@ -352,11 +352,11 @@ public:
         , onerror(std::move(e))
         , oncompleted(std::move(c))
     {
-        static_assert(detail::is_on_next_of<T, OnNext>::value || std::is_same<OnNext, nullptr_t>::value,
+        static_assert(detail::is_on_next_of<T, OnNext>::value || std::is_same<OnNext, std::nullptr_t>::value,
                 "Function supplied for on_next must be a function with the signature void(T);");
-        static_assert(detail::is_on_error<OnError>::value || std::is_same<OnError, nullptr_t>::value,
+        static_assert(detail::is_on_error<OnError>::value || std::is_same<OnError, std::nullptr_t>::value,
                 "Function supplied for on_error must be a function with the signature void(std::exception_ptr);");
-        static_assert(detail::is_on_completed<OnCompleted>::value || std::is_same<OnCompleted, nullptr_t>::value,
+        static_assert(detail::is_on_completed<OnCompleted>::value || std::is_same<OnCompleted, std::nullptr_t>::value,
                 "Function supplied for on_completed must be a function with the signature void();");
     }
 

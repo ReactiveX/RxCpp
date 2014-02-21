@@ -50,7 +50,7 @@ SCENARIO("filter stops on completion", "[filter][operators]"){
             m::on_next(580, 11),
             m::on_completed(600),
             m::on_next(610, 12),
-            m::on_error(620, std::exception()),
+            m::on_error(620, std::runtime_error("error in unsubscribed stream")),
             m::on_completed(630)
         };
         auto xs = sc->make_hot_observable(messages);
@@ -193,7 +193,7 @@ SCENARIO("where stops on error", "[where][filter][operators]"){
 
         long invoked = 0;
 
-        std::exception ex("filter on_error from source");
+        std::runtime_error ex("filter on_error from source");
 
         auto xs = sc->make_hot_observable(
             [ex]() {
@@ -211,7 +211,7 @@ SCENARIO("where stops on error", "[where][filter][operators]"){
                     m::on_next(580, 11),
                     m::on_error(600, ex),
                     m::on_next(610, 12),
-                    m::on_error(620, std::exception()),
+                    m::on_error(620, std::runtime_error("error in unsubscribed stream")),
                     m::on_completed(630)
                 };
                 return rxu::to_vector(messages);
@@ -278,7 +278,7 @@ SCENARIO("where stops on throw from predicate", "[where][filter][operators]"){
 
         long invoked = 0;
 
-        std::exception ex("filter predicate error");
+        std::runtime_error ex("filter predicate error");
 
         auto xs = sc->make_hot_observable(
             []() {
@@ -296,7 +296,7 @@ SCENARIO("where stops on throw from predicate", "[where][filter][operators]"){
                     m::on_next(580, 11),
                     m::on_completed(600),
                     m::on_next(610, 12),
-                    m::on_error(620, std::exception()),
+                    m::on_error(620, std::runtime_error("error in unsubscribed stream")),
                     m::on_completed(630)
                 };
                 return rxu::to_vector(messages);
