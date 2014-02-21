@@ -9,6 +9,23 @@
 
 namespace rxcpp {
 
+namespace detail {
+
+template<class Source, class F>
+struct is_operator_factory_for
+{
+    struct not_void {};
+    template<class CS, class CF>
+    static auto check(int) -> decltype((*(CF*)nullptr)(*(CS*)nullptr));
+    template<class CS, class CF>
+    static not_void check(...);
+
+    typedef decltype(check<Source, F>(0)) detail_result;
+    static const bool value = !std::is_same<detail_result, not_void>::value;
+};
+
+}
+
 template<class T>
 class dynamic_observable
     : public rxs::source_base<T>
@@ -82,6 +99,7 @@ observable<T> make_dynamic_observable(Source&& s) {
 template<class T, class SourceOperator>
 class observable
 {
+    typedef observable<T, SourceOperator> this_type;
     mutable SourceOperator source_operator;
 
 private:
@@ -176,6 +194,18 @@ public:
     observable(const observable<T, SO>& o)
         : source_operator(o.source_operator)
     {}
+    // implicit conversion between observables of the same value_type
+    template<class SO>
+    observable(observable<T, SO>&& o)
+        : source_operator(std::move(o.source_operator))
+    {}
+
+    observable(const observable<T, SourceOperator>& o)
+        : source_operator(o.source_operator)
+    {}
+    observable(observable<T, SourceOperator>&& o)
+        : source_operator(std::move(o.source_operator))
+    {}
 
 #if 0
     template<class I>
@@ -221,6 +251,14 @@ public:
         return  observable<T,   rxo::detail::filter<T, observable, Predicate>>(
                                 rxo::detail::filter<T, observable, Predicate>(*this, std::move(p)));
     }
+
+    template<class OperatorFactory>
+    auto op(OperatorFactory&& of) const
+        -> decltype(of(*(this_type*)nullptr)) {
+        static_assert(detail::is_operator_factory_for<this_type, OperatorFactory>::value, "Function passed for op() must have the signature Result(SourceObservable)");
+        return      of(*this);
+    }
+
 };
 
 // observable<> has static methods to construct observable sources and adaptors.
@@ -241,9 +279,9 @@ public:
 }
 
 template<class T, class SourceOperator, class OperatorFactory>
-auto operator >> (rxcpp::observable<T, SourceOperator> source, OperatorFactory&& op)
-    -> decltype(op(source)){
-    return      op(source);
+auto operator >> (const rxcpp::observable<T, SourceOperator>& source, OperatorFactory&& of)
+    -> decltype(source.op(std::forward<OperatorFactory>(of))) {
+    return      source.op(std::forward<OperatorFactory>(of));
 }
 
 #endif

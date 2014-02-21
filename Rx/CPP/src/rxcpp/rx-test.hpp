@@ -111,6 +111,12 @@ namespace rxt=test;
 
 }
 
+template<class T, class OperatorFactory>
+auto operator >> (const rxcpp::test::testable_observable<T>& source, OperatorFactory&& of)
+    -> decltype(source.op(std::forward<OperatorFactory>(of))) {
+    return      source.op(std::forward<OperatorFactory>(of));
+}
+
 #include "schedulers/rx-test.hpp"
 
 #endif

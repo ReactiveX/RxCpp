@@ -140,7 +140,10 @@ SCENARIO("subject test", "[subject][subjects]"){
                         return 0;
                     });
 #endif
-                    sub.get_observable().subscribe([c](int){++(*c);});
+                    sub.get_observable()
+                        // demonstrates insertion of user definied operator
+                        .op(rxo::filter([](int){return true;}))
+                        .subscribe([c](int){++(*c);});
                 }
 
                 auto o = sub.get_observer();
@@ -185,7 +188,7 @@ SCENARIO("filter stops on completion", "[filter][operators]"){
         WHEN("filtered to ints that are primes"){
             auto res = sc->start<int>(
                 [&xs, &invoked]() {
-#if RXCPP_USE_OBSERVABLE_MEMBERS
+#if 0 && RXCPP_USE_OBSERVABLE_MEMBERS
                     return xs
                         .filter([&invoked](int x) {
                             invoked++;
@@ -199,6 +202,10 @@ SCENARIO("filter stops on completion", "[filter][operators]"){
                             invoked++;
                             return IsPrime(x);
                         })
+                        // demonstrates insertion of user definied operator
+                        >> [](rx::observable<int> o)->rx::observable<int>{
+                            return rxo::filter([](int){return true;})(o);
+                        }
                         // forget type to workaround lambda deduction bug on msvc 2013
                         >> rxo::as_dynamic();
 #endif
