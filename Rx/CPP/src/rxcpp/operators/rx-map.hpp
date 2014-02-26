@@ -51,7 +51,8 @@ struct map
 
         typedef observer<typename this_type::value_type, I> output_type;
         struct state_type
-            : public values
+            : public std::enable_shared_from_this<state_type>
+            , public values
         {
             state_type(values i, output_type oarg)
                 : values(std::move(i))
@@ -61,7 +62,7 @@ struct map
             output_type out;
         };
         // take a copy of the values for each subscription
-        auto state = std::make_shared<state_type>(initial, std::move(o));
+        auto state = std::shared_ptr<state_type>(new state_type(initial, std::move(o)));
 
         state->source.subscribe(
             state->out.get_subscription(),

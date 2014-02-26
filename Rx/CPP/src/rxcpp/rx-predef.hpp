@@ -41,7 +41,7 @@ class is_observable
     template<class C>
     static void check(...);
 public:
-    static const bool value = std::is_convertible<decltype(check<T>(0)), tag_observable>::value;
+    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_observable>::value;
 };
 
 }

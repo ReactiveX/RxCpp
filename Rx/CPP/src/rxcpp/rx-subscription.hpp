@@ -20,7 +20,7 @@ class is_subscription
     template<class C>
     static void check(...);
 public:
-    static const bool value = std::is_convertible<decltype(check<T>(0)), tag_subscription>::value;
+    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_subscription>::value;
 };
 
 class dynamic_subscription : public subscription_base
@@ -177,14 +177,16 @@ private:
         void remove(weak_subscription w) {
             std::unique_lock<decltype(lock)> guard(lock);
 
-            auto s = w.lock();
-            if (s)
-            {
-                auto end = std::end(subscriptions);
-                auto it = std::find(std::begin(subscriptions), end, s);
-                if (it != end)
+            if (issubscribed) {
+                auto s = w.lock();
+                if (s)
                 {
-                    subscriptions.erase(it);
+                    auto end = std::end(subscriptions);
+                    auto it = std::find(std::begin(subscriptions), end, s);
+                    if (it != end)
+                    {
+                        subscriptions.erase(it);
+                    }
                 }
             }
         }
@@ -251,7 +253,7 @@ public:
         return state->add(std::move(s));
     }
     void remove(weak_subscription w) const {
-        state->remove(w);
+        state->remove(std::move(w));
     }
     void clear() const {
         state->clear();

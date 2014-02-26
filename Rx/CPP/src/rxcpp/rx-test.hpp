@@ -80,7 +80,7 @@ public:
     }
 };
 
-struct tag_test_observable : public tag_observable {};
+//struct tag_test_observable : public tag_observable {};
 
 template<class T>
 class testable_observable
@@ -90,7 +90,7 @@ class testable_observable
     typedef typename detail::test_subject_base<T>::type test_subject;
     test_subject ts;
 
-    typedef tag_test_observable observable_tag;
+    //typedef tag_test_observable observable_tag;
 
 public:
     typedef typename detail::test_subject_base<T>::recorded_type recorded_type;

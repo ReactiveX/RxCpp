@@ -46,7 +46,7 @@ struct flat_map
     : public operator_base<typename flat_map_traits<Observable, CollectionSelector, ResultSelector>::value_type>
 {
     typedef flat_map<Observable, CollectionSelector, ResultSelector> this_type;
-    typedef typename flat_map_traits<Observable, CollectionSelector, ResultSelector> traits;
+    typedef flat_map_traits<Observable, CollectionSelector, ResultSelector> traits;
 
     struct values
     {
@@ -76,7 +76,8 @@ struct flat_map
 
         typedef observer<typename this_type::value_type, I> output_type;
         struct state_type
-            : public values
+            : public std::enable_shared_from_this<state_type>
+            , public values
         {
             state_type(values i, output_type oarg)
                 : values(std::move(i))
@@ -85,7 +86,7 @@ struct flat_map
             }
             // on_completed on the output must wait until all the
             // subscriptions have received on_completed
-            std::atomic<int> subscriptions;
+            std::atomic<int> pendingCompletions;
             // because multiple sources are subscribed to by flat_map,
             // calls to the output must be serialized by lock.
             // the on_error/on_complete and unsubscribe calls can
@@ -94,28 +95,20 @@ struct flat_map
             output_type out;
         };
         // take a copy of the values for each subscription
-        auto state = std::make_shared<state_type>(initial, std::move(o));
+        auto state = std::shared_ptr<state_type>(new state_type(initial, std::move(o)));
 
-        ++state->subscriptions;
-
-        composite_subscription cs;
+        composite_subscription outercs;
 
         // when the out observer is unsubscribed all the
         // inner subscriptions are unsubscribed as well
-        state->out.get_subscription().add(cs);
+        state->out.get_subscription().add(outercs);
 
-        cs.add(make_subscription([state](){
-            if (--state->subscriptions == 0) {
-                std::unique_lock<std::recursive_mutex> guard(state->lock);
-                state->out.on_completed();
-            }
-        }));
-
+        ++state->pendingCompletions;
         // this subscribe does not share the observer subscription
         // so that when it is unsubscribed the observer can be called
         // until the inner subscriptions have finished
         state->source.subscribe(
-            cs,
+            outercs,
         // on_next
             [state](source_value_type st) {
                 util::detail::maybe<collection_type> selectedCollection;
@@ -127,25 +120,21 @@ struct flat_map
                     return;
                 }
 
-                ++state->subscriptions;
-
-                composite_subscription cs;
+                composite_subscription innercs;
 
                 // when the out observer is unsubscribed all the
                 // inner subscriptions are unsubscribed as well
-                state->out.get_subscription().add(cs);
+                auto innercstoken = state->out.get_subscription().add(innercs);
 
-                cs.add(make_subscription([state](){
-                    if (--state->subscriptions == 0) {
-                        std::unique_lock<std::recursive_mutex> guard(state->lock);
-                        state->out.on_completed();
-                    }
+                innercs.add(make_subscription([state, innercstoken](){
+                    state->out.get_subscription().remove(innercstoken);
                 }));
 
+                ++state->pendingCompletions;
                 // this subscribe does not share the source subscription
                 // so that when it is unsubscribed the source will continue
                 selectedCollection->subscribe(
-                    cs,
+                    innercs,
                 // on_next
                     [state, st](collection_value_type ct) {
                         util::detail::maybe<typename this_type::value_type> selectedResult;
@@ -161,25 +150,29 @@ struct flat_map
                     },
                 // on_error
                     [state](std::exception_ptr e) {
-                        // no need to track state->subscriptions
-                        // after an error - complete will not be called.
                         std::unique_lock<std::recursive_mutex> guard(state->lock);
                         state->out.on_error(e);
                     },
                 //on_completed
-                    [](){
+                    [state](){
+                        if (--state->pendingCompletions == 0) {
+                            std::unique_lock<std::recursive_mutex> guard(state->lock);
+                            state->out.on_completed();
+                        }
                     }
                 );
             },
         // on_error
             [state](std::exception_ptr e) {
-                // no need to track state->subscriptions
-                // after an error - complete will not be called.
                 std::unique_lock<std::recursive_mutex> guard(state->lock);
                 state->out.on_error(e);
             },
         // on_completed
-            []() {
+            [state]() {
+                if (--state->pendingCompletions == 0) {
+                    std::unique_lock<std::recursive_mutex> guard(state->lock);
+                    state->out.on_completed();
+                }
             }
         );
     }
