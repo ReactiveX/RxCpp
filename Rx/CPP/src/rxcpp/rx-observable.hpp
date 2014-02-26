@@ -106,9 +106,12 @@ observable<T> make_dynamic_observable(Source&& s) {
 
 template<class T, class SourceOperator>
 class observable
+    : public observable_base<T>
 {
     typedef observable<T, SourceOperator> this_type;
     mutable SourceOperator source_operator;
+
+    static_assert(std::is_same<T, typename SourceOperator::value_type>::value, "SourceOperator::value_type must be the same as T in observable<T, SourceOperator>");
 
 private:
     template<class U, class SO>
@@ -258,6 +261,13 @@ public:
         ->      observable<typename rxo::detail::map<observable, Selector>::value_type, rxo::detail::map<observable, Selector>> {
         return  observable<typename rxo::detail::map<observable, Selector>::value_type, rxo::detail::map<observable, Selector>>(
                                                                                         rxo::detail::map<observable, Selector>(*this, std::move(s)));
+    }
+
+    template<class CollectionSelector, class ResultSelector>
+    auto flat_map(CollectionSelector s, ResultSelector rs) const
+        ->      observable<typename rxo::detail::flat_map<observable, CollectionSelector, ResultSelector>::value_type,  rxo::detail::flat_map<observable, CollectionSelector, ResultSelector>> {
+        return  observable<typename rxo::detail::flat_map<observable, CollectionSelector, ResultSelector>::value_type,  rxo::detail::flat_map<observable, CollectionSelector, ResultSelector>>(
+                                                                                                                        rxo::detail::flat_map<observable, CollectionSelector, ResultSelector>(*this, std::move(s), std::move(rs)));
     }
 
     template<class OperatorFactory>

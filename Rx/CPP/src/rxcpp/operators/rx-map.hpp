@@ -14,11 +14,24 @@ namespace operators {
 namespace detail {
 
 template<class Observable, class Selector>
-struct map : public operator_base<decltype((*(Selector*)nullptr)(*(typename Observable::value_type*)nullptr)), typename Observable::value_type>
+struct map
+    : public operator_base<decltype((*(Selector*)nullptr)(*(typename Observable::value_type*)nullptr))>
 {
     typedef map<Observable, Selector> this_type;
-    Observable source;
-    Selector select;
+
+    struct values
+    {
+        values(Observable o, Selector s)
+            : source(std::move(o))
+            , select(std::move(s))
+        {
+        }
+        Observable source;
+        Selector select;
+    };
+    values initial;
+
+    typedef typename Observable::value_type source_value_type;
 
     struct tag_not_valid {};
     template<class CF, class CP>
@@ -26,38 +39,52 @@ struct map : public operator_base<decltype((*(Selector*)nullptr)(*(typename Obse
     template<class CF, class CP>
     static tag_not_valid check(...);
 
-    static_assert(!std::is_same<decltype(check<typename this_type::source_value_type, Selector>(0)), tag_not_valid>::value, "map Selector must be a function with the signature map::value_type(map::source_value_type)");
+    static_assert(!std::is_same<decltype(check<source_value_type, Selector>(0)), tag_not_valid>::value, "map Selector must be a function with the signature map::value_type(map::source_value_type)");
 
     map(Observable o, Selector s)
-        : source(std::move(o))
-        , select(std::move(s))
+        : initial(std::move(o), std::move(s))
     {
     }
+
     template<class I>
     void on_subscribe(observer<typename this_type::value_type, I> o) {
-        o.add(source.subscribe(
-            o.get_subscription(),
+
+        typedef observer<typename this_type::value_type, I> output_type;
+        struct state_type
+            : public values
+        {
+            state_type(values i, output_type oarg)
+                : values(std::move(i))
+                , out(std::move(oarg))
+            {
+            }
+            output_type out;
+        };
+        // take a copy of the values for each subscription
+        auto state = std::make_shared<state_type>(initial, std::move(o));
+
+        state->source.subscribe(
+            state->out.get_subscription(),
         // on_next
-            [this, o](typename this_type::source_value_type st) {
+            [state](typename this_type::source_value_type st) {
                 util::detail::maybe<typename this_type::value_type> selected;
                 try {
-                   selected.reset(this->select(st));
+                   selected.reset(state->select(st));
                 } catch(...) {
-                    o.on_error(std::current_exception());
+                    state->out.on_error(std::current_exception());
+                    return;
                 }
-                if (!selected.empty()) {
-                    o.on_next(std::move(*selected));
-                }
+                state->out.on_next(std::move(*selected));
             },
         // on_error
-            [o](std::exception_ptr e) {
-                o.on_error(e);
+            [state](std::exception_ptr e) {
+                state->out.on_error(e);
             },
         // on_completed
-            [o]() {
-                o.on_completed();
+            [state]() {
+                state->out.on_completed();
             }
-        ));
+        );
     }
 };
 

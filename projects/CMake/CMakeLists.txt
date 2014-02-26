@@ -34,6 +34,7 @@ add_executable(rxcpp_test ${TEST_SOURCES})
 # define the sources of the self test
 set(TEST_SOURCES
     ${TEST_DIR}/test.cpp
+    ${TEST_DIR}/v2/operators/flat_map.cpp
     ${TEST_DIR}/v2/subscriptions/observer.cpp
     ${TEST_DIR}/v2/subscriptions/subscription.cpp
     ${TEST_DIR}/v2/operators/filter.cpp

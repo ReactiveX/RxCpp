@@ -27,6 +27,23 @@ class observable;
 template<class T, class Source>
 observable<T> make_dynamic_observable(Source&&);
 
+struct tag_observable {};
+template<class T>
+struct observable_base {
+    typedef tag_observable observable_tag;
+    typedef T value_type;
+};
+template<class T>
+class is_observable
+{
+    template<class C>
+    static typename C::observable_tag check(int);
+    template<class C>
+    static void check(...);
+public:
+    static const bool value = std::is_convertible<decltype(check<T>(0)), tag_observable>::value;
+};
+
 }
 
 #endif

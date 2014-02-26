@@ -31,7 +31,7 @@ struct filter : public operator_base<T>
     }
     template<class I>
     void on_subscribe(observer<T, I> o) {
-        o.add(source.subscribe(
+        source.subscribe(
             o.get_subscription(),
         // on_next
             [this, o](T t) {
@@ -40,6 +40,7 @@ struct filter : public operator_base<T>
                    filtered = !this->test(t);
                 } catch(...) {
                     o.on_error(std::current_exception());
+                    return;
                 }
                 if (!filtered) {
                     o.on_next(std::move(t));
@@ -53,7 +54,7 @@ struct filter : public operator_base<T>
             [o]() {
                 o.on_completed();
             }
-        ));
+        );
     }
 };
 

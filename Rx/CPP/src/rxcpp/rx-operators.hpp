@@ -12,11 +12,10 @@ namespace rxcpp {
 namespace operators {
 
 struct tag_operator {};
-template<class T, class From = T>
+template<class T>
 struct operator_base
 {
     typedef T value_type;
-    typedef From source_value_type;
     typedef tag_operator operator_tag;
 };
 template<class T>
@@ -38,5 +37,6 @@ namespace rxo=operators;
 #include "operators/rx-subscribe.hpp"
 #include "operators/rx-filter.hpp"
 #include "operators/rx-map.hpp"
+#include "operators/rx-flat_map.hpp"
 
 #endif
