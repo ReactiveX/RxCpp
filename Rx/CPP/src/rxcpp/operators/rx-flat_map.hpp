@@ -88,21 +88,28 @@ struct flat_map
             std::atomic<int> subscriptions;
             // because multiple sources are subscribed to by flat_map,
             // calls to the output must be serialized by lock.
-            std::mutex lock;
+            // the on_error/on_complete and unsubscribe calls can
+            // cause lock recursion.
+            std::recursive_mutex lock;
             output_type out;
         };
         // take a copy of the values for each subscription
         auto state = std::make_shared<state_type>(initial, std::move(o));
 
+        ++state->subscriptions;
+
         composite_subscription cs;
+
+        // when the out observer is unsubscribed all the
+        // inner subscriptions are unsubscribed as well
+        state->out.get_subscription().add(cs);
+
         cs.add(make_subscription([state](){
             if (--state->subscriptions == 0) {
-                std::unique_lock<std::mutex> guard(state->lock);
+                std::unique_lock<std::recursive_mutex> guard(state->lock);
                 state->out.on_completed();
             }
         }));
-
-        ++state->subscriptions;
 
         // this subscribe does not share the observer subscription
         // so that when it is unsubscribed the observer can be called
@@ -115,18 +122,22 @@ struct flat_map
                 try {
                     selectedCollection.reset(state->selectCollection(st));
                 } catch(...) {
-                    std::unique_lock<std::mutex> guard(state->lock);
+                    std::unique_lock<std::recursive_mutex> guard(state->lock);
                     state->out.on_error(std::current_exception());
                     return;
                 }
 
+                ++state->subscriptions;
+
                 composite_subscription cs;
 
-                ++state->subscriptions;
+                // when the out observer is unsubscribed all the
+                // inner subscriptions are unsubscribed as well
+                state->out.get_subscription().add(cs);
 
                 cs.add(make_subscription([state](){
                     if (--state->subscriptions == 0) {
-                        std::unique_lock<std::mutex> guard(state->lock);
+                        std::unique_lock<std::recursive_mutex> guard(state->lock);
                         state->out.on_completed();
                     }
                 }));
@@ -141,18 +152,18 @@ struct flat_map
                         try {
                             selectedResult.reset(state->selectResult(st, std::move(ct)));
                         } catch(...) {
-                            std::unique_lock<std::mutex> guard(state->lock);
+                            std::unique_lock<std::recursive_mutex> guard(state->lock);
                             state->out.on_error(std::current_exception());
                             return;
                         }
-                        std::unique_lock<std::mutex> guard(state->lock);
+                        std::unique_lock<std::recursive_mutex> guard(state->lock);
                         state->out.on_next(std::move(*selectedResult));
                     },
                 // on_error
                     [state](std::exception_ptr e) {
                         // no need to track state->subscriptions
                         // after an error - complete will not be called.
-                        std::unique_lock<std::mutex> guard(state->lock);
+                        std::unique_lock<std::recursive_mutex> guard(state->lock);
                         state->out.on_error(e);
                     },
                 //on_completed
@@ -164,7 +175,7 @@ struct flat_map
             [state](std::exception_ptr e) {
                 // no need to track state->subscriptions
                 // after an error - complete will not be called.
-                std::unique_lock<std::mutex> guard(state->lock);
+                std::unique_lock<std::recursive_mutex> guard(state->lock);
                 state->out.on_error(e);
             },
         // on_completed

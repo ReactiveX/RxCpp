@@ -168,7 +168,7 @@ private:
                 auto it = std::find(std::begin(subscriptions), end, s);
                 if (it == end)
                 {
-                    subscriptions.emplace_back(std::move(s));
+                    subscriptions.emplace_back(s);
                 }
             }
             return s;
