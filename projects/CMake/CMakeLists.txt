@@ -17,7 +17,9 @@ get_filename_component(RXCPP_DIR "${CMAKE_CURRENT_SOURCE_DIR}" PATH)
 get_filename_component(RXCPP_DIR "${RXCPP_DIR}" PATH)
 set(TEST_DIR ${RXCPP_DIR}/Rx/CPP/test)
 
-include_directories(${RXCPP_DIR}/ext/catch/include ${RXCPP_DIR}/Ix/CPP/src ${RXCPP_DIR}/Rx/CPP/src)
+set(V2_TEST_DIR ${RXCPP_DIR}/Rx/v2/test)
+
+include_directories(${RXCPP_DIR}/ext/catch/include ${RXCPP_DIR}/Ix/CPP/src ${RXCPP_DIR}/Rx/CPP/src ${RXCPP_DIR}/Rx/v2/src)
 
 # define the sources of the self test
 set(TEST_SOURCES
@@ -31,23 +33,23 @@ set(TEST_SOURCES
 )
 add_executable(rxcpp_test ${TEST_SOURCES})
 
-# define the sources of the self test
-set(TEST_SOURCES
-    ${TEST_DIR}/test.cpp
-    ${TEST_DIR}/v2/operators/flat_map.cpp
-    ${TEST_DIR}/v2/subscriptions/observer.cpp
-    ${TEST_DIR}/v2/subscriptions/subscription.cpp
-    ${TEST_DIR}/v2/operators/filter.cpp
-    ${TEST_DIR}/v2/operators/map.cpp
-    ${TEST_DIR}/v2/subjects/subject.cpp
-)
-add_executable(rxcppv2_test ${TEST_SOURCES})
-
 # define the sources of testbench
 set(TESTBENCH_SOURCES
     ${RXCPP_DIR}/Rx/CPP/testbench/testbench.cpp
 )
 add_executable(testbench ${TESTBENCH_SOURCES})
+
+# define the sources of the self test
+set(V2_TEST_SOURCES
+    ${V2_TEST_DIR}/test.cpp
+    ${V2_TEST_DIR}/operators/flat_map.cpp
+    ${V2_TEST_DIR}/subscriptions/observer.cpp
+    ${V2_TEST_DIR}/subscriptions/subscription.cpp
+    ${V2_TEST_DIR}/operators/filter.cpp
+    ${V2_TEST_DIR}/operators/map.cpp
+    ${V2_TEST_DIR}/subjects/subject.cpp
+)
+add_executable(rxcppv2_test ${V2_TEST_SOURCES})
 
 # configure unit tests via CTest
 enable_testing()
