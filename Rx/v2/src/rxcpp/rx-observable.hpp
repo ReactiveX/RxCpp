@@ -2,8 +2,8 @@
 
 #pragma once
 
-#if !defined(RXCPP_RX_SCHEDULER_OBSERVABLE_HPP)
-#define RXCPP_RX_SCHEDULER_OBSERVABLE_HPP
+#if !defined(RXCPP_RX_OBSERVABLE_HPP)
+#define RXCPP_RX_OBSERVABLE_HPP
 
 #include "rx-includes.hpp"
 
@@ -108,10 +108,11 @@ template<class T, class SourceOperator>
 class observable
     : public observable_base<T>
 {
+    static_assert(std::is_same<T, typename SourceOperator::value_type>::value, "SourceOperator::value_type must be the same as T in observable<T, SourceOperator>");
+
+protected:
     typedef observable<T, SourceOperator> this_type;
     mutable SourceOperator source_operator;
-
-    static_assert(std::is_same<T, typename SourceOperator::value_type>::value, "SourceOperator::value_type must be the same as T in observable<T, SourceOperator>");
 
 private:
     template<class U, class SO>
