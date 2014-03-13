@@ -9,6 +9,15 @@
 
 namespace rxcpp {
 
+// temp to get compiling
+namespace schedulers {
+	struct schedulable
+	{
+		schedulable& operator=(std::nullptr_t) {return *this;};
+		void schedule() {}
+	};
+}
+
 struct tag_resumption {};
 struct resumption_base
 {
@@ -28,7 +37,7 @@ public:
 namespace detail {
 
 struct regulator_state_type
-	: public std::enable_shared_from_this<regulator_state>
+	: public std::enable_shared_from_this<regulator_state_type>
 {
 	regulator_state_type()
 		: isresumed(true)

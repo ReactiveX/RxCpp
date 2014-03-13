@@ -79,6 +79,11 @@ public:
 };
 
 namespace detail {
+template<class T>
+struct OnNextEmpty
+{
+    void operator()(const T&) const {}
+};
 struct OnErrorEmpty
 {
     void operator()(std::exception_ptr) const {}

@@ -96,6 +96,8 @@
 #include "rx-observer.hpp"
 #include "rx-notification.hpp"
 #include "rx-scheduler.hpp"
+#include "rx-regulator.hpp"
+#include "rx-subscriber.hpp"
 #include "rx-sources.hpp"
 #include "rx-subjects.hpp"
 #include "rx-operators.hpp"

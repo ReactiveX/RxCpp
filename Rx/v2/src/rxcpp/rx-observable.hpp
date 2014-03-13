@@ -126,7 +126,7 @@ private:
             return make_subscription(o);
         }
 
-        auto subscriber = [=]() {
+        auto safe_subscribe = [=]() {
             try {
                 source_operator.on_subscribe(o);
             }
@@ -142,11 +142,11 @@ private:
         if (rxsc::current_thread::is_schedule_required()) {
             auto sc = rxsc::make_current_thread();
             sc->schedule([=](rxsc::action, rxsc::scheduler) {
-                subscriber();
+                safe_subscribe();
                 return rxsc::make_action_empty();
             });
         } else {
-            subscriber();
+            safe_subscribe();
         }
 
         return make_subscription(o);

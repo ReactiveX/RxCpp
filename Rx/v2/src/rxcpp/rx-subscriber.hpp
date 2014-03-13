@@ -10,7 +10,7 @@
 namespace rxcpp {
 
 template<class T, class Observer = observer<T>>
-class subscriber
+class subscriber : public observer_root<T>, public subscription_base
 {
     composite_subscription lifetime;
     resumption controller;
@@ -85,23 +85,30 @@ public:
 };
 
 template<class T, class ResolvedArgSet>
-auto make_observer_resolved(ResolvedArgSet& rs)
-    ->      observer<T, static_observer<T, typename std::tuple_element<2, ResolvedArgSet>::type::result_type, typename std::tuple_element<3, ResolvedArgSet>::type::result_type, typename std::tuple_element<4, ResolvedArgSet>::type::result_type>> {
-    return  observer<T, static_observer<T, typename std::tuple_element<2, ResolvedArgSet>::type::result_type, typename std::tuple_element<3, ResolvedArgSet>::type::result_type, typename std::tuple_element<4, ResolvedArgSet>::type::result_type>>(
-        std::move(std::get<2>(rs).value), std::move(std::get<3>(rs).value), std::move(std::get<4>(rs).value));
+auto make_observer_resolved(ResolvedArgSet&& rs)
+    ->      observer<T, static_observer<T,  decltype (std::get<2>(std::forward<ResolvedArgSet>(rs)).value), decltype (std::get<3>(std::forward<ResolvedArgSet>(rs)).value), decltype (std::get<4>(std::forward<ResolvedArgSet>(rs)).value)>> {
+        typedef         static_observer<T,  decltype (std::get<2>(std::forward<ResolvedArgSet>(rs)).value), decltype (std::get<3>(std::forward<ResolvedArgSet>(rs)).value), decltype (std::get<4>(std::forward<ResolvedArgSet>(rs)).value)> inner_type;
+    return  observer<T, inner_type>(inner_type(
+                                            std::move(std::get<2>(std::forward<ResolvedArgSet>(rs)).value), std::move(std::get<3>(std::forward<ResolvedArgSet>(rs)).value), std::move(std::get<4>(std::forward<ResolvedArgSet>(rs)).value)));
 
-    static_assert(std::tuple_element<2, ResolvedArgSet>::type::is_arg, "onnext is a required parameter");
-    static_assert(!(std::tuple_element<2, ResolvedArgSet>::type::is_arg && std::tuple_element<3, ResolvedArgSet>::type::is_arg) || std::tuple_element<2, ResolvedArgSet>::type::n + 1 == std::tuple_element<3, ResolvedArgSet>::type::n, "onnext, onerror parameters must be together and in order");
-    static_assert(!(std::tuple_element<3, ResolvedArgSet>::type::is_arg && std::tuple_element<4, ResolvedArgSet>::type::is_arg) || std::tuple_element<3, ResolvedArgSet>::type::n + 1 == std::tuple_element<4, ResolvedArgSet>::type::n, "onerror, oncompleted parameters must be together and in order");
-    static_assert(!(std::tuple_element<2, ResolvedArgSet>::type::is_arg && std::tuple_element<4, ResolvedArgSet>::type::is_arg && !std::tuple_element<3, ResolvedArgSet>::type::is_arg) || std::tuple_element<2, ResolvedArgSet>::type::n + 1 == std::tuple_element<4, ResolvedArgSet>::type::n, "onnext, oncompleted parameters must be together and in order");
+    typedef typename std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type rn_t;
+    typedef typename std::decay<decltype(std::get<3>(std::forward<ResolvedArgSet>(rs)))>::type re_t;
+    typedef typename std::decay<decltype(std::get<4>(std::forward<ResolvedArgSet>(rs)))>::type rc_t;
+
+    static_assert(rn_t::is_arg, "onnext is a required parameter");
+    static_assert(!(rn_t::is_arg && re_t::is_arg) || rn_t::n + 1 == re_t::n, "onnext, onerror parameters must be together and in order");
+    static_assert(!(re_t::is_arg && rc_t::is_arg) || re_t::n + 1 == rc_t::n, "onerror, oncompleted parameters must be together and in order");
+    static_assert(!(rn_t::is_arg && rc_t::is_arg  && !re_t::is_arg) || rn_t::n + 1 == rc_t::n, "onnext, oncompleted parameters must be together and in order");
 }
 
 template<class T, class ResolvedArgSet>
-auto make_subscriber_resolved(ResolvedArgSet& rs)
-    ->      subscriber<T, decltype(make_observer_resolved<T>(rs))> {
-    return  subscriber<T, decltype(make_observer_resolved<T>(rs))>(std::move(std::get<0>(rs).value), std::move(std::get<1>(rs).value), make_observer_resolved<T>(rs));
+auto make_subscriber_resolved(ResolvedArgSet&& rs)
+    ->      subscriber<T, decltype(make_observer_resolved<T>(std::forward<ResolvedArgSet>(rs)))> {
+    return  subscriber<T, decltype(make_observer_resolved<T>(std::forward<ResolvedArgSet>(rs)))>(std::move(std::get<0>(std::forward<ResolvedArgSet>(rs)).value), std::move(std::get<1>(std::forward<ResolvedArgSet>(rs)).value), make_observer_resolved<T>(std::forward<ResolvedArgSet>(rs)));
 
-    static_assert(std::tuple_element<1, ResolvedArgSet>::type::is_arg, "resumption is a required parameter");
+    typedef typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type rr_t;
+
+    static_assert(rr_t::is_arg, "resumption is a required parameter");
 }
 
 struct tag_subscription_resolution
@@ -127,7 +134,7 @@ template<class T>
 struct tag_onnext_resolution
 {
     template<class LHS>
-    struct predicate : public is_on_next_of<T, LHS>
+    struct predicate : public detail::is_on_next_of<T, LHS>
     {
     };
     typedef detail::OnNextEmpty<T> default_type;
@@ -136,7 +143,7 @@ struct tag_onnext_resolution
 struct tag_onerror_resolution
 {
     template<class LHS>
-    struct predicate : public is_on_error<LHS>
+    struct predicate : public detail::is_on_error<LHS>
     {
     };
     typedef detail::OnErrorEmpty default_type;
@@ -145,7 +152,7 @@ struct tag_onerror_resolution
 struct tag_oncompleted_resolution
 {
     template<class LHS>
-    struct predicate : public is_on_completed<LHS>
+    struct predicate : public detail::is_on_completed<LHS>
     {
     };
     typedef detail::OnCompletedEmpty default_type;
@@ -165,7 +172,7 @@ struct tag_subscriber_set
                 rxu::detail::tag_set<tag_resumption_resolution,
                 rxu::detail::tag_set<tag_onnext_resolution<T>,
                 rxu::detail::tag_set<tag_onerror_resolution,
-                rxu::detail::tag_set<tag_oncompleted_resolution>>>>>>
+                rxu::detail::tag_set<tag_oncompleted_resolution>>>>>
 {
 };
 

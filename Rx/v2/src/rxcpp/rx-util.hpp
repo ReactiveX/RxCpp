@@ -212,7 +212,7 @@ struct arg_resolver_n<5, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5>
     typedef arg_resolver_n<n - 1, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5> prev_type;
     typedef typename std::conditional<Predicate<result_type>::value, this_type, typename prev_type::type>::type type;
     result_type value;
-    arg_resolver_n(const Arg0&, const Arg1&, const Arg2&, const Arg3&, const Arg4&, result_type a, ...)
+    arg_resolver_n(const Arg0&, const Arg1&, const Arg2&, const Arg3&, const Arg4&, result_type a)
         : value(std::move(a)) {
     }
 };
@@ -227,7 +227,7 @@ struct arg_resolver_n<4, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5>
     typedef arg_resolver_n<n - 1, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5> prev_type;
     typedef typename std::conditional<Predicate<result_type>::value, this_type, typename prev_type::type>::type type;
     result_type value;
-    arg_resolver_n(const Arg0&, const Arg1&, const Arg2&, const Arg3&, result_type a, ...)
+    arg_resolver_n(const Arg0&, const Arg1&, const Arg2&, const Arg3&, result_type a, const Arg5&)
         : value(std::move(a)) {
     }
 };
@@ -242,7 +242,7 @@ struct arg_resolver_n<3, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5>
     typedef arg_resolver_n<n - 1, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5> prev_type;
     typedef typename std::conditional<Predicate<result_type>::value, this_type, typename prev_type::type>::type type;
     result_type value;
-    arg_resolver_n(const Arg0&, const Arg1&, const Arg2&, result_type a, ...)
+    arg_resolver_n(const Arg0&, const Arg1&, const Arg2&, result_type a, const Arg4&, const Arg5&)
         : value(std::move(a)) {
     }
 };
@@ -257,7 +257,7 @@ struct arg_resolver_n<2, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5>
     typedef arg_resolver_n<n - 1, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5> prev_type;
     typedef typename std::conditional<Predicate<result_type>::value, this_type, typename prev_type::type>::type type;
     result_type value;
-    arg_resolver_n(const Arg0&, const Arg1&, result_type a, ...)
+    arg_resolver_n(const Arg0&, const Arg1&, result_type a, const Arg3&, const Arg4&, const Arg5&)
         : value(std::move(a)) {
     }
 };
@@ -272,7 +272,7 @@ struct arg_resolver_n<1, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5>
     typedef arg_resolver_n<n - 1, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5> prev_type;
     typedef typename std::conditional<Predicate<result_type>::value, this_type, typename prev_type::type>::type type;
     result_type value;
-    arg_resolver_n(const Arg0&, result_type a, ...)
+    arg_resolver_n(const Arg0&, result_type a, const Arg2&, const Arg3&, const Arg4&, const Arg5&)
         : value(std::move(a)) {
     }
 };
@@ -287,7 +287,7 @@ struct arg_resolver_n<0, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5>
     typedef arg_resolver_n<n - 1, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5> prev_type;
     typedef typename std::conditional<Predicate<result_type>::value, this_type, typename prev_type::type>::type type;
     result_type value;
-    explicit arg_resolver_n(result_type a, ...)
+    arg_resolver_n(result_type a, const Arg1&, const Arg2&, const Arg3&, const Arg4&, const Arg5&)
         : value(std::move(a)) {
     }
 };
@@ -301,7 +301,7 @@ struct arg_resolver_n<-1, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5
     typedef arg_resolver_n<n, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5> this_type;
     typedef this_type type;
     result_type value;
-    explicit arg_resolver_n(...)
+    arg_resolver_n(const Arg0&, const Arg1&, const Arg2&, const Arg3&, const Arg4&, const Arg5&)
         : value() {
     }
 };
@@ -317,51 +317,51 @@ struct arg_resolver
 
 template<template<class Arg> class Predicate, class Default>
 auto resolve_arg()
--> decltype(typename arg_resolver<Predicate, Default>::type()) {
-    return  typename arg_resolver<Predicate, Default>::type();
+-> decltype(typename arg_resolver<Predicate, Default>::type(tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable())) {
+    return  typename arg_resolver<Predicate, Default>::type(tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable());
 }
 
 template<template<class Arg> class Predicate, class Default,
     class Arg0>
 auto resolve_arg(Arg0 a0)
--> decltype(typename arg_resolver<Predicate, Default, Arg0>::type(std::move(a0))) {
-    return  typename arg_resolver<Predicate, Default, Arg0>::type(std::move(a0));
+-> decltype(typename arg_resolver<Predicate, Default, Arg0>::type(std::move(a0), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable())) {
+    return  typename arg_resolver<Predicate, Default, Arg0>::type(std::move(a0), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable());
 }
 
 template<template<class Arg> class Predicate, class Default,
     class Arg0, class Arg1>
 auto resolve_arg(Arg0 a0, Arg1 a1)
 -> decltype(typename arg_resolver<Predicate, Default, Arg0, Arg1>::type(
-        std::move(a0), std::move(a1))) {
+        std::move(a0), std::move(a1), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable())) {
     return  typename arg_resolver<Predicate, Default, Arg0, Arg1>::type(
-        std::move(a0), std::move(a1));
+        std::move(a0), std::move(a1), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable());
 }
 
 template<template<class Arg> class Predicate, class Default,
     class Arg0, class Arg1, class Arg2>
 auto resolve_arg(Arg0 a0, Arg1 a1, Arg2 a2)
 -> decltype(typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2>::type(
-        std::move(a0), std::move(a1), std::move(a2))) {
+        std::move(a0), std::move(a1), std::move(a2), tag_unresolvable(), tag_unresolvable(), tag_unresolvable())) {
     return  typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2>::type(
-        std::move(a0), std::move(a1), std::move(a2));
+        std::move(a0), std::move(a1), std::move(a2), tag_unresolvable(), tag_unresolvable(), tag_unresolvable());
 }
 
 template<template<class Arg> class Predicate, class Default,
     class Arg0, class Arg1, class Arg2, class Arg3>
 auto resolve_arg(Arg0 a0, Arg1 a1, Arg2 a2, Arg3 a3)
 -> decltype(typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2, Arg3>::type(
-        std::move(a0), std::move(a1), std::move(a2), std::move(a3))) {
+        std::move(a0), std::move(a1), std::move(a2), std::move(a3), tag_unresolvable(), tag_unresolvable())) {
     return  typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2, Arg3>::type(
-        std::move(a0), std::move(a1), std::move(a2), std::move(a3));
+        std::move(a0), std::move(a1), std::move(a2), std::move(a3), tag_unresolvable(), tag_unresolvable());
 }
 
 template<template<class Arg> class Predicate, class Default,
     class Arg0, class Arg1, class Arg2, class Arg3, class Arg4>
 auto resolve_arg(Arg0 a0, Arg1 a1, Arg2 a2, Arg3 a3, Arg4 a4)
 -> decltype(typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4>::type(
-        std::move(a0), std::move(a1), std::move(a2), std::move(a3), std::move(a4))) {
+        std::move(a0), std::move(a1), std::move(a2), std::move(a3), std::move(a4), tag_unresolvable())) {
     return  typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4>::type(
-        std::move(a0), std::move(a1), std::move(a2), std::move(a3), std::move(a4));
+        std::move(a0), std::move(a1), std::move(a2), std::move(a3), std::move(a4), tag_unresolvable());
 }
 
 template<template<class Arg> class Predicate, class Default,
@@ -390,7 +390,7 @@ struct arg_resolver_set;
 template<>
 struct arg_resolver_set<arg_resolver_term>
 {
-    std::tuple<> operator()(...){
+    inline std::tuple<> operator()(...){
         return std::tuple<>();
     }
 };
@@ -399,7 +399,7 @@ template<class Tag>
 struct arg_resolver_set
 {
     typedef arg_resolver_set<typename Tag::next_tag> next_set;
-    auto operator()()
+    inline auto operator()()
     -> decltype(std::tuple_cat(
                             std::make_tuple(resolve_arg<Tag::template predicate, typename Tag::default_type>()),
                             next_set()())) {
@@ -463,7 +463,37 @@ struct arg_resolver_set
     }
 };
 
-std::tuple<> resolve_arg_set(arg_resolver_term&&, ...){
+inline std::tuple<> resolve_arg_set(arg_resolver_term&&) {
+    return std::tuple<>();
+}
+
+template<class Arg0>
+inline std::tuple<> resolve_arg_set(arg_resolver_term&&, Arg0&& ) {
+    return std::tuple<>();
+}
+
+template<class Arg0, class Arg1>
+inline std::tuple<> resolve_arg_set(arg_resolver_term&&, Arg0&& , Arg1&& ) {
+    return std::tuple<>();
+}
+
+template<class Arg0, class Arg1, class Arg2>
+inline std::tuple<> resolve_arg_set(arg_resolver_term&&, Arg0&& , Arg1&& , Arg2&& ) {
+    return std::tuple<>();
+}
+
+template<class Arg0, class Arg1, class Arg2, class Arg3>
+inline std::tuple<> resolve_arg_set(arg_resolver_term&&, Arg0&& , Arg1&& , Arg2&& , Arg3&& ) {
+    return std::tuple<>();
+}
+
+template<class Arg0, class Arg1, class Arg2, class Arg3, class Arg4>
+inline std::tuple<> resolve_arg_set(arg_resolver_term&&, Arg0&& , Arg1&& , Arg2&& , Arg3&& , Arg4&& ) {
+    return std::tuple<>();
+}
+
+template<class Arg0, class Arg1, class Arg2, class Arg3, class Arg4, class Arg5>
+inline std::tuple<> resolve_arg_set(arg_resolver_term&&, Arg0&& , Arg1&& , Arg2&& , Arg3&& , Arg4&& , Arg5&& ) {
     return std::tuple<>();
 }
 

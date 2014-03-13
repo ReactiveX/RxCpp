@@ -3,6 +3,61 @@ namespace rx=rxcpp;
 
 #include "catch.hpp"
 
+SCENARIO("subscriber traits", "[observer][traits]"){
+    GIVEN("given some subscriber types"){
+        int result = 0;
+        auto next = [&result](int i){result += i;};
+        auto error = [&result](std::exception_ptr){result += 10;};
+        auto completed = [&result](){result += 100;};
+//        auto ra = rx::rxu::detail::arg_resolver_n<0, rx::tag_resumption_resolution::template predicate, typename rx::tag_resumption_resolution::default_type, rx::resumption, decltype(next), decltype(error), decltype(completed), rx::rxu::detail::tag_unresolvable, rx::rxu::detail::tag_unresolvable>(rx::resumption(), next, error, completed, rx::rxu::detail::tag_unresolvable(), rx::rxu::detail::tag_unresolvable());
+//        auto ra = typename rx::rxu::detail::arg_resolver<rx::tag_resumption_resolution::template predicate, typename rx::tag_resumption_resolution::default_type, rx::resumption, decltype(next), decltype(error), decltype(completed)>::type(rx::resumption(), next, error, completed, rx::rxu::detail::tag_unresolvable(), rx::rxu::detail::tag_unresolvable());
+//        auto arg = rx::rxu::detail::resolve_arg<rx::tag_resumption_resolution::template predicate, typename rx::tag_resumption_resolution::default_type>(rx::resumption(), next, error, completed);
+//        auto argset = rx::rxu::detail::resolve_arg_set(rx::tag_subscriber_set<int>(), rx::resumption(), next, error, completed);
+//        auto o = rx::make_observer_resolved<int>(argset);
+//        auto scrbResult = rx::subscriber<int, decltype(o)>(std::move(std::get<0>(argset).value), std::move(std::get<1>(argset).value), o);
+//        static_assert(std::tuple_element<1, decltype(argset)>::type::is_arg, "resumption is a required parameter");
+//        auto scrbResult = rx::make_subscriber_resolved<int>(rx::rxu::detail::resolve_arg_set(rx::tag_subscriber_set<int>(), rx::resumption(), next, error, completed));
+//        auto scrbResult = rx::make_subscriber_resolved<int>(argset);
+        auto scrbResult = rx::make_subscriber<int>(rx::resumption(), next, error, completed);
+
+        auto emptyNext = [](int){};
+        auto scrb = rx::make_subscriber<int>(rx::resumption(), emptyNext);
+        WHEN("tested"){
+            THEN("is_observer value is true for subscriber"){
+                REQUIRE(rx::is_observer<decltype(scrb)>::value);
+            }
+            THEN("is_subscription value is true for subscriber"){
+                REQUIRE(rx::is_subscription<decltype(scrb)>::value);
+            }
+        }
+        WHEN("nothing is called"){
+            THEN("static_observer result is 0"){
+                REQUIRE(result == 0);
+            }
+        }
+        WHEN("onnext is called with 1"){
+            THEN("subscriber result is 1"){
+                scrbResult.on_next(1);
+                REQUIRE(result == 1);
+            }
+        }
+        WHEN("onnext is called with 1 after error"){
+            THEN("subscriber result is 10"){
+                scrbResult.on_error(std::current_exception());
+                scrbResult.on_next(1);
+                REQUIRE(result == 10);
+            }
+        }
+        WHEN("onnext is called with 1 after completed"){
+            THEN("subscriber result is 100"){
+                scrbResult.on_completed();
+                scrbResult.on_next(1);
+                REQUIRE(result == 100);
+            }
+        }
+    }
+}
+
 SCENARIO("observer traits", "[observer][traits]"){
     GIVEN("given some observer types"){
         auto emptyNext = [](int){};
