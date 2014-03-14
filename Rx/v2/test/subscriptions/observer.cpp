@@ -14,11 +14,16 @@ SCENARIO("subscriber traits", "[observer][traits]"){
 //        auto arg = rx::rxu::detail::resolve_arg<rx::tag_resumption_resolution::template predicate, typename rx::tag_resumption_resolution::default_type>(rx::resumption(), next, error, completed);
 //        auto argset = rx::rxu::detail::resolve_arg_set(rx::tag_subscriber_set<int>(), rx::resumption(), next, error, completed);
 //        auto o = rx::make_observer_resolved<int>(argset);
+//        auto o = rx::select_observer<int>(argset);
 //        auto scrbResult = rx::subscriber<int, decltype(o)>(std::move(std::get<0>(argset).value), std::move(std::get<1>(argset).value), o);
 //        static_assert(std::tuple_element<1, decltype(argset)>::type::is_arg, "resumption is a required parameter");
 //        auto scrbResult = rx::make_subscriber_resolved<int>(rx::rxu::detail::resolve_arg_set(rx::tag_subscriber_set<int>(), rx::resumption(), next, error, completed));
 //        auto scrbResult = rx::make_subscriber_resolved<int>(argset);
         auto scrbResult = rx::make_subscriber<int>(rx::resumption(), next, error, completed);
+        auto scrbdup = rx::make_subscriber<int>(scrbResult);
+        auto scrbop = rx::make_subscriber<int>(scrbResult, next, error, completed);
+        auto scrbsharelifetime = rx::make_subscriber<int>(scrbResult, scrbop.get_resumption(), scrbop.get_observer());
+        auto scrbuniquelifetime = rx::make_subscriber<int>(scrbResult, rx::composite_subscription());
 
         auto emptyNext = [](int){};
         auto scrb = rx::make_subscriber<int>(rx::resumption(), emptyNext);

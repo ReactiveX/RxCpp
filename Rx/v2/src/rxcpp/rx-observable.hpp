@@ -118,9 +118,11 @@ private:
     template<class U, class SO>
     friend class observable;
 
-    template<class I>
-    auto detail_subscribe(observer<T, I> o, tag_observer&&) const
+    template<class Observer>
+    auto detail_subscribe(Observer o, tag_observer&&) const
         -> decltype(make_subscription(o)) {
+
+        static_assert(is_observer<Observer>::value, "subscribe must be passed an observer");
 
         if (!o.is_subscribed()) {
             return make_subscription(o);

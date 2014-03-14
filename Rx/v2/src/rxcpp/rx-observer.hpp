@@ -489,6 +489,9 @@ public:
     ~observer()
     {
     }
+    observer()
+    {
+    }
     observer(inner_t inner)
         : inner(std::move(inner))
     {
