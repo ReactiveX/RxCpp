@@ -10,7 +10,7 @@
 namespace rxcpp {
 
 template<class T>
-struct subscriber_base : public observer_root<T>, public subscription_base, public resumption_base
+struct subscriber_base : public observer_base<T>, public subscription_base, public resumption_base
 {
     typedef tag_subscriber subscriber_tag;
 };
@@ -148,9 +148,6 @@ struct observer_selector<T, subscriber_is_arg, false, true>
     template<class Set>
     static auto get_observer(Set&& rs)
         -> decltype(make_observer_resolved<T>(std::forward<Set>(rs))) {
-        if (!std::get<0>(std::forward<Set>(rs)).value.is_subscribed()) {
-            abort();
-        }
         return      make_observer_resolved<T>(std::forward<Set>(rs));
     }
 };
@@ -166,16 +163,13 @@ struct observer_selector<T, true, false, false>
 
 template<class T, class ResolvedArgSet>
 auto select_observer(ResolvedArgSet&& rs)
-    -> decltype(observer_selector<T, std::decay<decltype(std::get<6>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg, std::decay<decltype(std::get<5>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg, std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg>::get_observer(std::forward<ResolvedArgSet>(rs))) {
-    if (!std::get<0>(std::forward<ResolvedArgSet>(rs)).value.is_subscribed()) {
-        abort();
-    }
-    return      observer_selector<T, std::decay<decltype(std::get<6>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg, std::decay<decltype(std::get<5>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg, std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg>::get_observer(std::forward<ResolvedArgSet>(rs));
+    -> decltype(observer_selector<T, std::decay<decltype(std::get<6>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg, std::decay<decltype(std::get<5>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg, std::decay<decltype(std::get<0>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg>::get_observer(std::forward<ResolvedArgSet>(rs))) {
+    return      observer_selector<T, std::decay<decltype(std::get<6>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg, std::decay<decltype(std::get<5>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg, std::decay<decltype(std::get<0>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg>::get_observer(std::forward<ResolvedArgSet>(rs));
 
     typedef typename std::decay<decltype(std::get<4>(std::forward<ResolvedArgSet>(rs)))>::type rr_t;
-    typedef typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type rn_t;
-    typedef typename std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type re_t;
-    typedef typename std::decay<decltype(std::get<3>(std::forward<ResolvedArgSet>(rs)))>::type rc_t;
+    typedef typename std::decay<decltype(std::get<0>(std::forward<ResolvedArgSet>(rs)))>::type rn_t;
+    typedef typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type re_t;
+    typedef typename std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type rc_t;
     typedef typename std::decay<decltype(std::get<5>(std::forward<ResolvedArgSet>(rs)))>::type ro_t;
     typedef typename std::decay<decltype(std::get<6>(std::forward<ResolvedArgSet>(rs)))>::type rs_t;
 
@@ -187,10 +181,7 @@ template<class T, class ResolvedArgSet>
 auto make_subscriber_resolved(ResolvedArgSet&& rsArg)
     ->      subscriber<T, decltype(     select_observer<T>(std::move(rsArg)))> {
     const auto rs = std::forward<ResolvedArgSet>(rsArg);
-    if (!std::get<0>(rs).value.is_subscribed()) {
-        abort();
-    }
-    const auto rsub = std::get<0>(rs);
+    const auto rsub = std::get<3>(rs);
     const auto rr = std::get<4>(rs);
     const auto rscrbr = std::get<6>(rs);
     const auto r = (rscrbr.is_arg && !rr.is_arg)      ? rscrbr.value.get_resumption()       : rr.value;
@@ -206,6 +197,16 @@ auto make_subscriber_resolved(ResolvedArgSet&& rsArg)
     static_assert(rs_t::is_arg || rr_t::is_arg, "at least one of; resumption or subscriber is a required parameter");
 #endif
 }
+
+struct tag_subscription_resolution
+{
+    template<class LHS>
+    struct predicate
+    {
+        static const bool value = !is_subscriber<LHS>::value && !is_observer<LHS>::value && is_subscription<LHS>::value;
+    };
+    typedef composite_subscription default_type;
+};
 
 template<class T>
 struct tag_subscriber_resolution
@@ -250,10 +251,10 @@ struct tag_resumption_resolution
 template<class T>
 struct tag_subscriber_set
                 // the first four must be the same as tag_observer_set or the indexing will fail
-    : public    rxu::detail::tag_set<tag_subscription_resolution,
-                rxu::detail::tag_set<tag_onnext_resolution<T>,
+    : public    rxu::detail::tag_set<tag_onnext_resolution<T>,
                 rxu::detail::tag_set<tag_onerror_resolution,
                 rxu::detail::tag_set<tag_oncompleted_resolution,
+                rxu::detail::tag_set<tag_subscription_resolution,
                 rxu::detail::tag_set<tag_resumption_resolution,
                 rxu::detail::tag_set<tag_observer_resolution<T>,
                 rxu::detail::tag_set<tag_subscriber_resolution<T>>>>>>>>

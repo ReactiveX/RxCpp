@@ -11,60 +11,10 @@ namespace rxcpp {
 
 
 template<class T>
-struct observer_root : public subscription_base
+struct observer_base
 {
     typedef T value_type;
-    typedef composite_subscription subscription_type;
-    typedef typename subscription_type::weak_subscription weak_subscription;
     typedef tag_observer observer_tag;
-};
-template<class T>
-struct observer_base : public observer_root<T>
-{
-private:
-    typedef observer_base this_type;
-
-    mutable typename this_type::subscription_type s;
-
-public:
-    observer_base()
-    {
-    }
-    observer_base(typename this_type::subscription_type s)
-        : s(std::move(s))
-    {
-    }
-    observer_base(const observer_base& o)
-        : s(o.s)
-    {
-    }
-    observer_base(observer_base&& o)
-        : s(std::move(o.s))
-    {
-    }
-    observer_base& operator=(observer_base o) {
-        swap(o);
-        return *this;
-    }
-    void swap(observer_base& o) {
-        using std::swap;
-        swap(s, o.s);
-    }
-    const typename this_type::subscription_type& get_subscription() const {
-        return s;
-    }
-    bool is_subscribed() const {
-        return s.is_subscribed();
-    }
-    typename this_type::weak_subscription add(dynamic_subscription ds) const {
-        return s.add(std::move(ds));
-    }
-    void remove(typename this_type::weak_subscription ws) const {
-        s.remove(ws);
-    }
-    void unsubscribe() const {
-        s.unsubscribe();
-    }
 };
 
 namespace detail {
@@ -143,9 +93,8 @@ public:
     }
 
     template<class OnNext, class OnError, class OnCompleted>
-    dynamic_observer(composite_subscription cs, OnNext&& n, OnError&& e, OnCompleted&& c)
-        : base_type(std::move(cs))
-        , onnext(std::forward<OnNext>(n))
+    dynamic_observer(OnNext&& n, OnError&& e, OnCompleted&& c)
+        : onnext(std::forward<OnNext>(n))
         , onerror(std::forward<OnError>(e))
         , oncompleted(std::forward<OnCompleted>(c))
     {
@@ -163,7 +112,6 @@ public:
     }
     void swap(dynamic_observer& o) {
         using std::swap;
-        observer_base<T>::swap(o);
         swap(onnext, o.onnext);
         swap(onerror, o.onerror);
         swap(oncompleted, o.oncompleted);
@@ -205,23 +153,20 @@ public:
     static_assert(detail::is_on_error<on_error_t>::value,         "Function supplied for on_error must be a function with the signature void(std::exception_ptr);");
     static_assert(detail::is_on_completed<on_completed_t>::value, "Function supplied for on_completed must be a function with the signature void();");
 
-    explicit static_observer(composite_subscription cs, on_next_t n, on_error_t e, on_completed_t c)
-        : observer_base<T>(std::move(cs))
-        , onnext(std::move(n))
+    explicit static_observer(on_next_t n, on_error_t e, on_completed_t c)
+        : onnext(std::move(n))
         , onerror(std::move(e))
         , oncompleted(std::move(c))
     {
     }
     static_observer(const this_type& o)
-        : observer_base<T>(o)
-        , onnext(o.onnext)
+        : onnext(o.onnext)
         , onerror(o.onerror)
         , oncompleted(o.oncompleted)
     {
     }
     static_observer(this_type&& o)
-        : observer_base<T>(std::move(o))
-        , onnext(std::move(o.onnext))
+        : onnext(std::move(o.onnext))
         , onerror(std::move(o.onerror))
         , oncompleted(std::move(o.oncompleted))
     {
@@ -232,7 +177,6 @@ public:
     }
     void swap(this_type& o) {
         using std::swap;
-        observer_base<T>::swap(o);
         swap(onnext, o.onnext);
         swap(onerror, o.onerror);
         swap(oncompleted, o.oncompleted);
@@ -250,25 +194,10 @@ public:
 };
 
 template<class T, class I>
-class observer : public observer_root<T>
+class observer : public observer_base<T>
 {
     typedef observer<T, I> this_type;
     typedef typename std::conditional<is_observer<I>::value, typename std::decay<I>::type, dynamic_observer<T>>::type inner_t;
-
-    struct detacher
-    {
-        ~detacher()
-        {
-            if (that) {
-                that->unsubscribe();
-            }
-        }
-        detacher(const observer<T,I>* that)
-            : that(that)
-        {
-        }
-        const observer<T,I>* that;
-    };
 
     inner_t inner;
 public:
@@ -283,42 +212,17 @@ public:
     {
     }
     void on_next(T t) const {
-        if (is_subscribed()) {
-            detacher protect(this);
-            inner.on_next(std::move(t));
-            protect.that = nullptr;
-        }
+        inner.on_next(std::move(t));
     }
     void on_error(std::exception_ptr e) const {
-        if (is_subscribed()) {
-            detacher protect(this);
-            inner.on_error(e);
-        }
+        inner.on_error(e);
     }
     void on_completed() const {
-        if (is_subscribed()) {
-            detacher protect(this);
-            inner.on_completed();
-        }
-    }
-    const typename this_type::subscription_type& get_subscription() const {
-        return inner.get_subscription();
-    }
-    bool is_subscribed() const {
-        return inner.is_subscribed();
-    }
-    typename this_type::weak_subscription add(dynamic_subscription ds) const {
-        return inner.add(std::move(ds));
-    }
-    void remove(typename this_type::weak_subscription ws) const {
-        inner.remove(ws);
-    }
-    void unsubscribe() const {
-        inner.unsubscribe();
+        inner.on_completed();
     }
 };
 template<class T>
-class observer<T, void> : public observer_root<T>
+class observer<T, void> : public observer_base<T>
 {
     typedef observer this_type;
 public:
@@ -330,22 +234,6 @@ public:
     void on_error(std::exception_ptr) const {
     }
     void on_completed() const {
-    }
-    const typename this_type::subscription_type& get_subscription() const {
-        static typename this_type::subscription_type result;
-        result.unsubscribe();
-        return result;
-    }
-    bool is_subscribed() const {
-        return false;
-    }
-    typename this_type::weak_subscription add(dynamic_subscription ds) const {
-        ds.unsubscribe();
-        return typename this_type::weak_subscription();
-    }
-    void remove(typename this_type::weak_subscription) const {
-    }
-    void unsubscribe() const {
     }
 };
 
@@ -359,8 +247,8 @@ namespace detail {
 
 template<class T, class ResolvedArgSet>
 auto make_observer_resolved(ResolvedArgSet&& rs)
-    ->      observer<T,                 static_observer<T, typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type::result_type, typename std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type::result_type, typename std::decay<decltype(std::get<3>(std::forward<ResolvedArgSet>(rs)))>::type::result_type>> {
-    return  make_observer_resolved<T,   static_observer<T, typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type::result_type, typename std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type::result_type, typename std::decay<decltype(std::get<3>(std::forward<ResolvedArgSet>(rs)))>::type::result_type>>(std::forward<ResolvedArgSet>(rs));
+    ->      observer<T,                 static_observer<T, typename std::decay<decltype(std::get<0>(std::forward<ResolvedArgSet>(rs)))>::type::result_type, typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type::result_type, typename std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type::result_type>> {
+    return  make_observer_resolved<T,   static_observer<T, typename std::decay<decltype(std::get<0>(std::forward<ResolvedArgSet>(rs)))>::type::result_type, typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type::result_type, typename std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type::result_type>>(std::forward<ResolvedArgSet>(rs));
 }
 template<class T, class ResolvedArgSet>
 auto make_observer_dynamic_resolved(ResolvedArgSet&& rs)
@@ -373,30 +261,19 @@ auto make_observer_resolved(ResolvedArgSet&& rs)
     ->      observer<T, I> {
     typedef I inner_type;
     return  observer<T, inner_type>(inner_type(
-        std::get<0>(std::forward<ResolvedArgSet>(rs)).value,
+        std::move(std::get<0>(std::forward<ResolvedArgSet>(rs)).value),
         std::move(std::get<1>(std::forward<ResolvedArgSet>(rs)).value),
-        std::move(std::get<2>(std::forward<ResolvedArgSet>(rs)).value),
-        std::move(std::get<3>(std::forward<ResolvedArgSet>(rs)).value)));
+        std::move(std::get<2>(std::forward<ResolvedArgSet>(rs)).value)));
 
-    typedef typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type rn_t;
-    typedef typename std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type re_t;
-    typedef typename std::decay<decltype(std::get<3>(std::forward<ResolvedArgSet>(rs)))>::type rc_t;
+    typedef typename std::decay<decltype(std::get<0>(std::forward<ResolvedArgSet>(rs)))>::type rn_t;
+    typedef typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type re_t;
+    typedef typename std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type rc_t;
 
     static_assert(rn_t::is_arg, "onnext is a required parameter");
     static_assert(!(rn_t::is_arg && re_t::is_arg) || rn_t::n + 1 == re_t::n, "onnext, onerror parameters must be together and in order");
     static_assert(!(re_t::is_arg && rc_t::is_arg) || re_t::n + 1 == rc_t::n, "onerror, oncompleted parameters must be together and in order");
     static_assert(!(rn_t::is_arg && rc_t::is_arg  && !re_t::is_arg) || rn_t::n + 1 == rc_t::n, "onnext, oncompleted parameters must be together and in order");
 }
-
-struct tag_subscription_resolution
-{
-    template<class LHS>
-    struct predicate
-    {
-        static const bool value = !is_subscriber<LHS>::value && !is_observer<LHS>::value && is_subscription<LHS>::value;
-    };
-    typedef composite_subscription default_type;
-};
 
 template<class T>
 struct tag_onnext_resolution
@@ -436,10 +313,9 @@ struct tag_oncompleted_resolution
 
 template<class T>
 struct tag_observer_set
-    : public    rxu::detail::tag_set<tag_subscription_resolution,
-                rxu::detail::tag_set<tag_onnext_resolution<T>,
+    : public    rxu::detail::tag_set<tag_onnext_resolution<T>,
                 rxu::detail::tag_set<tag_onerror_resolution,
-                rxu::detail::tag_set<tag_oncompleted_resolution>>>>
+                rxu::detail::tag_set<tag_oncompleted_resolution>>>
 {
 };
 

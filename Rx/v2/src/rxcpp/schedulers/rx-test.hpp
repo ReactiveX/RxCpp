@@ -165,9 +165,6 @@ public:
     }
 
     template<class T>
-    rxt::testable_observer<T> make_observer();
-
-    template<class T>
     subscriber<T, rxt::testable_observer<T>> make_subscriber();
 };
 
@@ -216,40 +213,32 @@ public:
 };
 
 template<class T>
-rxt::testable_observer<T> test::make_observer()
+subscriber<T, rxt::testable_observer<T>> test::make_subscriber()
 {
     typedef typename rxn::notification<T> notification_type;
     typedef rxn::recorded<typename notification_type::type> recorded_type;
-
-    std::shared_ptr<mock_observer<T>> ts(new mock_observer<T>(
-        std::static_pointer_cast<test>(shared_from_this())));
-
-    return rxt::testable_observer<T>(ts, make_observer_dynamic<T>(
-    // on_next
-        [ts](T value)
-        {
-            ts->m.push_back(
-                recorded_type(ts->sc->clock(), notification_type::on_next(value)));
-        },
-    // on_error
-        [ts](std::exception_ptr e)
-        {
-            ts->m.push_back(
-                recorded_type(ts->sc->clock(), notification_type::on_error(e)));
-        },
-    // on_completed
-        [ts]()
-        {
-            ts->m.push_back(
-                recorded_type(ts->sc->clock(), notification_type::on_completed()));
-        }));
-}
-
-template<class T>
-subscriber<T, rxt::testable_observer<T>> test::make_subscriber()
-{
-    auto to = this->make_observer<T>();
-    return rxcpp::make_subscriber<T>(to.get_subscription(), to);
+    
+    std::shared_ptr<mock_observer<T>> ts(new mock_observer<T>(std::static_pointer_cast<test>(shared_from_this())));
+    
+    return rxcpp::make_subscriber<T>(rxt::testable_observer<T>(ts, make_observer_dynamic<T>(
+          // on_next
+          [ts](T value)
+          {
+              ts->m.push_back(
+                              recorded_type(ts->sc->clock(), notification_type::on_next(value)));
+          },
+          // on_error
+          [ts](std::exception_ptr e)
+          {
+              ts->m.push_back(
+                              recorded_type(ts->sc->clock(), notification_type::on_error(e)));
+          },
+          // on_completed
+          [ts]()
+          {
+              ts->m.push_back(
+                              recorded_type(ts->sc->clock(), notification_type::on_completed()));
+          })));
 }
 
 template<class T>

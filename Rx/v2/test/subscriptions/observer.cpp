@@ -127,15 +127,14 @@ SCENARIO("observers with subscription traits", "[observer][subscription][traits]
     }
 }
 
-SCENARIO("observer behavior", "[observer][traits]"){
-    GIVEN("given some observer types"){
+SCENARIO("subscriber behavior", "[observer][traits]"){
+    GIVEN("given some subscriber types"){
         int result = 0;
         auto next = [&result](int i){result += i;};
         auto error = [&result](std::exception_ptr){result += 10;};
         auto completed = [&result](){result += 100;};
-        auto dob = rx::make_observer_dynamic<int>(next, error, completed);
-        auto so = rx::make_observer<int>(next, error, completed);
-        auto eo = rx::make_observer<int>();
+        auto dob = rx::make_subscriber<int>(rx::make_observer_dynamic<int>(next, error, completed));
+        auto so = rx::make_subscriber<int>(next, error, completed);
         WHEN("nothing is called"){
             THEN("dynamic_observer result is 0"){
                 REQUIRE(result == 0);
@@ -152,9 +151,6 @@ SCENARIO("observer behavior", "[observer][traits]"){
             THEN("static_observer is subscribed"){
                 REQUIRE(so.is_subscribed());
             }
-            THEN("observer<void> is subscribed"){
-                REQUIRE(!eo.is_subscribed());
-            }
         }
         WHEN("onnext is called with 1"){
             THEN("dynamic_observer result is 1"){
@@ -165,10 +161,6 @@ SCENARIO("observer behavior", "[observer][traits]"){
                 so.on_next(1);
                 REQUIRE(result == 1);
             }
-            THEN("observer<void> result is 0"){
-                eo.on_next(1);
-                REQUIRE(result == 0);
-            }
             THEN("dynamic_observer is subscribed"){
                 dob.on_next(1);
                 REQUIRE(dob.is_subscribed());
@@ -176,10 +168,6 @@ SCENARIO("observer behavior", "[observer][traits]"){
             THEN("static_observer is subscribed"){
                 so.on_next(1);
                 REQUIRE(so.is_subscribed());
-            }
-            THEN("observer<void> is not subscribed"){
-                eo.on_next(1);
-                REQUIRE(!eo.is_subscribed());
             }
         }
         WHEN("onnext is called with 1 after error"){
@@ -193,11 +181,6 @@ SCENARIO("observer behavior", "[observer][traits]"){
                 so.on_next(1);
                 REQUIRE(result == 10);
             }
-            THEN("observer<void> result is 0"){
-                eo.on_error(std::current_exception());
-                eo.on_next(1);
-                REQUIRE(result == 0);
-            }
             THEN("dynamic_observer is not subscribed"){
                 dob.on_error(std::current_exception());
                 dob.on_next(1);
@@ -207,11 +190,6 @@ SCENARIO("observer behavior", "[observer][traits]"){
                 so.on_error(std::current_exception());
                 so.on_next(1);
                 REQUIRE(!so.is_subscribed());
-            }
-            THEN("observer<void> is not subscribed"){
-                eo.on_error(std::current_exception());
-                eo.on_next(1);
-                REQUIRE(!eo.is_subscribed());
             }
         }
         WHEN("onnext is called with 1 after completed"){
@@ -225,11 +203,6 @@ SCENARIO("observer behavior", "[observer][traits]"){
                 so.on_next(1);
                 REQUIRE(result == 100);
             }
-            THEN("observer<void> result is 0"){
-                eo.on_completed();
-                eo.on_next(1);
-                REQUIRE(result == 0);
-            }
             THEN("dynamic_observer is not subscribed"){
                 dob.on_completed();
                 dob.on_next(1);
@@ -239,11 +212,6 @@ SCENARIO("observer behavior", "[observer][traits]"){
                 so.on_completed();
                 so.on_next(1);
                 REQUIRE(!so.is_subscribed());
-            }
-            THEN("observer<void> is not subscribed"){
-                eo.on_completed();
-                eo.on_next(1);
-                REQUIRE(!eo.is_subscribed());
             }
         }
     }
