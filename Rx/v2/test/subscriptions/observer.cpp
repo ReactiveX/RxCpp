@@ -66,7 +66,7 @@ SCENARIO("subscriber traits", "[observer][traits]"){
 SCENARIO("observer traits", "[observer][traits]"){
     GIVEN("given some observer types"){
         auto emptyNext = [](int){};
-        rx::dynamic_observer<int> dob(emptyNext);
+        auto dob = rx::make_observer_dynamic<int>(emptyNext);
         auto so = rx::make_observer<int>(emptyNext);
         auto eo = rx::make_observer<int>();
         WHEN("tested"){
@@ -110,7 +110,7 @@ SCENARIO("non-observer traits", "[observer][traits]"){
 SCENARIO("observers with subscription traits", "[observer][subscription][traits]"){
     GIVEN("given some observer types"){
         auto emptyNext = [](int){};
-        rx::dynamic_observer<int> dob(emptyNext);
+        auto dob = rx::make_observer_dynamic<int>(emptyNext);
         auto so = rx::make_observer<int>(emptyNext);
         auto eo = rx::make_observer<int>();
         WHEN("tested"){
@@ -133,7 +133,7 @@ SCENARIO("observer behavior", "[observer][traits]"){
         auto next = [&result](int i){result += i;};
         auto error = [&result](std::exception_ptr){result += 10;};
         auto completed = [&result](){result += 100;};
-        auto dob = rx::make_observer(rx::dynamic_observer<int>(next, error, completed));
+        auto dob = rx::make_observer_dynamic<int>(next, error, completed);
         auto so = rx::make_observer<int>(next, error, completed);
         auto eo = rx::make_observer<int>();
         WHEN("nothing is called"){

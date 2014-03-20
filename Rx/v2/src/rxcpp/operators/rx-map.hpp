@@ -19,15 +19,18 @@ struct map
 {
     typedef map<Observable, Selector> this_type;
 
+    typedef typename std::decay<Observable>::type source_type;
+    typedef typename std::decay<Selector>::type select_type;
+
     struct values
     {
-        values(Observable o, Selector s)
+        values(source_type o, select_type s)
             : source(std::move(o))
             , select(std::move(s))
         {
         }
-        Observable source;
-        Selector select;
+        source_type source;
+        select_type select;
     };
     values initial;
 
@@ -39,17 +42,17 @@ struct map
     template<class CF, class CP>
     static tag_not_valid check(...);
 
-    static_assert(!std::is_same<decltype(check<source_value_type, Selector>(0)), tag_not_valid>::value, "map Selector must be a function with the signature map::value_type(map::source_value_type)");
+    static_assert(!std::is_same<decltype(check<source_value_type, select_type>(0)), tag_not_valid>::value, "map Selector must be a function with the signature map::value_type(map::source_value_type)");
 
-    map(Observable o, Selector s)
+    map(source_type o, select_type s)
         : initial(std::move(o), std::move(s))
     {
     }
 
-    template<class I>
-    void on_subscribe(observer<typename this_type::value_type, I> o) {
+    template<class Subscriber>
+    void on_subscribe(Subscriber o) {
 
-        typedef observer<typename this_type::value_type, I> output_type;
+        typedef Subscriber output_type;
         struct state_type
             : public std::enable_shared_from_this<state_type>
             , public values
@@ -65,7 +68,7 @@ struct map
         auto state = std::shared_ptr<state_type>(new state_type(initial, std::move(o)));
 
         state->source.subscribe(
-            state->out.get_subscription(),
+            state->out,
         // on_next
             [state](typename this_type::source_value_type st) {
                 util::detail::maybe<typename this_type::value_type> selected;
@@ -92,23 +95,24 @@ struct map
 template<class Selector>
 class map_factory
 {
-    Selector selector;
+    typedef typename std::decay<Selector>::type select_type;
+    select_type selector;
 public:
-    map_factory(Selector p) : selector(std::move(p)) {}
+    map_factory(select_type p) : selector(std::move(p)) {}
     template<class Observable>
-    auto operator()(Observable source)
+    auto operator()(Observable&& source)
         ->      observable<typename map<Observable, Selector>::value_type,  map<Observable, Selector>> {
         return  observable<typename map<Observable, Selector>::value_type,  map<Observable, Selector>>(
-                                                                            map<Observable, Selector>(source, std::move(selector)));
+                                                                            map<Observable, Selector>(std::forward<Observable>(source), std::move(selector)));
     }
 };
 
 }
 
 template<class Selector>
-auto map(Selector p)
+auto map(Selector&& p)
     ->      detail::map_factory<Selector> {
-    return  detail::map_factory<Selector>(std::move(p));
+    return  detail::map_factory<Selector>(std::forward<Selector>(p));
 }
 
 }

@@ -20,8 +20,21 @@ struct is_operator_factory_for
     template<class CS, class CF>
     static not_void check(...);
 
-    typedef decltype(check<Source, F>(0)) detail_result;
+    typedef decltype(check<typename std::decay<Source>::type, typename std::decay<F>::type>(0)) detail_result;
     static const bool value = !std::is_same<detail_result, not_void>::value;
+};
+
+template<class Subscriber, class T>
+struct has_on_subscribe_for
+{
+    struct not_void {};
+    template<class CS, class CT>
+    static auto check(int) -> decltype((*(CT*)nullptr).on_subscribe(*(CS*)nullptr));
+    template<class CS, class CT>
+    static not_void check(...);
+
+    typedef decltype(check<typename std::decay<Subscriber>::type, T>(0)) detail_result;
+    static const bool value = std::is_same<detail_result, void>::value;
 };
 
 }
@@ -33,7 +46,7 @@ class dynamic_observable
     struct state_type
         : public std::enable_shared_from_this<state_type>
     {
-        typedef std::function<void(observer<T>)> onsubscribe_type;
+        typedef std::function<void(subscriber<T>)> onsubscribe_type;
 
         onsubscribe_type on_subscribe;
     };
@@ -48,8 +61,9 @@ class dynamic_observable
     }
 
     template<class SO>
-    void construct(SO so, rxs::tag_source&&) {
-        state->on_subscribe = [so](observer<T> o) mutable {
+    void construct(SO&& source, rxs::tag_source&&) {
+        typename std::decay<SO>::type so = std::forward<SO>(source);
+        state->on_subscribe = [so](subscriber<T> o) mutable {
             so.on_subscribe(std::move(o));
         };
     }
@@ -74,28 +88,29 @@ public:
             typename std::conditional<rxs::is_source<SOF>::value || rxo::is_operator<SOF>::value, rxs::tag_source, tag_function>::type());
     }
 
-    void on_subscribe(observer<T> o) const {
+    void on_subscribe(subscriber<T> o) const {
         state->on_subscribe(std::move(o));
     }
 
-    template<class Observer>
-    typename std::enable_if<!std::is_same<typename std::decay<Observer>::type, observer<T>>::value, void>::type
-    on_subscribe(Observer o) const {
-        auto so = std::make_shared<Observer>(o);
-        state->on_subscribe(make_observer_dynamic<T>(
-            so->get_subscription(),
-        // on_next
-            [so](T t){
-                so->on_next(t);
-            },
-        // on_error
-            [so](std::exception_ptr e){
-                so->on_error(e);
-            },
-        // on_completed
-            [so](){
-                so->on_completed();
-            }));
+    template<class Subscriber>
+    typename std::enable_if<!std::is_same<typename std::decay<Subscriber>::type, observer<T>>::value, void>::type
+    on_subscribe(Subscriber&& o) const {
+        auto so = std::make_shared<typename std::decay<Subscriber>::type>(std::forward<Subscriber>(o));
+        state->on_subscribe(make_subscriber<T>(
+            *so,
+            make_observer_dynamic<T>(
+            // on_next
+                [so](T t){
+                    so->on_next(t);
+                },
+            // on_error
+                [so](std::exception_ptr e){
+                    so->on_error(e);
+                },
+            // on_completed
+                [so](){
+                    so->on_completed();
+                })));
     }
 };
 
@@ -112,17 +127,23 @@ class observable
 
 protected:
     typedef observable<T, SourceOperator> this_type;
-    mutable SourceOperator source_operator;
+    typedef typename std::decay<SourceOperator>::type source_operator_type;
+    mutable source_operator_type source_operator;
 
 private:
     template<class U, class SO>
     friend class observable;
 
-    template<class Observer>
-    auto detail_subscribe(Observer o, tag_observer&&) const
-        -> decltype(make_subscription(o)) {
+    template<class Subscriber>
+    auto detail_subscribe(Subscriber&& scrbr) const
+    -> decltype(make_subscription(*(typename std::decay<Subscriber>::type*)nullptr)) {
 
-        static_assert(is_observer<Observer>::value, "subscribe must be passed an observer");
+        typedef typename std::decay<Subscriber>::type subscriber_type;
+        subscriber_type o = std::forward<Subscriber>(scrbr);
+
+        static_assert(is_observer<subscriber_type>::value, "subscribe must be passed an observer");
+        static_assert(std::is_same<typename source_operator_type::value_type, T>::value && std::is_convertible<T*, typename subscriber_type::value_type*>::value, "the value types in the sequence must match or be convertible");
+        static_assert(detail::has_on_subscribe_for<subscriber_type, source_operator_type>::value, "inner must have on_subscribe method that accepts this subscriber ");
 
         if (!o.is_subscribed()) {
             return make_subscription(o);
@@ -154,51 +175,20 @@ private:
         return make_subscription(o);
     }
 
-    struct tag_function {};
-    template<class OnNext>
-    auto detail_subscribe(OnNext n, tag_function&&) const
-        -> decltype(make_subscription(  make_observer<T>(std::move(n)))) {
-        return subscribe(               make_observer<T>(std::move(n)));
-    }
-
-    template<class OnNext, class OnError>
-    auto detail_subscribe(OnNext n, OnError e, tag_function&&) const
-        -> decltype(make_subscription(  make_observer<T>(std::move(n), std::move(e)))) {
-        return subscribe(               make_observer<T>(std::move(n), std::move(e)));
-    }
-
-    template<class OnNext, class OnError, class OnCompleted>
-    auto detail_subscribe(OnNext n, OnError e, OnCompleted c, tag_function&&) const
-        -> decltype(make_subscription(  make_observer<T>(std::move(n), std::move(e), std::move(c)))) {
-        return subscribe(               make_observer<T>(std::move(n), std::move(e), std::move(c)));
-    }
-
-    template<class OnNext>
-    auto detail_subscribe(composite_subscription cs, OnNext n, tag_subscription&&) const
-        -> decltype(make_subscription(  make_observer<T>(std::move(cs), std::move(n)))) {
-        return subscribe(               make_observer<T>(std::move(cs), std::move(n)));
-    }
-
-    template<class OnNext, class OnError>
-    auto detail_subscribe(composite_subscription cs, OnNext n, OnError e, tag_subscription&&) const
-        -> decltype(make_subscription(  make_observer<T>(std::move(cs), std::move(n), std::move(e)))) {
-        return subscribe(               make_observer<T>(std::move(cs), std::move(n), std::move(e)));
-    }
-
 public:
     typedef T value_type;
 
-    static_assert(rxo::is_operator<SourceOperator>::value || rxs::is_source<SourceOperator>::value, "observable must wrap an operator or source");
+    static_assert(rxo::is_operator<source_operator_type>::value || rxs::is_source<source_operator_type>::value, "observable must wrap an operator or source");
 
     observable()
     {
     }
 
-    explicit observable(const SourceOperator& o)
+    explicit observable(const source_operator_type& o)
         : source_operator(o)
     {
     }
-    explicit observable(SourceOperator&& o)
+    explicit observable(source_operator_type&& o)
         : source_operator(std::move(o))
     {
     }
@@ -228,54 +218,66 @@ public:
         return *this;
     }
 
-    template<class Arg>
-    auto subscribe(Arg a) const
-        -> decltype(detail_subscribe(std::move(a), typename std::conditional<is_observer<Arg>::value, tag_observer, tag_function>::type())) {
-        return      detail_subscribe(std::move(a), typename std::conditional<is_observer<Arg>::value, tag_observer, tag_function>::type());
+    template<class Arg0>
+    auto subscribe(Arg0&& a0) const
+        -> decltype(detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0)))) {
+        return      detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0)));
     }
 
-    template<class Arg1, class Arg2>
-    auto subscribe(Arg1 a1, Arg2 a2) const
-        -> decltype(detail_subscribe(std::move(a1), std::move(a2), typename std::conditional<is_subscription<Arg1>::value, tag_subscription, tag_function>::type())) {
-        return      detail_subscribe(std::move(a1), std::move(a2), typename std::conditional<is_subscription<Arg1>::value, tag_subscription, tag_function>::type());
+    template<class Arg0, class Arg1>
+    auto subscribe(Arg0&& a0, Arg1&& a1) const
+        -> decltype(detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<Arg1>(a1)))) {
+        return      detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<Arg1>(a1)));
     }
 
-    template<class Arg1, class Arg2, class Arg3>
-    auto subscribe(Arg1 a1, Arg2 a2, Arg3 a3) const
-        -> decltype(detail_subscribe(std::move(a1), std::move(a2), std::move(a3), typename std::conditional<is_subscription<Arg1>::value, tag_subscription, tag_function>::type())) {
-        return      detail_subscribe(std::move(a1), std::move(a2), std::move(a3), typename std::conditional<is_subscription<Arg1>::value, tag_subscription, tag_function>::type());
+    template<class Arg0, class Arg1, class Arg2>
+    auto subscribe(Arg0&& a0, Arg1&& a1, Arg2&& a2) const
+        -> decltype(detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2)))) {
+        return      detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2)));
     }
 
-    template<class OnNext, class OnError, class OnCompleted>
-    auto subscribe(composite_subscription cs, OnNext n, OnError e, OnCompleted c) const
-        -> decltype(make_subscription(  make_observer<T>(std::move(cs), std::move(n), std::move(e), std::move(c)))) {
-        return subscribe(               make_observer<T>(std::move(cs), std::move(n), std::move(e), std::move(c)));
+    template<class Arg0, class Arg1, class Arg2, class Arg3>
+    auto subscribe(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3) const
+        -> decltype(detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3)))) {
+        return      detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3)));
+    }
+
+    template<class Arg0, class Arg1, class Arg2, class Arg3, class Arg4>
+    auto subscribe(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3, Arg4&& a4) const
+        -> decltype(detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4)))) {
+        return      detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4)));
+    }
+
+    template<class Arg0, class Arg1, class Arg2, class Arg3, class Arg4, class Arg5>
+    auto subscribe(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3, Arg4&& a4, Arg5&& a5) const
+        -> decltype(detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4), std::forward<Arg5>(a5)))) {
+        return      detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4), std::forward<Arg5>(a5)));
     }
 
     template<class Predicate>
-    auto filter(Predicate p) const
+    auto filter(Predicate&& p) const
         ->      observable<T,   rxo::detail::filter<T, observable, Predicate>> {
         return  observable<T,   rxo::detail::filter<T, observable, Predicate>>(
-                                rxo::detail::filter<T, observable, Predicate>(*this, std::move(p)));
+                                rxo::detail::filter<T, observable, Predicate>(*this, std::forward<Predicate>(p)));
     }
 
     template<class Selector>
-    auto map(Selector s) const
+    auto map(Selector&& s) const
         ->      observable<typename rxo::detail::map<observable, Selector>::value_type, rxo::detail::map<observable, Selector>> {
         return  observable<typename rxo::detail::map<observable, Selector>::value_type, rxo::detail::map<observable, Selector>>(
-                                                                                        rxo::detail::map<observable, Selector>(*this, std::move(s)));
+                                                                                        rxo::detail::map<observable, Selector>(*this, std::forward<Selector>(s)));
     }
 
     template<class CollectionSelector, class ResultSelector>
-    auto flat_map(CollectionSelector s, ResultSelector rs) const
+    auto flat_map(CollectionSelector&& s, ResultSelector&& rs) const
         ->      observable<typename rxo::detail::flat_map<observable, CollectionSelector, ResultSelector>::value_type,  rxo::detail::flat_map<observable, CollectionSelector, ResultSelector>> {
         return  observable<typename rxo::detail::flat_map<observable, CollectionSelector, ResultSelector>::value_type,  rxo::detail::flat_map<observable, CollectionSelector, ResultSelector>>(
-                                                                                                                        rxo::detail::flat_map<observable, CollectionSelector, ResultSelector>(*this, std::move(s), std::move(rs)));
+                                                                                                                        rxo::detail::flat_map<observable, CollectionSelector, ResultSelector>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs)));
     }
 
     template<class OperatorFactory>
     auto op(OperatorFactory&& of) const
-        -> decltype(of(*(this_type*)nullptr)) {
+        -> decltype(of(*(const this_type*)nullptr)) {
         static_assert(detail::is_operator_factory_for<this_type, OperatorFactory>::value, "Function passed for op() must have the signature Result(SourceObservable)");
         return      of(*this);
     }

@@ -18,8 +18,6 @@ SCENARIO("flat_map completes", "[flat_map][map][operators]"){
         typedef rxsc::test::messages<int> m;
         typedef rxsc::test::messages<std::string> ms;
 
-        long invoked = 0;
-
         m::recorded_type int_messages[] = {
             m::on_next(100, 4),
             m::on_next(200, 2),
@@ -43,7 +41,11 @@ SCENARIO("flat_map completes", "[flat_map][map][operators]"){
             auto res = sc->start<std::string>(
                 [&]() {
                     return xs
-                        .flat_map([&](int){return ys;}, [](int, std::string s){return s;})
+                        .flat_map(
+                            [&](int){
+                                return ys;},
+                            [](int, std::string s){
+                                return s;})
                         // forget type to workaround lambda deduction bug on msvc 2013
                         .as_dynamic();
                 }
@@ -70,7 +72,7 @@ SCENARIO("flat_map completes", "[flat_map][map][operators]"){
                     ms::on_completed(850)
                 };
                 auto required = rxu::to_vector(items);
-                auto actual = res.messages();
+                auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
@@ -104,8 +106,6 @@ SCENARIO("flat_map source never ends", "[flat_map][map][operators]"){
         auto sc = std::make_shared<rxsc::test>();
         typedef rxsc::test::messages<int> m;
         typedef rxsc::test::messages<std::string> ms;
-
-        long invoked = 0;
 
         m::recorded_type int_messages[] = {
             m::on_next(100, 4),
@@ -162,7 +162,7 @@ SCENARIO("flat_map source never ends", "[flat_map][map][operators]"){
                     ms::on_next(950, "foo")
                 };
                 auto required = rxu::to_vector(items);
-                auto actual = res.messages();
+                auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
@@ -197,8 +197,6 @@ SCENARIO("flat_map inner error", "[flat_map][map][operators]"){
         auto sc = std::make_shared<rxsc::test>();
         typedef rxsc::test::messages<int> m;
         typedef rxsc::test::messages<std::string> ms;
-
-        long invoked = 0;
 
         m::recorded_type int_messages[] = {
             m::on_next(100, 4),
@@ -244,7 +242,7 @@ SCENARIO("flat_map inner error", "[flat_map][map][operators]"){
                     ms::on_error(601, ex)
                 };
                 auto required = rxu::to_vector(items);
-                auto actual = res.messages();
+                auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 

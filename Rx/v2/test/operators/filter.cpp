@@ -89,7 +89,7 @@ SCENARIO("filter stops on completion", "[filter][operators]"){
                     m::on_completed(600)
                 };
                 auto required = rxu::to_vector(items);
-                auto actual = res.messages();
+                auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
@@ -110,7 +110,7 @@ SCENARIO("filter stops on completion", "[filter][operators]"){
 }
 
 
-SCENARIO("where stops on disposal", "[where][filter][operators]"){
+SCENARIO("filter stops on disposal", "[where][filter][operators]"){
     GIVEN("a test hot observable of ints"){
         auto sc = std::make_shared<rxsc::test>();
         typedef rxsc::test::messages<int> m;
@@ -165,7 +165,7 @@ SCENARIO("where stops on disposal", "[where][filter][operators]"){
                     m::on_next(390, 7)
                 };
                 auto required = rxu::to_vector(items);
-                auto actual = res.messages();
+                auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
@@ -185,7 +185,7 @@ SCENARIO("where stops on disposal", "[where][filter][operators]"){
     }
 }
 
-SCENARIO("where stops on error", "[where][filter][operators]"){
+SCENARIO("filter stops on error", "[where][filter][operators]"){
     GIVEN("a test hot observable of ints"){
         auto sc = std::make_shared<rxsc::test>();
         typedef rxsc::test::messages<int> m;
@@ -250,7 +250,7 @@ SCENARIO("where stops on error", "[where][filter][operators]"){
                     m::on_error(600, ex),
                 };
                 auto required = rxu::to_vector(items);
-                auto actual = res.messages();
+                auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
@@ -270,7 +270,7 @@ SCENARIO("where stops on error", "[where][filter][operators]"){
     }
 }
 
-SCENARIO("where stops on throw from predicate", "[where][filter][operators]"){
+SCENARIO("filter stops on throw from predicate", "[where][filter][operators]"){
     GIVEN("a test hot observable of ints"){
         auto sc = std::make_shared<rxsc::test>();
         typedef rxsc::test::messages<int> m;
@@ -339,7 +339,7 @@ SCENARIO("where stops on throw from predicate", "[where][filter][operators]"){
                     m::on_error(380, ex)
                 };
                 auto required = rxu::to_vector(items);
-                auto actual = res.messages();
+                auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
@@ -359,7 +359,7 @@ SCENARIO("where stops on throw from predicate", "[where][filter][operators]"){
     }
 }
 
-SCENARIO("where stops on dispose from predicate", "[where][filter][operators]"){
+SCENARIO("filter stops on dispose from predicate", "[where][filter][operators]"){
     GIVEN("a test hot observable of ints"){
         auto sc = std::make_shared<rxsc::test>();
         typedef rxsc::test::messages<int> m;
@@ -389,7 +389,7 @@ SCENARIO("where stops on dispose from predicate", "[where][filter][operators]"){
             }()
         );
 
-        auto res = sc->make_observer<int>();
+        auto res = sc->make_subscriber<int>();
 
         rx::observable<int, rx::dynamic_observable<int>> ys;
 
@@ -436,7 +436,7 @@ SCENARIO("where stops on dispose from predicate", "[where][filter][operators]"){
                     m::on_next(390, 7)
                 };
                 auto required = rxu::to_vector(items);
-                auto actual = res.messages();
+                auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 

@@ -18,7 +18,7 @@ class multicast_observer
     : public observer_base<T>
 {
     typedef observer_base<T> base;
-    typedef observer<T> observer_type;
+    typedef subscriber<T> observer_type;
     typedef std::vector<observer_type> list_type;
 
     struct mode
@@ -66,7 +66,7 @@ class multicast_observer
                 std::copy_if(
                     old->observers.begin(), old->observers.end(),
                     std::inserter(observers, observers.end()),
-                    [](const observer<T>& o){
+                    [](const observer_type& o){
                         return o.is_subscribed();
                     });
             }
@@ -108,7 +108,7 @@ public:
     bool has_observers() const {
         return b->state->has_observers;
     }
-    void add(observer<T> o) const {
+    void add(observer_type o) const {
         std::unique_lock<std::mutex> guard(b->state->lock);
         switch (b->state->current) {
         case mode::Casting:
@@ -148,7 +148,7 @@ public:
                 c = b->completer;
             }
             for (auto& o : c->observers) {
-                o.on_next(std::move(t));
+                o.on_next(t);
             }
         }
     }
@@ -206,7 +206,7 @@ public:
         return observer<T, detail::multicast_observer<T>>(s);
     }
     observable<T> get_observable() const {
-        return make_dynamic_observable<T>([this](observer<T> o){
+        return make_dynamic_observable<T>([this](subscriber<T> o){
             this->s.add(std::move(o));
         });
     }

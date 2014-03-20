@@ -16,23 +16,25 @@ namespace detail {
 template<class T, class Observable, class Predicate>
 struct filter : public operator_base<T>
 {
-    Observable source;
-    Predicate test;
+    typedef typename std::decay<Observable>::type source_type;
+    typedef typename std::decay<Predicate>::type test_type;
+    source_type source;
+    test_type test;
 
     template<class CT, class CP>
     static auto check(int) -> decltype((*(CP*)nullptr)(*(CT*)nullptr));
     template<class CT, class CP>
     static void check(...);
-    filter(Observable o, Predicate p)
+    filter(source_type o, test_type p)
         : source(std::move(o))
         , test(std::move(p))
     {
-        static_assert(std::is_convertible<decltype(check<T, Predicate>(0)), bool>::value, "filter Predicate must be a function with the signature bool(T)");
+        static_assert(std::is_convertible<decltype(check<T, test_type>(0)), bool>::value, "filter Predicate must be a function with the signature bool(T)");
     }
-    template<class I>
-    void on_subscribe(observer<T, I> o) {
+    template<class Subscriber>
+    void on_subscribe(Subscriber o) {
         source.subscribe(
-            o.get_subscription(),
+            o,
         // on_next
             [this, o](T t) {
                 bool filtered = false;
@@ -61,23 +63,24 @@ struct filter : public operator_base<T>
 template<class Predicate>
 class filter_factory
 {
-    Predicate predicate;
+    typedef typename std::decay<Predicate>::type test_type;
+    test_type predicate;
 public:
-    filter_factory(Predicate p) : predicate(std::move(p)) {}
+    filter_factory(test_type p) : predicate(std::move(p)) {}
     template<class Observable>
-    auto operator()(Observable source)
-        ->      observable<typename Observable::value_type, filter<typename Observable::value_type, Observable, Predicate>> {
-        return  observable<typename Observable::value_type, filter<typename Observable::value_type, Observable, Predicate>>(
-                                                            filter<typename Observable::value_type, Observable, Predicate>(source, std::move(predicate)));
+    auto operator()(Observable&& source)
+        ->      observable<typename std::decay<Observable>::type::value_type,   filter<typename std::decay<Observable>::type::value_type, Observable, Predicate>> {
+        return  observable<typename std::decay<Observable>::type::value_type,   filter<typename std::decay<Observable>::type::value_type, Observable, Predicate>>(
+                                                                                filter<typename std::decay<Observable>::type::value_type, Observable, Predicate>(std::forward<Observable>(source), std::move(predicate)));
     }
 };
 
 }
 
 template<class Predicate>
-auto filter(Predicate p)
+auto filter(Predicate&& p)
     ->      detail::filter_factory<Predicate> {
-    return  detail::filter_factory<Predicate>(std::move(p));
+    return  detail::filter_factory<Predicate>(std::forward<Predicate>(p));
 }
 
 }

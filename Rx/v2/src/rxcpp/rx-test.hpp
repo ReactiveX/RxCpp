@@ -18,7 +18,7 @@ struct test_subject_base
     typedef rxn::recorded<typename rxn::notification<T>::type> recorded_type;
     typedef std::shared_ptr<test_subject_base<T>> type;
 
-    virtual void on_subscribe(observer<T>) const =0;
+    virtual void on_subscribe(subscriber<T>) const =0;
     virtual std::vector<recorded_type> messages() const =0;
     virtual std::vector<rxn::subscription> subscriptions() const =0;
 };
@@ -30,29 +30,35 @@ struct test_source
     explicit test_source(typename test_subject_base<T>::type ts)
         : ts(std::move(ts))
     {
+        if (!this->ts) abort();
     }
     typename test_subject_base<T>::type ts;
-    void on_subscribe(observer<T> o) const {
+    void on_subscribe(subscriber<T> o) const {
         ts->on_subscribe(std::move(o));
     }
-    template<class Observer>
-    typename std::enable_if<!std::is_same<typename std::decay<Observer>::type, observer<T>>::value, void>::type
-    on_subscribe(Observer o) const {
-        auto so = std::make_shared<Observer>(o);
-        ts->on_subscribe(make_observer_dynamic<T>(
-            so->get_subscription(),
-        // on_next
-            [so](T t){
-                so->on_next(t);
-            },
-        // on_error
-            [so](std::exception_ptr e){
-                so->on_error(e);
-            },
-        // on_completed
-            [so](){
-                so->on_completed();
-            }));
+    template<class Subscriber>
+    typename std::enable_if<!std::is_same<typename std::decay<Subscriber>::type, subscriber<T>>::value, void>::type
+    on_subscribe(Subscriber&& o) const {
+
+        static_assert(is_subscriber<Subscriber>::value, "on_subscribe must be passed a subscriber.");
+
+        auto so = std::make_shared<typename std::decay<Subscriber>::type>(std::forward<Subscriber>(o));
+        ts->on_subscribe(
+            make_subscriber<T>(
+                *so,
+                make_observer_dynamic<T>(
+                // on_next
+                    [so](T t){
+                        so->on_next(t);
+                    },
+                // on_error
+                    [so](std::exception_ptr e){
+                        so->on_error(e);
+                    },
+                // on_completed
+                    [so](){
+                        so->on_completed();
+                    })));
     }
 };
 

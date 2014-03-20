@@ -57,7 +57,7 @@ public:
 template<class Unsubscribe>
 class static_subscription : public subscription_base
 {
-    typedef Unsubscribe unsubscribe_call_type;
+    typedef typename std::decay<Unsubscribe>::type unsubscribe_call_type;
     unsubscribe_call_type unsubscribe_call;
     static_subscription()
     {
@@ -83,7 +83,7 @@ public:
 template<class I>
 class subscription : public subscription_base
 {
-    typedef I inner_t;
+    typedef typename std::decay<I>::type inner_t;
     inner_t inner;
     mutable bool issubscribed;
 public:
@@ -120,17 +120,17 @@ inline auto make_subscription()
     return  subscription<void>();
 }
 template<class I>
-auto make_subscription(I i)
+auto make_subscription(I&& i)
     -> typename std::enable_if<is_subscription<I>::value,
             subscription<I>>::type {
-    return  subscription<I>(std::move(i));
+    return  subscription<I>(std::forward<I>(i));
 }
 template<class Unsubscribe>
-auto make_subscription(Unsubscribe u)
+auto make_subscription(Unsubscribe&& u)
     -> typename std::enable_if<!is_subscription<Unsubscribe>::value,
             subscription<   static_subscription<Unsubscribe>>>::type {
     return  subscription<   static_subscription<Unsubscribe>>(
-                            static_subscription<Unsubscribe>(std::move(u)));
+                            static_subscription<Unsubscribe>(std::forward<Unsubscribe>(u)));
 }
 
 class composite_subscription : public subscription_base
@@ -222,24 +222,39 @@ public:
     composite_subscription()
         : state(std::make_shared<state_t>())
     {
+        if (!state) {
+            abort();
+        }
     }
     composite_subscription(const composite_subscription& o)
         : state(o.state)
     {
+        if (!state) {
+            abort();
+        }
     }
     composite_subscription(composite_subscription&& o)
         : state(std::move(o.state))
     {
+        if (!state) {
+            abort();
+        }
     }
 
     composite_subscription& operator=(const composite_subscription& o)
     {
         state = o.state;
+        if (!state) {
+            abort();
+        }
         return *this;
     }
     composite_subscription& operator=(composite_subscription&& o)
     {
         state = std::move(o.state);
+        if (!state) {
+            abort();
+        }
         return *this;
     }
 

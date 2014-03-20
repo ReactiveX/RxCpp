@@ -51,7 +51,7 @@ public:
         using std::swap;
         swap(s, o.s);
     }
-    typename this_type::subscription_type get_subscription() {
+    const typename this_type::subscription_type& get_subscription() const {
         return s;
     }
     bool is_subscribed() const {
@@ -75,7 +75,7 @@ class is_observer
     template<class C>
     static void check(...);
 public:
-    static const bool value = std::is_convertible<decltype(check<T>(0)), tag_observer>::value;
+    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_observer>::value;
 };
 
 namespace detail {
@@ -102,7 +102,7 @@ struct is_on_next_of
     template<class CT, class CF>
     static not_void check(...);
 
-    typedef decltype(check<T, F>(0)) detail_result;
+    typedef decltype(check<T, typename std::decay<F>::type>(0)) detail_result;
     static const bool value = std::is_same<detail_result, void>::value;
 };
 
@@ -115,7 +115,7 @@ struct is_on_error
     template<class CF>
     static not_void check(...);
 
-    static const bool value = std::is_same<decltype(check<F>(0)), void>::value;
+    static const bool value = std::is_same<decltype(check<typename std::decay<F>::type>(0)), void>::value;
 };
 
 template<class F>
@@ -127,7 +127,7 @@ struct is_on_completed
     template<class CF>
     static not_void check(...);
 
-    static const bool value = std::is_same<decltype(check<F>(0)), void>::value;
+    static const bool value = std::is_same<decltype(check<typename std::decay<F>::type>(0)), void>::value;
 };
 
 }
@@ -147,215 +147,17 @@ private:
     on_error_t onerror;
     on_completed_t oncompleted;
 
-    struct tag_this_type {};
-    struct tag_function {};
-
-    template<class Arg>
-    struct resolve_tag
-    {
-        typedef typename std::conditional<std::is_same<typename std::decay<Arg>::type, dynamic_observer<T>>::value, tag_this_type,
-                    typename std::conditional<is_subscription<Arg>::value, tag_subscription, tag_function>::type
-                >::type type;
-    };
-
-    template<class Arg, class Tag = typename resolve_tag<Arg>::type>
-    struct resolve_cs;
-    template<class Arg>
-    struct resolve_cs<Arg, tag_this_type>
-    {
-        auto operator()(const Arg& a)
-            -> decltype(a.cs) {
-            return a.cs;
-        }
-        auto operator()(Arg&& a)
-            -> decltype(a.cs) {
-            return std::move(a.cs);
-        }
-    };
-    template<class Arg>
-    struct resolve_cs<Arg, tag_subscription>
-    {
-        Arg operator()(Arg a) {
-            return std::move(a);
-        }
-    };
-    template<class Arg>
-    struct resolve_cs<Arg, tag_function>
-    {
-        composite_subscription operator()(const Arg& a) {
-            return composite_subscription();
-        }
-    };
-
-    template<class Arg, class Tag = typename resolve_tag<Arg>::type>
-    struct resolve_onnext;
-    template<class Arg>
-    struct resolve_onnext<Arg, tag_this_type>
-    {
-        auto operator()(const Arg& a)
-            -> decltype(a.onnext) {
-            return a.onnext;
-        }
-        auto operator()(Arg&& a)
-            -> decltype(a.onnext) {
-            return std::move(a.onnext);
-        }
-    };
-    template<class Arg>
-    struct resolve_onnext<Arg, tag_subscription>
-    {
-        template<class Arg1>
-        on_next_t operator()(const Arg1& a1) {
-            return on_next_t();
-        }
-        template<class Arg1, class Arg2>
-        Arg2 operator()(const Arg1&, Arg2 a2) {
-            static_assert(detail::is_on_next_of<T, Arg2>::value || std::is_same<Arg2, std::nullptr_t>::value,
-                "Function supplied for on_next must be a function with the signature void(T);");
-            return std::move(a2);
-        }
-    };
-    template<class Arg>
-    struct resolve_onnext<Arg, tag_function>
-    {
-        template<class Arg1>
-        Arg1 operator()(Arg1 a1) {
-            static_assert(detail::is_on_next_of<T, Arg1>::value || std::is_same<Arg1, std::nullptr_t>::value,
-                "Function supplied for on_next must be a function with the signature void(T);");
-            return std::move(a1);
-        }
-        template<class Arg1, class Arg2>
-        Arg operator()(Arg1 a1, const Arg2&) {
-            static_assert(detail::is_on_next_of<T, Arg1>::value || std::is_same<Arg1, std::nullptr_t>::value,
-                "Function supplied for on_next must be a function with the signature void(T);");
-            return std::move(a1);
-        }
-    };
-
-    template<class Arg, class Tag = typename resolve_tag<Arg>::type>
-    struct resolve_onerror;
-    template<class Arg>
-    struct resolve_onerror<Arg, tag_this_type>
-    {
-        auto operator()(const Arg& a)
-            -> decltype(a.onerror) {
-            return a.onerror;
-        }
-        auto operator()(Arg&& a)
-            -> decltype(a.onerror) {
-            return std::move(a.onerror);
-        }
-    };
-    template<class Arg>
-    struct resolve_onerror<Arg, tag_subscription>
-    {
-        template<class Arg1>
-        on_error_t operator()(const Arg1& a1) {
-            return on_error_t();
-        }
-        template<class Arg1, class Arg2>
-        Arg2 operator()(const Arg1&, Arg2 a2) {
-            static_assert(detail::is_on_error<Arg2>::value || std::is_same<Arg2, std::nullptr_t>::value,
-                "Function supplied for on_error must be a function with the signature void(std::exception_ptr);");
-            return std::move(a2);
-        }
-    };
-    template<class Arg>
-    struct resolve_onerror<Arg, tag_function>
-    {
-        template<class Arg1>
-        on_error_t operator()(const Arg1& a1) {
-            return on_error_t();
-        }
-        template<class Arg1, class Arg2>
-        Arg1 operator()(Arg1 a1, const Arg2&) {
-            static_assert(detail::is_on_error<Arg1>::value || std::is_same<Arg1, std::nullptr_t>::value,
-                "Function supplied for on_error must be a function with the signature void(std::exception_ptr);");
-            return std::move(a1);
-        }
-    };
-
-    template<class Arg, class Tag = typename resolve_tag<Arg>::type>
-    struct resolve_oncompleted;
-    template<class Arg>
-    struct resolve_oncompleted<Arg, tag_this_type>
-    {
-        auto operator()(const Arg& a)
-            -> decltype(a.oncompleted) {
-            return a.oncompleted;
-        }
-        auto operator()(Arg&& a)
-            -> decltype(a.oncompleted) {
-            return std::move(a.oncompleted);
-        }
-    };
-    template<class Arg>
-    struct resolve_oncompleted<Arg, tag_subscription>
-    {
-        template<class Arg1>
-        on_completed_t operator()(const Arg1& a1) {
-            return on_completed_t();
-        }
-        template<class Arg1, class Arg2>
-        Arg2 operator()(const Arg1&, Arg2 a2) {
-            static_assert(detail::is_on_completed<Arg2>::value || std::is_same<Arg2, std::nullptr_t>::value,
-                "Function supplied for on_completed must be a function with the signature void();");
-            return std::move(a2);
-        }
-    };
-    template<class Arg>
-    struct resolve_oncompleted<Arg, tag_function>
-    {
-        template<class Arg1>
-        on_completed_t operator()(const Arg1& a1) {
-            return on_completed_t();
-        }
-        template<class Arg1, class Arg2>
-        Arg1 operator()(Arg1 a1, const Arg2&) {
-            static_assert(detail::is_on_completed<Arg1>::value || std::is_same<Arg1, std::nullptr_t>::value,
-                "Function supplied for on_completed must be a function with the signature void();");
-            return std::move(a1);
-        }
-    };
-
 public:
     dynamic_observer()
     {
     }
 
-    template<class Arg>
-    explicit dynamic_observer(Arg a)
-        : base_type(resolve_cs<Arg>()(a))
-        , onnext(resolve_onnext<Arg>()(a))
-        , onerror(resolve_onerror<Arg>()(a))
-        , oncompleted(resolve_oncompleted<Arg>()(a))
-    {
-    }
-
-    template<class Arg1, class Arg2>
-    dynamic_observer(Arg1 a1, Arg2 a2)
-        : base_type(resolve_cs<Arg1>()(a1))
-        , onnext(resolve_onnext<Arg1>()(a1, a2))
-        , onerror(resolve_onerror<Arg1>()(a2, on_error_t()))
-        , oncompleted(resolve_oncompleted<Arg1>()(on_completed_t(), on_completed_t()))
-    {
-    }
-
-    template<class Arg1, class Arg2, class Arg3>
-    dynamic_observer(Arg1 a1, Arg2 a2, Arg3 a3)
-        : base_type(resolve_cs<Arg1>()(a1))
-        , onnext(resolve_onnext<Arg1>()(a1, a2))
-        , onerror(resolve_onerror<Arg1>()(a2, a3))
-        , oncompleted(resolve_oncompleted<Arg1>()(a3, on_completed_t()))
-    {
-    }
-
     template<class OnNext, class OnError, class OnCompleted>
-    dynamic_observer(composite_subscription cs, OnNext n, OnError e, OnCompleted c)
+    dynamic_observer(composite_subscription cs, OnNext&& n, OnError&& e, OnCompleted&& c)
         : base_type(std::move(cs))
-        , onnext(std::move(n))
-        , onerror(std::move(e))
-        , oncompleted(std::move(c))
+        , onnext(std::forward<OnNext>(n))
+        , onerror(std::forward<OnError>(e))
+        , oncompleted(std::forward<OnCompleted>(c))
     {
         static_assert(detail::is_on_next_of<T, OnNext>::value || std::is_same<OnNext, std::nullptr_t>::value,
                 "Function supplied for on_next must be a function with the signature void(T);");
@@ -394,13 +196,14 @@ public:
     }
 };
 
-template<class T, class OnNext, class OnError = detail::OnErrorEmpty, class OnCompleted = detail::OnCompletedEmpty>
+template<class T, class OnNext, class OnError, class OnCompleted>
 class static_observer : public observer_base<T>
 {
 public:
-    typedef OnNext on_next_t;
-    typedef OnError on_error_t;
-    typedef OnCompleted on_completed_t;
+    typedef static_observer<T, OnNext, OnError, OnCompleted> this_type;
+    typedef typename std::decay<OnNext>::type on_next_t;
+    typedef typename std::decay<OnError>::type on_error_t;
+    typedef typename std::decay<OnCompleted>::type on_completed_t;
 
 private:
     on_next_t onnext;
@@ -412,39 +215,32 @@ public:
     static_assert(detail::is_on_error<on_error_t>::value,         "Function supplied for on_error must be a function with the signature void(std::exception_ptr);");
     static_assert(detail::is_on_completed<on_completed_t>::value, "Function supplied for on_completed must be a function with the signature void();");
 
-    explicit static_observer(on_next_t n = on_next_t(), on_error_t e = on_error_t(), on_completed_t c = on_completed_t())
-        : observer_base<T>(composite_subscription())
-        , onnext(std::move(n))
-        , onerror(std::move(e))
-        , oncompleted(std::move(c))
-    {
-    }
-    explicit static_observer(composite_subscription cs, on_next_t n = on_next_t(), on_error_t e = on_error_t(), on_completed_t c = on_completed_t())
+    explicit static_observer(composite_subscription cs, on_next_t n, on_error_t e, on_completed_t c)
         : observer_base<T>(std::move(cs))
         , onnext(std::move(n))
         , onerror(std::move(e))
         , oncompleted(std::move(c))
     {
     }
-    static_observer(const static_observer& o)
+    static_observer(const this_type& o)
         : observer_base<T>(o)
         , onnext(o.onnext)
         , onerror(o.onerror)
         , oncompleted(o.oncompleted)
     {
     }
-    static_observer(static_observer&& o)
+    static_observer(this_type&& o)
         : observer_base<T>(std::move(o))
         , onnext(std::move(o.onnext))
         , onerror(std::move(o.onerror))
         , oncompleted(std::move(o.oncompleted))
     {
     }
-    static_observer& operator=(static_observer o) {
+    static_observer& operator=(this_type o) {
         swap(o);
         return *this;
     }
-    void swap(static_observer& o) {
+    void swap(this_type& o) {
         using std::swap;
         observer_base<T>::swap(o);
         swap(onnext, o.onnext);
@@ -466,8 +262,8 @@ public:
 template<class T, class I>
 class observer : public observer_root<T>
 {
-    typedef observer this_type;
-    typedef typename std::conditional<is_observer<I>::value, I, dynamic_observer<T>>::type inner_t;
+    typedef observer<T, I> this_type;
+    typedef typename std::conditional<is_observer<I>::value, typename std::decay<I>::type, dynamic_observer<T>>::type inner_t;
 
     struct detacher
     {
@@ -515,7 +311,7 @@ public:
             inner.on_completed();
         }
     }
-    typename this_type::subscription_type get_subscription() {
+    const typename this_type::subscription_type& get_subscription() const {
         return inner.get_subscription();
     }
     bool is_subscribed() const {
@@ -545,7 +341,7 @@ public:
     }
     void on_completed() const {
     }
-    typename this_type::subscription_type get_subscription() {
+    const typename this_type::subscription_type& get_subscription() const {
         static typename this_type::subscription_type result;
         result.unsubscribe();
         return result;
@@ -571,115 +367,135 @@ auto make_observer()
 
 namespace detail {
 
-struct tag_require_observer {};
-
-struct tag_require_function {};
-
-template<class I>
-auto make_observer(I i, tag_observer&&)
-    ->      observer<typename I::value_type, I> {
-    return  observer<typename I::value_type, I>(std::move(i));
+template<class T, class ResolvedArgSet>
+auto make_observer_resolved(ResolvedArgSet&& rs)
+    ->      observer<T,                 static_observer<T, typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type::result_type, typename std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type::result_type, typename std::decay<decltype(std::get<3>(std::forward<ResolvedArgSet>(rs)))>::type::result_type>> {
+    return  make_observer_resolved<T,   static_observer<T, typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type::result_type, typename std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type::result_type, typename std::decay<decltype(std::get<3>(std::forward<ResolvedArgSet>(rs)))>::type::result_type>>(std::forward<ResolvedArgSet>(rs));
+}
+template<class T, class ResolvedArgSet>
+auto make_observer_dynamic_resolved(ResolvedArgSet&& rs)
+    ->      observer<T, dynamic_observer<T>> {
+    return  make_observer_resolved<T, dynamic_observer<T>>(std::forward<ResolvedArgSet>(rs));
 }
 
-struct tag_function {};
-template<class T, class OnNext>
-auto make_observer(OnNext n, tag_function&&)
-    ->      observer<T, static_observer<T, OnNext>> {
-    return  observer<T, static_observer<T, OnNext>>(
-                        static_observer<T, OnNext>(std::move(n)));
+template<class T, class I, class ResolvedArgSet>
+auto make_observer_resolved(ResolvedArgSet&& rs)
+    ->      observer<T, I> {
+    typedef I inner_type;
+    return  observer<T, inner_type>(inner_type(
+        std::get<0>(std::forward<ResolvedArgSet>(rs)).value,
+        std::move(std::get<1>(std::forward<ResolvedArgSet>(rs)).value),
+        std::move(std::get<2>(std::forward<ResolvedArgSet>(rs)).value),
+        std::move(std::get<3>(std::forward<ResolvedArgSet>(rs)).value)));
+
+    typedef typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type rn_t;
+    typedef typename std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type re_t;
+    typedef typename std::decay<decltype(std::get<3>(std::forward<ResolvedArgSet>(rs)))>::type rc_t;
+
+    static_assert(rn_t::is_arg, "onnext is a required parameter");
+    static_assert(!(rn_t::is_arg && re_t::is_arg) || rn_t::n + 1 == re_t::n, "onnext, onerror parameters must be together and in order");
+    static_assert(!(re_t::is_arg && rc_t::is_arg) || re_t::n + 1 == rc_t::n, "onerror, oncompleted parameters must be together and in order");
+    static_assert(!(rn_t::is_arg && rc_t::is_arg  && !re_t::is_arg) || rn_t::n + 1 == rc_t::n, "onnext, oncompleted parameters must be together and in order");
 }
 
-template<class T, class OnNext, class OnError>
-auto make_observer(OnNext n, OnError e, tag_function&&)
-    ->      observer<T, static_observer<T, OnNext, OnError>> {
-    return  observer<T, static_observer<T, OnNext, OnError>>(
-                        static_observer<T, OnNext, OnError>(std::move(n), std::move(e)));
+struct tag_subscription_resolution
+{
+    template<class LHS>
+    struct predicate
+    {
+        static const bool value = !is_subscriber<LHS>::value && !is_observer<LHS>::value && is_subscription<LHS>::value;
+    };
+    typedef composite_subscription default_type;
+};
+
+template<class T>
+struct tag_onnext_resolution
+{
+    template<class LHS>
+    struct predicate
+    {
+        static const bool value = is_on_next_of<T, LHS>::value;
+    };
+    typedef OnNextEmpty<T> default_type;
+};
+
+struct tag_onerror_resolution
+{
+    template<class LHS>
+    struct predicate
+    {
+        static const bool value = is_on_error<LHS>::value;
+    };
+    typedef OnErrorEmpty default_type;
+};
+
+struct tag_oncompleted_resolution
+{
+    template<class LHS>
+    struct predicate
+    {
+        static const bool value = is_on_completed<LHS>::value;
+    };
+    typedef OnCompletedEmpty default_type;
+};
+
+// types to disambiguate
+// on_next and optional on_error, on_completed +
+// optional subscription
+//
+
+template<class T>
+struct tag_observer_set
+    : public    rxu::detail::tag_set<tag_subscription_resolution,
+                rxu::detail::tag_set<tag_onnext_resolution<T>,
+                rxu::detail::tag_set<tag_onerror_resolution,
+                rxu::detail::tag_set<tag_oncompleted_resolution>>>>
+{
+};
+
+
 }
 
-template<class T, class OnNext, class OnError, class OnCompleted>
-auto make_observer(OnNext n, OnError e, OnCompleted c, tag_function&&)
-    ->      observer<T, static_observer<T, OnNext, OnError, OnCompleted>> {
-    return  observer<T, static_observer<T, OnNext, OnError, OnCompleted>>(
-                        static_observer<T, OnNext, OnError, OnCompleted>(std::move(n), std::move(e), std::move(c)));
+template<class T, class Arg0>
+auto make_observer(Arg0&& a0)
+    -> decltype(detail::make_observer_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0)))) {
+    return      detail::make_observer_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0)));
+}
+template<class T, class Arg0, class Arg1>
+auto make_observer(Arg0&& a0, Arg1&& a1)
+    -> decltype(detail::make_observer_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1)))) {
+    return      detail::make_observer_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1)));
+}
+template<class T, class Arg0, class Arg1, class Arg2>
+auto make_observer(Arg0&& a0, Arg1&& a1, Arg2&& a2)
+    -> decltype(detail::make_observer_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2)))) {
+    return      detail::make_observer_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2)));
+}
+template<class T, class Arg0, class Arg1, class Arg2, class Arg3>
+auto make_observer(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3)
+    -> decltype(detail::make_observer_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3)))) {
+    return      detail::make_observer_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3)));
 }
 
-template<class T, class OnNext>
-auto make_observer(composite_subscription cs, OnNext n, tag_subscription&&)
-    ->      observer<T, static_observer<T, OnNext>> {
-    return  observer<T, static_observer<T, OnNext>>(
-                        static_observer<T, OnNext>(std::move(cs), std::move(n)));
+template<class T, class Arg0>
+auto make_observer_dynamic(Arg0&& a0)
+    -> decltype(detail::make_observer_dynamic_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0)))) {
+    return      detail::make_observer_dynamic_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0)));
 }
-
-template<class T, class OnNext, class OnError>
-auto make_observer(composite_subscription cs, OnNext n, OnError e, tag_subscription&&)
-    ->      observer<T, static_observer<T, OnNext, OnError>> {
-    return  observer<T, static_observer<T, OnNext, OnError>>(
-                        static_observer<T, OnNext, OnError>(std::move(cs), std::move(n), std::move(e)));
+template<class T, class Arg0, class Arg1>
+auto make_observer_dynamic(Arg0&& a0, Arg1&& a1)
+    -> decltype(detail::make_observer_dynamic_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1)))) {
+    return      detail::make_observer_dynamic_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1)));
 }
-
+template<class T, class Arg0, class Arg1, class Arg2>
+auto make_observer_dynamic(Arg0&& a0, Arg1&& a1, Arg2&& a2)
+    -> decltype(detail::make_observer_dynamic_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2)))) {
+    return      detail::make_observer_dynamic_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2)));
 }
-
-template<class Arg>
-auto make_observer(Arg a)
-    -> decltype(detail::make_observer(std::move(a), typename std::conditional<is_observer<Arg>::value, tag_observer, detail::tag_require_observer>::type())) {
-    return      detail::make_observer(std::move(a), typename std::conditional<is_observer<Arg>::value, tag_observer, detail::tag_require_observer>::type());
-}
-
-template<class T, class Arg>
-auto make_observer(Arg a)
-    -> decltype(detail::make_observer<T>(std::move(a), typename std::conditional<is_observer<Arg>::value, detail::tag_require_function, detail::tag_function>::type())) {
-    return      detail::make_observer<T>(std::move(a), typename std::conditional<is_observer<Arg>::value, detail::tag_require_function, detail::tag_function>::type());
-}
-
-template<class T, class Arg1, class Arg2>
-auto make_observer(Arg1 a1, Arg2 a2)
-    -> decltype(detail::make_observer<T>(std::move(a1), std::move(a2), typename std::conditional<is_subscription<Arg1>::value, tag_subscription, detail::tag_function>::type())) {
-    return      detail::make_observer<T>(std::move(a1), std::move(a2), typename std::conditional<is_subscription<Arg1>::value, tag_subscription, detail::tag_function>::type());
-}
-
-template<class T, class Arg1, class Arg2, class Arg3>
-auto make_observer(Arg1 a1, Arg2 a2, Arg3 a3)
-    -> decltype(detail::make_observer<T>(std::move(a1), std::move(a2), std::move(a3), typename std::conditional<is_subscription<Arg1>::value, tag_subscription, detail::tag_function>::type())) {
-    return      detail::make_observer<T>(std::move(a1), std::move(a2), std::move(a3), typename std::conditional<is_subscription<Arg1>::value, tag_subscription, detail::tag_function>::type());
-}
-
-template<class T, class OnNext, class OnError, class OnCompleted>
-auto make_observer(composite_subscription cs, OnNext n, OnError e, OnCompleted c)
-    ->      observer<T, static_observer<T, OnNext, OnError, OnCompleted>> {
-    return  observer<T, static_observer<T, OnNext, OnError, OnCompleted>>(
-                        static_observer<T, OnNext, OnError, OnCompleted>(std::move(cs), std::move(n), std::move(e), std::move(c)));
-}
-
-template<class T, class OnNext>
-auto make_observer_dynamic(OnNext n)
-    ->      observer<T> {
-    return  observer<T>(dynamic_observer<T>(std::move(n)));
-}
-template<class T, class OnNext, class OnError>
-auto make_observer_dynamic(OnNext n, OnError e)
-    ->      observer<T> {
-    return  observer<T>(dynamic_observer<T>(std::move(n), std::move(e)));
-}
-template<class T, class OnNext, class OnError, class OnCompleted>
-auto make_observer_dynamic(OnNext n, OnError e, OnCompleted c)
-    ->      observer<T> {
-    return  observer<T>(dynamic_observer<T>(std::move(n), std::move(e), std::move(c)));
-}
-
-template<class T, class OnNext>
-auto make_observer_dynamic(composite_subscription cs, OnNext n)
-    ->      observer<T> {
-    return  observer<T>(dynamic_observer<T>(std::move(cs), std::move(n)));
-}
-template<class T, class OnNext, class OnError>
-auto make_observer_dynamic(composite_subscription cs, OnNext n, OnError e)
-    ->      observer<T> {
-    return  observer<T>(dynamic_observer<T>(std::move(cs), std::move(n), std::move(e)));
-}
-template<class T, class OnNext, class OnError, class OnCompleted>
-auto make_observer_dynamic(composite_subscription cs, OnNext n, OnError e, OnCompleted c)
-    ->      observer<T> {
-    return  observer<T>(dynamic_observer<T>(std::move(cs), std::move(n), std::move(e), std::move(c)));
+template<class T, class Arg0, class Arg1, class Arg2, class Arg3>
+auto make_observer_dynamic(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3)
+    -> decltype(detail::make_observer_dynamic_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3)))) {
+    return      detail::make_observer_dynamic_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3)));
 }
 
 }

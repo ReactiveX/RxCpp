@@ -42,12 +42,12 @@ add_executable(testbench ${TESTBENCH_SOURCES})
 # define the sources of the self test
 set(V2_TEST_SOURCES
     ${V2_TEST_DIR}/test.cpp
-    ${V2_TEST_DIR}/operators/flat_map.cpp
+    ${V2_TEST_DIR}/subjects/subject.cpp
     ${V2_TEST_DIR}/subscriptions/observer.cpp
+    ${V2_TEST_DIR}/operators/flat_map.cpp
     ${V2_TEST_DIR}/subscriptions/subscription.cpp
     ${V2_TEST_DIR}/operators/filter.cpp
     ${V2_TEST_DIR}/operators/map.cpp
-    ${V2_TEST_DIR}/subjects/subject.cpp
 )
 add_executable(rxcppv2_test ${V2_TEST_SOURCES})
 

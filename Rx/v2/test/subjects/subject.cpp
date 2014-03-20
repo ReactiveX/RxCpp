@@ -172,11 +172,11 @@ SCENARIO("subject - infinite source", "[subject][subjects]"){
 
         rxsub::subject<int> s;
 
-        auto results1 = sc->make_observer<int>();
+        auto results1 = sc->make_subscriber<int>();
 
-        auto results2 = sc->make_observer<int>();
+        auto results2 = sc->make_subscriber<int>();
 
-        auto results3 = sc->make_observer<int>();
+        auto results3 = sc->make_subscriber<int>();
 
         WHEN("multicasting an infinite source"){
 
@@ -213,7 +213,7 @@ SCENARIO("subject - infinite source", "[subject][subjects]"){
                     m::on_next(520, 7)
                 };
                 auto required = rxu::to_vector(items);
-                auto actual = results1.messages();
+                auto actual = results1.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
@@ -224,7 +224,7 @@ SCENARIO("subject - infinite source", "[subject][subjects]"){
                     m::on_next(630, 8)
                 };
                 auto required = rxu::to_vector(items);
-                auto actual = results2.messages();
+                auto actual = results2.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
@@ -233,7 +233,7 @@ SCENARIO("subject - infinite source", "[subject][subjects]"){
                     m::on_next(940, 11)
                 };
                 auto required = rxu::to_vector(items);
-                auto actual = results3.messages();
+                auto actual = results3.get_observer().messages();
                 REQUIRE(required == actual);
             }
 

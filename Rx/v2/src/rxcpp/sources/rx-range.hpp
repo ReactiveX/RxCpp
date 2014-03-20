@@ -31,8 +31,8 @@ struct range : public source_base<T>
         init.step = s;
         init.sc = sc;
     }
-    template<class I>
-    void on_subscribe(observer<T, I> o) {
+    template<class Subscriber>
+    void on_subscribe(Subscriber o) {
         auto state = std::make_shared<state_type>(init);
         state->sc->schedule(o.get_subscription(), [=](rxsc::action that, rxsc::scheduler){
             if (state->remaining == 0) {

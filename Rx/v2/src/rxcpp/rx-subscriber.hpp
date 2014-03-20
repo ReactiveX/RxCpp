@@ -9,29 +9,36 @@
 
 namespace rxcpp {
 
-struct tag_subscriber {};
 template<class T>
 struct subscriber_base : public observer_root<T>, public subscription_base, public resumption_base
 {
     typedef tag_subscriber subscriber_tag;
 };
-template<class T>
-class is_subscriber
-{
-    template<class C>
-    static typename C::subscriber_tag* check(int);
-    template<class C>
-    static void check(...);
-public:
-    static const bool value = std::is_convertible<decltype(check<T>(0)), tag_subscriber*>::value;
-};
 
 template<class T, class Observer = observer<T>>
 class subscriber : public subscriber_base<T>
 {
+    typedef subscriber<T, Observer> this_type;
+    typedef typename std::decay<Observer>::type observer_type;
+
     composite_subscription lifetime;
     resumption controller;
-    Observer destination;
+    observer_type destination;
+
+    struct detacher
+    {
+        ~detacher()
+        {
+            if (that) {
+                that->unsubscribe();
+            }
+        }
+        detacher(const this_type* that)
+            : that(that)
+        {
+        }
+        const this_type* that;
+    };
 
 public:
     typedef typename composite_subscription::weak_subscription weak_subscription;
@@ -40,20 +47,30 @@ public:
     subscriber()
     {
     }
-    subscriber(composite_subscription cs, resumption r, Observer o)
+    template<class U>
+    subscriber(composite_subscription cs, resumption r, U&& o)
         : lifetime(std::move(cs))
-        , destination(std::move(o))
         , controller(std::move(r))
+        , destination(std::forward<U>(o))
     {
     }
 
-    Observer get_observer() const {
+    const observer_type& get_observer() const {
         return destination;
     }
-    resumption get_resumption() const {
+    observer_type& get_observer() {
+        return destination;
+    }
+    const resumption& get_resumption() const {
         return controller;
     }
-    composite_subscription get_subscription() const {
+    resumption& get_resumption() {
+        return controller;
+    }
+    const composite_subscription& get_subscription() const {
+        return lifetime;
+    }
+    composite_subscription& get_subscription() {
         return lifetime;
     }
 
@@ -69,13 +86,23 @@ public:
     // observer
     //
     void on_next(T t) const {
-        destination.on_next(std::move(t));
+        if (is_subscribed()) {
+            detacher protect(this);
+            destination.on_next(std::move(t));
+            protect.that = nullptr;
+        }
     }
     void on_error(std::exception_ptr e) const {
-        destination.on_error(e);
+        if (is_subscribed()) {
+            detacher protect(this);
+            destination.on_error(e);
+        }
     }
     void on_completed() const {
-        destination.on_completed();
+        if (is_subscribed()) {
+            detacher protect(this);
+            destination.on_completed();
+        }
     }
 
     // composite_subscription
@@ -101,22 +128,7 @@ public:
 
 };
 
-template<class T, class ResolvedArgSet>
-auto make_observer_resolved(ResolvedArgSet&& rs)
-    ->      observer<T, static_observer<T,  decltype (std::get<2>(std::forward<ResolvedArgSet>(rs)).value), decltype (std::get<3>(std::forward<ResolvedArgSet>(rs)).value), decltype (std::get<4>(std::forward<ResolvedArgSet>(rs)).value)>> {
-        typedef         static_observer<T,  decltype (std::get<2>(std::forward<ResolvedArgSet>(rs)).value), decltype (std::get<3>(std::forward<ResolvedArgSet>(rs)).value), decltype (std::get<4>(std::forward<ResolvedArgSet>(rs)).value)> inner_type;
-    return  observer<T, inner_type>(inner_type(
-                                            std::move(std::get<2>(std::forward<ResolvedArgSet>(rs)).value), std::move(std::get<3>(std::forward<ResolvedArgSet>(rs)).value), std::move(std::get<4>(std::forward<ResolvedArgSet>(rs)).value)));
-
-    typedef typename std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type rn_t;
-    typedef typename std::decay<decltype(std::get<3>(std::forward<ResolvedArgSet>(rs)))>::type re_t;
-    typedef typename std::decay<decltype(std::get<4>(std::forward<ResolvedArgSet>(rs)))>::type rc_t;
-
-    static_assert(rn_t::is_arg, "onnext is a required parameter");
-    static_assert(!(rn_t::is_arg && re_t::is_arg) || rn_t::n + 1 == re_t::n, "onnext, onerror parameters must be together and in order");
-    static_assert(!(re_t::is_arg && rc_t::is_arg) || re_t::n + 1 == rc_t::n, "onerror, oncompleted parameters must be together and in order");
-    static_assert(!(rn_t::is_arg && rc_t::is_arg  && !re_t::is_arg) || rn_t::n + 1 == rc_t::n, "onnext, oncompleted parameters must be together and in order");
-}
+namespace detail {
 
 template<class T, bool subscriber_is_arg, bool observer_is_arg, bool onnext_is_arg>
 struct observer_selector;
@@ -126,8 +138,8 @@ struct observer_selector<T, subscriber_is_arg, true, false>
 {
     template<class Set>
     static auto get_observer(Set&& rs)
-        -> decltype(std::get<5>(std::forward<Set>(rs))) {
-        return      std::get<5>(std::forward<Set>(rs));
+        -> decltype(std::get<5>(std::forward<Set>(rs)).value) {
+        return      std::get<5>(std::forward<Set>(rs)).value;
     }
 };
 template<class T, bool subscriber_is_arg>
@@ -136,6 +148,9 @@ struct observer_selector<T, subscriber_is_arg, false, true>
     template<class Set>
     static auto get_observer(Set&& rs)
         -> decltype(make_observer_resolved<T>(std::forward<Set>(rs))) {
+        if (!std::get<0>(std::forward<Set>(rs)).value.is_subscribed()) {
+            abort();
+        }
         return      make_observer_resolved<T>(std::forward<Set>(rs));
     }
 };
@@ -144,20 +159,23 @@ struct observer_selector<T, true, false, false>
 {
     template<class Set>
     static auto get_observer(Set&& rs)
-        -> decltype(std::get<6>(std::forward<Set>(rs)).value.get_observer()) {
-        return      std::get<6>(std::forward<Set>(rs)).value.get_observer();
+        -> const decltype(  std::get<6>(std::forward<Set>(rs)).value.get_observer())& {
+        return              std::get<6>(std::forward<Set>(rs)).value.get_observer();
     }
 };
 
 template<class T, class ResolvedArgSet>
 auto select_observer(ResolvedArgSet&& rs)
-    -> decltype(observer_selector<T, std::decay<decltype(std::get<6>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg, std::decay<decltype(std::get<5>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg, std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg>::get_observer(std::forward<ResolvedArgSet>(rs))) {
-    return      observer_selector<T, std::decay<decltype(std::get<6>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg, std::decay<decltype(std::get<5>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg, std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg>::get_observer(std::forward<ResolvedArgSet>(rs));
+    -> decltype(observer_selector<T, std::decay<decltype(std::get<6>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg, std::decay<decltype(std::get<5>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg, std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg>::get_observer(std::forward<ResolvedArgSet>(rs))) {
+    if (!std::get<0>(std::forward<ResolvedArgSet>(rs)).value.is_subscribed()) {
+        abort();
+    }
+    return      observer_selector<T, std::decay<decltype(std::get<6>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg, std::decay<decltype(std::get<5>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg, std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg>::get_observer(std::forward<ResolvedArgSet>(rs));
 
-    typedef typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type rr_t;
-    typedef typename std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type rn_t;
-    typedef typename std::decay<decltype(std::get<3>(std::forward<ResolvedArgSet>(rs)))>::type re_t;
-    typedef typename std::decay<decltype(std::get<4>(std::forward<ResolvedArgSet>(rs)))>::type rc_t;
+    typedef typename std::decay<decltype(std::get<4>(std::forward<ResolvedArgSet>(rs)))>::type rr_t;
+    typedef typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type rn_t;
+    typedef typename std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type re_t;
+    typedef typename std::decay<decltype(std::get<3>(std::forward<ResolvedArgSet>(rs)))>::type rc_t;
     typedef typename std::decay<decltype(std::get<5>(std::forward<ResolvedArgSet>(rs)))>::type ro_t;
     typedef typename std::decay<decltype(std::get<6>(std::forward<ResolvedArgSet>(rs)))>::type rs_t;
 
@@ -166,20 +184,27 @@ auto select_observer(ResolvedArgSet&& rs)
 }
 
 template<class T, class ResolvedArgSet>
-auto make_subscriber_resolved(ResolvedArgSet&& rs)
-    ->      subscriber<T, decltype(     select_observer<T>(std::forward<ResolvedArgSet>(rs)))> {
-    auto rsub = std::get<0>(std::forward<ResolvedArgSet>(rs));
-    auto rr = std::get<1>(std::forward<ResolvedArgSet>(rs));
-    const auto& rscrbr = std::get<6>(std::forward<ResolvedArgSet>(rs));
-    auto r = (rscrbr.is_arg && !rr.is_arg) ?    rscrbr.value.get_resumption() :     std::move(rr.value);
-    auto s = (rscrbr.is_arg && !rsub.is_arg) ?  rscrbr.value.get_subscription() :   std::move(rsub.value);
-    return  subscriber<T, decltype(     select_observer<T>(std::forward<ResolvedArgSet>(rs)))>(
-            std::move(s), std::move(r), select_observer<T>(std::forward<ResolvedArgSet>(rs)));
+auto make_subscriber_resolved(ResolvedArgSet&& rsArg)
+    ->      subscriber<T, decltype(     select_observer<T>(std::move(rsArg)))> {
+    const auto rs = std::forward<ResolvedArgSet>(rsArg);
+    if (!std::get<0>(rs).value.is_subscribed()) {
+        abort();
+    }
+    const auto rsub = std::get<0>(rs);
+    const auto rr = std::get<4>(rs);
+    const auto rscrbr = std::get<6>(rs);
+    const auto r = (rscrbr.is_arg && !rr.is_arg)      ? rscrbr.value.get_resumption()       : rr.value;
+    const auto s = (rscrbr.is_arg && !rsub.is_arg)    ? rscrbr.value.get_subscription()     : rsub.value;
+    return  subscriber<T, decltype(     select_observer<T>(std::move(rsArg)))>(
+            s, r, select_observer<T>(std::move(rs)));
 
+// at least for now do not enforce resolver
+#if 0
     typedef typename std::decay<decltype(rr)>::type rr_t;
     typedef typename std::decay<decltype(rscrbr)>::type rs_t;
 
     static_assert(rs_t::is_arg || rr_t::is_arg, "at least one of; resumption or subscriber is a required parameter");
+#endif
 }
 
 template<class T>
@@ -203,16 +228,6 @@ struct tag_observer_resolution
     typedef observer<T, void> default_type;
 };
 
-struct tag_subscription_resolution
-{
-    template<class LHS>
-    struct predicate
-    {
-        static const bool value = !is_subscriber<LHS>::value && !is_observer<LHS>::value && is_subscription<LHS>::value;
-    };
-    typedef composite_subscription default_type;
-};
-
 struct tag_resumption_resolution
 {
     template<class LHS>
@@ -224,34 +239,6 @@ struct tag_resumption_resolution
 };
 
 
-template<class T>
-struct tag_onnext_resolution
-{
-    template<class LHS>
-    struct predicate : public detail::is_on_next_of<T, LHS>
-    {
-    };
-    typedef detail::OnNextEmpty<T> default_type;
-};
-
-struct tag_onerror_resolution
-{
-    template<class LHS>
-    struct predicate : public detail::is_on_error<LHS>
-    {
-    };
-    typedef detail::OnErrorEmpty default_type;
-};
-
-struct tag_oncompleted_resolution
-{
-    template<class LHS>
-    struct predicate : public detail::is_on_completed<LHS>
-    {
-    };
-    typedef detail::OnCompletedEmpty default_type;
-};
-
 // types to disambiguate
 // subscriber with override for subscription, observer, resumption |
 // optional subscriber +
@@ -262,45 +249,48 @@ struct tag_oncompleted_resolution
 
 template<class T>
 struct tag_subscriber_set
+                // the first four must be the same as tag_observer_set or the indexing will fail
     : public    rxu::detail::tag_set<tag_subscription_resolution,
-                rxu::detail::tag_set<tag_resumption_resolution,
                 rxu::detail::tag_set<tag_onnext_resolution<T>,
                 rxu::detail::tag_set<tag_onerror_resolution,
                 rxu::detail::tag_set<tag_oncompleted_resolution,
+                rxu::detail::tag_set<tag_resumption_resolution,
                 rxu::detail::tag_set<tag_observer_resolution<T>,
                 rxu::detail::tag_set<tag_subscriber_resolution<T>>>>>>>>
 {
 };
 
+}
+
 template<class T, class Arg0>
 auto make_subscriber(Arg0&& a0)
-    -> decltype(make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(tag_subscriber_set<T>(), std::forward<Arg0>(a0)))) {
-    return      make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(tag_subscriber_set<T>(), std::forward<Arg0>(a0)));
+    -> decltype(detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0)))) {
+    return      detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0)));
 }
 template<class T, class Arg0, class Arg1>
 auto make_subscriber(Arg0&& a0, Arg1&& a1)
-    -> decltype(make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1)))) {
-    return      make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1)));
+    -> decltype(detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1)))) {
+    return      detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1)));
 }
 template<class T, class Arg0, class Arg1, class Arg2>
 auto make_subscriber(Arg0&& a0, Arg1&& a1, Arg2&& a2)
-    -> decltype(make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2)))) {
-    return      make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2)));
+    -> decltype(detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2)))) {
+    return      detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2)));
 }
 template<class T, class Arg0, class Arg1, class Arg2, class Arg3>
 auto make_subscriber(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3)
-    -> decltype(make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3)))) {
-    return      make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3)));
+    -> decltype(detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3)))) {
+    return      detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3)));
 }
 template<class T, class Arg0, class Arg1, class Arg2, class Arg3, class Arg4>
 auto make_subscriber(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3, Arg4&& a4)
-    -> decltype(make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4)))) {
-    return      make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4)));
+    -> decltype(detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4)))) {
+    return      detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4)));
 }
 template<class T, class Arg0, class Arg1, class Arg2, class Arg3, class Arg4, class Arg5>
 auto make_subscriber(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3, Arg4&& a4, Arg5&& a5)
-    -> decltype(make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4), std::forward<Arg5>(a5)))) {
-    return      make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4), std::forward<Arg5>(a5)));
+    -> decltype(detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4), std::forward<Arg5>(a5)))) {
+    return      detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4), std::forward<Arg5>(a5)));
 }
 
 }

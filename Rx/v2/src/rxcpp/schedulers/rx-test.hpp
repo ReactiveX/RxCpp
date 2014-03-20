@@ -28,30 +28,37 @@ public:
         typedef typename rxn::notification<T> notification_type;
         typedef rxn::recorded<typename notification_type::type> recorded_type;
 
-        static
-        recorded_type on_next(long ticks, T value)
+        struct on_next_factory
         {
-            return recorded_type(ticks, notification_type::make_on_next(value));
-        }
+            recorded_type operator()(long ticks, T value) const {
+                return recorded_type(ticks, notification_type::on_next(value));
+            }
+        };
+        struct on_completed_factory
+        {
+            recorded_type operator()(long ticks) const {
+                return recorded_type(ticks, notification_type::on_completed());
+            }
+        };
+        struct on_error_factory
+        {
+            template<class Exception>
+            recorded_type operator()(long ticks, Exception&& e) const {
+                return recorded_type(ticks, notification_type::on_error(std::forward<Exception>(e)));
+            }
+        };
 
-        static
-        recorded_type on_completed(long ticks)
-        {
-            return recorded_type(ticks, notification_type::make_on_completed());
-        }
+        static const on_next_factory on_next;
+        static const on_completed_factory on_completed;
+        static const on_error_factory on_error;
 
-        template<class Exception>
-        static
-        recorded_type on_error(long ticks, Exception e)
+        struct subscribe_factory
         {
-            return recorded_type(ticks, notification_type::make_on_error(e));
-        }
-
-        static
-        rxn::subscription subscribe(long subscribe, long unsubscribe)
-        {
-            return rxn::subscription(subscribe, unsubscribe);
-        }
+            rxn::subscription operator()(long subscribe, long unsubscribe) const {
+                return rxn::subscription(subscribe, unsubscribe);
+            }
+        };
+        static const subscribe_factory subscribe;
 
     private:
         ~messages();
@@ -86,27 +93,29 @@ public:
     using base::start;
 
     template<class T, class F>
-    auto start(F createSource, long created, long subscribed, long unsubscribed)
-        -> rxt::testable_observer<T>
+    auto start(F&& createSource, long created, long subscribed, long unsubscribed)
+        -> subscriber<T, rxt::testable_observer<T>>
     {
+        typename std::decay<F>::type createSrc = std::forward<F>(createSource);
+
         struct state_type
             : public std::enable_shared_from_this<state_type>
         {
-            typedef decltype(createSource()) source_type;
+            typedef decltype(std::forward<F>(createSrc)()) source_type;
 
             std::unique_ptr<source_type> source;
-            rxt::testable_observer<T> o;
+            subscriber<T, rxt::testable_observer<T>> o;
 
-            explicit state_type(rxt::testable_observer<T> o)
+            explicit state_type(subscriber<T, rxt::testable_observer<T>> o)
                 : source()
                 , o(o)
             {
             }
         };
-        std::shared_ptr<state_type> state(new state_type(this->make_observer<T>()));
+        std::shared_ptr<state_type> state(new state_type(this->make_subscriber<T>()));
 
-        schedule_absolute(created, make_action([createSource, state](action, scheduler) {
-            state->source.reset(new typename state_type::source_type(createSource()));
+        schedule_absolute(created, make_action([createSrc, state](action, scheduler) {
+            state->source.reset(new typename state_type::source_type(createSrc()));
             return make_action_empty();
         }));
         schedule_absolute(subscribed, make_action([state](action, scheduler) {
@@ -124,17 +133,17 @@ public:
     }
 
     template<class T, class F>
-    auto start(F createSource, long unsubscribed)
-        -> rxt::testable_observer<T>
+    auto start(F&& createSource, long unsubscribed)
+        -> subscriber<T, rxt::testable_observer<T>>
     {
-        return start<T>(std::move(createSource), created_time, subscribed_time, unsubscribed);
+        return start<T>(std::forward<F>(createSource), created_time, subscribed_time, unsubscribed);
     }
 
     template<class T, class F>
-    auto start(F createSource)
-        -> rxt::testable_observer<T>
+    auto start(F&& createSource)
+        -> subscriber<T, rxt::testable_observer<T>>
     {
-        return start<T>(std::move(createSource), created_time, subscribed_time, unsubscribed_time);
+        return start<T>(std::forward<F>(createSource), created_time, subscribed_time, unsubscribed_time);
     }
 
     template<class T>
@@ -157,7 +166,26 @@ public:
 
     template<class T>
     rxt::testable_observer<T> make_observer();
+
+    template<class T>
+    subscriber<T, rxt::testable_observer<T>> make_subscriber();
 };
+
+template<class T>
+//static
+RXCPP_SELECT_ANY const typename test::messages<T>::on_next_factory test::messages<T>::on_next = test::messages<T>::on_next_factory();
+
+template<class T>
+//static
+RXCPP_SELECT_ANY const typename test::messages<T>::on_completed_factory test::messages<T>::on_completed = test::messages<T>::on_completed_factory();
+
+template<class T>
+//static
+RXCPP_SELECT_ANY const typename test::messages<T>::on_error_factory test::messages<T>::on_error = test::messages<T>::on_error_factory();
+
+template<class T>
+//static
+RXCPP_SELECT_ANY const typename test::messages<T>::subscribe_factory test::messages<T>::subscribe = test::messages<T>::subscribe_factory();
 
 template<class T>
 class mock_observer
@@ -175,7 +203,7 @@ public:
     typename test::shared sc;
     std::vector<recorded_type> m;
 
-    virtual void on_subscribe(observer<T>) const {
+    virtual void on_subscribe(subscriber<T>) const {
         abort();
     }
     virtual std::vector<rxn::subscription> subscriptions() const {
@@ -193,28 +221,35 @@ rxt::testable_observer<T> test::make_observer()
     typedef typename rxn::notification<T> notification_type;
     typedef rxn::recorded<typename notification_type::type> recorded_type;
 
-    auto ts = std::make_shared<mock_observer<T>>(
-        std::static_pointer_cast<test>(shared_from_this()));
+    std::shared_ptr<mock_observer<T>> ts(new mock_observer<T>(
+        std::static_pointer_cast<test>(shared_from_this())));
 
     return rxt::testable_observer<T>(ts, make_observer_dynamic<T>(
     // on_next
         [ts](T value)
         {
             ts->m.push_back(
-                recorded_type(ts->sc->clock(), notification_type::make_on_next(value)));
+                recorded_type(ts->sc->clock(), notification_type::on_next(value)));
         },
     // on_error
         [ts](std::exception_ptr e)
         {
             ts->m.push_back(
-                recorded_type(ts->sc->clock(), notification_type::make_on_error(e)));
+                recorded_type(ts->sc->clock(), notification_type::on_error(e)));
         },
     // on_completed
         [ts]()
         {
             ts->m.push_back(
-                recorded_type(ts->sc->clock(), notification_type::make_on_completed()));
+                recorded_type(ts->sc->clock(), notification_type::on_completed()));
         }));
+}
+
+template<class T>
+subscriber<T, rxt::testable_observer<T>> test::make_subscriber()
+{
+    auto to = this->make_observer<T>();
+    return rxcpp::make_subscriber<T>(to.get_subscription(), to);
 }
 
 template<class T>
@@ -242,7 +277,7 @@ public:
     {
     }
 
-    virtual void on_subscribe(observer<T> o) const {
+    virtual void on_subscribe(subscriber<T> o) const {
         sv.push_back(rxn::subscription(sc->clock()));
         auto index = sv.size() - 1;
 
@@ -272,8 +307,8 @@ public:
 template<class T>
 rxt::testable_observable<T> test::make_cold_observable(std::vector<rxn::recorded<std::shared_ptr<rxn::detail::notification_base<T>>>> messages)
 {
-    return rxt::testable_observable<T>(std::make_shared<cold_observable<T>>(
-        std::static_pointer_cast<test>(shared_from_this()), std::move(messages)));
+    auto co = std::shared_ptr<cold_observable<T>>(new cold_observable<T>(std::static_pointer_cast<test>(shared_from_this()), std::move(messages)));
+    return rxt::testable_observable<T>(co);
 }
 
 template<class T>
@@ -283,7 +318,7 @@ class hot_observable
     typedef hot_observable<T> this_type;
     typename test::shared sc;
     typedef rxn::recorded<typename rxn::notification<T>::type> recorded_type;
-    typedef observer<T> observer_type;
+    typedef subscriber<T> observer_type;
     mutable std::vector<recorded_type> mv;
     mutable std::vector<rxn::subscription> sv;
     mutable std::vector<observer_type> observers;
