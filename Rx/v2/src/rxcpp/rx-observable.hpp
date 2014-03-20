@@ -52,11 +52,13 @@ class dynamic_observable
     };
     std::shared_ptr<state_type> state;
 
-    void construct(const dynamic_observable<T>& o, rxs::tag_source&&) {
+    template<class U>
+    void construct(const dynamic_observable<U>& o, tag_dynamic_observable&&) {
         state = o.state;
     }
 
-    void construct(dynamic_observable<T>&& o, rxs::tag_source&&) {
+    template<class U>
+    void construct(dynamic_observable<U>&& o, tag_dynamic_observable&&) {
         state = std::move(o.state);
     }
 
@@ -76,6 +78,8 @@ class dynamic_observable
 
 public:
 
+    typedef tag_dynamic_observable dynamic_observable_tag;
+
     dynamic_observable()
     {
     }
@@ -85,7 +89,7 @@ public:
         : state(std::make_shared<state_type>())
     {
         construct(std::forward<SOF>(sof),
-            typename std::conditional<rxs::is_source<SOF>::value || rxo::is_operator<SOF>::value, rxs::tag_source, tag_function>::type());
+                  typename std::conditional<is_dynamic_observable<SOF>::value, tag_dynamic_observable, typename std::conditional<rxs::is_source<SOF>::value || rxo::is_operator<SOF>::value, rxs::tag_source, tag_function>::type>::type());
     }
 
     void on_subscribe(subscriber<T> o) const {

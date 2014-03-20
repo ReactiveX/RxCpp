@@ -15,6 +15,31 @@ class dynamic_observer;
 template<class T, class I = dynamic_observer<T>>
 class observer;
 
+struct tag_observer {};
+template<class T>
+class is_observer
+{
+    template<class C>
+    static typename C::observer_tag check(int);
+    template<class C>
+    static void check(...);
+public:
+    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_observer>::value;
+};
+
+struct tag_dynamic_observer {};
+template<class T>
+class is_dynamic_observer
+{
+    struct not_void {};
+    template<class C>
+    static typename C::dynamic_observer_tag* check(int);
+    template<class C>
+    static not_void check(...);
+public:
+    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_dynamic_observer*>::value;
+};
+
 struct tag_subscriber {};
 template<class T>
 class is_subscriber
@@ -26,6 +51,19 @@ class is_subscriber
     static not_void check(...);
 public:
     static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_subscriber*>::value;
+};
+
+struct tag_dynamic_observable {};
+template<class T>
+class is_dynamic_observable
+{
+    struct not_void {};
+    template<class C>
+    static typename C::dynamic_observable_tag* check(int);
+    template<class C>
+    static not_void check(...);
+public:
+    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_dynamic_observable*>::value;
 };
 
 template<class T>

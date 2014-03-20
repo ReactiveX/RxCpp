@@ -202,8 +202,8 @@ public:
         return s.has_observers();
     }
 
-    observer<T, detail::multicast_observer<T>> get_observer() const {
-        return observer<T, detail::multicast_observer<T>>(s);
+    subscriber<T, observer<T, detail::multicast_observer<T>>> get_subscriber(composite_subscription cs = composite_subscription()) const {
+        return make_subscriber<T>(cs, observer<T, detail::multicast_observer<T>>(s));
     }
     observable<T> get_observable() const {
         return make_dynamic_observable<T>([this](subscriber<T> o){

@@ -10,7 +10,6 @@
 namespace rxcpp {
 
 
-struct tag_observer {};
 template<class T>
 struct observer_root : public subscription_base
 {
@@ -66,16 +65,6 @@ public:
     void unsubscribe() const {
         s.unsubscribe();
     }
-};
-template<class T>
-class is_observer
-{
-    template<class C>
-    static typename C::observer_tag check(int);
-    template<class C>
-    static void check(...);
-public:
-    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_observer>::value;
 };
 
 namespace detail {
@@ -136,10 +125,11 @@ template<class T>
 class dynamic_observer : public observer_base<T>
 {
 public:
+    typedef tag_dynamic_observer dynamic_observer_tag;
+
     typedef std::function<void(T)> on_next_t;
     typedef std::function<void(std::exception_ptr)> on_error_t;
     typedef std::function<void()> on_completed_t;
-
 private:
     typedef observer_base<T> base_type;
 

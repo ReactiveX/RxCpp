@@ -74,12 +74,13 @@ SCENARIO("subject test", "[hide][subject][subjects][perf]"){
                 std::vector<std::future<int>> f(n);
 #endif
 
+                auto o = sub.get_subscriber();
+
                 for (int i = 0; i < n; i++) {
 #if RXCPP_SUBJECT_TEST_ASYNC
-                    f[i] = std::async([sub]() {
+                    f[i] = std::async([sub, o]() {
                         auto source = sub.get_observable();
-                        auto subscription = sub.get_observer();
-                        while(subscription.is_subscribed()) {
+                        while(o.is_subscribed()) {
                             std::this_thread::sleep_for(std::chrono::milliseconds(100));
                             rx::composite_subscription cs;
                             source.subscribe(cs, [cs](int){
@@ -91,8 +92,6 @@ SCENARIO("subject test", "[hide][subject][subjects][perf]"){
 #endif
                     sub.get_observable().subscribe([c](int){++(*c);});
                 }
-
-                auto o = sub.get_observer();
 
                 auto start = clock::now();
                 for (int i = 0; i < onnextcalls; i++) {
@@ -114,10 +113,12 @@ SCENARIO("subject test", "[hide][subject][subjects][perf]"){
                 std::vector<std::future<int>> f(n);
 #endif
 
+                auto o = sub.get_subscriber();
+
                 for (int i = 0; i < n; i++) {
 #if RXCPP_SUBJECT_TEST_ASYNC
-                    f[i] = std::async([sub]() {
-                        while(sub.get_observer().is_subscribed()) {
+                    f[i] = std::async([sub, o]() {
+                        while(o.is_subscribed()) {
                             std::this_thread::sleep_for(std::chrono::milliseconds(100));
                             rx::composite_subscription cs;
                             sub.get_observable().subscribe(cs, [cs](int){
@@ -132,8 +133,6 @@ SCENARIO("subject test", "[hide][subject][subjects][perf]"){
                         .op(rxo::filter([](int){return true;}))
                         .subscribe([c](int){++(*c);});
                 }
-
-                auto o = sub.get_observer();
 
                 auto start = clock::now();
                 rxs::range<int>(0, onnextcalls).subscribe(o);
@@ -180,13 +179,14 @@ SCENARIO("subject - infinite source", "[subject][subjects]"){
 
         WHEN("multicasting an infinite source"){
 
+            auto o = s.get_subscriber();
 
             sc->schedule_absolute(100, [&s](rxsc::action, rxsc::scheduler){
                 s = rxsub::subject<int>(); return rxsc::make_action_empty();});
-            sc->schedule_absolute(200, [&xs, &s](rxsc::action, rxsc::scheduler){
-                xs.subscribe(s.get_observer()); return rxsc::make_action_empty();});
-            sc->schedule_absolute(1000, [&s](rxsc::action, rxsc::scheduler){
-                s.get_observer().unsubscribe(); return rxsc::make_action_empty();});
+            sc->schedule_absolute(200, [&xs, &o](rxsc::action, rxsc::scheduler){
+                xs.subscribe(o); return rxsc::make_action_empty();});
+            sc->schedule_absolute(1000, [&o](rxsc::action, rxsc::scheduler){
+                o.unsubscribe(); return rxsc::make_action_empty();});
 
             sc->schedule_absolute(300, [&s, &results1](rxsc::action, rxsc::scheduler){
                 s.get_observable().subscribe(results1); return rxsc::make_action_empty();});
@@ -272,13 +272,14 @@ SCENARIO("subject - finite source", "[subject][subjects]"){
 
         WHEN("multicasting an infinite source"){
 
+            auto o = s.get_subscriber();
 
             sc->schedule_absolute(100, [&s](rxsc::action, rxsc::scheduler){
                 s = rxsub::subject<int>(); return rxsc::make_action_empty();});
-            sc->schedule_absolute(200, [&xs, &s](rxsc::action, rxsc::scheduler){
-                xs.subscribe(s.get_observer()); return rxsc::make_action_empty();});
-            sc->schedule_absolute(1000, [&s](rxsc::action, rxsc::scheduler){
-                s.get_observer().unsubscribe(); return rxsc::make_action_empty();});
+            sc->schedule_absolute(200, [&xs, &o](rxsc::action, rxsc::scheduler){
+                xs.subscribe(o); return rxsc::make_action_empty();});
+            sc->schedule_absolute(1000, [&o](rxsc::action, rxsc::scheduler){
+                o.unsubscribe(); return rxsc::make_action_empty();});
 
             sc->schedule_absolute(300, [&s, &results1](rxsc::action, rxsc::scheduler){
                 s.get_observable().subscribe(results1); return rxsc::make_action_empty();});
@@ -368,12 +369,14 @@ SCENARIO("subject - on_error in source", "[subject][subjects]"){
         WHEN("multicasting an infinite source"){
 
 
+            auto o = s.get_subscriber();
+
             sc->schedule_absolute(100, [&s](rxsc::action, rxsc::scheduler){
                 s = rxsub::subject<int>(); return rxsc::make_action_empty();});
-            sc->schedule_absolute(200, [&xs, &s](rxsc::action, rxsc::scheduler){
-                xs.subscribe(s.get_observer()); return rxsc::make_action_empty();});
-            sc->schedule_absolute(1000, [&s](rxsc::action, rxsc::scheduler){
-                s.get_observer().unsubscribe(); return rxsc::make_action_empty();});
+            sc->schedule_absolute(200, [&xs, &o](rxsc::action, rxsc::scheduler){
+                xs.subscribe(o); return rxsc::make_action_empty();});
+            sc->schedule_absolute(1000, [&o](rxsc::action, rxsc::scheduler){
+                o.unsubscribe(); return rxsc::make_action_empty();});
 
             sc->schedule_absolute(300, [&s, &results1](rxsc::action, rxsc::scheduler){
                 s.get_observable().subscribe(results1); return rxsc::make_action_empty();});
