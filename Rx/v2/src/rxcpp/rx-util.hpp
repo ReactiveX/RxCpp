@@ -198,6 +198,69 @@ private:
     Function* function;
 };
 
+#if RXCPP_USE_VARIADIC_TEMPLATES
+
+namespace detail {
+
+template<int N, int Index>
+struct select_arg
+{
+    template<class GArg, class... GArgN>
+    static auto get(GArg&&, GArgN&&... gan)
+        -> decltype(select_arg<N, Index + 1>::get(std::forward<GArgN>(gan)...)) {
+        return      select_arg<N, Index + 1>::get(std::forward<GArgN>(gan)...);
+    }
+};
+template<int N>
+struct select_arg<N, N>
+{
+    template<class GArg, class... GArgN>
+    static auto get(GArg&& ga, GArgN&&...)
+        -> decltype(std::forward<GArg>(ga)) {
+        return      std::forward<GArg>(ga);
+    }
+};
+
+}
+
+template<int Size, int N, template<class Arg> class Predicate, class Default, class... ArgN>
+struct arg_resolver_n;
+    
+template<int Size, int N, template<class Arg> class Predicate, class Default, class Arg, class... ArgN>
+struct arg_resolver_n<Size, N, Predicate, Default, Arg, ArgN...>
+{
+    static const int n = N;
+    static const bool is_arg = true;
+    typedef Arg result_type;
+    typedef arg_resolver_n<Size, n, Predicate, Default, Arg, ArgN...> this_type;
+    typedef arg_resolver_n<Size, n + 1, Predicate, Default, ArgN...> next_type;
+    typedef typename std::conditional<Predicate<result_type>::value, this_type, typename next_type::type>::type type;
+    result_type value;
+    template<class... CArgN>
+    arg_resolver_n(CArgN&&... can)
+        : value(detail::select_arg<n, 0>::get(std::forward<CArgN>(can)...)) {
+    }
+};
+
+template<int Size, template<class Arg> class Predicate, class Default>
+struct arg_resolver_n<Size, Size, Predicate, Default>
+{
+    static const int n = -1;
+    static const bool is_arg = false;
+    typedef Default result_type;
+    typedef arg_resolver_n<Size, Size, Predicate, Default> this_type;
+    typedef this_type type;
+    result_type value;
+    template<int Index>
+    struct select_arg
+    {
+    };
+    template<class... CArgN>
+    arg_resolver_n(CArgN&&...)
+        : value() {
+    }
+};
+#else
 template<int N, template<class Arg> class Predicate, class Default, class Arg0, class Arg1, class Arg2, class Arg3, class Arg4, class Arg5>
 struct arg_resolver_n;
 
@@ -310,16 +373,32 @@ struct arg_resolver_n<-1, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5
         : value() {
     }
 };
+#endif
 
 
+#if RXCPP_USE_VARIADIC_TEMPLATES
+template<template<class Arg> class Predicate, class Default, class... ArgN>
+struct arg_resolver
+{
+    typedef typename arg_resolver_n<sizeof...(ArgN), 0, Predicate, Default, typename std::decay<ArgN>::type...>::type type;
+};
+#else
 struct tag_unresolvable {};
 template<template<class Arg> class Predicate, class Default, class Arg0 = tag_unresolvable, class Arg1 = tag_unresolvable, class Arg2 = tag_unresolvable, class Arg3 = tag_unresolvable, class Arg4 = tag_unresolvable, class Arg5 = tag_unresolvable>
 struct arg_resolver
 {
     typedef typename arg_resolver_n<5, Predicate, Default, typename std::decay<Arg0>::type, typename std::decay<Arg1>::type, typename std::decay<Arg2>::type, typename std::decay<Arg3>::type, typename std::decay<Arg4>::type, typename std::decay<Arg5>::type>::type type;
 };
+#endif
 
-
+#if RXCPP_USE_VARIADIC_TEMPLATES
+template<template<class Arg> class Predicate, class Default,
+    class... ArgN>
+auto resolve_arg(ArgN&&... an)
+-> decltype(typename arg_resolver<Predicate, Default, ArgN...>::type(std::forward<ArgN>(an)...)) {
+    return  typename arg_resolver<Predicate, Default, ArgN...>::type(std::forward<ArgN>(an)...);
+}
+#else
 template<template<class Arg> class Predicate, class Default>
 auto resolve_arg()
 -> decltype(typename arg_resolver<Predicate, Default>::type(tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable())) {
@@ -377,6 +456,7 @@ auto resolve_arg(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3, Arg4&& a4, Arg5&& a
     return  typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5>::type(
         std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4), std::forward<Arg5>(a5));
 }
+#endif
 
 struct arg_resolver_term {};
 
@@ -404,6 +484,17 @@ template<class Tag>
 struct arg_resolver_set
 {
     typedef arg_resolver_set<typename Tag::next_tag> next_set;
+#if RXCPP_USE_VARIADIC_TEMPLATES
+    template<class... ArgN>
+    auto operator()(ArgN&&... an)
+    -> decltype(std::tuple_cat(
+                            std::make_tuple(resolve_arg<Tag::template predicate, typename Tag::default_type>(std::forward<ArgN>(an)...)),
+                            next_set()(std::forward<ArgN>(an)...))) {
+        return  std::tuple_cat(
+                            std::make_tuple(resolve_arg<Tag::template predicate, typename Tag::default_type>(std::forward<ArgN>(an)...)),
+                            next_set()(std::forward<ArgN>(an)...));
+    }
+#else
     inline auto operator()()
     -> decltype(std::tuple_cat(
                             std::make_tuple(resolve_arg<Tag::template predicate, typename Tag::default_type>()),
@@ -466,8 +557,15 @@ struct arg_resolver_set
                             std::make_tuple(resolve_arg<Tag::template predicate, typename Tag::default_type>(std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4), std::forward<Arg5>(a5))),
                             next_set()(std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4), std::forward<Arg5>(a5)));
     }
+#endif
 };
 
+#if RXCPP_USE_VARIADIC_TEMPLATES
+template<class... ArgN>
+inline std::tuple<> resolve_arg_set(arg_resolver_term&&, ArgN&&... ) {
+    return std::tuple<>();
+}
+#else
 inline std::tuple<> resolve_arg_set(arg_resolver_term&&) {
     return std::tuple<>();
 }
@@ -501,7 +599,23 @@ template<class Arg0, class Arg1, class Arg2, class Arg3, class Arg4, class Arg5>
 inline std::tuple<> resolve_arg_set(arg_resolver_term&&, Arg0&& , Arg1&& , Arg2&& , Arg3&& , Arg4&& , Arg5&& ) {
     return std::tuple<>();
 }
+#endif
 
+#if RXCPP_USE_VARIADIC_TEMPLATES
+template<class Tag, class... ArgN>
+auto resolve_arg_set(Tag&&, ArgN&&... an)
+    -> decltype(std::tuple_cat(
+                    std::make_tuple(resolve_arg<Tag::template predicate, typename Tag::default_type>(
+                        std::forward<ArgN>(an)...)),
+                    resolve_arg_set(typename Tag::next_tag(),
+                        std::forward<ArgN>(an)...))) {
+    return      std::tuple_cat(
+                    std::make_tuple(resolve_arg<Tag::template predicate, typename Tag::default_type>(
+                        std::forward<ArgN>(an)...)),
+                    resolve_arg_set(typename Tag::next_tag(),
+                        std::forward<ArgN>(an)...));
+}
+#else
 template<class Tag>
 auto resolve_arg_set(Tag&&)
     -> decltype(std::tuple_cat(
@@ -589,6 +703,7 @@ auto resolve_arg_set(Tag&&, Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3, Arg4&& a
                     resolve_arg_set(typename Tag::next_tag(),
                         std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4), std::forward<Arg5>(a5)));
 }
+#endif
 
 }
 
