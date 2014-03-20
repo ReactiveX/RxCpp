@@ -181,8 +181,8 @@ SCENARIO("subject - infinite source", "[subject][subjects]"){
 
             auto o = s.get_subscriber();
 
-            sc->schedule_absolute(100, [&s](rxsc::action, rxsc::scheduler){
-                s = rxsub::subject<int>(); return rxsc::make_action_empty();});
+            sc->schedule_absolute(100, [&s, &o](rxsc::action, rxsc::scheduler){
+                s = rxsub::subject<int>(); o = s.get_subscriber(); return rxsc::make_action_empty();});
             sc->schedule_absolute(200, [&xs, &o](rxsc::action, rxsc::scheduler){
                 xs.subscribe(o); return rxsc::make_action_empty();});
             sc->schedule_absolute(1000, [&o](rxsc::action, rxsc::scheduler){
@@ -274,8 +274,8 @@ SCENARIO("subject - finite source", "[subject][subjects]"){
 
             auto o = s.get_subscriber();
 
-            sc->schedule_absolute(100, [&s](rxsc::action, rxsc::scheduler){
-                s = rxsub::subject<int>(); return rxsc::make_action_empty();});
+            sc->schedule_absolute(100, [&s, &o](rxsc::action, rxsc::scheduler){
+                s = rxsub::subject<int>(); o = s.get_subscriber(); return rxsc::make_action_empty();});
             sc->schedule_absolute(200, [&xs, &o](rxsc::action, rxsc::scheduler){
                 xs.subscribe(o); return rxsc::make_action_empty();});
             sc->schedule_absolute(1000, [&o](rxsc::action, rxsc::scheduler){
@@ -368,11 +368,10 @@ SCENARIO("subject - on_error in source", "[subject][subjects]"){
 
         WHEN("multicasting an infinite source"){
 
-
             auto o = s.get_subscriber();
 
-            sc->schedule_absolute(100, [&s](rxsc::action, rxsc::scheduler){
-                s = rxsub::subject<int>(); return rxsc::make_action_empty();});
+            sc->schedule_absolute(100, [&s, &o](rxsc::action, rxsc::scheduler){
+                s = rxsub::subject<int>(); o = s.get_subscriber(); return rxsc::make_action_empty();});
             sc->schedule_absolute(200, [&xs, &o](rxsc::action, rxsc::scheduler){
                 xs.subscribe(o); return rxsc::make_action_empty();});
             sc->schedule_absolute(1000, [&o](rxsc::action, rxsc::scheduler){

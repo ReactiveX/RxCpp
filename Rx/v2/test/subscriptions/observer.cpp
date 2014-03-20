@@ -107,26 +107,6 @@ SCENARIO("non-observer traits", "[observer][traits]"){
     }
 }
 
-SCENARIO("observers with subscription traits", "[observer][subscription][traits]"){
-    GIVEN("given some observer types"){
-        auto emptyNext = [](int){};
-        auto dob = rx::make_observer_dynamic<int>(emptyNext);
-        auto so = rx::make_observer<int>(emptyNext);
-        auto eo = rx::make_observer<int>();
-        WHEN("tested"){
-            THEN("is_subscription value is true for dynamic_observer"){
-                REQUIRE(rx::is_subscription<decltype(dob)>::value);
-            }
-            THEN("is_subscription value is true for static_observer"){
-                REQUIRE(rx::is_subscription<decltype(so)>::value);
-            }
-            THEN("is_subscription value is true for observer<void>"){
-                REQUIRE(rx::is_subscription<decltype(eo)>::value);
-            }
-        }
-    }
-}
-
 SCENARIO("subscriber behavior", "[observer][traits]"){
     GIVEN("given some subscriber types"){
         int result = 0;
