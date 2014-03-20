@@ -305,8 +305,22 @@ public:
 
 }
 
+//
+// support range() >> filter() >> subscribe() syntax
+// '>>' is spelled 'stream'
+//
 template<class T, class SourceOperator, class OperatorFactory>
 auto operator >> (const rxcpp::observable<T, SourceOperator>& source, OperatorFactory&& of)
+    -> decltype(source.op(std::forward<OperatorFactory>(of))) {
+    return      source.op(std::forward<OperatorFactory>(of));
+}
+
+//
+// support range() | filter() | subscribe() syntax
+// '|' is spelled 'pipe'
+//
+template<class T, class SourceOperator, class OperatorFactory>
+auto operator | (const rxcpp::observable<T, SourceOperator>& source, OperatorFactory&& of)
     -> decltype(source.op(std::forward<OperatorFactory>(of))) {
     return      source.op(std::forward<OperatorFactory>(of));
 }

@@ -121,8 +121,22 @@ namespace rxt=test;
 
 }
 
+//
+// support range() >> filter() >> subscribe() syntax
+// '>>' is spelled 'stream'
+//
 template<class T, class OperatorFactory>
 auto operator >> (const rxcpp::test::testable_observable<T>& source, OperatorFactory&& of)
+    -> decltype(source.op(std::forward<OperatorFactory>(of))) {
+    return      source.op(std::forward<OperatorFactory>(of));
+}
+
+//
+// support range() | filter() | subscribe() syntax
+// '|' is spelled 'pipe'
+//
+template<class T, class OperatorFactory>
+auto operator | (const rxcpp::test::testable_observable<T>& source, OperatorFactory&& of)
     -> decltype(source.op(std::forward<OperatorFactory>(of))) {
     return      source.op(std::forward<OperatorFactory>(of));
 }
