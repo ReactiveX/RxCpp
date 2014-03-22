@@ -43,7 +43,10 @@ SCENARIO("subject test", "[hide][subject][subjects][perf]"){
                 int c = 0;
                 int n = 1;
                 auto start = clock::now();
-                rxs::range<int>(0, onnextcalls).subscribe([&c](int){++c;});
+                rxs::range<int>(0, onnextcalls).subscribe(
+                    [&c](int){
+                        ++c;
+                    });
                 auto finish = clock::now();
                 auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
                        duration_cast<milliseconds>(start.time_since_epoch());
@@ -181,28 +184,28 @@ SCENARIO("subject - infinite source", "[subject][subjects]"){
 
             auto o = s.get_subscriber();
 
-            sc->schedule_absolute(100, [&s, &o](rxsc::action, rxsc::scheduler){
-                s = rxsub::subject<int>(); o = s.get_subscriber(); return rxsc::make_action_empty();});
-            sc->schedule_absolute(200, [&xs, &o](rxsc::action, rxsc::scheduler){
-                xs.subscribe(o); return rxsc::make_action_empty();});
-            sc->schedule_absolute(1000, [&o](rxsc::action, rxsc::scheduler){
-                o.unsubscribe(); return rxsc::make_action_empty();});
+            sc->schedule_absolute(100, [&s, &o](const rxsc::schedulable& scbl){
+                s = rxsub::subject<int>(); o = s.get_subscriber(); scbl.unsubscribe(); return scbl;});
+            sc->schedule_absolute(200, [&xs, &o](const rxsc::schedulable& scbl){
+                xs.subscribe(o); scbl.unsubscribe(); return scbl;});
+            sc->schedule_absolute(1000, [&o](const rxsc::schedulable& scbl){
+                o.unsubscribe(); scbl.unsubscribe(); return scbl;});
 
-            sc->schedule_absolute(300, [&s, &results1](rxsc::action, rxsc::scheduler){
-                s.get_observable().subscribe(results1); return rxsc::make_action_empty();});
-            sc->schedule_absolute(400, [&s, &results2](rxsc::action, rxsc::scheduler){
-                s.get_observable().subscribe(results2); return rxsc::make_action_empty();});
-            sc->schedule_absolute(900, [&s, &results3](rxsc::action, rxsc::scheduler){
-                s.get_observable().subscribe(results3); return rxsc::make_action_empty();});
+            sc->schedule_absolute(300, [&s, &results1](const rxsc::schedulable& scbl){
+                s.get_observable().subscribe(results1); scbl.unsubscribe(); return scbl;});
+            sc->schedule_absolute(400, [&s, &results2](const rxsc::schedulable& scbl){
+                s.get_observable().subscribe(results2); scbl.unsubscribe(); return scbl;});
+            sc->schedule_absolute(900, [&s, &results3](const rxsc::schedulable& scbl){
+                s.get_observable().subscribe(results3); scbl.unsubscribe(); return scbl;});
 
-            sc->schedule_absolute(600, [&results1](rxsc::action, rxsc::scheduler){
-                results1.unsubscribe(); return rxsc::make_action_empty();});
-            sc->schedule_absolute(700, [&results2](rxsc::action, rxsc::scheduler){
-                results2.unsubscribe(); return rxsc::make_action_empty();});
-            sc->schedule_absolute(800, [&results1](rxsc::action, rxsc::scheduler){
-                results1.unsubscribe(); return rxsc::make_action_empty();});
-            sc->schedule_absolute(950, [&results3](rxsc::action, rxsc::scheduler){
-                results3.unsubscribe(); return rxsc::make_action_empty();});
+            sc->schedule_absolute(600, [&results1](const rxsc::schedulable& scbl){
+                results1.unsubscribe(); scbl.unsubscribe(); return scbl;});
+            sc->schedule_absolute(700, [&results2](const rxsc::schedulable& scbl){
+                results2.unsubscribe(); scbl.unsubscribe(); return scbl;});
+            sc->schedule_absolute(800, [&results1](const rxsc::schedulable& scbl){
+                results1.unsubscribe(); scbl.unsubscribe(); return scbl;});
+            sc->schedule_absolute(950, [&results3](const rxsc::schedulable& scbl){
+                results3.unsubscribe(); scbl.unsubscribe(); return scbl;});
 
             sc->start();
 
@@ -274,28 +277,28 @@ SCENARIO("subject - finite source", "[subject][subjects]"){
 
             auto o = s.get_subscriber();
 
-            sc->schedule_absolute(100, [&s, &o](rxsc::action, rxsc::scheduler){
-                s = rxsub::subject<int>(); o = s.get_subscriber(); return rxsc::make_action_empty();});
-            sc->schedule_absolute(200, [&xs, &o](rxsc::action, rxsc::scheduler){
-                xs.subscribe(o); return rxsc::make_action_empty();});
-            sc->schedule_absolute(1000, [&o](rxsc::action, rxsc::scheduler){
-                o.unsubscribe(); return rxsc::make_action_empty();});
+            sc->schedule_absolute(100, [&s, &o](const rxsc::schedulable& scbl){
+                s = rxsub::subject<int>(); o = s.get_subscriber(); scbl.unsubscribe(); return scbl;});
+            sc->schedule_absolute(200, [&xs, &o](const rxsc::schedulable& scbl){
+                xs.subscribe(o); scbl.unsubscribe(); return scbl;});
+            sc->schedule_absolute(1000, [&o](const rxsc::schedulable& scbl){
+                o.unsubscribe(); scbl.unsubscribe(); return scbl;});
 
-            sc->schedule_absolute(300, [&s, &results1](rxsc::action, rxsc::scheduler){
-                s.get_observable().subscribe(results1); return rxsc::make_action_empty();});
-            sc->schedule_absolute(400, [&s, &results2](rxsc::action, rxsc::scheduler){
-                s.get_observable().subscribe(results2); return rxsc::make_action_empty();});
-            sc->schedule_absolute(900, [&s, &results3](rxsc::action, rxsc::scheduler){
-                s.get_observable().subscribe(results3); return rxsc::make_action_empty();});
+            sc->schedule_absolute(300, [&s, &results1](const rxsc::schedulable& scbl){
+                s.get_observable().subscribe(results1); scbl.unsubscribe(); return scbl;});
+            sc->schedule_absolute(400, [&s, &results2](const rxsc::schedulable& scbl){
+                s.get_observable().subscribe(results2); scbl.unsubscribe(); return scbl;});
+            sc->schedule_absolute(900, [&s, &results3](const rxsc::schedulable& scbl){
+                s.get_observable().subscribe(results3); scbl.unsubscribe(); return scbl;});
 
-            sc->schedule_absolute(600, [&results1](rxsc::action, rxsc::scheduler){
-                results1.unsubscribe(); return rxsc::make_action_empty();});
-            sc->schedule_absolute(700, [&results2](rxsc::action, rxsc::scheduler){
-                results2.unsubscribe(); return rxsc::make_action_empty();});
-            sc->schedule_absolute(800, [&results1](rxsc::action, rxsc::scheduler){
-                results1.unsubscribe(); return rxsc::make_action_empty();});
-            sc->schedule_absolute(950, [&results3](rxsc::action, rxsc::scheduler){
-                results3.unsubscribe(); return rxsc::make_action_empty();});
+            sc->schedule_absolute(600, [&results1](const rxsc::schedulable& scbl){
+                results1.unsubscribe(); scbl.unsubscribe(); return scbl;});
+            sc->schedule_absolute(700, [&results2](const rxsc::schedulable& scbl){
+                results2.unsubscribe(); scbl.unsubscribe(); return scbl;});
+            sc->schedule_absolute(800, [&results1](const rxsc::schedulable& scbl){
+                results1.unsubscribe(); scbl.unsubscribe(); return scbl;});
+            sc->schedule_absolute(950, [&results3](const rxsc::schedulable& scbl){
+                results3.unsubscribe(); scbl.unsubscribe(); return scbl;});
 
             sc->start();
 
@@ -370,28 +373,28 @@ SCENARIO("subject - on_error in source", "[subject][subjects]"){
 
             auto o = s.get_subscriber();
 
-            sc->schedule_absolute(100, [&s, &o](rxsc::action, rxsc::scheduler){
-                s = rxsub::subject<int>(); o = s.get_subscriber(); return rxsc::make_action_empty();});
-            sc->schedule_absolute(200, [&xs, &o](rxsc::action, rxsc::scheduler){
-                xs.subscribe(o); return rxsc::make_action_empty();});
-            sc->schedule_absolute(1000, [&o](rxsc::action, rxsc::scheduler){
-                o.unsubscribe(); return rxsc::make_action_empty();});
+            sc->schedule_absolute(100, [&s, &o](const rxsc::schedulable& scbl){
+                s = rxsub::subject<int>(); o = s.get_subscriber(); scbl.unsubscribe(); return scbl;});
+            sc->schedule_absolute(200, [&xs, &o](const rxsc::schedulable& scbl){
+                xs.subscribe(o); scbl.unsubscribe(); return scbl;});
+            sc->schedule_absolute(1000, [&o](const rxsc::schedulable& scbl){
+                o.unsubscribe(); scbl.unsubscribe(); return scbl;});
 
-            sc->schedule_absolute(300, [&s, &results1](rxsc::action, rxsc::scheduler){
-                s.get_observable().subscribe(results1); return rxsc::make_action_empty();});
-            sc->schedule_absolute(400, [&s, &results2](rxsc::action, rxsc::scheduler){
-                s.get_observable().subscribe(results2); return rxsc::make_action_empty();});
-            sc->schedule_absolute(900, [&s, &results3](rxsc::action, rxsc::scheduler){
-                s.get_observable().subscribe(results3); return rxsc::make_action_empty();});
+            sc->schedule_absolute(300, [&s, &results1](const rxsc::schedulable& scbl){
+                s.get_observable().subscribe(results1); scbl.unsubscribe(); return scbl;});
+            sc->schedule_absolute(400, [&s, &results2](const rxsc::schedulable& scbl){
+                s.get_observable().subscribe(results2); scbl.unsubscribe(); return scbl;});
+            sc->schedule_absolute(900, [&s, &results3](const rxsc::schedulable& scbl){
+                s.get_observable().subscribe(results3); scbl.unsubscribe(); return scbl;});
 
-            sc->schedule_absolute(600, [&results1](rxsc::action, rxsc::scheduler){
-                results1.unsubscribe(); return rxsc::make_action_empty();});
-            sc->schedule_absolute(700, [&results2](rxsc::action, rxsc::scheduler){
-                results2.unsubscribe(); return rxsc::make_action_empty();});
-            sc->schedule_absolute(800, [&results1](rxsc::action, rxsc::scheduler){
-                results1.unsubscribe(); return rxsc::make_action_empty();});
-            sc->schedule_absolute(950, [&results3](rxsc::action, rxsc::scheduler){
-                results3.unsubscribe(); return rxsc::make_action_empty();});
+            sc->schedule_absolute(600, [&results1](const rxsc::schedulable& scbl){
+                results1.unsubscribe(); scbl.unsubscribe(); return scbl;});
+            sc->schedule_absolute(700, [&results2](const rxsc::schedulable& scbl){
+                results2.unsubscribe(); scbl.unsubscribe(); return scbl;});
+            sc->schedule_absolute(800, [&results1](const rxsc::schedulable& scbl){
+                results1.unsubscribe(); scbl.unsubscribe(); return scbl;});
+            sc->schedule_absolute(950, [&results3](const rxsc::schedulable& scbl){
+                results3.unsubscribe(); scbl.unsubscribe(); return scbl;});
 
             sc->start();
 

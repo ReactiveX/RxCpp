@@ -18,7 +18,7 @@ struct action_queue
     typedef action_queue this_type;
 
     typedef scheduler_base::clock_type clock;
-    typedef time_action<clock::time_point> item_type;
+    typedef time_schedulable<clock::time_point> item_type;
 
 private:
     struct compare_item_time
@@ -73,7 +73,7 @@ public:
         if (!current_thread_queue()) {
             abort();
         }
-        if (!item.a->is_subscribed()) {
+        if (!item.what.is_subscribed()) {
             return;
         }
         current_thread_queue()->queue.push(std::move(item));
@@ -114,7 +114,7 @@ public:
 
 }
 
-struct current_thread : public scheduler_base
+struct current_thread : public scheduler_interface
 {
 private:
     typedef current_thread this_type;
@@ -122,7 +122,7 @@ private:
 
     typedef detail::action_queue queue;
 
-    struct derecurser : public scheduler_base
+    struct derecurser : public scheduler_interface
     {
     private:
         typedef current_thread this_type;
@@ -135,20 +135,24 @@ private:
         {
         }
 
-        virtual clock_type::time_point now() {
+        virtual clock_type::time_point now() const {
             return clock_type::now();
         }
 
-        virtual void schedule(action a) {
-            queue::push(queue::item_type(now(), std::move(a)));
+        inline bool is_tail_recursion_allowed() const {
+            return queue::empty();
         }
 
-        virtual void schedule(clock_type::duration when, action a) {
-            queue::push(queue::item_type(now() + when, std::move(a)));
+        virtual void schedule(const schedulable& scbl) const {
+            queue::push(queue::item_type(now(), scbl));
         }
 
-        virtual void schedule(clock_type::time_point when, action a) {
-            queue::push(queue::item_type(when, std::move(a)));
+        virtual void schedule(clock_type::duration when, const schedulable& scbl) const {
+            queue::push(queue::item_type(now() + when, scbl));
+        }
+
+        virtual void schedule(clock_type::time_point when, const schedulable& scbl) const {
+            queue::push(queue::item_type(when, scbl));
         }
     };
 
@@ -160,41 +164,45 @@ public:
     {
     }
 
-    static bool is_schedule_required() { return !queue::get_scheduler(); }
+    static bool is_schedule_required() { return queue::get_scheduler() == scheduler(); }
 
-    virtual clock_type::time_point now() {
+    virtual clock_type::time_point now() const {
         return clock_type::now();
     }
 
-    virtual void schedule(action a) {
-        schedule(now(), std::move(a));
+    inline bool is_tail_recursion_allowed() const {
+        return queue::empty();
     }
 
-    virtual void schedule(clock_type::duration when, action a) {
-        schedule(now() + when, std::move(a));
+    virtual void schedule(const schedulable& scbl) const {
+        schedule(now(), scbl);
     }
 
-    virtual void schedule(clock_type::time_point when, action a) {
-        if (!a->is_subscribed()) {
+    virtual void schedule(clock_type::duration when, const schedulable& scbl) const {
+        schedule(now() + when, scbl);
+    }
+
+    virtual void schedule(clock_type::time_point when, const schedulable& scbl) const {
+        if (!scbl.is_subscribed()) {
             return;
         }
 
         auto sc = queue::get_scheduler();
         // check ownership
-        if (!!sc)
+        if (sc != scheduler())
         {
             // already has an owner - delegate
-            return sc->schedule(when, std::move(a));
+            return sc.schedule(when, scbl);
         }
 
         // take ownership
 
-        sc = queue::ensure(std::make_shared<derecurser>());
+        sc = queue::ensure(make_scheduler<derecurser>());
         RXCPP_UNWIND_AUTO([]{
             queue::destroy();
         });
 
-        queue::push(queue::item_type(when, std::move(a)));
+        queue::push(queue::item_type(when, scbl));
 
         // loop until queue is empty
         for (
@@ -203,18 +211,12 @@ public:
              when = queue::top().when
              )
         {
-            auto a = queue::top().a;
+            auto what = queue::top().what;
 
             queue::pop();
 
-            while (a->is_subscribed()) {
-                a = (*a)(sc);
-                if (!queue::empty()) {
-                    // take proper place in line
-                    sc->schedule(std::move(a));
-                    break;
-                }
-                // tail recurse to a
+            if (what.is_subscribed()) {
+                what.get_action()(what);
             }
 
             if (queue::empty()) {
@@ -225,7 +227,7 @@ public:
 };
 
 inline scheduler make_current_thread() {
-    return std::make_shared<current_thread>();
+    return make_scheduler<current_thread>();
 }
 
 }

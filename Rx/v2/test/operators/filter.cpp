@@ -396,7 +396,7 @@ SCENARIO("filter stops on dispose from predicate", "[where][filter][operators]")
         WHEN("filtered to ints that are primes"){
 
             sc->schedule_absolute(rxsc::test::created_time,
-                [&invoked, &res, &ys, &xs](rxsc::action, rxsc::scheduler) {
+                [&invoked, &res, &ys, &xs](const rxsc::schedulable& scbl) {
 #if RXCPP_USE_OBSERVABLE_MEMBERS
                     ys = xs
                         .filter([&invoked, &res](int x) {
@@ -414,17 +414,20 @@ SCENARIO("filter stops on dispose from predicate", "[where][filter][operators]")
                             return IsPrime(x);
                         });
 #endif
-                    return rxsc::make_action_empty();
+                    scbl.unsubscribe();
+                    return scbl;
                 });
 
-            sc->schedule_absolute(rxsc::test::subscribed_time, [&ys, &res](rxsc::action, rxsc::scheduler) {
+            sc->schedule_absolute(rxsc::test::subscribed_time, [&ys, &res](const rxsc::schedulable& scbl) {
                 ys.subscribe(res);
-                return rxsc::make_action_empty();
+                scbl.unsubscribe();
+                return scbl;
             });
 
-            sc->schedule_absolute(rxsc::test::unsubscribed_time, [&res](rxsc::action, rxsc::scheduler) {
+            sc->schedule_absolute(rxsc::test::unsubscribed_time, [&res](const rxsc::schedulable& scbl) {
                 res.unsubscribe();
-                return rxsc::make_action_empty();
+                scbl.unsubscribe();
+                return scbl;
             });
 
             sc->start();

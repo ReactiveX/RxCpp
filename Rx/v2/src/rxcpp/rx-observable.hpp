@@ -168,9 +168,9 @@ private:
 
         if (rxsc::current_thread::is_schedule_required()) {
             auto sc = rxsc::make_current_thread();
-            sc->schedule([=](rxsc::action, rxsc::scheduler) {
+            schedule(sc, [=](const rxsc::schedulable& scbl) {
                 safe_subscribe();
-                return rxsc::make_action_empty();
+                return rxsc::schedulable::empty(scbl.get_scheduler());
             });
         } else {
             safe_subscribe();

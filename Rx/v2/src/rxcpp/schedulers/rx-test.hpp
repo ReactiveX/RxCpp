@@ -67,7 +67,7 @@ public:
     using base::schedule_absolute;
     using base::schedule_relative;
 
-    virtual void schedule_absolute(long when, action a)
+    virtual void schedule_absolute(long when, action a) const
     {
         if (when <= base::clock_now)
             when = base::clock_now + 1;
@@ -75,17 +75,17 @@ public:
         return base::schedule_absolute(when, std::move(a));
     }
 
-    virtual long add(long absolute, long relative)
+    virtual long add(long absolute, long relative) const
     {
         return absolute + relative;
     }
 
-    virtual clock_type::time_point to_time_point(long absolute)
+    virtual clock_type::time_point to_time_point(long absolute) const
     {
         return clock_type::time_point(clock_type::duration(absolute));
     }
 
-    virtual long to_relative(clock_type::duration d)
+    virtual long to_relative(clock_type::duration d) const
     {
         return static_cast<long>(d.count());
     }
@@ -93,7 +93,7 @@ public:
     using base::start;
 
     template<class T, class F>
-    auto start(F&& createSource, long created, long subscribed, long unsubscribed)
+    auto start(F&& createSource, long created, long subscribed, long unsubscribed) const
         -> subscriber<T, rxt::testable_observer<T>>
     {
         typename std::decay<F>::type createSrc = std::forward<F>(createSource);
@@ -114,17 +114,17 @@ public:
         };
         std::shared_ptr<state_type> state(new state_type(this->make_subscriber<T>()));
 
-        schedule_absolute(created, make_action([createSrc, state](action, scheduler) {
+        schedule_absolute(created, make_action([createSrc, state](const schedulable& scbl) {
             state->source.reset(new typename state_type::source_type(createSrc()));
-            return make_action_empty();
+            return schedulable::empty(scbl.get_scheduler());
         }));
-        schedule_absolute(subscribed, make_action([state](action, scheduler) {
+        schedule_absolute(subscribed, make_action([state](const schedulable& scbl) {
             state->source->subscribe(state->o);
-            return make_action_empty();
+            return schedulable::empty(scbl.get_scheduler());
         }));
-        schedule_absolute(unsubscribed, make_action([state](action, scheduler) {
+        schedule_absolute(unsubscribed, make_action([state](const schedulable& scbl) {
             state->o.unsubscribe();
-            return make_action_empty();
+            return schedulable::empty(scbl.get_scheduler());
         }));
 
         start();
@@ -133,39 +133,39 @@ public:
     }
 
     template<class T, class F>
-    auto start(F&& createSource, long unsubscribed)
+    auto start(F&& createSource, long unsubscribed) const
         -> subscriber<T, rxt::testable_observer<T>>
     {
         return start<T>(std::forward<F>(createSource), created_time, subscribed_time, unsubscribed);
     }
 
     template<class T, class F>
-    auto start(F&& createSource)
+    auto start(F&& createSource) const
         -> subscriber<T, rxt::testable_observer<T>>
     {
         return start<T>(std::forward<F>(createSource), created_time, subscribed_time, unsubscribed_time);
     }
 
     template<class T>
-    rxt::testable_observable<T> make_hot_observable(std::vector<rxn::recorded<std::shared_ptr<rxn::detail::notification_base<T>>>> messages);
+    rxt::testable_observable<T> make_hot_observable(std::vector<rxn::recorded<std::shared_ptr<rxn::detail::notification_base<T>>>> messages) const;
 
     template<class T, size_t size>
-    auto make_hot_observable(const T (&arr) [size])
+    auto make_hot_observable(const T (&arr) [size]) const
         -> decltype(make_hot_observable(std::vector<T>())) {
         return      make_hot_observable(rxu::to_vector(arr));
     }
 
     template<class T>
-    rxt::testable_observable<T> make_cold_observable(std::vector<rxn::recorded<std::shared_ptr<rxn::detail::notification_base<T>>>> messages);
+    rxt::testable_observable<T> make_cold_observable(std::vector<rxn::recorded<std::shared_ptr<rxn::detail::notification_base<T>>>> messages) const;
 
     template<class T, size_t size>
-    auto make_cold_observable(const T (&arr) [size])
+    auto make_cold_observable(const T (&arr) [size]) const
         -> decltype(make_cold_observable(std::vector<T>())) {
         return      make_cold_observable(rxu::to_vector(arr));
     }
 
     template<class T>
-    subscriber<T, rxt::testable_observer<T>> make_subscriber();
+    subscriber<T, rxt::testable_observer<T>> make_subscriber() const;
 };
 
 template<class T>
@@ -213,12 +213,12 @@ public:
 };
 
 template<class T>
-subscriber<T, rxt::testable_observer<T>> test::make_subscriber()
+subscriber<T, rxt::testable_observer<T>> test::make_subscriber() const
 {
     typedef typename rxn::notification<T> notification_type;
     typedef rxn::recorded<typename notification_type::type> recorded_type;
     
-    std::shared_ptr<mock_observer<T>> ts(new mock_observer<T>(std::static_pointer_cast<test>(shared_from_this())));
+    std::shared_ptr<mock_observer<T>> ts(new mock_observer<T>(std::const_pointer_cast<test>(std::static_pointer_cast<const test>(shared_from_this()))));
     
     return rxcpp::make_subscriber<T>(rxt::testable_observer<T>(ts, make_observer_dynamic<T>(
           // on_next
@@ -272,9 +272,10 @@ public:
 
         for (auto& message : mv) {
             auto n = message.value();
-            sc->schedule_relative(message.time(), make_action([n, o](action, scheduler) {
+            sc->schedule_relative(message.time(), make_action([n, o](const schedulable& scbl) {
                 n->accept(o);
-                return make_action_empty();
+                scbl.unsubscribe();
+                return scbl;
             }));
         }
 
@@ -294,9 +295,9 @@ public:
 };
 
 template<class T>
-rxt::testable_observable<T> test::make_cold_observable(std::vector<rxn::recorded<std::shared_ptr<rxn::detail::notification_base<T>>>> messages)
+rxt::testable_observable<T> test::make_cold_observable(std::vector<rxn::recorded<std::shared_ptr<rxn::detail::notification_base<T>>>> messages) const
 {
-    auto co = std::shared_ptr<cold_observable<T>>(new cold_observable<T>(std::static_pointer_cast<test>(shared_from_this()), std::move(messages)));
+    auto co = std::shared_ptr<cold_observable<T>>(new cold_observable<T>(std::const_pointer_cast<test>(std::static_pointer_cast<const test>(shared_from_this())), std::move(messages)));
     return rxt::testable_observable<T>(co);
 }
 
@@ -320,12 +321,12 @@ public:
     {
         for (auto& message : mv) {
             auto n = message.value();
-            sc->schedule_absolute(message.time(), make_action([this, n](action, scheduler) {
+            sc->schedule_absolute(message.time(), make_action([this, n](const schedulable& scbl) {
                 auto local = this->observers;
                 for (auto& o : local) {
                     n->accept(o);
                 }
-                return make_action_empty();
+                return schedulable::empty(scbl.get_scheduler());
             }));
         }
     }
@@ -351,10 +352,10 @@ public:
 };
 
 template<class T>
-rxt::testable_observable<T> test::make_hot_observable(std::vector<rxn::recorded<std::shared_ptr<rxn::detail::notification_base<T>>>> messages)
+rxt::testable_observable<T> test::make_hot_observable(std::vector<rxn::recorded<std::shared_ptr<rxn::detail::notification_base<T>>>> messages) const
 {
     return rxt::testable_observable<T>(std::make_shared<hot_observable<T>>(
-        std::static_pointer_cast<test>(shared_from_this()), std::move(messages)));
+        std::const_pointer_cast<test>(std::static_pointer_cast<const test>(shared_from_this())), std::move(messages)));
 }
 
 }

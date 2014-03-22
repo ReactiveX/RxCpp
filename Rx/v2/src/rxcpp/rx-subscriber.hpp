@@ -182,14 +182,14 @@ auto select_observer(ResolvedArgSet& rs)
 
 template<class T, class ResolvedArgSet>
 auto make_subscriber_resolved(ResolvedArgSet&& rsArg)
-    ->      subscriber<T, decltype(     select_observer<T>(std::move(rsArg)))> {
+    ->      subscriber<T, decltype(     select_observer<T>(*(typename std::decay<ResolvedArgSet>::type*)nullptr))> {
     const auto rs = std::forward<ResolvedArgSet>(rsArg);
     const auto rsub = std::get<3>(rs);
     const auto rr = std::get<4>(rs);
     const auto rscrbr = std::get<6>(rs);
     const auto r = (rscrbr.is_arg && !rr.is_arg)      ? rscrbr.value.get_resumption()       : rr.value;
     const auto s = (rscrbr.is_arg && !rsub.is_arg)    ? rscrbr.value.get_subscription()     : rsub.value;
-    return  subscriber<T, decltype(     select_observer<T>(std::move(rsArg)))>(
+    return  subscriber<T, decltype(     select_observer<T>(*(typename std::decay<ResolvedArgSet>::type*)nullptr))>(
             s, r, select_observer<T>(rs));
 
 // at least for now do not enforce resolver

@@ -9,15 +9,6 @@
 
 namespace rxcpp {
 
-// temp to get compiling
-namespace schedulers {
-	struct schedulable
-	{
-		schedulable& operator=(std::nullptr_t) {return *this;};
-		void schedule() {}
-	};
-}
-
 struct tag_resumption {};
 struct resumption_base
 {
@@ -96,8 +87,9 @@ public:
 	inline void resume() {
 		state->isresumed = true;
         auto resumewith = std::move(state->resumewith);
-        state->resumewith = nullptr;
-        resumewith.schedule();
+        auto local = state->resumewith;
+        state->resumewith = rxsc::schedulable::empty(local.get_scheduler());
+        local.schedule();
 	}
 	inline resumption get_resumption() {
 		return resumption(state);

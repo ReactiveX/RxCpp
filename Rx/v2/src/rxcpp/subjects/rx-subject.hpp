@@ -148,7 +148,9 @@ public:
                 c = b->completer;
             }
             for (auto& o : c->observers) {
-                o.on_next(t);
+                if (o.is_subscribed()) {
+                    o.on_next(t);
+                }
             }
         }
     }
@@ -161,7 +163,9 @@ public:
             guard.unlock();
             if (c) {
                 for (auto& o : c->observers) {
-                    o.on_error(e);
+                    if (o.is_subscribed()) {
+                        o.on_error(e);
+                    }
                 }
             }
         }
@@ -174,7 +178,9 @@ public:
             guard.unlock();
             if (c) {
                 for (auto& o : c->observers) {
-                    o.on_completed();
+                    if (o.is_subscribed()) {
+                        o.on_completed();
+                    }
                 }
             }
         }

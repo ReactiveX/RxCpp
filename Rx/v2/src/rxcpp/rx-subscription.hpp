@@ -23,20 +23,6 @@ public:
     static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_subscription>::value;
 };
 
-namespace detail {
-
-struct tag_subscription_resolution
-{
-    template<class LHS>
-    struct predicate
-    {
-        static const bool value = !is_subscriber<LHS>::value && !is_observer<LHS>::value && is_subscription<LHS>::value;
-    };
-    typedef composite_subscription default_type;
-};
-
-}
-
 class dynamic_subscription : public subscription_base
 {
     typedef std::function<void()> unsubscribe_call_type;
@@ -170,15 +156,15 @@ private:
         {
         }
 
-        bool is_subscribed() {
+        inline bool is_subscribed() {
             return issubscribed;
         }
 
-        weak_subscription add(dynamic_subscription s) {
+        inline weak_subscription add(dynamic_subscription s) {
             return add(std::make_shared<dynamic_subscription>(std::move(s)));
         }
 
-        weak_subscription add(shared_subscription s) {
+        inline weak_subscription add(shared_subscription s) {
             std::unique_lock<decltype(lock)> guard(lock);
 
             if (!issubscribed) {
@@ -194,7 +180,7 @@ private:
             return s;
         }
 
-        void remove(weak_subscription w) {
+        inline void remove(weak_subscription w) {
             std::unique_lock<decltype(lock)> guard(lock);
 
             if (issubscribed) {
@@ -211,7 +197,7 @@ private:
             }
         }
 
-        void clear() {
+        inline void clear() {
             std::unique_lock<decltype(lock)> guard(lock);
 
             if (issubscribed) {
@@ -222,7 +208,7 @@ private:
             }
         }
 
-        void unsubscribe() {
+        inline void unsubscribe() {
             std::unique_lock<decltype(lock)> guard(lock);
 
             if (issubscribed) {
@@ -290,40 +276,54 @@ public:
         return *this;
     }
 
-    static composite_subscription empty() {
+    static inline composite_subscription empty() {
         return composite_subscription(shared_empty);
     }
 
-    bool is_subscribed() const {
+    inline bool is_subscribed() const {
         return state->is_subscribed();
     }
-    weak_subscription add(shared_subscription s) const {
+    inline weak_subscription add(shared_subscription s) const {
         return state->add(std::move(s));
     }
-    weak_subscription add(dynamic_subscription s) const {
+    inline weak_subscription add(dynamic_subscription s) const {
         return state->add(std::move(s));
     }
-    void remove(weak_subscription w) const {
+    inline void remove(weak_subscription w) const {
         state->remove(std::move(w));
     }
-    void clear() const {
+    inline void clear() const {
         state->clear();
     }
-    void unsubscribe() const {
+    inline void unsubscribe() const {
         state->unsubscribe();
     }
 };
 
-bool operator==(const composite_subscription& lhs, const composite_subscription& rhs) {
+inline bool operator==(const composite_subscription& lhs, const composite_subscription& rhs) {
     return lhs.state == rhs.state;
 }
-bool operator!=(const composite_subscription& lhs, const composite_subscription& rhs) {
+inline bool operator!=(const composite_subscription& lhs, const composite_subscription& rhs) {
     return !(lhs == rhs);
 }
 
 //static
 RXCPP_SELECT_ANY std::shared_ptr<composite_subscription::state_t> composite_subscription::shared_empty = std::make_shared<composite_subscription::state_t>(composite_subscription::tag_empty());
 
+
+namespace detail {
+
+    struct tag_subscription_resolution
+    {
+        template<class LHS>
+        struct predicate
+        {
+            static const bool value = !is_subscriber<LHS>::value && !is_observer<LHS>::value && is_subscription<LHS>::value;
+        };
+        typedef composite_subscription default_type;
+    };
+
+}
 
 }
 

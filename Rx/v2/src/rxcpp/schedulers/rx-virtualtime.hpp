@@ -14,13 +14,13 @@ namespace schedulers {
 namespace detail {
 
 template<class Absolute, class Relative>
-struct virtual_time_base : public scheduler_base
+struct virtual_time_base : public scheduler_interface
 {
 private:
     typedef virtual_time_base<Absolute, Relative> this_type;
     virtual_time_base(const virtual_time_base&);
 
-    bool isenabled;
+    mutable bool isenabled;
 
 public:
     typedef Absolute absolute;
@@ -42,57 +42,54 @@ protected:
     {
     }
 
-    absolute clock_now;
+    mutable absolute clock_now;
 
-    typedef time_action<long> item_type;
+    typedef time_schedulable<long> item_type;
 
-    virtual absolute add(absolute, relative) =0;
+    virtual absolute add(absolute, relative) const =0;
 
-    virtual typename scheduler_base::clock_type::time_point to_time_point(absolute) =0;
-    virtual relative to_relative(typename scheduler_base::clock_type::duration) =0;
+    virtual typename scheduler_base::clock_type::time_point to_time_point(absolute) const =0;
+    virtual relative to_relative(typename scheduler_base::clock_type::duration) const =0;
 
-    virtual item_type top() =0;
-    virtual void pop() =0;
-    virtual bool empty() =0;
+    virtual item_type top() const =0;
+    virtual void pop() const =0;
+    virtual bool empty() const =0;
 
 public:
-    virtual void schedule_absolute(absolute, action) =0;
+    virtual void schedule_absolute(absolute, action) const =0;
 
     template<class F>
-    typename std::enable_if<!std::is_same<typename std::decay<F>::type, action>::value, void>::type 
-    schedule_absolute(absolute when, F f) {
+    typename std::enable_if<!std::is_same<typename std::decay<F>::type, action>::value, void>::type
+    schedule_absolute(absolute when, F f) const {
         schedule_absolute(when, make_action(f));
     }
 
-    virtual void schedule_relative(relative when, action a) {
+    virtual void schedule_relative(relative when, action a) const {
         auto at = add(clock_now, when);
         return schedule_absolute(at, std::move(a));
     }
 
     template<class F>
-    typename std::enable_if<!std::is_same<typename std::decay<F>::type, action>::value, void>::type 
-    schedule_relative(relative when, F f) {
+    typename std::enable_if<!std::is_same<typename std::decay<F>::type, action>::value, void>::type
+    schedule_relative(relative when, F f) const {
         schedule_relative(when, make_action(f));
     }
 
-    bool is_enabled() {return isenabled;}
-    absolute clock() {return clock_now;}
+    bool is_enabled() const {return isenabled;}
+    absolute clock() const {return clock_now;}
 
-    void start()
+    void start() const
     {
         if (!isenabled) {
             isenabled = true;
             while (!empty() && isenabled) {
                 auto next = top();
                 pop();
-                if (next.a->is_subscribed()) {
+                if (next.what.is_subscribed()) {
                     if (next.when > clock_now) {
                         clock_now = next.when;
                     }
-                    auto a = (*next.a)(shared_from_this());
-                    if (a->is_subscribed()) {
-                        schedule(a);
-                    }
+                    next.what.get_action()(next.what);
                 }
                 else {
                     isenabled = false;
@@ -101,12 +98,12 @@ public:
         }
     }
 
-    void stop()
+    void stop() const
     {
         isenabled = false;
     }
 
-    void advance_to(absolute time)
+    void advance_to(absolute time) const
     {
         if (time < clock_now) {
             abort();
@@ -121,14 +118,11 @@ public:
             while (!empty() && isenabled) {
                 auto next = top();
                 pop();
-                if (next.a->is_subscribed() && next.when <= time) {
+                if (next.what.is_subscribed() && next.when <= time) {
                     if (next.when > clock_now) {
                         clock_now = next.when;
                     }
-                    auto a = (*next.a)(shared_from_this());
-                    if (a.subscribed()) {
-                        schedule(a);
-                    }
+                    next.what.get_action()(next.what);
                 }
                 else {
                     isenabled = false;
@@ -142,7 +136,7 @@ public:
         }
     }
 
-    void advance_by(relative time)
+    void advance_by(relative time) const
     {
         auto dt = add(clock_now, time);
 
@@ -162,7 +156,7 @@ public:
         }
     }
 
-    void sleep(relative time)
+    void sleep(relative time) const
     {
         auto dt = add(clock_now, time);
 
@@ -173,20 +167,24 @@ public:
         clock_now = dt;
     }
 
-    virtual clock_type::time_point now() {
+    virtual clock_type::time_point now() const {
         return to_time_point(clock_now);
     }
 
-    virtual void schedule(action a) {
-        schedule_absolute(clock_now, std::move(a));
+    virtual bool is_tail_recursion_allowed() const {
+        return false;
     }
 
-    virtual void schedule(clock_type::duration when, action a) {
-        schedule_absolute(to_relative(when), std::move(a));
+    virtual void schedule(const schedulable& scbl) const {
+        schedule_absolute(clock_now, scbl.get_action());
     }
 
-    virtual void schedule(clock_type::time_point when, action a) {
-        schedule_absolute(to_relative(when - now()), std::move(a));
+    virtual void schedule(clock_type::duration when, const schedulable& scbl) const {
+        schedule_absolute(to_relative(when), scbl.get_action());
+    }
+
+    virtual void schedule(clock_type::time_point when, const schedulable& scbl) const {
+        schedule_absolute(to_relative(when - now()), scbl.get_action());
     }
 
 };
@@ -197,7 +195,8 @@ template<class Absolute, class Relative>
 class virtual_time : public detail::virtual_time_base<Absolute, Relative>
 {
 private:
-    virtual_time(const virtual_time&);
+    typedef virtual_time this_type;
+    virtual_time(const this_type&);
 
     typedef detail::virtual_time_base<Absolute, Relative> base;
 
@@ -216,7 +215,7 @@ private:
         compare_item_time
     > queue_item_time;
 
-    queue_item_time queue;
+    mutable queue_item_time queue;
 
 public:
     virtual ~virtual_time()
@@ -232,29 +231,31 @@ protected:
     {
     }
 
-    virtual item_type top() {
+    virtual item_type top() const {
         return queue.top();
     }
-    virtual void pop() {
+    virtual void pop() const {
         queue.pop();
     }
-    virtual bool empty() {
+    virtual bool empty() const {
         return queue.empty();
     }
 
     using base::schedule_absolute;
     using base::schedule_relative;
 
-    virtual void schedule_absolute(typename base::absolute when, action a)
+    virtual void schedule_absolute(typename base::absolute when, action a) const
     {
         // use a separate subscription here so that a's subscription is not affected
-        auto run = make_action([a](action that, scheduler sc) {
-            if (that->is_subscribed()) {
-                that->unsubscribe(); // unsubscribe() run, not a;
-                (*a)(sc);
-            }
-            return make_action_empty();
-        });
+        auto run = make_schedulable(
+            scheduler(this->shared_from_this()),
+            [a](const schedulable& scbl) {
+                if (scbl.is_subscribed()) {
+                    scbl.unsubscribe(); // unsubscribe() run, not a;
+                    a(scbl);
+                }
+                return schedulable::empty(scbl.get_scheduler());
+            });
         queue.push(item_type(when, run));
     }
 
