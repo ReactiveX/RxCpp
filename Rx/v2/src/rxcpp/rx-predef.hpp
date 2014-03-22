@@ -9,6 +9,46 @@
 
 namespace rxcpp {
 
+struct tag_action {};
+template<class T>
+class is_action
+{
+    struct not_void {};
+    template<class C>
+    static typename C::action_tag* check(int);
+    template<class C>
+    static not_void check(...);
+public:
+    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_action*>::value;
+};
+
+struct tag_scheduler {};
+template<class T>
+class is_scheduler
+{
+    struct not_void {};
+    template<class C>
+    static typename C::scheduler_tag* check(int);
+    template<class C>
+    static not_void check(...);
+public:
+    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_scheduler*>::value;
+};
+
+struct tag_schedulable {};
+template<class T>
+class is_schedulable
+{
+    struct not_void {};
+    template<class C>
+    static typename C::schedulable_tag* check(int);
+    template<class C>
+    static not_void check(...);
+public:
+    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_schedulable*>::value;
+};
+
+
 template<class T>
 class dynamic_observer;
 

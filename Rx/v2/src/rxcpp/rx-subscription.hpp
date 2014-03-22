@@ -23,6 +23,20 @@ public:
     static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_subscription>::value;
 };
 
+namespace detail {
+
+struct tag_subscription_resolution
+{
+    template<class LHS>
+    struct predicate
+    {
+        static const bool value = !is_subscriber<LHS>::value && !is_observer<LHS>::value && is_subscription<LHS>::value;
+    };
+    typedef composite_subscription default_type;
+};
+
+}
+
 class dynamic_subscription : public subscription_base
 {
     typedef std::function<void()> unsubscribe_call_type;
@@ -139,6 +153,7 @@ public:
     typedef std::shared_ptr<dynamic_subscription> shared_subscription;
     typedef std::weak_ptr<dynamic_subscription> weak_subscription;
 private:
+    struct tag_empty {};
     struct state_t : public std::enable_shared_from_this<state_t>
     {
         std::vector<shared_subscription> subscriptions;
@@ -147,6 +162,11 @@ private:
 
         state_t()
             : issubscribed(true)
+        {
+        }
+
+        state_t(tag_empty&&)
+            : issubscribed(false)
         {
         }
 
@@ -217,6 +237,18 @@ private:
 
     mutable std::shared_ptr<state_t> state;
 
+    static std::shared_ptr<state_t> shared_empty;
+
+    composite_subscription(std::shared_ptr<state_t> s)
+        : state(std::move(s))
+    {
+        if (!state) {
+            abort();
+        }
+    }
+
+    friend bool operator==(const composite_subscription&, const composite_subscription&);
+
 public:
 
     composite_subscription()
@@ -258,6 +290,10 @@ public:
         return *this;
     }
 
+    static composite_subscription empty() {
+        return composite_subscription(shared_empty);
+    }
+
     bool is_subscribed() const {
         return state->is_subscribed();
     }
@@ -277,6 +313,17 @@ public:
         state->unsubscribe();
     }
 };
+
+bool operator==(const composite_subscription& lhs, const composite_subscription& rhs) {
+    return lhs.state == rhs.state;
+}
+bool operator!=(const composite_subscription& lhs, const composite_subscription& rhs) {
+    return !(lhs == rhs);
+}
+
+//static
+RXCPP_SELECT_ANY std::shared_ptr<composite_subscription::state_t> composite_subscription::shared_empty = std::make_shared<composite_subscription::state_t>(composite_subscription::tag_empty());
+
 
 }
 

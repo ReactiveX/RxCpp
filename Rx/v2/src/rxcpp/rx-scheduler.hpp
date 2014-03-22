@@ -11,139 +11,582 @@ namespace rxcpp {
 
 namespace schedulers {
 
-class action_type;
-typedef std::shared_ptr<action_type> action;
+namespace detail {
 
-class scheduler_base;
-typedef std::shared_ptr<scheduler_base> scheduler;
+class action_type;
+typedef std::shared_ptr<action_type> action_ptr;
+
+class scheduler_interface;
+typedef std::shared_ptr<scheduler_interface> scheduler_interface_ptr;
+
+}
+
+struct action_base
+{
+    typedef tag_action action_tag;
+};
+
+struct scheduler_base
+{
+    typedef tag_scheduler scheduler_tag;
+};
+
+class scheduler_interface
+    : public std::enable_shared_from_this<scheduler_base>
+{
+    typedef scheduler_interface this_type;
+
+public:
+    typedef std::chrono::steady_clock clock_type;
+
+    virtual ~scheduler_interface() {}
+
+    virtual clock_type::time_point now() const = 0;
+
+    virtual bool is_tail_recursion_allowed() const = 0;
+
+    virtual void schedule(composite_subscription cs, action a) const = 0;
+    virtual void schedule(clock_type::duration when, composite_subscription cs, action a) const = 0;
+    virtual void schedule(clock_type::time_point when, composite_subscription cs, action a) const = 0;
+};
+
+
+struct schedulable_base : public subscription_base, public scheduler_base, public action_base
+{
+    typedef tag_schedulable schedulable_tag;
+};
+
+class schedulable;
+
+namespace action_duration {
+    enum type {
+        invalid,
+        runs_short,
+        runs_long
+    };
+}
+
+class action : public action_base
+{
+    typedef action this_type;
+    detail::action_ptr inner;
+    static detail::action_ptr shared_empty;
+    friend bool operator==(const action&, const action&);
+public:
+    action()
+    {
+    }
+    explicit action(detail::action_ptr i)
+        : inner(std::move(i))
+    {
+    }
+
+    inline static action empty() {
+        return action(shared_empty);
+    }
+
+    inline action_duration::type get_duration() const {
+        return inner->get_duration();
+    }
+
+    inline void operator()(const schedulable& s) const;
+};
+
+//static
+RXCPP_SELECT_ANY detail::action_ptr action::shared_empty = std::make_shared<detail::action_type>();
+
+inline bool operator==(const action& lhs, const action& rhs) {
+    return lhs.inner == rhs.inner;
+}
+inline bool operator!=(const action& lhs, const action& rhs) {
+    return !(lhs == rhs);
+}
+
+class scheduler : public scheduler_base
+{
+    typedef scheduler this_type;
+    detail::scheduler_interface_ptr inner;
+    friend bool operator==(const scheduler&, const scheduler&);
+public:
+    typedef std::chrono::steady_clock clock_type;
+
+    scheduler()
+    {
+    }
+    explicit scheduler(detail::scheduler_interface_ptr i)
+        : inner(std::move(i))
+    {
+    }
+
+    inline clock_type::time_point now() const {
+        return inner->now();
+    }
+
+    inline bool is_tail_recursion_allowed() const {
+        return inner->is_tail_recursion_allowed();
+    }
+
+    inline void schedule(composite_subscription cs, action a) const {
+        inner->schedule(std::move(cs), std::move(a));
+    }
+    inline void schedule(clock_type::duration when, composite_subscription cs, action a) const {
+        inner->schedule(when, std::move(cs), std::move(a));
+    }
+    inline void schedule(clock_type::time_point when, composite_subscription cs, action a) const {
+        inner->schedule(when, std::move(cs), std::move(a));
+    }
+};
+
+inline bool operator==(const scheduler& lhs, const scheduler& rhs) {
+    return lhs.inner == rhs.inner;
+}
+inline bool operator!=(const scheduler& lhs, const scheduler& rhs) {
+    return !(lhs == rhs);
+}
+
+class schedulable : public schedulable_base
+{
+    typedef schedulable this_type;
+
+    composite_subscription lifetime;
+    scheduler controller;
+    action activity;
+
+    struct detacher
+    {
+        ~detacher()
+        {
+            if (that) {
+                that->unsubscribe();
+            }
+        }
+        detacher(const this_type* that)
+            : that(that)
+        {
+        }
+        const this_type* that;
+    };
+
+public:
+    typedef typename composite_subscription::weak_subscription weak_subscription;
+    typedef typename composite_subscription::shared_subscription shared_subscription;
+    typedef std::chrono::steady_clock clock_type;
+
+    schedulable()
+    {
+    }
+    schedulable(composite_subscription cs, scheduler q, action a)
+        : lifetime(std::move(cs))
+        , controller(std::move(q))
+        , activity(std::move(a))
+    {
+    }
+
+    inline const composite_subscription& get_subscription() const {
+        return lifetime;
+    }
+    inline composite_subscription& get_subscription() {
+        return lifetime;
+    }
+    inline const scheduler& get_scheduler() const {
+        return controller;
+    }
+    inline scheduler& get_scheduler() {
+        return controller;
+    }
+    inline const action& get_action() const {
+        return activity;
+    }
+    inline action& get_action() {
+        return activity;
+    }
+
+    inline static schedulable empty() {
+        return schedulable(composite_subscription::empty(), controller, action::empty());
+    }
+
+    // composite_subscription
+    //
+    inline bool is_subscribed() const {
+        return lifetime.is_subscribed();
+    }
+    inline weak_subscription add(shared_subscription s) const {
+        return lifetime.add(std::move(s));
+    }
+    inline weak_subscription add(dynamic_subscription s) const {
+        return lifetime.add(std::move(s));
+    }
+    inline void remove(weak_subscription w) const {
+        return lifetime.remove(std::move(w));
+    }
+    inline void clear() const {
+        return lifetime.clear();
+    }
+    inline void unsubscribe() const {
+        return lifetime.unsubscribe();
+    }
+
+    // scheduler
+    //
+    inline clock_type::time_point now() const {
+        return controller.now();
+    }
+    inline bool is_tail_recursion_allowed() const {
+        return controller.is_tail_recursion_allowed();
+    }
+    inline void schedule() const {
+        controller.schedule(lifetime, activity);
+    }
+    inline void schedule(clock_type::duration when) const {
+        controller.schedule(when, lifetime, activity);
+    }
+    inline void schedule(clock_type::time_point when) const {
+        controller.schedule(when, lifetime, activity);
+    }
+
+    // action
+    //
+    inline action_duration::type get_duration() const {
+        return activity.get_duration();
+    }
+    inline void operator()() const {
+        if (!is_subscribed()) {
+            abort();
+        }
+        detacher protect(this);
+        activity(*this);
+        protect.that = nullptr;
+    }
+};
+
+inline bool operator==(const schedulable& lhs, const schedulable& rhs) {
+    return  lhs.get_action() == rhs.get_action() &&
+            lhs.get_scheduler() == rhs.get_scheduler() &&
+            lhs.get_subscription() == rhs.get_subscription();
+}
+inline bool operator!=(const schedulable& lhs, const schedulable& rhs) {
+    return !(lhs == rhs);
+}
+
+
+inline void action::operator()(const schedulable& s) const {
+    auto next = (*inner)(s);
+    if (next.is_subscribed()) {
+        next.schedule();
+    }
+}
+
+
+namespace detail {
 
 class action_type
-    : public subscription_base
-    , public std::enable_shared_from_this<action_type>
+    : public std::enable_shared_from_this<action_type>
 {
     typedef action_type this_type;
 
 public:
-    typedef composite_subscription subscription_type;
-    typedef subscription_type::weak_subscription weak_subscription;
-    typedef std::function<action(action, scheduler)> function_type;
+    typedef std::function<schedulable(const schedulable&)> function_type;
 
 private:
-    mutable this_type::subscription_type s;
+    action_duration::type d;
     function_type f;
-
-    static action shared_empty;
 
 public:
     action_type()
     {
-        s.unsubscribe();
     }
 
-    explicit action_type(function_type f)
-        : f(std::move(f))
-    {
-        if (!this->f) {
-            s.unsubscribe();
-        }
-    }
-    action_type(this_type::subscription_type s, function_type f)
-        : s(std::move(s))
+    action_type(action_duration::type d, function_type f)
+        : d(d)
         , f(std::move(f))
     {
-        if (!this->f) {
-            this->s.unsubscribe();
+    }
+
+    inline action_duration::type get_duration() const {
+        return d;
+    }
+
+    inline schedulable operator()(const schedulable& s) {
+        if (f) {
+            return f(s);
         }
-    }
-
-    inline static action empty() {
-        return shared_empty;
-    }
-
-    inline action operator()(scheduler sc) {
-        if (is_subscribed() && f) {
-            return f(this->shared_from_this(), std::move(sc));
-        }
-        return empty();
-    }
-
-    inline bool is_subscribed() const {
-        return s.is_subscribed();
-    }
-    inline this_type::weak_subscription add(dynamic_subscription ds) const {
-        return s.add(std::move(ds));
-    }
-    inline void remove(this_type::weak_subscription ws) const {
-        s.remove(ws);
-    }
-    inline void unsubscribe() const {
-        s.unsubscribe();
+        return schedulable::empty();
     }
 };
 
-//static
-RXCPP_SELECT_ANY action action_type::shared_empty = std::make_shared<action_type>();
+}
 
 inline action make_action_empty() {
     return action_type::empty();
 }
 
-inline action make_action(action_type::function_type f) {
-    return std::make_shared<action_type>(std::move(f));
+template<class F>
+inline action make_action(F&& f, action_duration::type d = action_duration::runs_short) {
+    auto fn = std::forward<F>(f);
+    return action(std::make_shared<detail::action_type>(
+        d,
+        // tail-recurse inside of the virtual function call
+        // until a new action, lifetime or scheduler is returned
+        [fn](const schedulable& s) {
+            auto next = s;
+            auto last = s;
+            while (next.is_subscribed() && last == next && next.get_scheduler().is_tail_recursion_allowed()) {
+                last = next;
+                next = fn(next);
+            }
+            return next;
+        }));
 }
 
-inline action make_action(action_type::subscription_type s, action_type::function_type f) {
-    return std::make_shared<action_type>(std::move(s), std::move(f));
+template<class Scheduler>
+inline scheduler make_scheduler() {
+    return scheduler(std::static_pointer_cast<scheduler_interface>(std::make_shared<Scheduler>()));
 }
 
-class scheduler_base
-    : public std::enable_shared_from_this<scheduler_base>
+namespace detail {
+
+template<class F>
+struct is_action_function
 {
-    typedef scheduler_base this_type;
+    struct not_void {};
+    template<class CF>
+    static auto check(int) -> decltype((*(CF*)nullptr)(*(schedulable*)nullptr));
+    template<class CF>
+    static not_void check(...);
 
-public:
-    typedef std::chrono::steady_clock clock_type;
+    static const bool value = std::is_same<decltype(check<typename std::decay<F>::type>(0)), schedulable>::value;
+};
 
-    virtual ~scheduler_base() {}
+struct tag_action_function_resolution
+{
+    template<class LHS>
+    struct predicate
+    {
+        static const bool value = is_action_function<LHS>::value;
+    };
+    typedef detail::action_type::function_type default_type;
+};
 
-    virtual clock_type::time_point now() = 0;
+struct tag_action_duration_resolution
+{
+    template<class LHS>
+    struct predicate
+    {
+        static const bool value = std::is_same<typename std::decay<LHS>::type, action_duration::type>::value;
+    };
+    struct default_type {
+        inline operator action_duration::type() {
+            return action_duration::runs_short;
+        }
+    };
+};
 
-    virtual void schedule(action a) = 0;
-    virtual void schedule(clock_type::duration when, action a) = 0;
-    virtual void schedule(clock_type::time_point when, action a) = 0;
+struct tag_when_resolution
+{
+    typedef scheduler_interface::clock_type clock_type;
+    typedef clock_type::duration duration_type;
+    typedef clock_type::duration time_point_type;
+    template<class LHS>
+    struct predicate
+    {
+        typedef typename std::decay<LHS>::type decayedlhs;
+        static const bool value =   std::is_same<decayedlhs, time_point_type>::value ||
+                                    std::is_same<decayedlhs, duration_type>::value;
+    };
+    struct default_type {
+        inline operator time_point_type() {
+            return clock_type::now();
+        }
+    };
+};
 
-    inline void schedule(action_type::function_type f){
-        return schedule(make_action(std::move(f)));
-    }
-    inline void schedule(clock_type::duration when, action_type::function_type f){
-        return schedule(when, make_action(std::move(f)));
-    }
-    inline void schedule(clock_type::time_point when, action_type::function_type f){
-        return schedule(when, make_action(std::move(f)));
-    }
-    inline void schedule(action_type::subscription_type s, action_type::function_type f){
-        return schedule(make_action(std::move(s), std::move(f)));
-    }
-    inline void schedule(clock_type::duration when, action_type::subscription_type s, action_type::function_type f){
-        return schedule(when, make_action(std::move(s), std::move(f)));
-    }
-    inline void schedule(clock_type::time_point when, action_type::subscription_type s, action_type::function_type f){
-        return schedule(when, make_action(std::move(s), std::move(f)));
+struct tag_schedulable_resolution
+{
+    template<class LHS>
+    struct predicate : public is_schedulable<LHS>
+    {
+    };
+    typedef schedulable default_type;
+};
+
+struct tag_action_resolution
+{
+    template<class LHS>
+    struct predicate
+    {
+        static const bool value = !is_schedulable<LHS>::value && is_action<LHS>::value;
+    };
+    typedef action default_type;
+};
+
+struct tag_scheduler_resolution
+{
+    template<class LHS>
+    struct predicate
+    {
+        static const bool value = !is_schedulable<LHS>::value && is_scheduler<LHS>::value;
+    };
+    typedef scheduler default_type;
+};
+
+
+template<class T>
+struct tag_schedulable_set
+                // the first four must be the same as tag_observer_set or the indexing will fail
+    : public    rxu::detail::tag_set<tag_when_resolution<T>,
+                rxu::detail::tag_set<tag_schedulable_resolution,
+                rxu::detail::tag_set<tag_subscription_resolution,
+                rxu::detail::tag_set<tag_scheduler_resolution,
+                rxu::detail::tag_set<tag_action_resolution<T>,
+                rxu::detail::tag_set<tag_action_function_resolution,
+                rxu::detail::tag_set<tag_action_duration_resolution>>>>>>>
+{
+};
+
+template<bool scheulable_is_arg, bool action_is_arg, bool action_function_is_arg>
+struct action_selector;
+
+template<bool scheulable_is_arg>
+struct action_selector<scheulable_is_arg, true, false>
+{
+    template<class Set>
+    static action get_action(Set& rs) {
+        return std::get<4>(rs).value;
     }
 };
+template<bool scheulable_is_arg>
+struct action_selector<scheulable_is_arg, false, true>
+{
+    template<class Set>
+    static action get_action(Set& rs) {
+        return make_action(std::move(std::get<5>(rs).value), std::get<6>(rs).value);
+    }
+};
+template<>
+struct action_selector<true, false, false>
+{
+    template<class Set>
+    static action get_action(Set& rs) {
+        return std::get<1>(rs).value.get_action();
+    }
+};
+
+template<class ResolvedArgSet>
+action select_action(ResolvedArgSet& rs)
+    -> decltype(action_selector<T, std::decay<decltype(std::get<6>(rs))>::type::is_arg, std::decay<decltype(std::get<5>(rs))>::type::is_arg, std::decay<decltype(std::get<0>(rs))>::type::is_arg>::get_observer(rs)) {
+    return      action_selector<T, std::decay<decltype(std::get<6>(rs))>::type::is_arg, std::decay<decltype(std::get<5>(rs))>::type::is_arg, std::decay<decltype(std::get<0>(rs))>::type::is_arg>::get_observer(rs);
+
+    typedef typename std::decay<decltype(std::get<3>(std::forward<ResolvedArgSet>(rs)))>::type rsc_t;
+    typedef typename std::decay<decltype(std::get<5>(std::forward<ResolvedArgSet>(rs)))>::type raf_t;
+    typedef typename std::decay<decltype(std::get<6>(std::forward<ResolvedArgSet>(rs)))>::type rad_t;
+    typedef typename std::decay<decltype(std::get<4>(std::forward<ResolvedArgSet>(rs)))>::type ra_t;
+    typedef typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type rscbl_t;
+
+    static_assert(rscbl_t::is_arg || ra_t::is_arg || raf_t::is_arg, "at least one of; action_function, action or schedulable is required");
+    static_assert(int(ra_t::is_arg) + int(raf_t::is_arg) < 2, "action_function not allowed with an action");
+    static_assert(int(ra_t::is_arg) + int(rad_t::is_arg) < 2, "action_duration not allowed with an action");
+}
+
+template<bool when_invalid, class ResolvedArgSet>
+schedulable make_schedulable_resolved(ResolvedArgSet&& rsArg) {
+    const auto rs = std::forward<ResolvedArgSet>(rsArg);
+    const auto rsub = std::get<2>(rs);
+    const auto rsc = std::get<3>(rs);
+    const auto rscbl = std::get<1>(rs);
+    const auto sc =     (rscbl.is_arg && !rsc.is_arg)   ? rscrbr.value.get_scheduler()      : rsc.value;
+    const auto sub =    (rscbl.is_arg && !rsub.is_arg)  ? rscrbr.value.get_subscription()   : rsub.value;
+    return  schedulable(sub, sc, select_action(rs));
+
+    typedef typename std::decay<decltype(std::get<0>(std::forward<ResolvedArgSet>(rs)))>::type rw_t;
+    typedef typename std::decay<decltype(std::get<3>(std::forward<ResolvedArgSet>(rs)))>::type rsc_t;
+    typedef typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type rscbl_t;
+
+    static_assert(when_invalid || !rw_t::is_arg, "when is an invalid parameter");
+    static_assert(rscbl_t::is_arg || rsc_t::is_arg, "at least one of; scheduler or schedulable is required");
+}
+
+template<bool when_required, class ResolvedArgSet>
+schedulable schedule_resolved(ResolvedArgSet&& rsArg) {
+    schedulable result = make_schedulable_resolved<false>(std::forward<ResolvedArgSet>(rsArg));
+    const auto rw = std::get<0>(rs);
+    if (rx.is_arg) {
+        result.schedule(rw.value);
+    } else {
+        result.schedule();
+    }
+    return result;
+}
+
+}
+
+#if RXCPP_USE_VARIADIC_TEMPLATES
+template<class Arg0, class... ArgN>
+schedulable make_schedulable(Arg0&& a0, ArgN&&... an) {
+    return detail::make_schedulable_resolved<true>(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
+}
+#else
+template<class Arg0>
+schedulable make_schedulable(Arg0&& a0) {
+    return detail::make_schedulable_resolved<true>(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0)));
+}
+template<class Arg0, class Arg1>
+schedulable make_schedulable(Arg0&& a0, Arg1&& a1) {
+    return detail::make_schedulable_resolved<true>(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0), std::forward<Arg1>(a1)));
+}
+template<class Arg0, class Arg1, class Arg2>
+schedulable make_schedulable(Arg0&& a0, Arg1&& a1, Arg2&& a2) {
+    return detail::make_schedulable_resolved<true>(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2)));
+}
+template<class Arg0, class Arg1, class Arg2, class Arg3>
+schedulable make_schedulable(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3) {
+    return detail::make_schedulable_resolved<true>(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3)));
+}
+template<class Arg0, class Arg1, class Arg2, class Arg3, class Arg4>
+schedulable make_schedulable(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3, Arg4&& a4) {
+    return detail::make_schedulable_resolved<true>(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4)));
+}
+#endif
+
+#if RXCPP_USE_VARIADIC_TEMPLATES
+template<class Arg0, class... ArgN>
+schedulable schedule(Arg0&& a0, ArgN&&... an) {
+    detail::schedule_resolved(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
+}
+#else
+template<class Arg0>
+schedulable schedule(Arg0&& a0) {
+    detail::schedule_resolved(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0)));
+}
+template<class Arg0, class Arg1>
+schedulable schedule(Arg0&& a0, Arg1&& a1) {
+    detail::schedule_resolved(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0), std::forward<Arg1>(a1)));
+}
+template<class Arg0, class Arg1, class Arg2>
+schedulable schedule(Arg0&& a0, Arg1&& a1, Arg2&& a2) {
+    detail::schedule_resolved(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2)));
+}
+template<class Arg0, class Arg1, class Arg2, class Arg3>
+schedulable schedule(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3) {
+    detail::schedule_resolved(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3)));
+}
+template<class Arg0, class Arg1, class Arg2, class Arg3, class Arg4>
+schedulable schedule(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3, Arg4&& a4) {
+    detail::schedule_resolved(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4)));
+}
+#endif
 
 namespace detail {
 
 template<class TimePoint>
-struct time_action
+struct time_schedulable
 {
-    time_action(TimePoint when, action a)
+    time_schedulable(TimePoint when, schedulable a)
         : when(when)
         , a(std::move(a))
     {
     }
     TimePoint when;
-    action a;
+    schedulable a;
 };
 
 }

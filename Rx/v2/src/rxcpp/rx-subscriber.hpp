@@ -86,23 +86,26 @@ public:
     // observer
     //
     void on_next(T t) const {
-        if (is_subscribed()) {
-            detacher protect(this);
-            destination.on_next(std::move(t));
-            protect.that = nullptr;
+        if (!is_subscribed()) {
+            abort();
         }
+        detacher protect(this);
+        destination.on_next(std::move(t));
+        protect.that = nullptr;
     }
     void on_error(std::exception_ptr e) const {
-        if (is_subscribed()) {
-            detacher protect(this);
-            destination.on_error(e);
+        if (!is_subscribed()) {
+            abort();
         }
+        detacher protect(this);
+        destination.on_error(e);
     }
     void on_completed() const {
-        if (is_subscribed()) {
-            detacher protect(this);
-            destination.on_completed();
+        if (!is_subscribed()) {
+            abort();
         }
+        detacher protect(this);
+        destination.on_completed();
     }
 
     // composite_subscription
@@ -137,34 +140,34 @@ template<class T, bool subscriber_is_arg>
 struct observer_selector<T, subscriber_is_arg, true, false>
 {
     template<class Set>
-    static auto get_observer(Set&& rs)
-        -> decltype(std::get<5>(std::forward<Set>(rs)).value) {
-        return      std::get<5>(std::forward<Set>(rs)).value;
+    static auto get_observer(Set& rs)
+        -> decltype(std::get<5>(rs).value) {
+        return      std::get<5>(rs).value;
     }
 };
 template<class T, bool subscriber_is_arg>
 struct observer_selector<T, subscriber_is_arg, false, true>
 {
     template<class Set>
-    static auto get_observer(Set&& rs)
-        -> decltype(make_observer_resolved<T>(std::forward<Set>(rs))) {
-        return      make_observer_resolved<T>(std::forward<Set>(rs));
+    static auto get_observer(Set& rs)
+        -> decltype(make_observer_resolved<T>(rs)) {
+        return      make_observer_resolved<T>(rs);
     }
 };
 template<class T>
 struct observer_selector<T, true, false, false>
 {
     template<class Set>
-    static auto get_observer(Set&& rs)
-        -> const decltype(  std::get<6>(std::forward<Set>(rs)).value.get_observer())& {
-        return              std::get<6>(std::forward<Set>(rs)).value.get_observer();
+    static auto get_observer(Set& rs)
+        -> decltype(    std::get<6>(rs).value.get_observer()) {
+        return          std::get<6>(rs).value.get_observer();
     }
 };
 
 template<class T, class ResolvedArgSet>
-auto select_observer(ResolvedArgSet&& rs)
-    -> decltype(observer_selector<T, std::decay<decltype(std::get<6>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg, std::decay<decltype(std::get<5>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg, std::decay<decltype(std::get<0>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg>::get_observer(std::forward<ResolvedArgSet>(rs))) {
-    return      observer_selector<T, std::decay<decltype(std::get<6>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg, std::decay<decltype(std::get<5>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg, std::decay<decltype(std::get<0>(std::forward<ResolvedArgSet>(rs)))>::type::is_arg>::get_observer(std::forward<ResolvedArgSet>(rs));
+auto select_observer(ResolvedArgSet& rs)
+    -> decltype(observer_selector<T, std::decay<decltype(std::get<6>(rs))>::type::is_arg, std::decay<decltype(std::get<5>(rs))>::type::is_arg, std::decay<decltype(std::get<0>(rs))>::type::is_arg>::get_observer(rs)) {
+    return      observer_selector<T, std::decay<decltype(std::get<6>(rs))>::type::is_arg, std::decay<decltype(std::get<5>(rs))>::type::is_arg, std::decay<decltype(std::get<0>(rs))>::type::is_arg>::get_observer(rs);
 
     typedef typename std::decay<decltype(std::get<4>(std::forward<ResolvedArgSet>(rs)))>::type rr_t;
     typedef typename std::decay<decltype(std::get<0>(std::forward<ResolvedArgSet>(rs)))>::type rn_t;
@@ -187,7 +190,7 @@ auto make_subscriber_resolved(ResolvedArgSet&& rsArg)
     const auto r = (rscrbr.is_arg && !rr.is_arg)      ? rscrbr.value.get_resumption()       : rr.value;
     const auto s = (rscrbr.is_arg && !rsub.is_arg)    ? rscrbr.value.get_subscription()     : rsub.value;
     return  subscriber<T, decltype(     select_observer<T>(std::move(rsArg)))>(
-            s, r, select_observer<T>(std::move(rs)));
+            s, r, select_observer<T>(rs));
 
 // at least for now do not enforce resolver
 #if 0
@@ -197,16 +200,6 @@ auto make_subscriber_resolved(ResolvedArgSet&& rsArg)
     static_assert(rs_t::is_arg || rr_t::is_arg, "at least one of; resumption or subscriber is a required parameter");
 #endif
 }
-
-struct tag_subscription_resolution
-{
-    template<class LHS>
-    struct predicate
-    {
-        static const bool value = !is_subscriber<LHS>::value && !is_observer<LHS>::value && is_subscription<LHS>::value;
-    };
-    typedef composite_subscription default_type;
-};
 
 template<class T>
 struct tag_subscriber_resolution
