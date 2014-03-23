@@ -313,15 +313,19 @@ RXCPP_SELECT_ANY std::shared_ptr<composite_subscription::state_t> composite_subs
 
 namespace detail {
 
-    struct tag_subscription_resolution
+struct tag_subscription_resolution
+{
+    template<class LHS>
+    struct predicate
     {
-        template<class LHS>
-        struct predicate
-        {
-            static const bool value = !is_subscriber<LHS>::value && !is_observer<LHS>::value && is_subscription<LHS>::value;
-        };
-        typedef composite_subscription default_type;
+        static const bool value = !is_subscriber<LHS>::value && !is_observer<LHS>::value && is_subscription<LHS>::value;
     };
+    struct default_type {
+        inline operator composite_subscription() const {
+            return composite_subscription();
+        }
+    };
+};
 
 }
 

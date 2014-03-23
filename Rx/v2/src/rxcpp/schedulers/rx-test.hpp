@@ -116,15 +116,12 @@ public:
 
         schedule_absolute(created, make_action([createSrc, state](const schedulable& scbl) {
             state->source.reset(new typename state_type::source_type(createSrc()));
-            return schedulable::empty(scbl.get_scheduler());
         }));
         schedule_absolute(subscribed, make_action([state](const schedulable& scbl) {
             state->source->subscribe(state->o);
-            return schedulable::empty(scbl.get_scheduler());
         }));
         schedule_absolute(unsubscribed, make_action([state](const schedulable& scbl) {
             state->o.unsubscribe();
-            return schedulable::empty(scbl.get_scheduler());
         }));
 
         start();

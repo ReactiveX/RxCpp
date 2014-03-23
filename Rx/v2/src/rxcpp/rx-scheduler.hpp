@@ -23,6 +23,69 @@ typedef std::shared_ptr<const scheduler_interface> const_scheduler_interface_ptr
 
 }
 
+class recursed
+{
+    bool& isrequested;
+public:
+    explicit recursed(bool& r)
+        : isrequested(r)
+    {
+    }
+    inline void operator()() const {
+        isrequested = true;
+    }
+};
+
+class recurse
+{
+    bool& isallowed;
+    mutable bool isrequested;
+    recursed requestor;
+public:
+    explicit recurse(bool& a)
+        : isallowed(a)
+        , isrequested(true)
+        , requestor(isrequested)
+    {
+    }
+    inline bool is_allowed() const {
+        return isallowed;
+    }
+    inline bool is_requested() const {
+        return isrequested;
+    }
+    inline void reset() const {
+        isrequested = false;
+    }
+    inline const recursed& get_recursed() const {
+        return requestor;
+    }
+};
+
+class recursion
+{
+    mutable bool isallowed;
+    recurse recursor;
+public:
+    recursion()
+        : isallowed(true)
+        , recursor(isallowed)
+    {
+    }
+    explicit recursion(bool b)
+        : isallowed(b)
+        , recursor(isallowed)
+    {
+    }
+    inline void reset(bool b = true) const {
+        isallowed = b;
+    }
+    inline const recurse& get_recurse() const {
+        return recursor;
+    }
+};
+
+
 struct action_base
 {
     typedef tag_action action_tag;
@@ -59,7 +122,7 @@ public:
 
     inline action_duration::type get_duration() const;
 
-    inline void operator()(const schedulable& s) const;
+    inline void operator()(const schedulable& s, const recurse& r) const;
 };
 
 struct scheduler_base
@@ -81,8 +144,6 @@ public:
     virtual ~scheduler_interface() {}
 
     virtual clock_type::time_point now() const = 0;
-
-    virtual bool is_tail_recursion_allowed() const = 0;
 
     virtual void schedule(const schedulable& scbl) const = 0;
     virtual void schedule(clock_type::duration when, const schedulable& scbl) const = 0;
@@ -124,10 +185,6 @@ public:
 
     inline clock_type::time_point now() const {
         return inner->now();
-    }
-
-    inline bool is_tail_recursion_allowed() const {
-        return inner->is_tail_recursion_allowed();
     }
 
     inline void schedule(const schedulable& scbl) const {
@@ -177,6 +234,48 @@ class schedulable : public schedulable_base
         const this_type* that;
     };
 
+    class recursed_scope_type
+    {
+        mutable const recursed* requestor;
+
+        class exit_recursed_scope_type
+        {
+            const recursed_scope_type* that;
+        public:
+            ~exit_recursed_scope_type()
+            {
+                    that->requestor = nullptr;
+            }
+            exit_recursed_scope_type(const recursed_scope_type* that)
+                : that(that)
+            {
+            }
+        };
+    public:
+        recursed_scope_type()
+            : requestor(nullptr)
+        {
+        }
+        recursed_scope_type(const recursed_scope_type&)
+            : requestor(nullptr)
+        {
+            // does not aquire recursion scope
+        }
+        recursed_scope_type& operator=(const recursed_scope_type& o)
+        {
+            // no change in recursion scope
+            return *this;
+        }
+        exit_recursed_scope_type reset(const recurse& r) const {
+            requestor = std::addressof(r.get_recursed());
+            return exit_recursed_scope_type(this);
+        }
+        void operator()() const {
+            (*requestor)();
+        }
+    };
+    recursed_scope_type recursed_scope;
+
 public:
     typedef typename composite_subscription::weak_subscription weak_subscription;
     typedef typename composite_subscription::shared_subscription shared_subscription;
@@ -215,6 +314,17 @@ public:
         return schedulable(composite_subscription::empty(), sc, action::empty());
     }
 
+    inline auto set_recursed(const recurse& r) const
+        -> decltype(recursed_scope.reset(r)) {
+        return      recursed_scope.reset(r);
+    }
+
+    // recursed
+    //
+    inline void operator()() const {
+        recursed_scope();
+    }
+
     // composite_subscription
     //
     inline bool is_subscribed() const {
@@ -241,9 +351,6 @@ public:
     inline clock_type::time_point now() const {
         return controller.now();
     }
-    inline bool is_tail_recursion_allowed() const {
-        return controller.is_tail_recursion_allowed();
-    }
     inline void schedule() const {
         controller.schedule(*this);
     }
@@ -259,12 +366,12 @@ public:
     inline action_duration::type get_duration() const {
         return activity.get_duration();
     }
-    inline void operator()() const {
+    inline void operator()(const schedulable& scbl, const recurse& r) const {
         if (!is_subscribed()) {
             abort();
         }
         detacher protect(this);
-        activity(*this);
+        activity(scbl, r);
         protect.that = nullptr;
     }
 };
@@ -288,7 +395,7 @@ class action_type
     typedef action_type this_type;
 
 public:
-    typedef std::function<schedulable(const schedulable&)> function_type;
+    typedef std::function<void(const schedulable&, const recurse&)> function_type;
 
 private:
     action_duration::type d;
@@ -309,11 +416,11 @@ public:
         return d;
     }
 
-    inline schedulable operator()(const schedulable& s) {
-        if (f) {
-            return f(s);
+    inline void operator()(const schedulable& s, const recurse& r) {
+        if (!f) {
+            abort();
         }
-        return schedulable::empty(make_scheduler<current_thread>());
+        f(s, r);
     }
 };
 
@@ -324,13 +431,10 @@ inline action_duration::type action::get_duration() const {
     return inner->get_duration();
 }
 
-inline void action::operator()(const schedulable& s) const {
-    auto next = (*inner)(s);
-    if (next.is_subscribed()) {
-        next.schedule();
-    }
+inline void action::operator()(const schedulable& s, const recurse& r) const {
+    (*inner)(s, r);
 }
-    
+
 //static
 RXCPP_SELECT_ANY detail::action_ptr action::shared_empty = detail::action_ptr(new detail::action_type());
 
@@ -346,14 +450,18 @@ inline action make_action(F&& f, action_duration::type d = action_duration::runs
         d,
         // tail-recurse inside of the virtual function call
         // until a new action, lifetime or scheduler is returned
-        [fn](const schedulable& s) {
-            auto next = s;
-            auto last = s;
-            while (next.is_subscribed() && last == next && next.get_scheduler().is_tail_recursion_allowed()) {
-                last = next;
-                next = fn(next);
+        [fn](const schedulable& s, const recurse& r) {
+            auto scope = s.set_recursed(r);
+            while (s.is_subscribed()) {
+                r.reset();
+                fn(s);
+                if (!r.is_allowed() || !r.is_requested()) {
+                    if (r.is_requested()) {
+                        s.schedule();
+                    }
+                    break;
+                }
             }
-            return next;
         }));
 }
 
@@ -368,7 +476,7 @@ struct is_action_function
     template<class CF>
     static not_void check(...);
 
-    static const bool value = std::is_same<decltype(check<typename std::decay<F>::type>(0)), schedulable>::value;
+    static const bool value = std::is_same<decltype(check<typename std::decay<F>::type>(0)), void>::value;
 };
 
 struct tag_action_function_resolution

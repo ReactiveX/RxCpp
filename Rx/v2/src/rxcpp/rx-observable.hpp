@@ -170,7 +170,6 @@ private:
             auto sc = rxsc::make_current_thread();
             schedule(sc, [=](const rxsc::schedulable& scbl) {
                 safe_subscribe();
-                return rxsc::schedulable::empty(scbl.get_scheduler());
             });
         } else {
             safe_subscribe();

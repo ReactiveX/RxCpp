@@ -82,6 +82,8 @@ public:
     {
         if (!isenabled) {
             isenabled = true;
+            rxsc::recursion r;
+            r.reset(false);
             while (!empty() && isenabled) {
                 auto next = top();
                 pop();
@@ -89,7 +91,7 @@ public:
                     if (next.when > clock_now) {
                         clock_now = next.when;
                     }
-                    next.what.get_action()(next.what);
+                    next.what(next.what, r.get_recurse());
                 }
                 else {
                     isenabled = false;
@@ -171,10 +173,6 @@ public:
         return to_time_point(clock_now);
     }
 
-    virtual bool is_tail_recursion_allowed() const {
-        return false;
-    }
-
     virtual void schedule(const schedulable& scbl) const {
         schedule_absolute(clock_now, scbl.get_action());
     }
@@ -250,11 +248,12 @@ protected:
         auto run = make_schedulable(
             scheduler(this->shared_from_this()),
             [a](const schedulable& scbl) {
+                rxsc::recursion r;
+                r.reset(false);
                 if (scbl.is_subscribed()) {
                     scbl.unsubscribe(); // unsubscribe() run, not a;
-                    a(scbl);
+                    a(scbl, r.get_recurse());
                 }
-                return schedulable::empty(scbl.get_scheduler());
             });
         queue.push(item_type(when, run));
     }

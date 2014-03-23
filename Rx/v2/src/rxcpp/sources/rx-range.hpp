@@ -34,14 +34,14 @@ struct range : public source_base<T>
     template<class Subscriber>
     void on_subscribe(Subscriber o) {
         auto state = std::make_shared<state_type>(init);
-        schedule(state->sc, o.get_subscription(), [=](rxsc::schedulable scbl){
+        schedule(state->sc, o.get_subscription(), [=](const rxsc::schedulable& self){
             if (state->remaining == 0) {
                 o.on_completed();
                 // o is unsubscribed
             }
             if (!o.is_subscribed()) {
                 // terminate loop
-                return scbl;
+                return;
             }
 
             // send next value
@@ -50,7 +50,7 @@ struct range : public source_base<T>
             state->next = static_cast<T>(state->step + state->next);
 
             // tail recurse this same action to continue loop
-            return scbl;
+            self();
         });
     }
 };

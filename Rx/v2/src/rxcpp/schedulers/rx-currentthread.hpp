@@ -37,6 +37,7 @@ private:
 public:
     struct current_thread_queue_type {
         scheduler sc;
+        recursion r;
         queue_item_time queue;
     };
 
@@ -51,6 +52,9 @@ public:
     static scheduler get_scheduler() {
         return !!current_thread_queue() ? current_thread_queue()->sc : scheduler();
     }
+    static recursion& get_recursion() {
+        return current_thread_queue()->r;
+    }
     static bool empty() {
         if (!current_thread_queue()) {
             abort();
@@ -64,19 +68,27 @@ public:
         return current_thread_queue()->queue.top();
     }
     static void pop() {
-        if (!current_thread_queue()) {
+        auto state = current_thread_queue();
+        if (!state) {
             abort();
         }
-        current_thread_queue()->queue.pop();
+        state->queue.pop();
+        if (state->queue.empty()) {
+            // allow recursion
+            state->r.reset(true);
+        }
     }
     static void push(item_type item) {
-        if (!current_thread_queue()) {
+        auto state = current_thread_queue();
+        if (!state) {
             abort();
         }
         if (!item.what.is_subscribed()) {
             return;
         }
-        current_thread_queue()->queue.push(std::move(item));
+        state->queue.push(std::move(item));
+        // disallow recursion
+        state->r.reset(false);
     }
     static scheduler ensure(scheduler sc) {
         if (!!current_thread_queue()) {
@@ -137,10 +149,6 @@ private:
 
         virtual clock_type::time_point now() const {
             return clock_type::now();
-        }
-
-        inline bool is_tail_recursion_allowed() const {
-            return queue::empty();
         }
 
         virtual void schedule(const schedulable& scbl) const {
@@ -204,6 +212,8 @@ public:
 
         queue::push(queue::item_type(when, scbl));
 
+        const auto& recursor = queue::get_recursion().get_recurse();
+
         // loop until queue is empty
         for (
              auto when = queue::top().when;
@@ -215,9 +225,7 @@ public:
 
             queue::pop();
 
-            if (what.is_subscribed()) {
-                what.get_action()(what);
-            }
+            what(what, recursor);
 
             if (queue::empty()) {
                 break;
