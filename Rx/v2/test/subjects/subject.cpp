@@ -25,35 +25,6 @@ SCENARIO("subject test", "[hide][subject][subjects][perf]"){
             const int onnextcalls = 10000000;
 
             {
-                int c = 0;
-                int n = 1;
-                auto o = rx::make_observer<int>([&c](int){++c;});
-                auto start = clock::now();
-                for (int i = 0; i < onnextcalls; i++) {
-                    o.on_next(i);
-                }
-                o.on_completed();
-                auto finish = clock::now();
-                auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
-                       duration_cast<milliseconds>(start.time_since_epoch());
-                std::cout << "loop no subject     : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
-            }
-
-            {
-                int c = 0;
-                int n = 1;
-                auto start = clock::now();
-                rxs::range<int>(0, onnextcalls).subscribe(
-                    [&c](int){
-                        ++c;
-                    });
-                auto finish = clock::now();
-                auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
-                       duration_cast<milliseconds>(start.time_since_epoch());
-                std::cout << "range no subject    : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
-            }
-
-            {
                 std::mutex m;
                 int c = 0;
                 int n = 1;
@@ -68,8 +39,58 @@ SCENARIO("subject test", "[hide][subject][subjects][perf]"){
                 std::cout << "loop mutex          : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
             }
 
+            {
+                int c = 0;
+                int n = 1;
+                auto o = rx::make_observer<int>(
+                    [&c](int){++c;},
+                    [](std::exception_ptr){abort();});
+                auto start = clock::now();
+                for (int i = 0; i < onnextcalls; i++) {
+                    o.on_next(i);
+                }
+                o.on_completed();
+                auto finish = clock::now();
+                auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
+                       duration_cast<milliseconds>(start.time_since_epoch());
+                std::cout << "loop -> observer    : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+            }
+
+            {
+                int c = 0;
+                int n = 1;
+                auto o = rx::make_observer<int>(
+                    [&c](int){++c;},
+                    [](std::exception_ptr){abort();});
+                auto start = clock::now();
+                for (int i = 0; i < onnextcalls; i++) {
+                    o.on_next(i);
+                }
+                o.on_completed();
+                auto finish = clock::now();
+                auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
+                       duration_cast<milliseconds>(start.time_since_epoch());
+                std::cout << "loop -> subscriber  : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+            }
+
+            {
+                int c = 0;
+                int n = 1;
+                auto start = clock::now();
+                rxs::range<int>(0, onnextcalls).subscribe(
+                    [&c](int){
+                        ++c;
+                    },
+                    [](std::exception_ptr){abort();});
+                auto finish = clock::now();
+                auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
+                       duration_cast<milliseconds>(start.time_since_epoch());
+                std::cout << "range -> subscriber : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+            }
+
             for (int n = 0; n < 10; n++)
             {
+                auto p = std::make_shared<int>(0);
                 auto c = std::make_shared<int>(0);
                 rxsub::subject<int> sub;
 
@@ -78,6 +99,11 @@ SCENARIO("subject test", "[hide][subject][subjects][perf]"){
 #endif
 
                 auto o = sub.get_subscriber();
+
+                o.add(rx::make_subscription([c, n, onnextcalls](){
+                    auto expected = n * onnextcalls;
+                    REQUIRE(*c == expected);
+                }));
 
                 for (int i = 0; i < n; i++) {
 #if RXCPP_SUBJECT_TEST_ASYNC
@@ -88,27 +114,37 @@ SCENARIO("subject test", "[hide][subject][subjects][perf]"){
                             rx::composite_subscription cs;
                             source.subscribe(cs, [cs](int){
                                 cs.unsubscribe();
-                            });
+                            },
+                            [](std::exception_ptr){abort();});
                         }
                         return 0;
                     });
 #endif
-                    sub.get_observable().subscribe([c](int){++(*c);});
+                    sub.get_observable().subscribe(
+                        [c, p](int){
+                            ++(*c);
+                        },
+                        [](std::exception_ptr){abort();});
                 }
 
                 auto start = clock::now();
                 for (int i = 0; i < onnextcalls; i++) {
+#if RXCPP_DEBUG_SUBJECT_RACE
+                    if (*p != *c) abort();
+                    (*p) += n;
+#endif
                     o.on_next(i);
                 }
                 o.on_completed();
                 auto finish = clock::now();
                 auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
                        duration_cast<milliseconds>(start.time_since_epoch());
-                std::cout << "loop                : " << n << " subscribed, " << (*c) << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+                std::cout << "loop -> subject     : " << n << " subscribed, " << (*c) << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
             }
 
             for (int n = 0; n < 10; n++)
             {
+                auto p = std::make_shared<int>(0);
                 auto c = std::make_shared<int>(0);
                 rxsub::subject<int> sub;
 
@@ -118,6 +154,11 @@ SCENARIO("subject test", "[hide][subject][subjects][perf]"){
 
                 auto o = sub.get_subscriber();
 
+                o.add(rx::make_subscription([c, n, onnextcalls](){
+                    auto expected = n * onnextcalls;
+                    REQUIRE(*c == expected);
+                }));
+
                 for (int i = 0; i < n; i++) {
 #if RXCPP_SUBJECT_TEST_ASYNC
                     f[i] = std::async([sub, o]() {
@@ -126,23 +167,35 @@ SCENARIO("subject test", "[hide][subject][subjects][perf]"){
                             rx::composite_subscription cs;
                             sub.get_observable().subscribe(cs, [cs](int){
                                 cs.unsubscribe();
-                            });
+                            },
+                            [](std::exception_ptr){abort();});
                         }
                         return 0;
                     });
 #endif
                     sub.get_observable()
-                        // demonstrates insertion of user definied operator
-                        .op(rxo::filter([](int){return true;}))
-                        .subscribe([c](int){++(*c);});
+                        .subscribe(
+                            [c, p](int){
+                               ++(*c);
+                            },
+                            [](std::exception_ptr){abort();}
+                        );
                 }
 
                 auto start = clock::now();
-                rxs::range<int>(0, onnextcalls).subscribe(o);
+                rxs::range<int>(0, onnextcalls)
+#if RXCPP_DEBUG_SUBJECT_RACE
+                    .filter([c, p, n](int){
+                        if (*p != *c) abort();
+                        (*p) += n;
+                        return true;
+                    })
+#endif
+                    .subscribe(o);
                 auto finish = clock::now();
                 auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
                        duration_cast<milliseconds>(start.time_since_epoch());
-                std::cout << "range               : " << n << " subscribed, " << (*c) << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+                std::cout << "range -> subject    : " << n << " subscribed, " << (*c) << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
             }
         }
     }

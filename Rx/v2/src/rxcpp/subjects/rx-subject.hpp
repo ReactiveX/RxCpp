@@ -59,8 +59,8 @@ class multicast_observer
         completer_type(std::shared_ptr<state_type> s, const std::shared_ptr<completer_type>& old, observer_type o)
             : state(s)
         {
-            state->has_observers.exchange(true);
             ++state->completers;
+            state->has_observers.exchange(true);
             if (old) {
                 observers.reserve(old->observers.size() + 1);
                 std::copy_if(
