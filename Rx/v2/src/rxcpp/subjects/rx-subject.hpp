@@ -76,6 +76,7 @@ class multicast_observer
     {
         binder_type()
             : state(std::make_shared<state_type>())
+            , current_generation(0)
         {
         }
 

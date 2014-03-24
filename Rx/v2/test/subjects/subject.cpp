@@ -1,5 +1,5 @@
 
-#define RXCPP_SUBJECT_TEST_ASYNC 0
+#define RXCPP_SUBJECT_TEST_ASYNC 1
 
 #include "rxcpp/rx.hpp"
 namespace rx=rxcpp;
