@@ -1,5 +1,5 @@
 
-#define RXCPP_SUBJECT_TEST_ASYNC 1
+#define RXCPP_SUBJECT_TEST_ASYNC 0
 
 #include "rxcpp/rx.hpp"
 namespace rx=rxcpp;
@@ -22,7 +22,7 @@ SCENARIO("subject test", "[hide][subject][subjects][perf]"){
             using namespace std::chrono;
             typedef steady_clock clock;
 
-            const int onnextcalls = 10000000;
+            const int onnextcalls = 100000000;
 
             {
                 std::mutex m;

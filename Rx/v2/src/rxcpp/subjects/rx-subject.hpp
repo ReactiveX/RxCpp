@@ -40,8 +40,7 @@ class multicast_observer
             : current(mode::Casting)
         {
         }
-        std::atomic<bool> has_observers;
-        std::atomic<int> completers;
+        std::atomic<int> generation;
         std::mutex lock;
         typename mode::type current;
         std::exception_ptr error;
@@ -52,15 +51,10 @@ class multicast_observer
     {
         ~completer_type()
         {
-            if (--state->completers == 0) {
-                state->has_observers.exchange(false);
-            }
         }
         completer_type(std::shared_ptr<state_type> s, const std::shared_ptr<completer_type>& old, observer_type o)
             : state(s)
         {
-            ++state->completers;
-            state->has_observers.exchange(true);
             if (old) {
                 observers.reserve(old->observers.size() + 1);
                 std::copy_if(
@@ -76,7 +70,7 @@ class multicast_observer
         list_type observers;
     };
 
-    // this type exists to prevent a circular ref between state and completer
+    // this type prevents a circular ref between state and completer
     struct binder_type
         : public std::enable_shared_from_this<binder_type>
     {
@@ -86,6 +80,10 @@ class multicast_observer
         }
 
         std::shared_ptr<state_type> state;
+
+        // used to avoid taking lock in on_next
+        mutable int current_generation;
+        mutable std::shared_ptr<completer_type> current_completer;
 
         // must only be accessed under state->lock
         mutable std::shared_ptr<completer_type> completer;
@@ -106,7 +104,7 @@ public:
     {
     }
     bool has_observers() const {
-        return b->state->has_observers;
+        return b->current_completer && !b->current_completer->observers.empty();
     }
     void add(observer_type o) const {
         std::unique_lock<std::mutex> guard(b->state->lock);
@@ -115,6 +113,7 @@ public:
             {
                 if (o.is_subscribed()) {
                     b->completer = std::make_shared<completer_type>(b->state, b->completer, o);
+                    ++b->state->generation;
                 }
             }
             break;
@@ -138,19 +137,20 @@ public:
         }
     }
     void on_next(T t) const {
-        if (has_observers()) {
-            std::shared_ptr<completer_type> c;
-            {
-                std::unique_lock<std::mutex> guard(b->state->lock);
-                if (!b->completer) {
-                    return;
-                }
-                c = b->completer;
+        if (b->current_generation != b->state->generation) {
+            std::unique_lock<std::mutex> guard(b->state->lock);
+            if (!b->completer) {
+                return;
             }
-            for (auto& o : c->observers) {
-                if (o.is_subscribed()) {
-                    o.on_next(t);
-                }
+            b->current_generation = b->state->generation;
+            b->current_completer = b->completer;
+        }
+        if (!b->current_completer || b->current_completer->observers.empty()) {
+            return;
+        }
+        for (auto& o : b->current_completer->observers) {
+            if (o.is_subscribed()) {
+                o.on_next(t);
             }
         }
     }
