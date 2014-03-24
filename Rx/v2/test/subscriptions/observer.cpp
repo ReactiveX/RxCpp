@@ -46,17 +46,15 @@ SCENARIO("subscriber traits", "[observer][traits]"){
                 REQUIRE(result == 1);
             }
         }
-        WHEN("onnext is called with 1 after error"){
+        WHEN("after error"){
             THEN("subscriber result is 10"){
                 scrbResult.on_error(std::current_exception());
-                scrbResult.on_next(1);
                 REQUIRE(result == 10);
             }
         }
-        WHEN("onnext is called with 1 after completed"){
+        WHEN("after completed"){
             THEN("subscriber result is 100"){
                 scrbResult.on_completed();
-                scrbResult.on_next(1);
                 REQUIRE(result == 100);
             }
         }
@@ -150,47 +148,39 @@ SCENARIO("subscriber behavior", "[observer][traits]"){
                 REQUIRE(so.is_subscribed());
             }
         }
-        WHEN("onnext is called with 1 after error"){
+        WHEN("after error"){
             THEN("dynamic_observer result is 10"){
                 dob.on_error(std::current_exception());
-                dob.on_next(1);
                 REQUIRE(result == 10);
             }
             THEN("static_observer result is 10"){
                 so.on_error(std::current_exception());
-                so.on_next(1);
                 REQUIRE(result == 10);
             }
             THEN("dynamic_observer is not subscribed"){
                 dob.on_error(std::current_exception());
-                dob.on_next(1);
                 REQUIRE(!dob.is_subscribed());
             }
             THEN("static_observer is not subscribed"){
                 so.on_error(std::current_exception());
-                so.on_next(1);
                 REQUIRE(!so.is_subscribed());
             }
         }
-        WHEN("onnext is called with 1 after completed"){
+        WHEN("after completed"){
             THEN("dynamic_observer result is 100"){
                 dob.on_completed();
-                dob.on_next(1);
                 REQUIRE(result == 100);
             }
             THEN("static_observer result is 100"){
                 so.on_completed();
-                so.on_next(1);
                 REQUIRE(result == 100);
             }
             THEN("dynamic_observer is not subscribed"){
                 dob.on_completed();
-                dob.on_next(1);
                 REQUIRE(!dob.is_subscribed());
             }
             THEN("static_observer is not subscribed"){
                 so.on_completed();
-                so.on_next(1);
                 REQUIRE(!so.is_subscribed());
             }
         }

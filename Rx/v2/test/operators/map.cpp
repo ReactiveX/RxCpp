@@ -15,15 +15,18 @@ namespace rxt=rxcpp::test;
 
 SCENARIO("map stops on completion", "[map][operators]"){
     GIVEN("a test hot observable of ints"){
-        auto sc = std::make_shared<rxsc::test>();
+        auto sc = rxsc::make_test();
         typedef rxsc::test::messages<int> m;
+        typedef rxn::subscription life;
+        typedef m::recorded_type record;
         auto on_next = m::on_next;
         auto on_error = m::on_error;
         auto on_completed = m::on_completed;
+        auto subscribe = m::subscribe;
 
         long invoked = 0;
 
-        m::recorded_type messages[] = {
+        record messages[] = {
             on_next(180, 1),
             on_next(210, 2),
             on_next(240, 3),
@@ -34,11 +37,11 @@ SCENARIO("map stops on completion", "[map][operators]"){
             on_completed(420),
             on_error(430, std::runtime_error("error on unsubscribed stream"))
         };
-        auto xs = sc->make_hot_observable(messages);
+        auto xs = sc.make_hot_observable(messages);
 
         WHEN("mapped to ints that are one larger"){
 
-            auto res = sc->start<int>(
+            auto res = sc.start<int>(
                 [xs, &invoked]() {
                     return xs
                         .map([&invoked](int x) {
@@ -51,12 +54,12 @@ SCENARIO("map stops on completion", "[map][operators]"){
             );
 
             THEN("the output stops on completion"){
-                m::recorded_type items[] = {
-                    m::on_next(210, 3),
-                    m::on_next(240, 4),
-                    m::on_next(290, 5),
-                    m::on_next(350, 6),
-                    m::on_completed(400)
+                record items[] = {
+                    on_next(210, 3),
+                    on_next(240, 4),
+                    on_next(290, 5),
+                    on_next(350, 6),
+                    on_completed(400)
                 };
                 auto required = rxu::to_vector(items);
                 auto actual = res.get_observer().messages();
@@ -64,8 +67,8 @@ SCENARIO("map stops on completion", "[map][operators]"){
             }
 
             THEN("there was one subscription and one unsubscription"){
-                rxn::subscription items[] = {
-                    m::subscribe(200, 400)
+                life items[] = {
+                    subscribe(200, 400)
                 };
                 auto required = rxu::to_vector(items);
                 auto actual = xs.subscriptions();

@@ -153,67 +153,70 @@ SCENARIO("subject test", "[hide][subject][subjects][perf]"){
 SCENARIO("subject - infinite source", "[subject][subjects]"){
     GIVEN("a subject and an infinite source"){
 
-        auto sc = std::make_shared<rxsc::test>();
+        auto sc = rxsc::make_test();
         typedef rxsc::test::messages<int> m;
+        typedef rxn::subscription life;
+        typedef m::recorded_type record;
+        auto on_next = m::on_next;
 
-        m::recorded_type messages[] = {
-            m::on_next(70, 1),
-            m::on_next(110, 2),
-            m::on_next(220, 3),
-            m::on_next(270, 4),
-            m::on_next(340, 5),
-            m::on_next(410, 6),
-            m::on_next(520, 7),
-            m::on_next(630, 8),
-            m::on_next(710, 9),
-            m::on_next(870, 10),
-            m::on_next(940, 11),
-            m::on_next(1020, 12)
+        record messages[] = {
+            on_next(70, 1),
+            on_next(110, 2),
+            on_next(220, 3),
+            on_next(270, 4),
+            on_next(340, 5),
+            on_next(410, 6),
+            on_next(520, 7),
+            on_next(630, 8),
+            on_next(710, 9),
+            on_next(870, 10),
+            on_next(940, 11),
+            on_next(1020, 12)
         };
-        auto xs = sc->make_hot_observable(messages);
+        auto xs = sc.make_hot_observable(messages);
 
         rxsub::subject<int> s;
 
-        auto results1 = sc->make_subscriber<int>();
+        auto results1 = sc.make_subscriber<int>();
 
-        auto results2 = sc->make_subscriber<int>();
+        auto results2 = sc.make_subscriber<int>();
 
-        auto results3 = sc->make_subscriber<int>();
+        auto results3 = sc.make_subscriber<int>();
 
         WHEN("multicasting an infinite source"){
 
             auto o = s.get_subscriber();
 
-            sc->schedule_absolute(100, [&s, &o](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(100, [&s, &o](const rxsc::schedulable& scbl){
                 s = rxsub::subject<int>(); o = s.get_subscriber();});
-            sc->schedule_absolute(200, [&xs, &o](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(200, [&xs, &o](const rxsc::schedulable& scbl){
                 xs.subscribe(o);});
-            sc->schedule_absolute(1000, [&o](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(1000, [&o](const rxsc::schedulable& scbl){
                 o.unsubscribe();});
 
-            sc->schedule_absolute(300, [&s, &results1](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(300, [&s, &results1](const rxsc::schedulable& scbl){
                 s.get_observable().subscribe(results1);});
-            sc->schedule_absolute(400, [&s, &results2](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(400, [&s, &results2](const rxsc::schedulable& scbl){
                 s.get_observable().subscribe(results2);});
-            sc->schedule_absolute(900, [&s, &results3](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(900, [&s, &results3](const rxsc::schedulable& scbl){
                 s.get_observable().subscribe(results3);});
 
-            sc->schedule_absolute(600, [&results1](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(600, [&results1](const rxsc::schedulable& scbl){
                 results1.unsubscribe();});
-            sc->schedule_absolute(700, [&results2](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(700, [&results2](const rxsc::schedulable& scbl){
                 results2.unsubscribe();});
-            sc->schedule_absolute(800, [&results1](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(800, [&results1](const rxsc::schedulable& scbl){
                 results1.unsubscribe();});
-            sc->schedule_absolute(950, [&results3](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(950, [&results3](const rxsc::schedulable& scbl){
                 results3.unsubscribe();});
 
-            sc->start();
+            sc.start();
 
             THEN("result1 contains expected messages"){
-                m::recorded_type items[] = {
-                    m::on_next(340, 5),
-                    m::on_next(410, 6),
-                    m::on_next(520, 7)
+                record items[] = {
+                    on_next(340, 5),
+                    on_next(410, 6),
+                    on_next(520, 7)
                 };
                 auto required = rxu::to_vector(items);
                 auto actual = results1.get_observer().messages();
@@ -221,10 +224,10 @@ SCENARIO("subject - infinite source", "[subject][subjects]"){
             }
 
             THEN("result2 contains expected messages"){
-                m::recorded_type items[] = {
-                    m::on_next(410, 6),
-                    m::on_next(520, 7),
-                    m::on_next(630, 8)
+                record items[] = {
+                    on_next(410, 6),
+                    on_next(520, 7),
+                    on_next(630, 8)
                 };
                 auto required = rxu::to_vector(items);
                 auto actual = results2.get_observer().messages();
@@ -232,8 +235,8 @@ SCENARIO("subject - infinite source", "[subject][subjects]"){
             }
 
             THEN("result3 contains expected messages"){
-                m::recorded_type items[] = {
-                    m::on_next(940, 11)
+                record items[] = {
+                    on_next(940, 11)
                 };
                 auto required = rxu::to_vector(items);
                 auto actual = results3.get_observer().messages();
@@ -247,66 +250,71 @@ SCENARIO("subject - infinite source", "[subject][subjects]"){
 SCENARIO("subject - finite source", "[subject][subjects]"){
     GIVEN("a subject and an finite source"){
 
-        auto sc = std::make_shared<rxsc::test>();
+        auto sc = rxsc::make_test();
         typedef rxsc::test::messages<int> m;
+        typedef rxn::subscription life;
+        typedef m::recorded_type record;
+        auto on_next = m::on_next;
+        auto on_error = m::on_error;
+        auto on_completed = m::on_completed;
 
-        m::recorded_type messages[] = {
-            m::on_next(70, 1),
-            m::on_next(110, 2),
-            m::on_next(220, 3),
-            m::on_next(270, 4),
-            m::on_next(340, 5),
-            m::on_next(410, 6),
-            m::on_next(520, 7),
-            m::on_completed(630),
-            m::on_next(640, 9),
-            m::on_completed(650),
-            m::on_error(660, std::runtime_error("error on unsubscribed stream"))
+        record messages[] = {
+            on_next(70, 1),
+            on_next(110, 2),
+            on_next(220, 3),
+            on_next(270, 4),
+            on_next(340, 5),
+            on_next(410, 6),
+            on_next(520, 7),
+            on_completed(630),
+            on_next(640, 9),
+            on_completed(650),
+            on_error(660, std::runtime_error("error on unsubscribed stream"))
         };
-        auto xs = sc->make_hot_observable(messages);
+        auto xs = sc.make_hot_observable(messages);
 
         rxsub::subject<int> s;
 
-        auto results1 = sc->make_subscriber<int>();
+        auto results1 = sc.make_subscriber<int>();
 
-        auto results2 = sc->make_subscriber<int>();
+        auto results2 = sc.make_subscriber<int>();
 
-        auto results3 = sc->make_subscriber<int>();
+        auto results3 = sc.make_subscriber<int>();
 
         WHEN("multicasting an infinite source"){
 
             auto o = s.get_subscriber();
 
-            sc->schedule_absolute(100, [&s, &o](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(100, [&s, &o](const rxsc::schedulable& scbl){
                 s = rxsub::subject<int>(); o = s.get_subscriber();});
-            sc->schedule_absolute(200, [&xs, &o](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(200, [&xs, &o](const rxsc::schedulable& scbl){
                 xs.subscribe(o);});
-            sc->schedule_absolute(1000, [&o](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(1000, [&o](const rxsc::schedulable& scbl){
                 o.unsubscribe();});
 
-            sc->schedule_absolute(300, [&s, &results1](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(300, [&s, &results1](const rxsc::schedulable& scbl){
                 s.get_observable().subscribe(results1);});
-            sc->schedule_absolute(400, [&s, &results2](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(400, [&s, &results2](const rxsc::schedulable& scbl){
                 s.get_observable().subscribe(results2);});
-            sc->schedule_absolute(900, [&s, &results3](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(900, [&s, &results3](const rxsc::schedulable& scbl){
                 s.get_observable().subscribe(results3);});
 
-            sc->schedule_absolute(600, [&results1](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(600, [&results1](const rxsc::schedulable& scbl){
                 results1.unsubscribe();});
-            sc->schedule_absolute(700, [&results2](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(700, [&results2](const rxsc::schedulable& scbl){
                 results2.unsubscribe();});
-            sc->schedule_absolute(800, [&results1](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(800, [&results1](const rxsc::schedulable& scbl){
                 results1.unsubscribe();});
-            sc->schedule_absolute(950, [&results3](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(950, [&results3](const rxsc::schedulable& scbl){
                 results3.unsubscribe();});
 
-            sc->start();
+            sc.start();
 
             THEN("result1 contains expected messages"){
-                m::recorded_type items[] = {
-                    m::on_next(340, 5),
-                    m::on_next(410, 6),
-                    m::on_next(520, 7)
+                record items[] = {
+                    on_next(340, 5),
+                    on_next(410, 6),
+                    on_next(520, 7)
                 };
                 auto required = rxu::to_vector(items);
                 auto actual = results1.get_observer().messages();
@@ -314,10 +322,10 @@ SCENARIO("subject - finite source", "[subject][subjects]"){
             }
 
             THEN("result2 contains expected messages"){
-                m::recorded_type items[] = {
-                    m::on_next(410, 6),
-                    m::on_next(520, 7),
-                    m::on_completed(630)
+                record items[] = {
+                    on_next(410, 6),
+                    on_next(520, 7),
+                    on_completed(630)
                 };
                 auto required = rxu::to_vector(items);
                 auto actual = results2.get_observer().messages();
@@ -325,8 +333,8 @@ SCENARIO("subject - finite source", "[subject][subjects]"){
             }
 
             THEN("result3 contains expected messages"){
-                m::recorded_type items[] = {
-                    m::on_completed(900)
+                record items[] = {
+                    on_completed(900)
                 };
                 auto required = rxu::to_vector(items);
                 auto actual = results3.get_observer().messages();
@@ -341,68 +349,73 @@ SCENARIO("subject - finite source", "[subject][subjects]"){
 SCENARIO("subject - on_error in source", "[subject][subjects]"){
     GIVEN("a subject and a source with an error"){
 
-        auto sc = std::make_shared<rxsc::test>();
+        auto sc = rxsc::make_test();
         typedef rxsc::test::messages<int> m;
+        typedef rxn::subscription life;
+        typedef m::recorded_type record;
+        auto on_next = m::on_next;
+        auto on_error = m::on_error;
+        auto on_completed = m::on_completed;
 
         std::runtime_error ex("subject on_error in stream");
 
-        m::recorded_type messages[] = {
-            m::on_next(70, 1),
-            m::on_next(110, 2),
-            m::on_next(220, 3),
-            m::on_next(270, 4),
-            m::on_next(340, 5),
-            m::on_next(410, 6),
-            m::on_next(520, 7),
-            m::on_error(630, ex),
-            m::on_next(640, 9),
-            m::on_completed(650),
-            m::on_error(660, std::runtime_error("error on unsubscribed stream"))
+        record messages[] = {
+            on_next(70, 1),
+            on_next(110, 2),
+            on_next(220, 3),
+            on_next(270, 4),
+            on_next(340, 5),
+            on_next(410, 6),
+            on_next(520, 7),
+            on_error(630, ex),
+            on_next(640, 9),
+            on_completed(650),
+            on_error(660, std::runtime_error("error on unsubscribed stream"))
         };
-        auto xs = sc->make_hot_observable(messages);
+        auto xs = sc.make_hot_observable(messages);
 
         rxsub::subject<int> s;
 
-        auto results1 = sc->make_subscriber<int>();
+        auto results1 = sc.make_subscriber<int>();
 
-        auto results2 = sc->make_subscriber<int>();
+        auto results2 = sc.make_subscriber<int>();
 
-        auto results3 = sc->make_subscriber<int>();
+        auto results3 = sc.make_subscriber<int>();
 
         WHEN("multicasting an infinite source"){
 
             auto o = s.get_subscriber();
 
-            sc->schedule_absolute(100, [&s, &o](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(100, [&s, &o](const rxsc::schedulable& scbl){
                 s = rxsub::subject<int>(); o = s.get_subscriber();});
-            sc->schedule_absolute(200, [&xs, &o](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(200, [&xs, &o](const rxsc::schedulable& scbl){
                 xs.subscribe(o);});
-            sc->schedule_absolute(1000, [&o](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(1000, [&o](const rxsc::schedulable& scbl){
                 o.unsubscribe();});
 
-            sc->schedule_absolute(300, [&s, &results1](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(300, [&s, &results1](const rxsc::schedulable& scbl){
                 s.get_observable().subscribe(results1);});
-            sc->schedule_absolute(400, [&s, &results2](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(400, [&s, &results2](const rxsc::schedulable& scbl){
                 s.get_observable().subscribe(results2);});
-            sc->schedule_absolute(900, [&s, &results3](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(900, [&s, &results3](const rxsc::schedulable& scbl){
                 s.get_observable().subscribe(results3);});
 
-            sc->schedule_absolute(600, [&results1](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(600, [&results1](const rxsc::schedulable& scbl){
                 results1.unsubscribe();});
-            sc->schedule_absolute(700, [&results2](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(700, [&results2](const rxsc::schedulable& scbl){
                 results2.unsubscribe();});
-            sc->schedule_absolute(800, [&results1](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(800, [&results1](const rxsc::schedulable& scbl){
                 results1.unsubscribe();});
-            sc->schedule_absolute(950, [&results3](const rxsc::schedulable& scbl){
+            sc.schedule_absolute(950, [&results3](const rxsc::schedulable& scbl){
                 results3.unsubscribe();});
 
-            sc->start();
+            sc.start();
 
             THEN("result1 contains expected messages"){
-                m::recorded_type items[] = {
-                    m::on_next(340, 5),
-                    m::on_next(410, 6),
-                    m::on_next(520, 7)
+                record items[] = {
+                    on_next(340, 5),
+                    on_next(410, 6),
+                    on_next(520, 7)
                 };
                 auto required = rxu::to_vector(items);
                 auto actual = results1.get_observer().messages();
@@ -410,10 +423,10 @@ SCENARIO("subject - on_error in source", "[subject][subjects]"){
             }
 
             THEN("result2 contains expected messages"){
-                m::recorded_type items[] = {
-                    m::on_next(410, 6),
-                    m::on_next(520, 7),
-                    m::on_error(630, ex)
+                record items[] = {
+                    on_next(410, 6),
+                    on_next(520, 7),
+                    on_error(630, ex)
                 };
                 auto required = rxu::to_vector(items);
                 auto actual = results2.get_observer().messages();
@@ -421,8 +434,8 @@ SCENARIO("subject - on_error in source", "[subject][subjects]"){
             }
 
             THEN("result3 contains expected messages"){
-                m::recorded_type items[] = {
-                    m::on_error(900, ex)
+                record items[] = {
+                    on_error(900, ex)
                 };
                 auto required = rxu::to_vector(items);
                 auto actual = results3.get_observer().messages();

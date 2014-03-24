@@ -58,21 +58,9 @@ protected:
 public:
     virtual void schedule_absolute(absolute, action) const =0;
 
-    template<class F>
-    typename std::enable_if<!std::is_same<typename std::decay<F>::type, action>::value, void>::type
-    schedule_absolute(absolute when, F f) const {
-        schedule_absolute(when, make_action(f));
-    }
-
     virtual void schedule_relative(relative when, action a) const {
         auto at = add(clock_now, when);
         return schedule_absolute(at, std::move(a));
-    }
-
-    template<class F>
-    typename std::enable_if<!std::is_same<typename std::decay<F>::type, action>::value, void>::type
-    schedule_relative(relative when, F f) const {
-        schedule_relative(when, make_action(f));
     }
 
     bool is_enabled() const {return isenabled;}

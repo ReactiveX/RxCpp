@@ -198,12 +198,12 @@ public:
     {
     }
 
-    // implicit conversion between observables of the same value_type
+    /// implicit conversion between observables of the same value_type
     template<class SO>
     observable(const observable<T, SO>& o)
         : source_operator(o.source_operator)
     {}
-    // implicit conversion between observables of the same value_type
+    /// implicit conversion between observables of the same value_type
     template<class SO>
     observable(observable<T, SO>&& o)
         : source_operator(std::move(o.source_operator))
@@ -216,120 +216,120 @@ public:
     }
 #endif
 
-    //
-    // performs type-forgetting conversion to a new observable
-    //
+    ///
+    /// performs type-forgetting conversion to a new observable
+    ///
     observable<T> as_dynamic() {
         return *this;
     }
 
 #if RXCPP_USE_VARIADIC_TEMPLATES
-    //
-    // subscribe will cause this observable to emit values to the provided subscriber.
-    // callers must provide enough arguments to make a subscriber.
-    // overrides are supported. thus
-    //   subscribe(thesubscriber, composite_subscription())
-    // will take thesubscriber.get_observer() and the provided
-    // subscription and subscribe to the new subscriber.
-    // the on_next, on_error, on_completed methods can be supplied instead of an observer
-    // if a subscription or subscriber is not provided then a new subscription will be created.
-    //
+    ///
+    /// subscribe will cause this observable to emit values to the provided subscriber.
+    /// callers must provide enough arguments to make a subscriber.
+    /// overrides are supported. thus
+    ///   subscribe(thesubscriber, composite_subscription())
+    /// will take thesubscriber.get_observer() and the provided
+    /// subscription and subscribe to the new subscriber.
+    /// the on_next, on_error, on_completed methods can be supplied instead of an observer
+    /// if a subscription or subscriber is not provided then a new subscription will be created.
+    ///
     template<class Arg0, class... ArgN>
     auto subscribe(Arg0&& a0, ArgN&&... an) const
         -> decltype(detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<ArgN>(an)...))) {
         return      detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
     }
 #else
-    //
-    // subscribe will cause this observable to emit values to the provided subscriber.
-    // callers must provide enough arguments to make a subscriber.
-    // overrides are supported. thus
-    //   subscribe(thesubscriber, composite_subscription())
-    // will take thesubscriber.get_observer() and the provided
-    // subscription and subscribe to the new subscriber.
-    // the on_next, on_error, on_completed methods can be supplied instead of an observer
-    // if a subscription or subscriber is not provided then a new subscription will be created.
-    //
+    ///
+    /// subscribe will cause this observable to emit values to the provided subscriber.
+    /// callers must provide enough arguments to make a subscriber.
+    /// overrides are supported. thus
+    ///   subscribe(thesubscriber, composite_subscription())
+    /// will take thesubscriber.get_observer() and the provided
+    /// subscription and subscribe to the new subscriber.
+    /// the on_next, on_error, on_completed methods can be supplied instead of an observer
+    /// if a subscription or subscriber is not provided then a new subscription will be created.
+    ///
     template<class Arg0>
     auto subscribe(Arg0&& a0) const
         -> decltype(detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0)))) {
         return      detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0)));
     }
 
-    //
-    // subscribe will cause this observable to emit values to the provided subscriber.
-    // callers must provide enough arguments to make a subscriber.
-    // overrides are supported. thus
-    //   subscribe(thesubscriber, composite_subscription())
-    // will take thesubscriber.get_observer() and the provided
-    // subscription and subscribe to the new subscriber.
-    // the on_next, on_error, on_completed methods can be supplied instead of an observer
-    // if a subscription or subscriber is not provided then a new subscription will be created.
-    //
+    ///
+    /// subscribe will cause this observable to emit values to the provided subscriber.
+    /// callers must provide enough arguments to make a subscriber.
+    /// overrides are supported. thus
+    ///   subscribe(thesubscriber, composite_subscription())
+    /// will take thesubscriber.get_observer() and the provided
+    /// subscription and subscribe to the new subscriber.
+    /// the on_next, on_error, on_completed methods can be supplied instead of an observer
+    /// if a subscription or subscriber is not provided then a new subscription will be created.
+    ///
     template<class Arg0, class Arg1>
     auto subscribe(Arg0&& a0, Arg1&& a1) const
         -> decltype(detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<Arg1>(a1)))) {
         return      detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<Arg1>(a1)));
     }
 
-    //
-    // subscribe will cause this observable to emit values to the provided subscriber.
-    // callers must provide enough arguments to make a subscriber.
-    // overrides are supported. thus
-    //   subscribe(thesubscriber, composite_subscription())
-    // will take thesubscriber.get_observer() and the provided
-    // subscription and subscribe to the new subscriber.
-    // the on_next, on_error, on_completed methods can be supplied instead of an observer
-    // if a subscription or subscriber is not provided then a new subscription will be created.
-    //
+    ///
+    /// subscribe will cause this observable to emit values to the provided subscriber.
+    /// callers must provide enough arguments to make a subscriber.
+    /// overrides are supported. thus
+    ///   subscribe(thesubscriber, composite_subscription())
+    /// will take thesubscriber.get_observer() and the provided
+    /// subscription and subscribe to the new subscriber.
+    /// the on_next, on_error, on_completed methods can be supplied instead of an observer
+    /// if a subscription or subscriber is not provided then a new subscription will be created.
+    ///
     template<class Arg0, class Arg1, class Arg2>
     auto subscribe(Arg0&& a0, Arg1&& a1, Arg2&& a2) const
         -> decltype(detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2)))) {
         return      detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2)));
     }
 
-    //
-    // subscribe will cause this observable to emit values to the provided subscriber.
-    // callers must provide enough arguments to make a subscriber.
-    // overrides are supported. thus
-    //   subscribe(thesubscriber, composite_subscription())
-    // will take thesubscriber.get_observer() and the provided
-    // subscription and subscribe to the new subscriber.
-    // the on_next, on_error, on_completed methods can be supplied instead of an observer
-    // if a subscription or subscriber is not provided then a new subscription will be created.
-    //
+    ///
+    /// subscribe will cause this observable to emit values to the provided subscriber.
+    /// callers must provide enough arguments to make a subscriber.
+    /// overrides are supported. thus
+    ///   subscribe(thesubscriber, composite_subscription())
+    /// will take thesubscriber.get_observer() and the provided
+    /// subscription and subscribe to the new subscriber.
+    /// the on_next, on_error, on_completed methods can be supplied instead of an observer
+    /// if a subscription or subscriber is not provided then a new subscription will be created.
+    ///
     template<class Arg0, class Arg1, class Arg2, class Arg3>
     auto subscribe(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3) const
         -> decltype(detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3)))) {
         return      detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3)));
     }
 
-    //
-    // subscribe will cause this observable to emit values to the provided subscriber.
-    // callers must provide enough arguments to make a subscriber.
-    // overrides are supported. thus
-    //   subscribe(thesubscriber, composite_subscription())
-    // will take thesubscriber.get_observer() and the provided
-    // subscription and subscribe to the new subscriber.
-    // the on_next, on_error, on_completed methods can be supplied instead of an observer
-    // if a subscription or subscriber is not provided then a new subscription will be created.
-    //
+    ///
+    /// subscribe will cause this observable to emit values to the provided subscriber.
+    /// callers must provide enough arguments to make a subscriber.
+    /// overrides are supported. thus
+    ///   subscribe(thesubscriber, composite_subscription())
+    /// will take thesubscriber.get_observer() and the provided
+    /// subscription and subscribe to the new subscriber.
+    /// the on_next, on_error, on_completed methods can be supplied instead of an observer
+    /// if a subscription or subscriber is not provided then a new subscription will be created.
+    ///
     template<class Arg0, class Arg1, class Arg2, class Arg3, class Arg4>
     auto subscribe(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3, Arg4&& a4) const
         -> decltype(detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4)))) {
         return      detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4)));
     }
 
-    //
-    // subscribe will cause this observable to emit values to the provided subscriber.
-    // callers must provide enough arguments to make a subscriber.
-    // overrides are supported. thus
-    //   subscribe(thesubscriber, composite_subscription())
-    // will take thesubscriber.get_observer() and the provided
-    // subscription and subscribe to the new subscriber.
-    // the on_next, on_error, on_completed methods can be supplied instead of an observer
-    // if a subscription or subscriber is not provided then a new subscription will be created.
-    //
+    ///
+    /// subscribe will cause this observable to emit values to the provided subscriber.
+    /// callers must provide enough arguments to make a subscriber.
+    /// overrides are supported. thus
+    ///   subscribe(thesubscriber, composite_subscription())
+    /// will take thesubscriber.get_observer() and the provided
+    /// subscription and subscribe to the new subscriber.
+    /// the on_next, on_error, on_completed methods can be supplied instead of an observer
+    /// if a subscription or subscriber is not provided then a new subscription will be created.
+    ///
     template<class Arg0, class Arg1, class Arg2, class Arg3, class Arg4, class Arg5>
     auto subscribe(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3, Arg4&& a4, Arg5&& a5) const
         -> decltype(detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4), std::forward<Arg5>(a5)))) {
@@ -337,9 +337,9 @@ public:
     }
 #endif
 
-    //
-    // for each item from this observable use Predicate to select which items to emit from the new observable that is returned.
-    //
+    /// filter (AKA Where) ->
+    /// for each item from this observable use Predicate to select which items to emit from the new observable that is returned.
+    ///
     template<class Predicate>
     auto filter(Predicate&& p) const
         ->      observable<T,   rxo::detail::filter<T, observable, Predicate>> {
@@ -347,9 +347,9 @@ public:
                                 rxo::detail::filter<T, observable, Predicate>(*this, std::forward<Predicate>(p)));
     }
 
-    //
-    // for each item from this observable use Selector to produce an item to emit from the new observable that is returned.
-    //
+    /// map (AKA Select) ->
+    /// for each item from this observable use Selector to produce an item to emit from the new observable that is returned.
+    ///
     template<class Selector>
     auto map(Selector&& s) const
         ->      observable<typename rxo::detail::map<observable, Selector>::value_type, rxo::detail::map<observable, Selector>> {
@@ -357,10 +357,10 @@ public:
                                                                                         rxo::detail::map<observable, Selector>(*this, std::forward<Selector>(s)));
     }
 
-    //
-    // for each item from this observable use the CollectionSelector to select an observable and subscribe to that observable.
-    // for each item from all of the selected observables use the ResultSelector to select a value to emit from the new observable that is returned.
-    //
+    /// flat_map (AKA SelectMany) ->
+    /// for each item from this observable use the CollectionSelector to select an observable and subscribe to that observable.
+    /// for each item from all of the selected observables use the ResultSelector to select a value to emit from the new observable that is returned.
+    ///
     template<class CollectionSelector, class ResultSelector>
     auto flat_map(CollectionSelector&& s, ResultSelector&& rs) const
         ->      observable<typename rxo::detail::flat_map<observable, CollectionSelector, ResultSelector>::value_type,  rxo::detail::flat_map<observable, CollectionSelector, ResultSelector>> {
@@ -368,10 +368,10 @@ public:
                                                                                                                         rxo::detail::flat_map<observable, CollectionSelector, ResultSelector>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs)));
     }
 
-    //
-    // takes any function that will take this observable and produce a result value.
-    // this is intended to allow externally defined operators to be connected into the expression.
-    //
+    ///
+    /// takes any function that will take this observable and produce a result value.
+    /// this is intended to allow externally defined operators to be connected into the expression.
+    ///
     template<class OperatorFactory>
     auto op(OperatorFactory&& of) const
         -> decltype(of(*(const this_type*)nullptr)) {
