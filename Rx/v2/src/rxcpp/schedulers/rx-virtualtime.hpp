@@ -56,11 +56,11 @@ protected:
     virtual bool empty() const =0;
 
 public:
-    virtual void schedule_absolute(absolute, action) const =0;
+    virtual void schedule_absolute(absolute, const schedulable&) const =0;
 
-    virtual void schedule_relative(relative when, action a) const {
+    virtual void schedule_relative(relative when, const schedulable& a) const {
         auto at = add(clock_now, when);
-        return schedule_absolute(at, std::move(a));
+        return schedule_absolute(at, a);
     }
 
     bool is_enabled() const {return isenabled;}
@@ -162,15 +162,15 @@ public:
     }
 
     virtual void schedule(const schedulable& scbl) const {
-        schedule_absolute(clock_now, scbl.get_action());
+        schedule_absolute(clock_now, scbl);
     }
 
     virtual void schedule(clock_type::duration when, const schedulable& scbl) const {
-        schedule_absolute(to_relative(when), scbl.get_action());
+        schedule_absolute(to_relative(when), scbl);
     }
 
     virtual void schedule(clock_type::time_point when, const schedulable& scbl) const {
-        schedule_absolute(to_relative(when - now()), scbl.get_action());
+        schedule_absolute(to_relative(when - now()), scbl);
     }
 
 };
@@ -230,7 +230,7 @@ protected:
     using base::schedule_absolute;
     using base::schedule_relative;
 
-    virtual void schedule_absolute(typename base::absolute when, action a) const
+    virtual void schedule_absolute(typename base::absolute when, const schedulable& a) const
     {
         // use a separate subscription here so that a's subscription is not affected
         auto run = make_schedulable(
@@ -240,7 +240,7 @@ protected:
                 r.reset(false);
                 if (scbl.is_subscribed()) {
                     scbl.unsubscribe(); // unsubscribe() run, not a;
-                    a(scbl, r.get_recurse());
+                    a(a, r.get_recurse());
                 }
             });
         queue.push(item_type(when, run));

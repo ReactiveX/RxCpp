@@ -23,12 +23,12 @@ public:
     using base::schedule_absolute;
     using base::schedule_relative;
 
-    virtual void schedule_absolute(long when, action a) const
+    virtual void schedule_absolute(long when, const schedulable& a) const
     {
         if (when <= base::clock_now)
             when = base::clock_now + 1;
 
-        return base::schedule_absolute(when, std::move(a));
+        return base::schedule_absolute(when, a);
     }
 
     virtual long add(long absolute, long relative) const
@@ -135,7 +135,7 @@ public:
 
     template<class Iterator>
     cold_observable(typename test_type::shared sc, Iterator begin, Iterator end)
-        : scheduler(sc)
+        : sc(sc)
         , mv(begin, end)
     {
     }
@@ -146,11 +146,13 @@ public:
 
         for (auto& message : mv) {
             auto n = message.value();
-            sc->schedule_relative(message.time(), make_action([n, o](const schedulable& scbl) {
-                n->accept(o);
-                scbl.unsubscribe();
-                return scbl;
-            }));
+            sc->schedule_relative(message.time(), make_schedulable(
+                scheduler(std::static_pointer_cast<scheduler_interface>(sc)),
+                [n, o](const schedulable& scbl) {
+                    if (o.is_subscribed()) {
+                        n->accept(o);
+                    }
+                }));
         }
 
         auto sharedThis = std::static_pointer_cast<const this_type>(this->shared_from_this());
@@ -195,13 +197,16 @@ public:
     {
         for (auto& message : mv) {
             auto n = message.value();
-            sc->schedule_absolute(message.time(), make_action([this, n](const schedulable& scbl) {
-                auto local = this->observers;
-                for (auto& o : local) {
-                    n->accept(o);
-                }
-                return schedulable::empty(scbl.get_scheduler());
-            }));
+            sc->schedule_absolute(message.time(), make_schedulable(
+                scheduler(std::static_pointer_cast<scheduler_interface>(sc)),
+                [this, n](const schedulable& scbl) {
+                    auto local = this->observers;
+                    for (auto& o : local) {
+                        if (o.is_subscribed()) {
+                            n->accept(o);
+                        }
+                    }
+                }));
         }
     }
 
@@ -234,13 +239,14 @@ rxt::testable_observable<T> test_type::make_hot_observable(std::vector<rxn::reco
 
 }
 
-class test
+class test : public scheduler
 {
     detail::test_type::shared tester;
 public:
 
     explicit test(detail::test_type::shared t)
-        : tester(std::move(t))
+        : scheduler(std::static_pointer_cast<scheduler_interface>(t))
+        , tester(t)
     {
     }
 
@@ -292,25 +298,25 @@ public:
         ~messages();
     };
 
-    void schedule_absolute(long when, action a) const {
-        tester->schedule_absolute(when, std::move(a));
+    void schedule_absolute(long when, const schedulable& a) const {
+        tester->schedule_absolute(when, a);
     }
 
-    void schedule_relative(long when, action a) const {
-        tester->schedule_relative(when, std::move(a));
+    void schedule_relative(long when, const schedulable& a) const {
+        tester->schedule_relative(when, a);
     }
 
     template<class F>
-    typename std::enable_if<!std::is_same<typename std::decay<F>::type, action>::value, void>::type
+    typename std::enable_if<!std::is_same<typename std::decay<F>::type, schedulable>::value, void>::type
     schedule_absolute(long when, F f) const {
-        tester->schedule_absolute(when, make_action(f));
+        tester->schedule_absolute(when, make_schedulable(*this, f));
     }
 
 
     template<class F>
-    typename std::enable_if<!std::is_same<typename std::decay<F>::type, action>::value, void>::type
+    typename std::enable_if<!std::is_same<typename std::decay<F>::type, schedulable>::value, void>::type
     schedule_relative(long when, F f) const {
-        tester->schedule_relative(when, make_action(f));
+        tester->schedule_relative(when, make_schedulable(*this, f));
     }
 
     template<class T, class F>
@@ -335,15 +341,15 @@ public:
         };
         std::shared_ptr<state_type> state(new state_type(this->make_subscriber<T>()));
 
-        schedule_absolute(created, make_action([createSrc, state](const schedulable& scbl) {
+        schedule_absolute(created, [createSrc, state](const schedulable& scbl) {
             state->source.reset(new typename state_type::source_type(createSrc()));
-        }));
-        schedule_absolute(subscribed, make_action([state](const schedulable& scbl) {
+        });
+        schedule_absolute(subscribed, [state](const schedulable& scbl) {
             state->source->subscribe(state->o);
-        }));
-        schedule_absolute(unsubscribed, make_action([state](const schedulable& scbl) {
+        });
+        schedule_absolute(unsubscribed, [state](const schedulable& scbl) {
             state->o.unsubscribe();
-        }));
+        });
 
         tester->start();
 
