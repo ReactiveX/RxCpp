@@ -277,8 +277,8 @@ class schedulable : public schedulable_base
     recursed_scope_type recursed_scope;
 
 public:
-    typedef typename composite_subscription::weak_subscription weak_subscription;
-    typedef typename composite_subscription::shared_subscription shared_subscription;
+    typedef composite_subscription::weak_subscription weak_subscription;
+    typedef composite_subscription::shared_subscription shared_subscription;
     typedef scheduler_base::clock_type clock_type;
 
     schedulable()

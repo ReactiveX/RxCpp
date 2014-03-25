@@ -60,11 +60,11 @@ template<class T>
 class is_observer
 {
     template<class C>
-    static typename C::observer_tag check(int);
+    static typename C::observer_tag* check(int);
     template<class C>
     static void check(...);
 public:
-    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_observer>::value;
+    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_observer*>::value;
 };
 
 struct tag_dynamic_observer {};

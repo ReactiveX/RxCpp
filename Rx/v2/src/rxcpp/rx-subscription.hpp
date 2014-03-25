@@ -16,11 +16,11 @@ template<class T>
 class is_subscription
 {
     template<class C>
-    static typename C::subscription_tag check(int);
+    static typename C::subscription_tag* check(int);
     template<class C>
     static void check(...);
 public:
-    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_subscription>::value;
+    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_subscription*>::value;
 };
 
 class dynamic_subscription : public subscription_base
