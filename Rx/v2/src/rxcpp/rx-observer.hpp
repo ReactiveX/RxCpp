@@ -244,6 +244,25 @@ auto make_observer()
 }
 
 namespace detail {
+    
+template<class T, class I, class ResolvedArgSet>
+auto make_observer_resolved(ResolvedArgSet&& rs)
+    ->      observer<T, I> {
+    typedef I inner_type;
+    return  observer<T, inner_type>(inner_type(
+        std::move(std::get<0>(std::forward<ResolvedArgSet>(rs)).value),
+        std::move(std::get<1>(std::forward<ResolvedArgSet>(rs)).value),
+        std::move(std::get<2>(std::forward<ResolvedArgSet>(rs)).value)));
+    
+    typedef typename std::decay<decltype(std::get<0>(std::forward<ResolvedArgSet>(rs)))>::type rn_t;
+    typedef typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type re_t;
+    typedef typename std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type rc_t;
+    
+    static_assert(rn_t::is_arg, "onnext is a required parameter");
+    static_assert(!(rn_t::is_arg && re_t::is_arg) || rn_t::n + 1 == re_t::n, "onnext, onerror parameters must be together and in order");
+    static_assert(!(re_t::is_arg && rc_t::is_arg) || re_t::n + 1 == rc_t::n, "onerror, oncompleted parameters must be together and in order");
+    static_assert(!(rn_t::is_arg && rc_t::is_arg  && !re_t::is_arg) || rn_t::n + 1 == rc_t::n, "onnext, oncompleted parameters must be together and in order");
+}
 
 template<class T, class ResolvedArgSet>
 auto make_observer_resolved(ResolvedArgSet&& rs)
@@ -254,25 +273,6 @@ template<class T, class ResolvedArgSet>
 auto make_observer_dynamic_resolved(ResolvedArgSet&& rs)
     ->      observer<T, dynamic_observer<T>> {
     return  make_observer_resolved<T, dynamic_observer<T>>(std::forward<ResolvedArgSet>(rs));
-}
-
-template<class T, class I, class ResolvedArgSet>
-auto make_observer_resolved(ResolvedArgSet&& rs)
-    ->      observer<T, I> {
-    typedef I inner_type;
-    return  observer<T, inner_type>(inner_type(
-        std::move(std::get<0>(std::forward<ResolvedArgSet>(rs)).value),
-        std::move(std::get<1>(std::forward<ResolvedArgSet>(rs)).value),
-        std::move(std::get<2>(std::forward<ResolvedArgSet>(rs)).value)));
-
-    typedef typename std::decay<decltype(std::get<0>(std::forward<ResolvedArgSet>(rs)))>::type rn_t;
-    typedef typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type re_t;
-    typedef typename std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type rc_t;
-
-    static_assert(rn_t::is_arg, "onnext is a required parameter");
-    static_assert(!(rn_t::is_arg && re_t::is_arg) || rn_t::n + 1 == re_t::n, "onnext, onerror parameters must be together and in order");
-    static_assert(!(re_t::is_arg && rc_t::is_arg) || re_t::n + 1 == rc_t::n, "onerror, oncompleted parameters must be together and in order");
-    static_assert(!(rn_t::is_arg && rc_t::is_arg  && !re_t::is_arg) || rn_t::n + 1 == rc_t::n, "onnext, oncompleted parameters must be together and in order");
 }
 
 template<class T>

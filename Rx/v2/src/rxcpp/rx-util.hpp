@@ -200,8 +200,6 @@ private:
 
 #if RXCPP_USE_VARIADIC_TEMPLATES
 
-namespace detail {
-
 template<int N, int Index>
 struct select_arg
 {
@@ -221,44 +219,59 @@ struct select_arg<N, N>
     }
 };
 
-}
+template<int N, class T>
+struct resolved_arg
+{
+    typedef resolved_arg<N, T> this_type;
+    static const int n = N;
+    static const bool is_arg = true;
+    typedef T result_type;
+    result_type value;
+    template<class Value>
+    explicit resolved_arg(Value&& v)
+    : value(std::forward<Value>(v))
+    {
+    }
+    template<class... CArgN>
+    static this_type make(CArgN&&... can) {
+        return this_type(select_arg<n, 0>::get(std::forward<CArgN>(can)...));
+    }
+};
+
+template<class T>
+struct resolved_arg<-1, T>
+{
+    typedef resolved_arg<-1, T> this_type;
+    static const int n = -1;
+    static const bool is_arg = false;
+    typedef T result_type;
+    result_type value;
+    template<class... CArgN>
+    static this_type make(CArgN&&... can) {
+        return this_type();
+    }
+};
 
 template<int Size, int N, template<class Arg> class Predicate, class Default, class... ArgN>
 struct arg_resolver_n;
-    
+
 template<int Size, int N, template<class Arg> class Predicate, class Default, class Arg, class... ArgN>
 struct arg_resolver_n<Size, N, Predicate, Default, Arg, ArgN...>
 {
     static const int n = N;
-    static const bool is_arg = true;
-    typedef Arg result_type;
+    typedef resolved_arg<n, Arg> resolved_type;
     typedef arg_resolver_n<Size, n, Predicate, Default, Arg, ArgN...> this_type;
     typedef arg_resolver_n<Size, n + 1, Predicate, Default, ArgN...> next_type;
-    typedef typename std::conditional<Predicate<result_type>::value, this_type, typename next_type::type>::type type;
-    result_type value;
-    template<class... CArgN>
-    arg_resolver_n(CArgN&&... can)
-        : value(detail::select_arg<n, 0>::get(std::forward<CArgN>(can)...)) {
-    }
+    typedef typename std::conditional<Predicate<Arg>::value, this_type, typename next_type::type>::type type;
 };
 
 template<int Size, template<class Arg> class Predicate, class Default>
 struct arg_resolver_n<Size, Size, Predicate, Default>
 {
     static const int n = -1;
-    static const bool is_arg = false;
-    typedef Default result_type;
+    typedef resolved_arg<n, Default> resolved_type;
     typedef arg_resolver_n<Size, Size, Predicate, Default> this_type;
     typedef this_type type;
-    result_type value;
-    template<int Index>
-    struct select_arg
-    {
-    };
-    template<class... CArgN>
-    arg_resolver_n(CArgN&&...)
-        : value() {
-    }
 };
 #else
 template<int N, template<class Arg> class Predicate, class Default, class Arg0, class Arg1, class Arg2, class Arg3, class Arg4, class Arg5>
@@ -274,9 +287,14 @@ struct arg_resolver_n<5, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5>
     typedef arg_resolver_n<n - 1, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5> prev_type;
     typedef typename std::conditional<Predicate<result_type>::value, this_type, typename prev_type::type>::type type;
     result_type value;
+    arg_resolver_n(result_type v)
+        : value(std::move(v))
+    {
+    }
     template<class R>
-    arg_resolver_n(const Arg0&, const Arg1&, const Arg2&, const Arg3&, const Arg4&, R&& a)
-        : value(std::forward<R>(a)) {
+    static this_type make(const Arg0&, const Arg1&, const Arg2&, const Arg3&, const Arg4&, R&& a)
+    {
+        return this_type(std::forward<R>(a));
     }
 };
 
@@ -290,9 +308,14 @@ struct arg_resolver_n<4, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5>
     typedef arg_resolver_n<n - 1, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5> prev_type;
     typedef typename std::conditional<Predicate<result_type>::value, this_type, typename prev_type::type>::type type;
     result_type value;
+    arg_resolver_n(result_type v)
+        : value(std::move(v))
+    {
+    }
     template<class R>
-    arg_resolver_n(const Arg0&, const Arg1&, const Arg2&, const Arg3&, R&& a, const Arg5&)
-        : value(std::forward<R>(a)) {
+    static this_type make(const Arg0&, const Arg1&, const Arg2&, const Arg3&, R&& a, const Arg5&)
+    {
+        return this_type(std::forward<R>(a));
     }
 };
 
@@ -306,9 +329,14 @@ struct arg_resolver_n<3, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5>
     typedef arg_resolver_n<n - 1, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5> prev_type;
     typedef typename std::conditional<Predicate<result_type>::value, this_type, typename prev_type::type>::type type;
     result_type value;
+    arg_resolver_n(result_type v)
+        : value(std::move(v))
+    {
+    }
     template<class R>
-    arg_resolver_n(const Arg0&, const Arg1&, const Arg2&, R&& a, const Arg4&, const Arg5&)
-        : value(std::forward<R>(a)) {
+    static this_type make(const Arg0&, const Arg1&, const Arg2&, R&& a, const Arg4&, const Arg5&)
+    {
+        return this_type(std::forward<R>(a));
     }
 };
 
@@ -322,9 +350,14 @@ struct arg_resolver_n<2, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5>
     typedef arg_resolver_n<n - 1, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5> prev_type;
     typedef typename std::conditional<Predicate<result_type>::value, this_type, typename prev_type::type>::type type;
     result_type value;
+    arg_resolver_n(result_type v)
+        : value(std::move(v))
+    {
+    }
     template<class R>
-    arg_resolver_n(const Arg0&, const Arg1&, R&& a, const Arg3&, const Arg4&, const Arg5&)
-        : value(std::forward<R>(a)) {
+    static this_type make(const Arg0&, const Arg1&, R&& a, const Arg3&, const Arg4&, const Arg5&)
+    {
+        return this_type(std::forward<R>(a));
     }
 };
 
@@ -338,9 +371,14 @@ struct arg_resolver_n<1, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5>
     typedef arg_resolver_n<n - 1, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5> prev_type;
     typedef typename std::conditional<Predicate<result_type>::value, this_type, typename prev_type::type>::type type;
     result_type value;
+    arg_resolver_n(result_type v)
+        : value(std::move(v))
+    {
+    }
     template<class R>
-    arg_resolver_n(const Arg0&, R&& a, const Arg2&, const Arg3&, const Arg4&, const Arg5&)
-        : value(std::forward<R>(a)) {
+    static this_type make(const Arg0&, R&& a, const Arg2&, const Arg3&, const Arg4&, const Arg5&)
+    {
+        return this_type(std::forward<R>(a));
     }
 };
 
@@ -354,9 +392,14 @@ struct arg_resolver_n<0, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5>
     typedef arg_resolver_n<n - 1, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5> prev_type;
     typedef typename std::conditional<Predicate<result_type>::value, this_type, typename prev_type::type>::type type;
     result_type value;
+    arg_resolver_n(result_type v)
+        : value(std::move(v))
+    {
+    }
     template<class R>
-    arg_resolver_n(R&& a, const Arg1&, const Arg2&, const Arg3&, const Arg4&, const Arg5&)
-        : value(std::forward<R>(a)) {
+    static this_type make(R&& a, const Arg1&, const Arg2&, const Arg3&, const Arg4&, const Arg5&)
+    {
+        return this_type(std::forward<R>(a));
     }
 };
 
@@ -369,18 +412,55 @@ struct arg_resolver_n<-1, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5
     typedef arg_resolver_n<n, Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5> this_type;
     typedef this_type type;
     result_type value;
-    arg_resolver_n(const Arg0&, const Arg1&, const Arg2&, const Arg3&, const Arg4&, const Arg5&)
-        : value() {
+    static this_type make(const Arg0&, const Arg1&, const Arg2&, const Arg3&, const Arg4&, const Arg5&)
+    {
+        return this_type();
     }
 };
 #endif
 
 
 #if RXCPP_USE_VARIADIC_TEMPLATES
+template<int N, bool... PredicateN>
+struct select_first;
+
+template<int N, bool Predicate0, bool... PredicateN>
+struct select_first<N, Predicate0, PredicateN...>
+{
+    static const int value = Predicate0 ? N : select_first<N + 1, PredicateN...>::value;
+};
+template<int N>
+struct select_first<N>
+{
+    static const int value = -1;
+};
+
+template<int N, int Cursor, class... SArgN>
+struct select_n
+{
+    struct type;
+};
+
+template<int N, int Cursor, class SArg0, class... SArgN>
+struct select_n<N, Cursor, SArg0, SArgN...> : public select_n<N, Cursor + 1, SArgN...>
+{
+};
+
+template<int N, class SArg0, class... SArgN>
+struct select_n<N, N, SArg0, SArgN...>
+{
+    typedef SArg0 type;
+};
+
 template<template<class Arg> class Predicate, class Default, class... ArgN>
 struct arg_resolver
 {
-    typedef typename arg_resolver_n<sizeof...(ArgN), 0, Predicate, Default, typename std::decay<ArgN>::type...>::type type;
+    typedef select_first<0, Predicate<ArgN>::value...> match;
+    typedef typename std::conditional<
+        match::value != -1,
+        typename select_n<match::value, 0, ArgN...>::type,
+        Default>::type result_type;
+    typedef resolved_arg<match::value, result_type> resolved_type;
 };
 #else
 struct tag_unresolvable {};
@@ -395,65 +475,65 @@ struct arg_resolver
 template<template<class Arg> class Predicate, class Default,
     class... ArgN>
 auto resolve_arg(ArgN&&... an)
--> decltype(typename arg_resolver<Predicate, Default, ArgN...>::type(std::forward<ArgN>(an)...)) {
-    return  typename arg_resolver<Predicate, Default, ArgN...>::type(std::forward<ArgN>(an)...);
+-> decltype(arg_resolver<Predicate, Default, ArgN...>::resolved_type::make(std::forward<ArgN>(an)...)) {
+    return  arg_resolver<Predicate, Default, ArgN...>::resolved_type::make(std::forward<ArgN>(an)...);
 }
 #else
 template<template<class Arg> class Predicate, class Default>
 auto resolve_arg()
--> decltype(typename arg_resolver<Predicate, Default>::type(tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable())) {
-    return  typename arg_resolver<Predicate, Default>::type(tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable());
+-> decltype(typename arg_resolver<Predicate, Default>::type::make(tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable())) {
+    return  typename arg_resolver<Predicate, Default>::type::make(tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable());
 }
 
 template<template<class Arg> class Predicate, class Default,
     class Arg0>
 auto resolve_arg(Arg0&& a0)
--> decltype(typename arg_resolver<Predicate, Default, Arg0>::type(std::forward<Arg0>(a0), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable())) {
-    return  typename arg_resolver<Predicate, Default, Arg0>::type(std::forward<Arg0>(a0), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable());
+-> decltype(typename arg_resolver<Predicate, Default, Arg0>::type::make(std::forward<Arg0>(a0), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable())) {
+    return  typename arg_resolver<Predicate, Default, Arg0>::type::make(std::forward<Arg0>(a0), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable());
 }
 
 template<template<class Arg> class Predicate, class Default,
     class Arg0, class Arg1>
 auto resolve_arg(Arg0&& a0, Arg1&& a1)
--> decltype(typename arg_resolver<Predicate, Default, Arg0, Arg1>::type(
+-> decltype(typename arg_resolver<Predicate, Default, Arg0, Arg1>::type::make(
         std::forward<Arg0>(a0), std::forward<Arg1>(a1), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable())) {
-    return  typename arg_resolver<Predicate, Default, Arg0, Arg1>::type(
+    return  typename arg_resolver<Predicate, Default, Arg0, Arg1>::type::make(
         std::forward<Arg0>(a0), std::forward<Arg1>(a1), tag_unresolvable(), tag_unresolvable(), tag_unresolvable(), tag_unresolvable());
 }
 
 template<template<class Arg> class Predicate, class Default,
     class Arg0, class Arg1, class Arg2>
 auto resolve_arg(Arg0&& a0, Arg1&& a1, Arg2&& a2)
--> decltype(typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2>::type(
+-> decltype(typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2>::type::make(
         std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), tag_unresolvable(), tag_unresolvable(), tag_unresolvable())) {
-    return  typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2>::type(
+    return  typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2>::type::make(
         std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), tag_unresolvable(), tag_unresolvable(), tag_unresolvable());
 }
 
 template<template<class Arg> class Predicate, class Default,
     class Arg0, class Arg1, class Arg2, class Arg3>
 auto resolve_arg(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3)
--> decltype(typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2, Arg3>::type(
+-> decltype(typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2, Arg3>::type::make(
         std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), tag_unresolvable(), tag_unresolvable())) {
-    return  typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2, Arg3>::type(
+    return  typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2, Arg3>::type::make(
         std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), tag_unresolvable(), tag_unresolvable());
 }
 
 template<template<class Arg> class Predicate, class Default,
     class Arg0, class Arg1, class Arg2, class Arg3, class Arg4>
 auto resolve_arg(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3, Arg4&& a4)
--> decltype(typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4>::type(
+-> decltype(typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4>::type::make(
         std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4), tag_unresolvable())) {
-    return  typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4>::type(
+    return  typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4>::type::make(
         std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4), tag_unresolvable());
 }
 
 template<template<class Arg> class Predicate, class Default,
     class Arg0, class Arg1, class Arg2, class Arg3, class Arg4, class Arg5>
 auto resolve_arg(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3, Arg4&& a4, Arg5&& a5)
--> decltype(typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5>::type(
+-> decltype(typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5>::type::make(
         std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4), std::forward<Arg5>(a5))) {
-    return  typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5>::type(
+    return  typename arg_resolver<Predicate, Default, Arg0, Arg1, Arg2, Arg3, Arg4, Arg5>::type::make(
         std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4), std::forward<Arg5>(a5));
 }
 #endif
