@@ -244,35 +244,51 @@ auto make_observer()
 }
 
 namespace detail {
-    
+
 template<class T, class I, class ResolvedArgSet>
-auto make_observer_resolved(ResolvedArgSet&& rs)
+auto make_observer_resolved_explicit(ResolvedArgSet&& rs)
     ->      observer<T, I> {
     typedef I inner_type;
     return  observer<T, inner_type>(inner_type(
         std::move(std::get<0>(std::forward<ResolvedArgSet>(rs)).value),
         std::move(std::get<1>(std::forward<ResolvedArgSet>(rs)).value),
         std::move(std::get<2>(std::forward<ResolvedArgSet>(rs)).value)));
-    
+
     typedef typename std::decay<decltype(std::get<0>(std::forward<ResolvedArgSet>(rs)))>::type rn_t;
     typedef typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type re_t;
     typedef typename std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type rc_t;
-    
+
     static_assert(rn_t::is_arg, "onnext is a required parameter");
     static_assert(!(rn_t::is_arg && re_t::is_arg) || rn_t::n + 1 == re_t::n, "onnext, onerror parameters must be together and in order");
     static_assert(!(re_t::is_arg && rc_t::is_arg) || re_t::n + 1 == rc_t::n, "onerror, oncompleted parameters must be together and in order");
     static_assert(!(rn_t::is_arg && rc_t::is_arg  && !re_t::is_arg) || rn_t::n + 1 == rc_t::n, "onnext, oncompleted parameters must be together and in order");
 }
+template<class ResolvedArgSet>
+struct resolved_observer_traits
+{
+    typedef typename std::decay<ResolvedArgSet>::type resolved_set;
+    typedef typename std::tuple_element<0, resolved_set>::type resolved_on_next;
+    typedef typename std::tuple_element<1, resolved_set>::type resolved_on_error;
+    typedef typename std::tuple_element<2, resolved_set>::type resolved_on_completed;
 
+    template<class T>
+    struct static_observer_of
+    {
+        typedef static_observer<T, 
+            typename resolved_on_next::result_type, 
+            typename resolved_on_error::result_type, 
+            typename resolved_on_completed::result_type> type;
+    };
+};
 template<class T, class ResolvedArgSet>
 auto make_observer_resolved(ResolvedArgSet&& rs)
-    ->      observer<T,                 static_observer<T, typename std::decay<decltype(std::get<0>(std::forward<ResolvedArgSet>(rs)))>::type::result_type, typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type::result_type, typename std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type::result_type>> {
-    return  make_observer_resolved<T,   static_observer<T, typename std::decay<decltype(std::get<0>(std::forward<ResolvedArgSet>(rs)))>::type::result_type, typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type::result_type, typename std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type::result_type>>(std::forward<ResolvedArgSet>(rs));
+    ->      observer<T,                         typename resolved_observer_traits<ResolvedArgSet>::template static_observer_of<T>::type> {
+    return  make_observer_resolved_explicit<T,  typename resolved_observer_traits<ResolvedArgSet>::template static_observer_of<T>::type>(std::forward<ResolvedArgSet>(rs));
 }
 template<class T, class ResolvedArgSet>
 auto make_observer_dynamic_resolved(ResolvedArgSet&& rs)
     ->      observer<T, dynamic_observer<T>> {
-    return  make_observer_resolved<T, dynamic_observer<T>>(std::forward<ResolvedArgSet>(rs));
+    return  make_observer_resolved_explicit<T, dynamic_observer<T>>(std::forward<ResolvedArgSet>(rs));
 }
 
 template<class T>

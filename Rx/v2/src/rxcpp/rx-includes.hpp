@@ -5,35 +5,6 @@
 #if !defined(RXCPP_RX_INCLUDES_HPP)
 #define RXCPP_RX_INCLUDES_HPP
 
-#pragma push_macro("min")
-#pragma push_macro("max")
-#undef min
-#undef max
-
-#include <stdlib.h>
-
-#include <cstddef>
-
-#include <iostream>
-#include <iomanip>
-
-#include <exception>
-#include <functional>
-#include <memory>
-#include <vector>
-#include <algorithm>
-#include <atomic>
-#include <map>
-#include <mutex>
-#include <deque>
-#include <thread>
-#include <future>
-#include <vector>
-#include <list>
-#include <queue>
-#include <chrono>
-#include <condition_variable>
-
 // some configuration macros
 #if defined(_MSC_VER)
 
@@ -89,6 +60,40 @@
 #undef RXCPP_USE_WINRT
 #define RXCPP_USE_WINRT RXCPP_FORCE_USE_WINRT
 #endif
+
+#if defined(_MSC_VER) && !RXCPP_USE_VARIADIC_TEMPLATES
+// resolve args needs enough to store all the possible resolved args
+#define _VARIADIC_MAX 10
+#endif
+
+#pragma push_macro("min")
+#pragma push_macro("max")
+#undef min
+#undef max
+
+#include <stdlib.h>
+
+#include <cstddef>
+
+#include <iostream>
+#include <iomanip>
+
+#include <exception>
+#include <functional>
+#include <memory>
+#include <vector>
+#include <algorithm>
+#include <atomic>
+#include <map>
+#include <mutex>
+#include <deque>
+#include <thread>
+#include <future>
+#include <vector>
+#include <list>
+#include <queue>
+#include <chrono>
+#include <condition_variable>
 
 #include "rx-util.hpp"
 #include "rx-predef.hpp"
