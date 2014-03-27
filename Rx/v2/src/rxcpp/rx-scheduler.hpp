@@ -552,17 +552,13 @@ struct tag_scheduler_resolution
 };
 
 
-struct tag_schedulable_set
-                // the first four must be the same as tag_observer_set or the indexing will fail
-    : public    rxu::detail::tag_set<tag_when_resolution,
-                rxu::detail::tag_set<tag_schedulable_resolution,
-                rxu::detail::tag_set<rxcpp::detail::tag_subscription_resolution,
-                rxu::detail::tag_set<tag_scheduler_resolution,
-                rxu::detail::tag_set<tag_action_resolution,
-                rxu::detail::tag_set<tag_action_function_resolution,
-                rxu::detail::tag_set<tag_action_duration_resolution>>>>>>>
-{
-};
+typedef rxu::detail::tag_set<tag_when_resolution,
+            tag_schedulable_resolution,
+            rxcpp::detail::tag_subscription_resolution,
+            tag_scheduler_resolution,
+            tag_action_resolution,
+            tag_action_function_resolution,
+            tag_action_duration_resolution> tag_schedulable_set;
 
 template<bool schedulable_is_arg, bool action_is_arg, bool action_function_is_arg>
 struct action_selector;
@@ -639,61 +635,15 @@ schedulable schedule_resolved(ResolvedArgSet&& rsArg) {
 
 }
 
-#if RXCPP_USE_VARIADIC_TEMPLATES
 template<class Arg0, class... ArgN>
 schedulable make_schedulable(Arg0&& a0, ArgN&&... an) {
     return detail::make_schedulable_resolved<true>(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
 }
-#else
-template<class Arg0>
-schedulable make_schedulable(Arg0&& a0) {
-    return detail::make_schedulable_resolved<true>(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0)));
-}
-template<class Arg0, class Arg1>
-schedulable make_schedulable(Arg0&& a0, Arg1&& a1) {
-    return detail::make_schedulable_resolved<true>(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0), std::forward<Arg1>(a1)));
-}
-template<class Arg0, class Arg1, class Arg2>
-schedulable make_schedulable(Arg0&& a0, Arg1&& a1, Arg2&& a2) {
-    return detail::make_schedulable_resolved<true>(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2)));
-}
-template<class Arg0, class Arg1, class Arg2, class Arg3>
-schedulable make_schedulable(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3) {
-    return detail::make_schedulable_resolved<true>(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3)));
-}
-template<class Arg0, class Arg1, class Arg2, class Arg3, class Arg4>
-schedulable make_schedulable(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3, Arg4&& a4) {
-    return detail::make_schedulable_resolved<true>(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4)));
-}
-#endif
 
-#if RXCPP_USE_VARIADIC_TEMPLATES
 template<class Arg0, class... ArgN>
 schedulable schedule(Arg0&& a0, ArgN&&... an) {
     return detail::schedule_resolved(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
 }
-#else
-template<class Arg0>
-schedulable schedule(Arg0&& a0) {
-    return detail::schedule_resolved(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0)));
-}
-template<class Arg0, class Arg1>
-schedulable schedule(Arg0&& a0, Arg1&& a1) {
-    return detail::schedule_resolved(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0), std::forward<Arg1>(a1)));
-}
-template<class Arg0, class Arg1, class Arg2>
-schedulable schedule(Arg0&& a0, Arg1&& a1, Arg2&& a2) {
-    return detail::schedule_resolved(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2)));
-}
-template<class Arg0, class Arg1, class Arg2, class Arg3>
-schedulable schedule(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3) {
-    return detail::schedule_resolved(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3)));
-}
-template<class Arg0, class Arg1, class Arg2, class Arg3, class Arg4>
-schedulable schedule(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3, Arg4&& a4) {
-    return detail::schedule_resolved(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4)));
-}
-#endif
 
 namespace detail {
 

@@ -42,6 +42,12 @@ SCENARIO("subject test", "[hide][subject][subjects][perf]"){
             {
                 int c = 0;
                 int n = 1;
+#if 0
+                auto onnext = [&c](int){++c;};
+                auto onerror = [](std::exception_ptr){abort();};
+
+                auto oex = rxu::detail::arg_resolver_set<rx::detail::tag_observer_set<int>::type>()(onnext, onerror);
+#endif
                 auto o = rx::make_observer<int>(
                     [&c](int){++c;},
                     [](std::exception_ptr){abort();});
@@ -77,6 +83,22 @@ SCENARIO("subject test", "[hide][subject][subjects][perf]"){
                 int c = 0;
                 int n = 1;
                 auto start = clock::now();
+#if 0
+                auto rso = rxu::detail::arg_resolver_set<rx::detail::tag_subscriber_set<int>::type>()(
+                    [&c](int){
+                        ++c;
+                    },
+                    [](std::exception_ptr){abort();});
+                static_assert(std::tuple_size<decltype(rso)>::value == 7, "object must resolve 7 args");
+                auto rsf = rxu::detail::resolve_arg_set(
+                    rx::detail::tag_subscriber_set<int>::type(),
+                    [&c](int){
+                        ++c;
+                    },
+                    [](std::exception_ptr){abort();});
+                static_assert(std::tuple_size<decltype(rsf)>::value == 7, "func must resolve 7 args");
+                auto ss = rx::detail::make_subscriber_resolved<int>(rsf);
+#endif
                 rxs::range<int>(0, onnextcalls).subscribe(
                     [&c](int){
                         ++c;

@@ -267,6 +267,9 @@ template<class ResolvedArgSet>
 struct resolved_observer_traits
 {
     typedef typename std::decay<ResolvedArgSet>::type resolved_set;
+
+    static_assert(std::tuple_size<resolved_set>::value >= 3, "must have at least three resolved arguments");
+
     typedef typename std::tuple_element<0, resolved_set>::type resolved_on_next;
     typedef typename std::tuple_element<1, resolved_set>::type resolved_on_error;
     typedef typename std::tuple_element<2, resolved_set>::type resolved_on_completed;
@@ -323,78 +326,29 @@ struct tag_oncompleted_resolution
 };
 
 // types to disambiguate
-// on_next and optional on_error, on_completed +
-// optional subscription
+// on_next and optional on_error, on_completed 
 //
 
 template<class T>
 struct tag_observer_set
-    : public    rxu::detail::tag_set<tag_onnext_resolution<T>,
-                rxu::detail::tag_set<tag_onerror_resolution,
-                rxu::detail::tag_set<tag_oncompleted_resolution>>>
 {
+    typedef rxu::detail::tag_set<tag_onnext_resolution<T>, tag_onerror_resolution, tag_oncompleted_resolution> type;
 };
 
 
 }
 
-#if RXCPP_USE_VARIADIC_TEMPLATES
 template<class T, class Arg0, class... ArgN>
 auto make_observer(Arg0&& a0, ArgN&&... an)
-    -> decltype(detail::make_observer_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...))) {
-    return      detail::make_observer_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
+    -> decltype(detail::make_observer_resolved<T>(rxu::detail::resolve_arg_set(typename detail::tag_observer_set<T>::type(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...))) {
+    return      detail::make_observer_resolved<T>(rxu::detail::resolve_arg_set(typename detail::tag_observer_set<T>::type(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
 }
-#else
-template<class T, class Arg0>
-auto make_observer(Arg0&& a0)
-    -> decltype(detail::make_observer_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0)))) {
-    return      detail::make_observer_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0)));
-}
-template<class T, class Arg0, class Arg1>
-auto make_observer(Arg0&& a0, Arg1&& a1)
-    -> decltype(detail::make_observer_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1)))) {
-    return      detail::make_observer_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1)));
-}
-template<class T, class Arg0, class Arg1, class Arg2>
-auto make_observer(Arg0&& a0, Arg1&& a1, Arg2&& a2)
-    -> decltype(detail::make_observer_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2)))) {
-    return      detail::make_observer_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2)));
-}
-template<class T, class Arg0, class Arg1, class Arg2, class Arg3>
-auto make_observer(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3)
-    -> decltype(detail::make_observer_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3)))) {
-    return      detail::make_observer_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3)));
-}
-#endif
 
-#if RXCPP_USE_VARIADIC_TEMPLATES
 template<class T, class Arg0, class... ArgN>
 auto make_observer_dynamic(Arg0&& a0, ArgN&&... an)
-    -> decltype(detail::make_observer_dynamic_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...))) {
-    return      detail::make_observer_dynamic_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
+    -> decltype(detail::make_observer_dynamic_resolved<T>(rxu::detail::resolve_arg_set(typename detail::tag_observer_set<T>::type(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...))) {
+    return      detail::make_observer_dynamic_resolved<T>(rxu::detail::resolve_arg_set(typename detail::tag_observer_set<T>::type(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
 }
-#else
-template<class T, class Arg0>
-auto make_observer_dynamic(Arg0&& a0)
-    -> decltype(detail::make_observer_dynamic_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0)))) {
-    return      detail::make_observer_dynamic_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0)));
-}
-template<class T, class Arg0, class Arg1>
-auto make_observer_dynamic(Arg0&& a0, Arg1&& a1)
-    -> decltype(detail::make_observer_dynamic_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1)))) {
-    return      detail::make_observer_dynamic_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1)));
-}
-template<class T, class Arg0, class Arg1, class Arg2>
-auto make_observer_dynamic(Arg0&& a0, Arg1&& a1, Arg2&& a2)
-    -> decltype(detail::make_observer_dynamic_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2)))) {
-    return      detail::make_observer_dynamic_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2)));
-}
-template<class T, class Arg0, class Arg1, class Arg2, class Arg3>
-auto make_observer_dynamic(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3)
-    -> decltype(detail::make_observer_dynamic_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3)))) {
-    return      detail::make_observer_dynamic_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_observer_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3)));
-}
-#endif
 
 }
 

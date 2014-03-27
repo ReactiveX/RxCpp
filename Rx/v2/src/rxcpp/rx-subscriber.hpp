@@ -192,6 +192,7 @@ auto make_subscriber_resolved(ResolvedArgSet&& rsArg)
     return  subscriber<T, decltype(     select_observer<T>(*(typename std::decay<ResolvedArgSet>::type*)nullptr))>(
             s, r, select_observer<T>(rs));
 
+    static_assert(std::tuple_size<decltype(rs)>::value == 7, "must have 7 resolved args");
 // at least for now do not enforce resolver
 #if 0
     typedef typename std::decay<decltype(rr)>::type rr_t;
@@ -243,57 +244,25 @@ struct tag_resumption_resolution
 
 template<class T>
 struct tag_subscriber_set
-                // the first four must be the same as tag_observer_set or the indexing will fail
-    : public    rxu::detail::tag_set<tag_onnext_resolution<T>,
-                rxu::detail::tag_set<tag_onerror_resolution,
-                rxu::detail::tag_set<tag_oncompleted_resolution,
-                rxu::detail::tag_set<tag_subscription_resolution,
-                rxu::detail::tag_set<tag_resumption_resolution,
-                rxu::detail::tag_set<tag_observer_resolution<T>,
-                rxu::detail::tag_set<tag_subscriber_resolution<T>>>>>>>>
 {
+    // the first four must be the same as tag_observer_set or the indexing will fail
+    typedef rxu::detail::tag_set<
+        tag_onnext_resolution<T>,
+        tag_onerror_resolution,
+        tag_oncompleted_resolution,
+        tag_subscription_resolution,
+        tag_resumption_resolution,
+        tag_observer_resolution<T>,
+        tag_subscriber_resolution<T>> type;
 };
 
 }
 
-#if RXCPP_USE_VARIADIC_TEMPLATES
 template<class T, class Arg0, class... ArgN>
 auto make_subscriber(Arg0&& a0, ArgN&&... an)
-    -> decltype(detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...))) {
-    return      detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
+    -> decltype(detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(typename detail::tag_subscriber_set<T>::type(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...))) {
+    return      detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(typename detail::tag_subscriber_set<T>::type(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
 }
-#else
-template<class T, class Arg0>
-auto make_subscriber(Arg0&& a0)
-    -> decltype(detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0)))) {
-    return      detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0)));
-}
-template<class T, class Arg0, class Arg1>
-auto make_subscriber(Arg0&& a0, Arg1&& a1)
-    -> decltype(detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1)))) {
-    return      detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1)));
-}
-template<class T, class Arg0, class Arg1, class Arg2>
-auto make_subscriber(Arg0&& a0, Arg1&& a1, Arg2&& a2)
-    -> decltype(detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2)))) {
-    return      detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2)));
-}
-template<class T, class Arg0, class Arg1, class Arg2, class Arg3>
-auto make_subscriber(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3)
-    -> decltype(detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3)))) {
-    return      detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3)));
-}
-template<class T, class Arg0, class Arg1, class Arg2, class Arg3, class Arg4>
-auto make_subscriber(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3, Arg4&& a4)
-    -> decltype(detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4)))) {
-    return      detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4)));
-}
-template<class T, class Arg0, class Arg1, class Arg2, class Arg3, class Arg4, class Arg5>
-auto make_subscriber(Arg0&& a0, Arg1&& a1, Arg2&& a2, Arg3&& a3, Arg4&& a4, Arg5&& a5)
-    -> decltype(detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4), std::forward<Arg5>(a5)))) {
-    return      detail::make_subscriber_resolved<T>(rxu::detail::resolve_arg_set(detail::tag_subscriber_set<T>(), std::forward<Arg0>(a0), std::forward<Arg1>(a1), std::forward<Arg2>(a2), std::forward<Arg3>(a3), std::forward<Arg4>(a4), std::forward<Arg5>(a5)));
-}
-#endif
 
 }
 
