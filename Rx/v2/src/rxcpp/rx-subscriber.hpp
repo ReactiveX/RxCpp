@@ -85,12 +85,13 @@ public:
 
     // observer
     //
-    void on_next(T t) const {
+    template<class V>
+    void on_next(V&& v) const {
         if (!is_subscribed()) {
             abort();
         }
         detacher protect(this);
-        destination.on_next(std::move(t));
+        destination.on_next(std::forward<V>(v));
         protect.that = nullptr;
     }
     void on_error(std::exception_ptr e) const {

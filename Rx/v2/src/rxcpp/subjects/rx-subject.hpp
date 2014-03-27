@@ -137,7 +137,8 @@ public:
             abort();
         }
     }
-    void on_next(T t) const {
+    template<class V>
+    void on_next(V&& v) const {
         if (b->current_generation != b->state->generation) {
             std::unique_lock<std::mutex> guard(b->state->lock);
             if (!b->completer) {
@@ -151,7 +152,7 @@ public:
         }
         for (auto& o : b->current_completer->observers) {
             if (o.is_subscribed()) {
-                o.on_next(t);
+                o.on_next(std::forward<V>(v));
             }
         }
     }

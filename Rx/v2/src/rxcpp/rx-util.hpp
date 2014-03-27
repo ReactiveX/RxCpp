@@ -139,7 +139,7 @@ public:
         if (is_set) {
             is_set = false;
             reinterpret_cast<T*>(&storage)->~T();
-            std::fill_n(reinterpret_cast<char*>(&storage), sizeof(T), 0);
+            //std::fill_n(reinterpret_cast<char*>(&storage), sizeof(T), 0);
         }
     }
 
@@ -331,7 +331,7 @@ struct arg_resolver_set<tag_set<Tag0, TagN...>>
     template<class Resolved0, class... ResolvedN>
     struct expanded<std::tuple<Resolved0, ResolvedN...>>
     {
-        typedef std::tuple<Resolved0, ResolvedN...> result_type; 
+        typedef std::tuple<Resolved0, ResolvedN...> result_type;
         template<class... ArgN>
         static result_type make(ArgN&&... an) {
             return std::tuple_cat(std::tuple<Resolved0>(Resolved0::make(std::forward<ArgN>(an)...)), expanded<std::tuple<ResolvedN...>>::make(std::forward<ArgN>(an)...));

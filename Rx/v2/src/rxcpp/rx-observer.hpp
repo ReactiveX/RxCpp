@@ -117,9 +117,10 @@ public:
         swap(oncompleted, o.oncompleted);
     }
 
-    void on_next(T t) const {
+    template<class V>
+    void on_next(V&& v) const {
         if (onnext) {
-            onnext(std::move(t));
+            onnext(std::forward<V>(v));
         }
     }
     void on_error(std::exception_ptr e) const {
@@ -182,8 +183,9 @@ public:
         swap(oncompleted, o.oncompleted);
     }
 
-    void on_next(T t) const {
-        onnext(std::move(t));
+    template<class V>
+    void on_next(V&& v) const {
+        onnext(std::forward<V>(v));
     }
     void on_error(std::exception_ptr e) const {
         onerror(e);
@@ -211,8 +213,9 @@ public:
         : inner(std::move(inner))
     {
     }
-    void on_next(T t) const {
-        inner.on_next(std::move(t));
+    template<class V>
+    void on_next(V&& v) const {
+        inner.on_next(std::forward<V>(v));
     }
     void on_error(std::exception_ptr e) const {
         inner.on_error(e);
@@ -229,7 +232,8 @@ public:
     observer()
     {
     }
-    void on_next(T&&) const {
+    template<class V>
+    void on_next(V&&) const {
     }
     void on_error(std::exception_ptr) const {
     }
@@ -277,9 +281,9 @@ struct resolved_observer_traits
     template<class T>
     struct static_observer_of
     {
-        typedef static_observer<T, 
-            typename resolved_on_next::result_type, 
-            typename resolved_on_error::result_type, 
+        typedef static_observer<T,
+            typename resolved_on_next::result_type,
+            typename resolved_on_error::result_type,
             typename resolved_on_completed::result_type> type;
     };
 };
@@ -326,7 +330,7 @@ struct tag_oncompleted_resolution
 };
 
 // types to disambiguate
-// on_next and optional on_error, on_completed 
+// on_next and optional on_error, on_completed
 //
 
 template<class T>
