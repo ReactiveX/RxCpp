@@ -202,18 +202,18 @@ template<int N, int Index>
 struct select_arg
 {
     template<class GArg, class... GArgN>
-    static auto get(GArg&&, GArgN&&... gan)
-        -> decltype(select_arg<N, Index + 1>::get(std::forward<GArgN>(gan)...)) {
-        return      select_arg<N, Index + 1>::get(std::forward<GArgN>(gan)...);
+    static auto get(const GArg&, const GArgN&... gan)
+        -> decltype(select_arg<N, Index + 1>::get(gan...)) {
+        return      select_arg<N, Index + 1>::get(gan...);
     }
 };
 template<int N>
 struct select_arg<N, N>
 {
     template<class GArg, class... GArgN>
-    static auto get(GArg&& ga, GArgN&&...)
-        -> decltype(std::forward<GArg>(ga)) {
-        return      std::forward<GArg>(ga);
+    static auto get(const GArg& ga, const GArgN&...)
+        -> decltype(ga) {
+        return      ga;
     }
 };
 
@@ -227,13 +227,13 @@ struct resolved_arg
     result_type value;
     struct tag_value {};
     template<class Value>
-    resolved_arg(Value&& v, tag_value&&)
-        : value(std::forward<Value>(v))
+    resolved_arg(const Value& v, tag_value&&)
+        : value(v)
     {
     }
     template<class... CArgN>
-    static this_type make(CArgN&&... can) {
-        return this_type(select_arg<n, 0>::get(std::forward<CArgN>(can)...), tag_value());
+    static this_type make(const CArgN&... can) {
+        return this_type(select_arg<n, 0>::get(can...), tag_value());
     }
 };
 
@@ -246,7 +246,7 @@ struct resolved_arg<-1, T>
     typedef T result_type;
     result_type value;
     template<class... CArgN>
-    static this_type make(CArgN&&... can) {
+    static this_type make(const CArgN&... can) {
         return this_type();
     }
 };
@@ -295,10 +295,10 @@ struct arg_resolver
 };
 
 template<template<class Arg> class Predicate, class Default, class... ArgN>
-auto resolve_arg(ArgN&&... an)
+auto resolve_arg(const ArgN&... an)
 -> typename arg_resolver<Predicate, Default, ArgN...>::resolved_type
 {
-    return  arg_resolver<Predicate, Default, ArgN...>::resolved_type::make(std::forward<ArgN>(an)...);
+    return  arg_resolver<Predicate, Default, ArgN...>::resolved_type::make(an...);
 }
 
 template<class... TagN>
@@ -319,40 +319,31 @@ struct arg_resolver_set<tag_set<Tag0, TagN...>>
     template<class Result>
     struct expanded;
 
-    template<class Resolved0>
-    struct expanded<std::tuple<Resolved0>>
-    {
-        template<class... ArgN>
-        static std::tuple<Resolved0> make(ArgN&&... an) {
-            return std::tuple<Resolved0>(Resolved0::make(std::forward<ArgN>(an)...));
-        }
-    };
-
     template<class Resolved0, class... ResolvedN>
     struct expanded<std::tuple<Resolved0, ResolvedN...>>
     {
         typedef std::tuple<Resolved0, ResolvedN...> result_type;
         template<class... ArgN>
-        static result_type make(ArgN&&... an) {
-            return std::tuple_cat(std::tuple<Resolved0>(Resolved0::make(std::forward<ArgN>(an)...)), expanded<std::tuple<ResolvedN...>>::make(std::forward<ArgN>(an)...));
+        static result_type make(const ArgN&... an) {
+            return result_type(Resolved0::make(an...), ResolvedN::make(an...)...);
         }
     };
 
     template<class... ArgN>
-    auto operator()(ArgN&&... an)
+    auto operator()(const ArgN&... an)
     ->          std::tuple< typename expand<Tag0, ArgN...>::type,
                             typename expand<TagN, ArgN...>::type...> {
         typedef std::tuple< typename expand<Tag0, ArgN...>::type,
                             typename expand<TagN, ArgN...>::type...> out_type;
         static_assert(std::tuple_size<out_type>::value == (sizeof...(TagN) + 1), "tuple must have a value per tag");
-        return  expanded<out_type>::make(std::forward<ArgN>(an)...);
+        return  expanded<out_type>::make(an...);
     }
 };
 
 template<class TagSet, class... ArgN>
-auto resolve_arg_set(const TagSet&, ArgN&&... an)
-    -> decltype(arg_resolver_set<TagSet>()(std::forward<ArgN>(an)...)) {
-    return      arg_resolver_set<TagSet>()(std::forward<ArgN>(an)...);
+auto resolve_arg_set(const TagSet&, const ArgN&... an)
+    -> decltype(arg_resolver_set<TagSet>()(an...)) {
+    return      arg_resolver_set<TagSet>()(an...);
 }
 
 }
