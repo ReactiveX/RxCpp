@@ -79,7 +79,7 @@ public:
                     if (next.when > clock_now) {
                         clock_now = next.when;
                     }
-                    next.what(next.what, r.get_recurse());
+                    next.what(r.get_recurse());
                 }
                 else {
                     isenabled = false;
@@ -240,7 +240,7 @@ protected:
                 r.reset(false);
                 if (scbl.is_subscribed()) {
                     scbl.unsubscribe(); // unsubscribe() run, not a;
-                    a(a, r.get_recurse());
+                    a(r.get_recurse());
                 }
             });
         queue.push(item_type(when, run));

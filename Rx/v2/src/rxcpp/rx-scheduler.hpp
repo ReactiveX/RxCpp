@@ -23,6 +23,12 @@ typedef std::shared_ptr<const scheduler_interface> const_scheduler_interface_ptr
 
 }
 
+// It is essential to keep virtual function calls out of an inner loop.
+// To make tail-recursion work efficiently the recursion objects create
+// a space on the stack inside the virtual function call in the actor that
+// allows the callback and the scheduler to share stack space that records
+// the request and the allowance without any virtual calls in the loop.
+
 class recursed
 {
     bool& isrequested;
@@ -270,6 +276,9 @@ class schedulable : public schedulable_base
             requestor = std::addressof(r.get_recursed());
             return exit_recursed_scope_type(this);
         }
+        bool is_recursed() const {
+            return !!requestor;
+        }
         void operator()() const {
             (*requestor)();
         }
@@ -321,6 +330,17 @@ public:
 
     // recursed
     //
+    bool is_recursed() const {
+        return recursed_scope.is_recursed();
+    }
+    /// requests tail-recursion of the same action
+    /// this will exit the process if called when
+    /// is_recursed() is false.
+    /// Note: to improve perf it is not required
+    /// to call is_recursed() before calling this
+    /// operator. Context is sufficient. The schedulable
+    /// passed to the action by the scheduler will return
+    /// true from is_recursed()
     inline void operator()() const {
         recursed_scope();
     }
@@ -351,27 +371,33 @@ public:
     inline clock_type::time_point now() const {
         return controller.now();
     }
+    /// put this on the queue of the stored scheduler to run asap
     inline void schedule() const {
         controller.schedule(*this);
     }
+    /// put this on the queue of the stored scheduler to run after a delay from now
     inline void schedule(clock_type::duration when) const {
         controller.schedule(when, *this);
     }
+    /// put this on the queue of the stored scheduler to run at the specified time
     inline void schedule(clock_type::time_point when) const {
         controller.schedule(when, *this);
     }
 
     // action
     //
+    /// some schedulers care about how long an action will run
+    /// this is how an action declares its behavior
     inline action_duration::type get_duration() const {
         return activity.get_duration();
     }
-    inline void operator()(const schedulable& scbl, const recurse& r) const {
+    ///
+    inline void operator()(const recurse& r) const {
         if (!is_subscribed()) {
             abort();
         }
         detacher protect(this);
-        activity(scbl, r);
+        activity(*this, r);
         protect.that = nullptr;
     }
 };

@@ -225,7 +225,7 @@ public:
 
             queue::pop();
 
-            what(what, recursor);
+            what(recursor);
 
             if (queue::empty()) {
                 break;
