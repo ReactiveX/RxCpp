@@ -244,9 +244,9 @@ public:
     ///
     template<class Predicate>
     auto filter(Predicate&& p) const
-        ->      observable<T,   rxo::detail::filter<T, observable, Predicate>> {
-        return  observable<T,   rxo::detail::filter<T, observable, Predicate>>(
-                                rxo::detail::filter<T, observable, Predicate>(*this, std::forward<Predicate>(p)));
+        ->      observable<T,   rxo::detail::filter<T, this_type, Predicate>> {
+        return  observable<T,   rxo::detail::filter<T, this_type, Predicate>>(
+                                rxo::detail::filter<T, this_type, Predicate>(*this, std::forward<Predicate>(p)));
     }
 
     /// map (AKA Select) ->
@@ -254,9 +254,9 @@ public:
     ///
     template<class Selector>
     auto map(Selector&& s) const
-        ->      observable<typename rxo::detail::map<observable, Selector>::value_type, rxo::detail::map<observable, Selector>> {
-        return  observable<typename rxo::detail::map<observable, Selector>::value_type, rxo::detail::map<observable, Selector>>(
-                                                                                        rxo::detail::map<observable, Selector>(*this, std::forward<Selector>(s)));
+        ->      observable<typename rxo::detail::map<this_type, Selector>::value_type, rxo::detail::map<this_type, Selector>> {
+        return  observable<typename rxo::detail::map<this_type, Selector>::value_type, rxo::detail::map<this_type, Selector>>(
+                                                                                       rxo::detail::map<this_type, Selector>(*this, std::forward<Selector>(s)));
     }
 
     /// flat_map (AKA SelectMany) ->
@@ -265,9 +265,9 @@ public:
     ///
     template<class CollectionSelector, class ResultSelector>
     auto flat_map(CollectionSelector&& s, ResultSelector&& rs) const
-        ->      observable<typename rxo::detail::flat_map<observable, CollectionSelector, ResultSelector>::value_type,  rxo::detail::flat_map<observable, CollectionSelector, ResultSelector>> {
-        return  observable<typename rxo::detail::flat_map<observable, CollectionSelector, ResultSelector>::value_type,  rxo::detail::flat_map<observable, CollectionSelector, ResultSelector>>(
-                                                                                                                        rxo::detail::flat_map<observable, CollectionSelector, ResultSelector>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs)));
+        ->      observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector>::value_type,  rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector>> {
+        return  observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector>::value_type,  rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector>>(
+                                                                                                                       rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs)));
     }
 
     ///

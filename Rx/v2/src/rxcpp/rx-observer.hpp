@@ -72,7 +72,7 @@ struct is_on_completed
 }
 
 template<class T>
-class dynamic_observer : public observer_base<T>
+class dynamic_observer
 {
 public:
     typedef tag_dynamic_observer dynamic_observer_tag;
@@ -135,8 +135,8 @@ public:
     }
 };
 
-template<class T, class OnNext, class OnError, class OnCompleted>
-class static_observer : public observer_base<T>
+template<class T, class OnNext, class OnError = detail::OnErrorEmpty, class OnCompleted = detail::OnCompletedEmpty>
+class static_observer
 {
 public:
     typedef static_observer<T, OnNext, OnError, OnCompleted> this_type;
@@ -154,7 +154,7 @@ public:
     static_assert(detail::is_on_error<on_error_t>::value,         "Function supplied for on_error must be a function with the signature void(std::exception_ptr);");
     static_assert(detail::is_on_completed<on_completed_t>::value, "Function supplied for on_completed must be a function with the signature void();");
 
-    explicit static_observer(on_next_t n, on_error_t e, on_completed_t c)
+    explicit static_observer(on_next_t n, on_error_t e = on_error_t(), on_completed_t c = on_completed_t())
         : onnext(std::move(n))
         , onerror(std::move(e))
         , oncompleted(std::move(c))
@@ -199,7 +199,7 @@ template<class T, class I>
 class observer : public observer_base<T>
 {
     typedef observer<T, I> this_type;
-    typedef typename std::conditional<is_observer<I>::value, typename std::decay<I>::type, dynamic_observer<T>>::type inner_t;
+    typedef typename std::decay<I>::type inner_t;
 
     inner_t inner;
 public:
@@ -247,111 +247,102 @@ auto make_observer()
     return observer<T, void>();
 }
 
-namespace detail {
-
-template<class T, class I, class ResolvedArgSet>
-auto make_observer_resolved_explicit(ResolvedArgSet&& rs)
+template<class T, class I>
+auto make_observer(const observer<T, I>& o)
     ->      observer<T, I> {
-    typedef I inner_type;
-    return  observer<T, inner_type>(inner_type(
-        std::move(std::get<0>(std::forward<ResolvedArgSet>(rs)).value),
-        std::move(std::get<1>(std::forward<ResolvedArgSet>(rs)).value),
-        std::move(std::get<2>(std::forward<ResolvedArgSet>(rs)).value)));
-
-    typedef typename std::decay<decltype(std::get<0>(std::forward<ResolvedArgSet>(rs)))>::type rn_t;
-    typedef typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type re_t;
-    typedef typename std::decay<decltype(std::get<2>(std::forward<ResolvedArgSet>(rs)))>::type rc_t;
-
-    static_assert(rn_t::is_arg, "onnext is a required parameter");
-    static_assert(!(rn_t::is_arg && re_t::is_arg) || rn_t::n + 1 == re_t::n, "onnext, onerror parameters must be together and in order");
-    static_assert(!(re_t::is_arg && rc_t::is_arg) || re_t::n + 1 == rc_t::n, "onerror, oncompleted parameters must be together and in order");
-    static_assert(!(rn_t::is_arg && rc_t::is_arg  && !re_t::is_arg) || rn_t::n + 1 == rc_t::n, "onnext, oncompleted parameters must be together and in order");
+    return  observer<T, I>(
+                        I(o));
 }
-template<class ResolvedArgSet>
-struct resolved_observer_traits
-{
-    typedef typename std::decay<ResolvedArgSet>::type resolved_set;
-
-    static_assert(std::tuple_size<resolved_set>::value >= 3, "must have at least three resolved arguments");
-
-    typedef typename std::tuple_element<0, resolved_set>::type resolved_on_next;
-    typedef typename std::tuple_element<1, resolved_set>::type resolved_on_error;
-    typedef typename std::tuple_element<2, resolved_set>::type resolved_on_completed;
-
-    template<class T>
-    struct static_observer_of
-    {
-        typedef static_observer<T,
-            typename resolved_on_next::result_type,
-            typename resolved_on_error::result_type,
-            typename resolved_on_completed::result_type> type;
-    };
-};
-template<class T, class ResolvedArgSet>
-auto make_observer_resolved(ResolvedArgSet&& rs)
-    ->      observer<T,                         typename resolved_observer_traits<ResolvedArgSet>::template static_observer_of<T>::type> {
-    return  make_observer_resolved_explicit<T,  typename resolved_observer_traits<ResolvedArgSet>::template static_observer_of<T>::type>(std::forward<ResolvedArgSet>(rs));
+template<class T, class I>
+auto make_observer(observer<T, I>&& o)
+    ->      observer<T, I> {
+    return  observer<T, I>(
+                        I(std::move(o)));
 }
-template<class T, class ResolvedArgSet>
-auto make_observer_dynamic_resolved(ResolvedArgSet&& rs)
-    ->      observer<T, dynamic_observer<T>> {
-    return  make_observer_resolved_explicit<T, dynamic_observer<T>>(std::forward<ResolvedArgSet>(rs));
+template<class T, class OnNext>
+auto make_observer(const OnNext& on)
+    -> typename std::enable_if<
+        detail::is_on_next_of<T, OnNext>::value,
+            observer<T, static_observer<T, OnNext>>>::type {
+    return  observer<T, static_observer<T, OnNext>>(
+                        static_observer<T, OnNext>(on));
+}
+template<class T, class OnNext, class OnError>
+auto make_observer(const OnNext& on, const OnError& oe)
+    -> typename std::enable_if<
+        detail::is_on_next_of<T, OnNext>::value &&
+        detail::is_on_error<OnError>::value,
+            observer<T, static_observer<T, OnNext, OnError>>>::type {
+    return  observer<T, static_observer<T, OnNext, OnError>>(
+                        static_observer<T, OnNext, OnError>(on, oe));
+}
+template<class T, class OnNext, class OnCompleted>
+auto make_observer(const OnNext& on, const OnCompleted& oc)
+    -> typename std::enable_if<
+        detail::is_on_next_of<T, OnNext>::value &&
+        detail::is_on_completed<OnCompleted>::value,
+            observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>>::type {
+    return  observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>(
+                        static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>(on, detail::OnErrorEmpty(), oc));
+}
+template<class T, class OnNext, class OnError, class OnCompleted>
+auto make_observer(const OnNext& on, const OnError& oe, const OnCompleted& oc)
+    -> typename std::enable_if<
+        detail::is_on_next_of<T, OnNext>::value &&
+        detail::is_on_error<OnError>::value &&
+        detail::is_on_completed<OnCompleted>::value,
+            observer<T, static_observer<T, OnNext, OnError, OnCompleted>>>::type {
+    return  observer<T, static_observer<T, OnNext, OnError, OnCompleted>>(
+                        static_observer<T, OnNext, OnError, OnCompleted>(on, oe, oc));
 }
 
 template<class T>
-struct tag_onnext_resolution
-{
-    template<class LHS>
-    struct predicate
-    {
-        static const bool value = is_on_next_of<T, LHS>::value;
-    };
-    typedef OnNextEmpty<T> default_type;
-};
-
-struct tag_onerror_resolution
-{
-    template<class LHS>
-    struct predicate
-    {
-        static const bool value = is_on_error<LHS>::value;
-    };
-    typedef OnErrorEmpty default_type;
-};
-
-struct tag_oncompleted_resolution
-{
-    template<class LHS>
-    struct predicate
-    {
-        static const bool value = is_on_completed<LHS>::value;
-    };
-    typedef OnCompletedEmpty default_type;
-};
-
-// types to disambiguate
-// on_next and optional on_error, on_completed
-//
-
+auto make_observer_dynamic(const observer<T>& o)
+    ->      observer<T> {
+    return  observer<T>(
+                dynamic_observer<T>(o));
+}
 template<class T>
-struct tag_observer_set
-{
-    typedef rxu::detail::tag_set<tag_onnext_resolution<T>, tag_onerror_resolution, tag_oncompleted_resolution> type;
-};
-
-
+auto make_observer_dynamic(observer<T>&& o)
+    ->      observer<T> {
+    return  observer<T>(
+                dynamic_observer<T>(std::move(o)));
 }
-
-template<class T, class Arg0, class... ArgN>
-auto make_observer(Arg0&& a0, ArgN&&... an)
-    -> decltype(detail::make_observer_resolved<T>(rxu::detail::resolve_arg_set(typename detail::tag_observer_set<T>::type(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...))) {
-    return      detail::make_observer_resolved<T>(rxu::detail::resolve_arg_set(typename detail::tag_observer_set<T>::type(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
+template<class T, class OnNext>
+auto make_observer_dynamic(OnNext&& on)
+    -> typename std::enable_if<
+        detail::is_on_next_of<T, OnNext>::value,
+            observer<T, dynamic_observer<T>>>::type {
+    return  observer<T, dynamic_observer<T>>(
+                        dynamic_observer<T>(std::forward<OnNext>(on), nullptr, nullptr));
 }
-
-template<class T, class Arg0, class... ArgN>
-auto make_observer_dynamic(Arg0&& a0, ArgN&&... an)
-    -> decltype(detail::make_observer_dynamic_resolved<T>(rxu::detail::resolve_arg_set(typename detail::tag_observer_set<T>::type(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...))) {
-    return      detail::make_observer_dynamic_resolved<T>(rxu::detail::resolve_arg_set(typename detail::tag_observer_set<T>::type(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
+template<class T, class OnNext, class OnError>
+auto make_observer_dynamic(OnNext&& on, OnError&& oe)
+    -> typename std::enable_if<
+        detail::is_on_next_of<T, OnNext>::value &&
+        detail::is_on_error<OnError>::value,
+            observer<T, dynamic_observer<T>>>::type {
+    return  observer<T, dynamic_observer<T>>(
+                        dynamic_observer<T>(std::forward<OnNext>(on), std::forward<OnError>(oe), nullptr));
+}
+template<class T, class OnNext, class OnCompleted>
+auto make_observer_dynamic(OnNext&& on, OnCompleted&& oc)
+    -> typename std::enable_if<
+        detail::is_on_next_of<T, OnNext>::value &&
+        detail::is_on_completed<OnCompleted>::value,
+            observer<T, dynamic_observer<T>>>::type {
+    return  observer<T, dynamic_observer<T>>(
+                        dynamic_observer<T>(std::forward<OnNext>(on), nullptr, std::forward<OnCompleted>(oc)));
+}
+template<class T, class OnNext, class OnError, class OnCompleted>
+auto make_observer_dynamic(OnNext&& on, OnError&& oe, OnCompleted&& oc)
+    -> typename std::enable_if<
+        detail::is_on_next_of<T, OnNext>::value &&
+        detail::is_on_error<OnError>::value &&
+        detail::is_on_completed<OnCompleted>::value,
+            observer<T, dynamic_observer<T>>>::type {
+    return  observer<T, dynamic_observer<T>>(
+                        dynamic_observer<T>(std::forward<OnNext>(on), std::forward<OnError>(oe), std::forward<OnCompleted>(oc)));
 }
 
 }

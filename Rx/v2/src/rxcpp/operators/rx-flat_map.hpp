@@ -31,9 +31,9 @@ struct flat_map_traits {
 
     typedef decltype((*(collection_selector_type*)nullptr)((*(source_value_type*)nullptr))) collection_type;
 
-#if _MSC_VER >= 1900
+//#if _MSC_VER >= 1900
     static_assert(is_observable<collection_type>::value, "flat_map CollectionSelector must return an observable");
-#endif
+//#endif
 
     typedef typename collection_type::value_type collection_value_type;
 
@@ -81,11 +81,11 @@ struct flat_map
     {
     }
 
-    template<class Observer>
-    void on_subscribe(Observer&& o) {
-        static_assert(is_observer<Observer>::value, "subscribe must be passed an observer");
+    template<class Subscriber>
+    void on_subscribe(Subscriber&& scbr) {
+        static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
 
-        typedef typename std::decay<Observer>::type output_type;
+        typedef typename std::decay<Subscriber>::type output_type;
 
         struct state_type
             : public std::enable_shared_from_this<state_type>
@@ -108,7 +108,7 @@ struct flat_map
             output_type out;
         };
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<state_type>(new state_type(initial, std::forward<Observer>(o)));
+        auto state = std::shared_ptr<state_type>(new state_type(initial, std::forward<Subscriber>(scbr)));
 
         composite_subscription outercs;
 
@@ -120,7 +120,7 @@ struct flat_map
         // this subscribe does not share the observer subscription
         // so that when it is unsubscribed the observer can be called
         // until the inner subscriptions have finished
-        state->source.subscribe(
+        state->source.subscribe(make_subscriber_cs5<source_value_type>(
             state->out,
             outercs,
         // on_next
@@ -189,7 +189,7 @@ struct flat_map
                     state->out.on_completed();
                 }
             }
-        );
+        ));
     }
 };
 
