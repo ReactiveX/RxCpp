@@ -170,7 +170,7 @@ auto make_subscriber(const OnNext& on)
             subscriber<T,   observer<T, static_observer<T, OnNext>>>>::type {
     return  subscriber<T,   observer<T, static_observer<T, OnNext>>>(composite_subscription(), resumption(),
                             observer<T, static_observer<T, OnNext>>(
-                                        static_observer<T, OnNext>>(on)));
+                                        static_observer<T, OnNext>(on)));
 }
 template<class T, class OnNext, class OnError>
 auto make_subscriber(const OnNext& on, const OnError& oe)
