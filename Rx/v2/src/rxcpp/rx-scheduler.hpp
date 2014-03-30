@@ -169,6 +169,22 @@ inline bool operator!=(const action& lhs, const action& rhs) {
     return !(lhs == rhs);
 }
 
+namespace detail {
+
+template<class F>
+struct is_action_function
+{
+    struct not_void {};
+    template<class CF>
+    static auto check(int) -> decltype((*(CF*)nullptr)(*(schedulable*)nullptr));
+    template<class CF>
+    static not_void check(...);
+
+    static const bool value = std::is_same<decltype(check<typename std::decay<F>::type>(0)), void>::value;
+};
+
+}
+
 class scheduler : public scheduler_base
 {
     typedef scheduler this_type;
@@ -202,6 +218,20 @@ public:
     inline void schedule(clock_type::time_point when, const schedulable& scbl) const {
         inner->schedule(when, scbl);
     }
+
+    template<class Arg0, class... ArgN>
+    auto schedule(Arg0&& a0, ArgN&&... an) const
+        -> typename std::enable_if<
+            (detail::is_action_function<Arg0>::value ||
+            is_subscription<Arg0>::value) &&
+            !is_schedulable<Arg0>::value>::type;
+    template<class Arg0, class... ArgN>
+    auto schedule(Arg0&& a0, ArgN&&... an) const
+        -> typename std::enable_if<
+            !detail::is_action_function<Arg0>::value &&
+            !is_subscription<Arg0>::value &&
+            !is_scheduler<Arg0>::value &&
+            !is_schedulable<Arg0>::value>::type;
 };
 
 inline bool operator==(const scheduler& lhs, const scheduler& rhs) {
@@ -471,6 +501,7 @@ inline action make_action_empty() {
 
 template<class F>
 inline action make_action(F&& f, action_duration::type d = action_duration::runs_short) {
+    static_assert(detail::is_action_function<F>::value, "action function must be void(schedulable)");
     auto fn = std::forward<F>(f);
     return action(std::make_shared<detail::action_type>(
         d,
@@ -491,184 +522,77 @@ inline action make_action(F&& f, action_duration::type d = action_duration::runs
         }));
 }
 
-namespace detail {
+// copy
+inline auto make_schedulable(
+    const   schedulable& scbl)
+    ->      schedulable {
+    return  schedulable(scbl);
+}
+// move
+inline auto make_schedulable(
+            schedulable&& scbl)
+    ->      schedulable {
+    return  schedulable(std::move(scbl));
+}
+
+// action
+//
 
 template<class F>
-struct is_action_function
-{
-    struct not_void {};
-    template<class CF>
-    static auto check(int) -> decltype((*(CF*)nullptr)(*(schedulable*)nullptr));
-    template<class CF>
-    static not_void check(...);
-
-    static const bool value = std::is_same<decltype(check<typename std::decay<F>::type>(0)), void>::value;
-};
-
-struct tag_action_function_resolution
-{
-    template<class LHS>
-    struct predicate
-    {
-        static const bool value = is_action_function<LHS>::value;
-    };
-    typedef detail::action_type::function_type default_type;
-};
-
-struct tag_action_duration_resolution
-{
-    template<class LHS>
-    struct predicate
-    {
-        static const bool value = std::is_same<typename std::decay<LHS>::type, action_duration::type>::value;
-    };
-    struct default_type {
-        inline operator action_duration::type() const {
-            return action_duration::runs_short;
-        }
-    };
-};
-
-struct tag_when_resolution
-{
-    typedef scheduler_interface::clock_type clock_type;
-    typedef clock_type::duration duration_type;
-    typedef clock_type::time_point time_point_type;
-    template<class LHS>
-    struct predicate
-    {
-        typedef typename std::decay<LHS>::type decayedlhs;
-        static const bool value =   std::is_same<decayedlhs, time_point_type>::value ||
-                                    std::is_same<decayedlhs, duration_type>::value;
-    };
-    struct default_type {
-        inline operator time_point_type() const {
-            return clock_type::now();
-        }
-    };
-};
-
-struct tag_schedulable_resolution
-{
-    template<class LHS>
-    struct predicate : public is_schedulable<LHS>
-    {
-    };
-    typedef schedulable default_type;
-};
-
-struct tag_action_resolution
-{
-    template<class LHS>
-    struct predicate
-    {
-        static const bool value = !is_schedulable<LHS>::value && is_action<LHS>::value;
-    };
-    typedef action default_type;
-};
-
-struct tag_scheduler_resolution
-{
-    template<class LHS>
-    struct predicate
-    {
-        static const bool value = !is_schedulable<LHS>::value && is_scheduler<LHS>::value;
-    };
-    typedef scheduler default_type;
-};
-
-
-typedef rxu::detail::tag_set<tag_when_resolution,
-            tag_schedulable_resolution,
-            rxcpp::detail::tag_subscription_resolution,
-            tag_scheduler_resolution,
-            tag_action_resolution,
-            tag_action_function_resolution,
-            tag_action_duration_resolution> tag_schedulable_set;
-
-template<bool schedulable_is_arg, bool action_is_arg, bool action_function_is_arg>
-struct action_selector;
-
-template<bool schedulable_is_arg>
-struct action_selector<schedulable_is_arg, true, false>
-{
-    template<class Set>
-    static action get_action(Set& rs) {
-        return std::get<4>(rs).value;
-    }
-};
-template<bool schedulable_is_arg>
-struct action_selector<schedulable_is_arg, false, true>
-{
-    template<class Set>
-    static action get_action(Set& rs) {
-        return make_action(std::get<5>(rs).value, std::get<6>(rs).value);
-    }
-};
-template<>
-struct action_selector<true, false, false>
-{
-    template<class Set>
-    static action get_action(Set& rs) {
-        return std::get<1>(rs).value.get_action();
-    }
-};
-
-template<class ResolvedArgSet>
-action select_action(ResolvedArgSet& rs) {
-    return action_selector<std::decay<decltype(std::get<1>(rs))>::type::is_arg, std::decay<decltype(std::get<4>(rs))>::type::is_arg, std::decay<decltype(std::get<5>(rs))>::type::is_arg>::get_action(rs);
-
-    typedef typename std::decay<decltype(std::get<3>(std::forward<ResolvedArgSet>(rs)))>::type rsc_t;
-    typedef typename std::decay<decltype(std::get<5>(std::forward<ResolvedArgSet>(rs)))>::type raf_t;
-    typedef typename std::decay<decltype(std::get<6>(std::forward<ResolvedArgSet>(rs)))>::type rad_t;
-    typedef typename std::decay<decltype(std::get<4>(std::forward<ResolvedArgSet>(rs)))>::type ra_t;
-    typedef typename std::decay<decltype(std::get<1>(std::forward<ResolvedArgSet>(rs)))>::type rscbl_t;
-
-    static_assert(rscbl_t::is_arg || ra_t::is_arg || raf_t::is_arg, "at least one of; action_function, action or schedulable is required");
-    static_assert(int(ra_t::is_arg) + int(raf_t::is_arg) < 2, "action_function not allowed with an action");
-    static_assert(int(ra_t::is_arg) + int(rad_t::is_arg) < 2, "action_duration not allowed with an action");
+auto make_schedulable(scheduler sc, F&& f, action_duration::type d = action_duration::runs_short)
+    -> typename std::enable_if<detail::is_action_function<F>::value, schedulable>::type {
+    return schedulable(composite_subscription(), sc, make_action(std::forward<F>(f), d));
+}
+template<class F>
+auto make_schedulable(scheduler sc, composite_subscription cs, F&& f, action_duration::type d = action_duration::runs_short)
+    -> typename std::enable_if<detail::is_action_function<F>::value, schedulable>::type {
+    return schedulable(cs, sc, make_action(std::forward<F>(f), d));
+}
+template<class F>
+auto make_schedulable(schedulable scbl, composite_subscription cs, F&& f, action_duration::type d = action_duration::runs_short)
+    -> typename std::enable_if<detail::is_action_function<F>::value, schedulable>::type {
+    return schedulable(cs, scbl.get_scheduler(), make_action(std::forward<F>(f), d));
+}
+template<class F>
+auto make_schedulable(schedulable scbl, scheduler sc, F&& f, action_duration::type d = action_duration::runs_short)
+    -> typename std::enable_if<detail::is_action_function<F>::value, schedulable>::type {
+    return schedulable(scbl.get_subscription(), sc, make_action(std::forward<F>(f), d));
+}
+template<class F>
+auto make_schedulable(schedulable scbl, F&& f, action_duration::type d = action_duration::runs_short)
+    -> typename std::enable_if<detail::is_action_function<F>::value, schedulable>::type {
+    return schedulable(scbl.get_subscription(), scbl.get_scheduler(), make_action(std::forward<F>(f), d));
 }
 
-template<bool when_invalid, class ResolvedArgSet>
-schedulable make_schedulable_resolved(ResolvedArgSet&& rsArg) {
-    const auto rs = std::forward<ResolvedArgSet>(rsArg);
-    const auto rsub = std::get<2>(rs);
-    const auto rsc = std::get<3>(rs);
-    const auto rscbl = std::get<1>(rs);
-    const auto sc =     (rscbl.is_arg && !rsc.is_arg)   ? rscbl.value.get_scheduler()      : rsc.value;
-    const auto sub =    (rscbl.is_arg && !rsub.is_arg)  ? rscbl.value.get_subscription()   : rsub.value;
-    return  schedulable(sub, sc, select_action(rs));
-
-    typedef typename std::decay<decltype(std::get<0>(rs))>::type rw_t;
-    typedef typename std::decay<decltype(std::get<3>(rs))>::type rsc_t;
-    typedef typename std::decay<decltype(std::get<1>(rs))>::type rscbl_t;
-
-    static_assert(when_invalid || !rw_t::is_arg, "when is an invalid parameter");
-    static_assert(rscbl_t::is_arg || rsc_t::is_arg, "at least one of; scheduler or schedulable is required");
+inline auto make_schedulable(schedulable scbl, composite_subscription cs)
+    -> schedulable {
+    return schedulable(cs, scbl.get_scheduler(), scbl.get_action());
 }
-
-template<class ResolvedArgSet>
-schedulable schedule_resolved(ResolvedArgSet&& rsArg) {
-    const auto rw = std::get<0>(rsArg);
-    schedulable result = make_schedulable_resolved<false>(std::forward<ResolvedArgSet>(rsArg));
-    if (rw.is_arg) {
-        result.schedule(rw.value);
-    } else {
-        result.schedule();
-    }
-    return result;
+inline auto make_schedulable(schedulable scbl, scheduler sc, composite_subscription cs)
+    -> schedulable {
+    return schedulable(cs, sc, scbl.get_action());
 }
-
+inline auto make_schedulable(schedulable scbl, scheduler sc)
+    -> schedulable {
+    return schedulable(composite_subscription(), sc, scbl.get_action());
 }
 
 template<class Arg0, class... ArgN>
-schedulable make_schedulable(Arg0&& a0, ArgN&&... an) {
-    return detail::make_schedulable_resolved<true>(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
+auto scheduler::schedule(Arg0&& a0, ArgN&&... an) const
+    -> typename std::enable_if<
+        (detail::is_action_function<Arg0>::value ||
+        is_subscription<Arg0>::value) &&
+        !is_schedulable<Arg0>::value>::type {
+    return this->schedule(make_schedulable(*this, std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
 }
-
 template<class Arg0, class... ArgN>
-schedulable schedule(Arg0&& a0, ArgN&&... an) {
-    return detail::schedule_resolved(rxu::detail::resolve_arg_set(detail::tag_schedulable_set(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
+auto scheduler::schedule(Arg0&& a0, ArgN&&... an) const
+    -> typename std::enable_if<
+        !detail::is_action_function<Arg0>::value &&
+        !is_subscription<Arg0>::value &&
+        !is_scheduler<Arg0>::value &&
+        !is_schedulable<Arg0>::value>::type {
+    return this->schedule(std::forward<Arg0>(a0), make_schedulable(*this, std::forward<ArgN>(an)...));
 }
 
 namespace detail {

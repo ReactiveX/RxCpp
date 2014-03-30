@@ -120,7 +120,7 @@ struct flat_map
         // this subscribe does not share the observer subscription
         // so that when it is unsubscribed the observer can be called
         // until the inner subscriptions have finished
-        state->source.subscribe(make_subscriber_cs5<source_value_type>(
+        state->source.subscribe(
             state->out,
             outercs,
         // on_next
@@ -189,7 +189,7 @@ struct flat_map
                     state->out.on_completed();
                 }
             }
-        ));
+        );
     }
 };
 

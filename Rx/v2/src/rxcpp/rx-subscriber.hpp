@@ -423,17 +423,6 @@ auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const compos
                             observer<T, static_observer<T, OnNext, OnError, OnCompleted>>(
                                         static_observer<T, OnNext, OnError, OnCompleted>(on, oe, oc)));
 }
-template<class T, class OtherT, class OtherObserver, class OnNext, class OnError, class OnCompleted>
-auto make_subscriber_cs5(const subscriber<OtherT, OtherObserver>& scbr, const composite_subscription& cs, const OnNext& on, const OnError& oe, const OnCompleted& oc)
-    -> typename std::enable_if<
-        detail::is_on_next_of<T, OnNext>::value &&
-        detail::is_on_error<OnError>::value &&
-        detail::is_on_completed<OnCompleted>::value,
-            subscriber<T,   observer<T, static_observer<T, OnNext, OnError, OnCompleted>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext, OnError, OnCompleted>>>(cs, scbr.get_resumption(),
-                            observer<T, static_observer<T, OnNext, OnError, OnCompleted>>(
-                                        static_observer<T, OnNext, OnError, OnCompleted>(on, oe, oc)));
-}
 
 template<class T, class OtherT, class OtherObserver, class I>
 auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const resumption& r,

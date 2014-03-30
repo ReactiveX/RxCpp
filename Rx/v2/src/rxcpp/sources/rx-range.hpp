@@ -34,24 +34,26 @@ struct range : public source_base<T>
     template<class Subscriber>
     void on_subscribe(Subscriber o) {
         auto state = std::make_shared<state_type>(init);
-        schedule(state->sc, o.get_subscription(), [=](const rxsc::schedulable& self){
-            if (state->remaining == 0) {
-                o.on_completed();
-                // o is unsubscribed
-            }
-            if (!o.is_subscribed()) {
-                // terminate loop
-                return;
-            }
+        state->sc.schedule(
+            o.get_subscription(),
+            [=](const rxsc::schedulable& self){
+                if (state->remaining == 0) {
+                    o.on_completed();
+                    // o is unsubscribed
+                }
+                if (!o.is_subscribed()) {
+                    // terminate loop
+                    return;
+                }
 
-            // send next value
-            --state->remaining;
-            o.on_next(state->next);
-            state->next = static_cast<T>(state->step + state->next);
+                // send next value
+                --state->remaining;
+                o.on_next(state->next);
+                state->next = static_cast<T>(state->step + state->next);
 
-            // tail recurse this same action to continue loop
-            self();
-        });
+                // tail recurse this same action to continue loop
+                self();
+            });
     }
 };
 
