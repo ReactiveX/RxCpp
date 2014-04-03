@@ -16,99 +16,121 @@ namespace rxt=rxcpp::test;
 #include "catch.hpp"
 
 
-SCENARIO("subject test", "[hide][subject][subjects][perf]"){
-    GIVEN("a subject"){
-        WHEN("multicasting a million ints"){
+const int static_onnextcalls = 100000000;
+
+SCENARIO("for loop locks mutex", "[hide][for][mutex][perf]"){
+    const int& onnextcalls = static_onnextcalls;
+    GIVEN("a for loop"){
+        WHEN("locking mutex 100 million times"){
             using namespace std::chrono;
             typedef steady_clock clock;
 
-            const int onnextcalls = 100000000;
+            int c = 0;
+            int n = 1;
+            auto start = clock::now();
+            std::mutex m;
+            for (int i = 0; i < onnextcalls; i++) {
+                std::unique_lock<std::mutex> guard(m);
+                ++c;
+            }
+            auto finish = clock::now();
+            auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
+                   duration_cast<milliseconds>(start.time_since_epoch());
+            std::cout << "loop mutex          : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
 
-            {
-                std::mutex m;
-                int c = 0;
-                int n = 1;
-                auto start = clock::now();
-                for (int i = 0; i < onnextcalls; i++) {
-                    std::unique_lock<std::mutex> guard(m);
+        }
+    }
+}
+
+int aliased = 0;
+
+SCENARIO("for loop calls observer", "[hide][for][observer][perf]"){
+    const int& onnextcalls = static_onnextcalls;
+    GIVEN("a for loop"){
+        WHEN("observing 100 million ints"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
+
+            int& c = aliased;
+            int n = 1;
+
+            c = 0;
+            auto start = clock::now();
+            auto o = rx::make_observer<int>(
+                [&c](int){++c;},
+                [](std::exception_ptr){abort();});
+            for (int i = 0; i < onnextcalls; i++) {
+                o.on_next(i);
+            }
+            o.on_completed();
+            auto finish = clock::now();
+            auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
+                   duration_cast<milliseconds>(start.time_since_epoch());
+            std::cout << "loop -> observer    : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+        }
+    }
+}
+
+SCENARIO("for loop calls subscriber", "[hide][for][subscriber][perf]"){
+    const int& onnextcalls = static_onnextcalls;
+    GIVEN("a for loop"){
+        WHEN("observing 100 million ints"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
+
+            int& c = aliased;
+            int n = 1;
+
+            c = 0;
+            auto start = clock::now();
+            auto o = rx::make_subscriber<int>(
+                [&c](int){++c;},
+                [](std::exception_ptr){abort();});
+            for (int i = 0; i < onnextcalls; i++) {
+                o.on_next(i);
+            }
+            o.on_completed();
+            auto finish = clock::now();
+            auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
+                   duration_cast<milliseconds>(start.time_since_epoch());
+            std::cout << "loop -> subscriber  : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+        }
+    }
+}
+
+SCENARIO("range calls subscriber", "[hide][range][subscriber][perf]"){
+    const int& onnextcalls = static_onnextcalls;
+    GIVEN("a range"){
+        WHEN("observing 100 million ints"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
+
+            int& c = aliased;
+            int n = 1;
+
+            c = 0;
+            auto start = clock::now();
+
+            rxs::range<int>(0, onnextcalls).subscribe(
+                [&c](int){
                     ++c;
-                }
-                auto finish = clock::now();
-                auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
-                       duration_cast<milliseconds>(start.time_since_epoch());
-                std::cout << "loop mutex          : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
-            }
+                },
+                [](std::exception_ptr){abort();});
 
-            {
-                int c = 0;
-                int n = 1;
-#if 0
-                auto onnext = [&c](int){++c;};
-                auto onerror = [](std::exception_ptr){abort();};
+            auto finish = clock::now();
+            auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
+                   duration_cast<milliseconds>(start.time_since_epoch());
+            std::cout << "range -> subscriber : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+        }
+    }
+}
 
-                auto oex = rxu::detail::arg_resolver_set<rx::detail::tag_observer_set<int>::type>()(onnext, onerror);
-#endif
-                auto o = rx::make_observer<int>(
-                    [&c](int){++c;},
-                    [](std::exception_ptr){abort();});
-                auto start = clock::now();
-                for (int i = 0; i < onnextcalls; i++) {
-                    o.on_next(i);
-                }
-                o.on_completed();
-                auto finish = clock::now();
-                auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
-                       duration_cast<milliseconds>(start.time_since_epoch());
-                std::cout << "loop -> observer    : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
-            }
-
-            {
-                int c = 0;
-                int n = 1;
-                auto o = rx::make_observer<int>(
-                    [&c](int){++c;},
-                    [](std::exception_ptr){abort();});
-                auto start = clock::now();
-                for (int i = 0; i < onnextcalls; i++) {
-                    o.on_next(i);
-                }
-                o.on_completed();
-                auto finish = clock::now();
-                auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
-                       duration_cast<milliseconds>(start.time_since_epoch());
-                std::cout << "loop -> subscriber  : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
-            }
-
-            {
-                int c = 0;
-                int n = 1;
-                auto start = clock::now();
-#if 0
-                auto rso = rxu::detail::arg_resolver_set<rx::detail::tag_subscriber_set<int>::type>()(
-                    [&c](int){
-                        ++c;
-                    },
-                    [](std::exception_ptr){abort();});
-                static_assert(std::tuple_size<decltype(rso)>::value == 7, "object must resolve 7 args");
-                auto rsf = rxu::detail::resolve_arg_set(
-                    rx::detail::tag_subscriber_set<int>::type(),
-                    [&c](int){
-                        ++c;
-                    },
-                    [](std::exception_ptr){abort();});
-                static_assert(std::tuple_size<decltype(rsf)>::value == 7, "func must resolve 7 args");
-                auto ss = rx::detail::make_subscriber_resolved<int>(rsf);
-#endif
-                rxs::range<int>(0, onnextcalls).subscribe(
-                    [&c](int){
-                        ++c;
-                    },
-                    [](std::exception_ptr){abort();});
-                auto finish = clock::now();
-                auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
-                       duration_cast<milliseconds>(start.time_since_epoch());
-                std::cout << "range -> subscriber : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
-            }
+SCENARIO("for loop calls subject", "[hide][for][subject][subjects][perf]"){
+    const int& onnextcalls = static_onnextcalls;
+    GIVEN("a for loop and a subject"){
+        WHEN("multicasting a million ints"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
 
             for (int n = 0; n < 10; n++)
             {
@@ -134,10 +156,13 @@ SCENARIO("subject test", "[hide][subject][subjects][perf]"){
                         while(o.is_subscribed()) {
                             std::this_thread::sleep_for(std::chrono::milliseconds(100));
                             rx::composite_subscription cs;
-                            source.subscribe(cs, [cs](int){
-                                cs.unsubscribe();
-                            },
-                            [](std::exception_ptr){abort();});
+                            source.subscribe(
+                                rx::make_subscriber<int>(
+                                cs,
+                                [cs](int){
+                                    cs.unsubscribe();
+                                },
+                                [](std::exception_ptr){abort();}));
                         }
                         return 0;
                     });
@@ -163,7 +188,16 @@ SCENARIO("subject test", "[hide][subject][subjects][perf]"){
                        duration_cast<milliseconds>(start.time_since_epoch());
                 std::cout << "loop -> subject     : " << n << " subscribed, " << (*c) << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
             }
+        }
+    }
+}
 
+SCENARIO("range calls subject", "[hide][range][subject][subjects][perf]"){
+    const int& onnextcalls = static_onnextcalls;
+    GIVEN("a range and a subject"){
+        WHEN("multicasting a million ints"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
             for (int n = 0; n < 10; n++)
             {
                 auto p = std::make_shared<int>(0);
@@ -222,7 +256,6 @@ SCENARIO("subject test", "[hide][subject][subjects][perf]"){
         }
     }
 }
-
 
 
 SCENARIO("subject - infinite source", "[subject][subjects]"){
