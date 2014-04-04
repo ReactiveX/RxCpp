@@ -43,6 +43,7 @@ add_executable(testbench ${TESTBENCH_SOURCES})
 set(V2_TEST_SOURCES
     ${V2_TEST_DIR}/test.cpp
     ${V2_TEST_DIR}/subscriptions/observer.cpp
+    ${V2_TEST_DIR}/operators/publish.cpp
     ${V2_TEST_DIR}/subjects/subject.cpp
     ${V2_TEST_DIR}/subscriptions/subscription.cpp
     ${V2_TEST_DIR}/operators/flat_map.cpp

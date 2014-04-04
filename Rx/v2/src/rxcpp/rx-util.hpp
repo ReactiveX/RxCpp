@@ -62,7 +62,7 @@ public:
     : is_set(false)
     {
         if (other.is_set) {
-            new (reinterpret_cast<T*>(&storage)) T(*other.get());
+            new (reinterpret_cast<T*>(&storage)) T(other.get());
             is_set = true;
         }
     }
@@ -70,7 +70,7 @@ public:
     : is_set(false)
     {
         if (other.is_set) {
-            new (reinterpret_cast<T*>(&storage)) T(std::move(*other.get()));
+            new (reinterpret_cast<T*>(&storage)) T(std::move(other.get()));
             is_set = true;
             other.reset();
         }
@@ -125,13 +125,13 @@ public:
         return *reinterpret_cast<T*>(&storage);
     }
 
-    T& value() {
+    T& get() {
         if (!is_set) abort();
         return *reinterpret_cast<T*>(&storage);
     }
-    const T& value() const {
+    const T& get() const {
         if (!is_set) abort();
-        return *reinterpret_cast<T*>(&storage);
+        return *reinterpret_cast<const T*>(&storage);
     }
 
     void reset()

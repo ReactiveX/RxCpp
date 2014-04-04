@@ -135,6 +135,11 @@ public:
     static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_observable>::value;
 };
 
+struct tag_connectable_observable {};
+
+template<class T, class SourceOperator>
+class connectable_observable;
+
 }
 
 #endif

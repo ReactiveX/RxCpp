@@ -270,6 +270,17 @@ public:
                                                                                                                        rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs)));
     }
 
+    /// publish ->
+    /// turns a cold observable hot and allows connections to the source to be independent of subscriptions
+    ///
+#if 1
+    auto publish() const
+        ->      connectable_observable<T,   rxo::detail::publish<T, this_type, rxsub::subject<T>>> {
+        return  connectable_observable<T,   rxo::detail::publish<T, this_type, rxsub::subject<T>>>(
+                                            rxo::detail::publish<T, this_type, rxsub::subject<T>>(*this));
+    }
+#endif
+
     ///
     /// takes any function that will take this observable and produce a result value.
     /// this is intended to allow externally defined operators to be connected into the expression.
