@@ -279,6 +279,16 @@ public:
                                             rxo::detail::publish<T, this_type, rxsub::subject<T>>(*this));
     }
 
+    /// take_until ->
+    ///
+    ///
+    template<class TriggerSource>
+    auto take_until(TriggerSource&& t) const
+        ->      observable<T,   rxo::detail::take_until<T, this_type, TriggerSource>> {
+        return  observable<T,   rxo::detail::take_until<T, this_type, TriggerSource>>(
+                                rxo::detail::take_until<T, this_type, TriggerSource>(*this, std::forward<TriggerSource>(t)));
+    }
+
     ///
     /// takes any function that will take this observable and produce a result value.
     /// this is intended to allow externally defined operators to be connected into the expression.

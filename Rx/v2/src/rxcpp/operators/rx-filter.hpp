@@ -32,7 +32,7 @@ struct filter : public operator_base<T>
         static_assert(std::is_convertible<decltype(check<T, test_type>(0)), bool>::value, "filter Predicate must be a function with the signature bool(T)");
     }
     template<class Subscriber>
-    void on_subscribe(Subscriber o) {
+    void on_subscribe(const Subscriber& o) {
         source.subscribe(
             o,
         // on_next

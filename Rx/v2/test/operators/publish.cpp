@@ -13,7 +13,7 @@ namespace rxt=rxcpp::test;
 #include "catch.hpp"
 
 
-SCENARIO("publish range", "[range][subject][publish][operators]"){
+SCENARIO("publish range", "[hide][range][subject][publish][operators]"){
     GIVEN("a range"){
         WHEN("published"){
             auto published = rxs::range<int>(0, 10).publish();
