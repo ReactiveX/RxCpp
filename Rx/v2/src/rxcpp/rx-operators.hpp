@@ -40,5 +40,6 @@ namespace rxo=operators;
 #include "operators/rx-flat_map.hpp"
 #include "operators/rx-publish.hpp"
 #include "operators/rx-ref_count.hpp"
+#include "operators/rx-connect_now.hpp"
 
 #endif

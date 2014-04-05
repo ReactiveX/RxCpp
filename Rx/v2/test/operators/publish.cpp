@@ -16,13 +16,13 @@ namespace rxt=rxcpp::test;
 SCENARIO("publish range", "[range][subject][publish][operators]"){
     GIVEN("a range"){
         WHEN("published"){
-            auto published = rxs::range<int>(0, 1000).publish().ref_count();
+            auto published = rxs::range<int>(0, 1000).publish().connect_now();
             std::cout << "connect to published" << std::endl;
             published.subscribe(
             // on_next
                 [](int v){std::cout << v << ", ";},
             // on_completed
-                [](){std::cout << std::endl;});
+                [](){std::cout << " done." << std::endl;});
         }
     }
 }
