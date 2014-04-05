@@ -135,10 +135,39 @@ public:
     static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_observable>::value;
 };
 
-struct tag_connectable_observable {};
+struct tag_dynamic_connectable_observable : public tag_dynamic_observable {};
 
-template<class T, class SourceOperator>
+template<class T>
+class is_dynamic_connectable_observable
+{
+    struct not_void {};
+    template<class C>
+    static typename C::dynamic_observable_tag* check(int);
+    template<class C>
+    static not_void check(...);
+public:
+    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_dynamic_connectable_observable*>::value;
+};
+
+template<class T>
+class dynamic_connectable_observable;
+
+template<class T,
+    class SourceObservable = typename std::conditional<std::is_same<T, void>::value,
+        void, dynamic_connectable_observable<T>>::type>
 class connectable_observable;
+
+struct tag_connectable_observable : public tag_observable {};
+template<class T>
+class is_connectable_observable
+{
+    template<class C>
+    static typename C::observable_tag check(int);
+    template<class C>
+    static void check(...);
+public:
+    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_connectable_observable>::value;
+};
 
 }
 
