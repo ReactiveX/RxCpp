@@ -50,7 +50,7 @@ struct map
     }
 
     template<class Subscriber>
-    void on_subscribe(Subscriber o) {
+    void on_subscribe(const Subscriber& o) {
 
         typedef Subscriber output_type;
         struct state_type
