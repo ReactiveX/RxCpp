@@ -40,13 +40,11 @@ class subscriber : public subscriber_base<T>
         const this_type* that;
     };
 
+    subscriber();
 public:
     typedef typename composite_subscription::weak_subscription weak_subscription;
     typedef typename composite_subscription::shared_subscription shared_subscription;
 
-    subscriber()
-    {
-    }
     template<class U>
     subscriber(composite_subscription cs, resumption r, U&& o)
         : lifetime(std::move(cs))

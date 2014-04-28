@@ -202,14 +202,13 @@ class observer : public observer_base<T>
     typedef typename std::decay<I>::type inner_t;
 
     inner_t inner;
+
+    observer();
 public:
     ~observer()
     {
     }
-    observer()
-    {
-    }
-    observer(inner_t inner)
+    explicit observer(inner_t inner)
         : inner(std::move(inner))
     {
     }
