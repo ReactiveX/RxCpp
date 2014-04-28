@@ -169,9 +169,11 @@ private:
         // make sure to let current_thread take ownership of the thread as early as possible.
         if (rxsc::current_thread::is_schedule_required()) {
             auto sc = rxsc::make_current_thread();
-            sc.schedule(o.get_subscription(), [=](const rxsc::schedulable& scbl) {
-                safe_subscribe();
-            });
+            sc.create_worker(o.get_subscription()).schedule(
+                o.get_subscription(),
+                [=](const rxsc::schedulable& scbl) {
+                    safe_subscribe();
+                });
         } else {
             // current_thread already owns this thread.
             safe_subscribe();

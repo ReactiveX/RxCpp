@@ -22,6 +22,30 @@ private:
 
     mutable bool isenabled;
 
+    struct virtual_worker : public worker_interface
+    {
+        std::shared_ptr<virtual_time_base> controller;
+
+        virtual_worker(std::shared_ptr<virtual_time_base> vb)
+            : controller(std::move(vb))
+        {
+        }
+
+        virtual clock_type::time_point now() const {
+            return controller->to_time_point(controller->clock_now);
+        }
+
+        virtual void schedule(const schedulable& scbl) const {
+            controller->schedule_absolute(controller->clock_now, scbl);
+        }
+
+        virtual void schedule(clock_type::time_point when, const schedulable& scbl) const {
+            controller->schedule_absolute(controller->to_relative(when - now()), scbl);
+        }
+    };
+
+    std::shared_ptr<>
+
 public:
     typedef Absolute absolute;
     typedef Relative relative;
@@ -161,16 +185,11 @@ public:
         return to_time_point(clock_now);
     }
 
-    virtual void schedule(const schedulable& scbl) const {
-        schedule_absolute(clock_now, scbl);
-    }
-
-    virtual void schedule(clock_type::duration when, const schedulable& scbl) const {
-        schedule_absolute(to_relative(when), scbl);
-    }
-
-    virtual void schedule(clock_type::time_point when, const schedulable& scbl) const {
-        schedule_absolute(to_relative(when - now()), scbl);
+    virtual worker create_worker(composite_subscription cs) const {
+        std::shared_ptr<virtual_worker> wi(new virtual_worker(
+            std::static_pointer_cast<virtual_time_base>(
+                std::const_pointer_cast<scheduler_interface>(shared_from_this()))));
+        return worker(cs, wi);
     }
 
 };
@@ -193,6 +212,8 @@ private:
 
     mutable queue_item_time queue;
 
+    worker controller;
+
 public:
     virtual ~virtual_time()
     {
@@ -201,11 +222,15 @@ public:
 protected:
     virtual_time()
     {
+        controller = base::create_worker(composite_subscription());
     }
     explicit virtual_time(typename base::absolute initialClock)
         : base(initialClock)
     {
+        controller = base::create_worker(composite_subscription());
     }
+
+    virtual worker get_worker() const {return controller;}
 
     virtual item_type top() const {
         return queue.top();
@@ -224,7 +249,8 @@ protected:
     {
         // use a separate subscription here so that a's subscription is not affected
         auto run = make_schedulable(
-            scheduler(this->shared_from_this()),
+            get_worker(),
+            composite_subscription(),
             [a](const schedulable& scbl) {
                 rxsc::recursion r;
                 r.reset(false);

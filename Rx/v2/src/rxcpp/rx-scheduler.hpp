@@ -11,12 +11,16 @@ namespace rxcpp {
 
 namespace schedulers {
 
+class worker_interface;
 class scheduler_interface;
 
 namespace detail {
 
 class action_type;
 typedef std::shared_ptr<action_type> action_ptr;
+
+typedef std::shared_ptr<worker_interface> worker_interface_ptr;
+typedef std::shared_ptr<const worker_interface> const_worker_interface_ptr;
 
 typedef std::shared_ptr<scheduler_interface> scheduler_interface_ptr;
 typedef std::shared_ptr<const scheduler_interface> const_scheduler_interface_ptr;
@@ -29,6 +33,8 @@ typedef std::shared_ptr<const scheduler_interface> const_scheduler_interface_ptr
 // allows the callback and the scheduler to share stack space that records
 // the request and the allowance without any virtual calls in the loop.
 
+/// recursed is set on a schedulable by the action to allow the called
+/// function to request to be rescheduled.
 class recursed
 {
     bool& isrequested;
@@ -37,11 +43,14 @@ public:
         : isrequested(r)
     {
     }
+    /// request to be rescheduled
     inline void operator()() const {
         isrequested = true;
     }
 };
 
+/// recurse is passed to the action by the scheduler.
+/// the action uses recurse to coordinate the scheduler and the function.
 class recurse
 {
     bool& isallowed;
@@ -54,20 +63,25 @@ public:
         , requestor(isrequested)
     {
     }
+    /// does the scheduler allow tail-recursion now?
     inline bool is_allowed() const {
         return isallowed;
     }
+    /// did the function request to be recursed?
     inline bool is_requested() const {
         return isrequested;
     }
+    /// reset the function request. call before each call to the function.
     inline void reset() const {
         isrequested = false;
     }
+    /// get the recursed to set into the schedulable for the function to use to request recursion
     inline const recursed& get_recursed() const {
         return requestor;
     }
 };
 
+/// recursion is used by the scheduler to signal to each action whether tail recursion is allowed.
 class recursion
 {
     mutable bool isallowed;
@@ -83,9 +97,11 @@ public:
         , recursor(isallowed)
     {
     }
+    /// set whether tail-recursion is allowed
     inline void reset(bool b = true) const {
         isallowed = b;
     }
+    /// get the recurse to pass into each action being called
     inline const recurse& get_recurse() const {
         return recursor;
     }
@@ -99,20 +115,12 @@ struct action_base
 
 class schedulable;
 
-namespace action_duration {
-    enum type {
-        invalid,
-        runs_short,
-        runs_long
-    };
-}
-
+/// action provides type-forgetting for a potentially recursive set of calls to a function that takes a schedulable
 class action : public action_base
 {
     typedef action this_type;
     detail::action_ptr inner;
     static detail::action_ptr shared_empty;
-    friend bool operator==(const action&, const action&);
 public:
     action()
     {
@@ -122,12 +130,12 @@ public:
     {
     }
 
+    /// return the empty action
     inline static action empty() {
         return action(shared_empty);
     }
 
-    inline action_duration::type get_duration() const;
-
+    /// call the function
     inline void operator()(const schedulable& s, const recurse& r) const;
 };
 
@@ -137,37 +145,26 @@ struct scheduler_base
     typedef tag_scheduler scheduler_tag;
 };
 
-class schedulable;
-
-class scheduler_interface
-    : public std::enable_shared_from_this<scheduler_interface>
+struct worker_base : public subscription_base
 {
-    typedef scheduler_interface this_type;
+    typedef tag_worker worker_tag;
+};
+
+class worker_interface
+    : public std::enable_shared_from_this<worker_interface>
+{
+    typedef worker_interface this_type;
 
 public:
     typedef scheduler_base::clock_type clock_type;
 
-    virtual ~scheduler_interface() {}
+    virtual ~worker_interface() {}
 
     virtual clock_type::time_point now() const = 0;
 
     virtual void schedule(const schedulable& scbl) const = 0;
-    virtual void schedule(clock_type::duration when, const schedulable& scbl) const = 0;
     virtual void schedule(clock_type::time_point when, const schedulable& scbl) const = 0;
 };
-
-
-struct schedulable_base : public subscription_base, public scheduler_base, public action_base
-{
-    typedef tag_schedulable schedulable_tag;
-};
-
-inline bool operator==(const action& lhs, const action& rhs) {
-    return lhs.inner == rhs.inner;
-}
-inline bool operator!=(const action& lhs, const action& rhs) {
-    return !(lhs == rhs);
-}
 
 namespace detail {
 
@@ -184,6 +181,161 @@ struct is_action_function
 };
 
 }
+
+/// a worker ensures that all scheduled actions on the same instance are executed in-order with no overlap
+/// a worker ensures that all scheduled actions are unsubscribed when it is unsubscribed
+/// some inner implementations will impose additional constraints on the execution of items.
+class worker : public worker_base
+{
+    typedef worker this_type;
+    detail::worker_interface_ptr inner;
+    composite_subscription lifetime;
+    friend bool operator==(const worker&, const worker&);
+public:
+    typedef scheduler_base::clock_type clock_type;
+    typedef composite_subscription::shared_subscription shared_subscription;
+    typedef composite_subscription::weak_subscription weak_subscription;
+
+    worker()
+    {
+    }
+    worker(composite_subscription cs, detail::const_worker_interface_ptr i)
+        : inner(std::const_pointer_cast<worker_interface>(i))
+        , lifetime(std::move(cs))
+    {
+    }
+
+    inline const composite_subscription& get_subscription() const {
+        return lifetime;
+    }
+    inline composite_subscription& get_subscription() {
+        return lifetime;
+    }
+
+    // composite_subscription
+    //
+    inline bool is_subscribed() const {
+        return lifetime.is_subscribed();
+    }
+    inline weak_subscription add(shared_subscription s) const {
+        return lifetime.add(std::move(s));
+    }
+    inline weak_subscription add(dynamic_subscription s) const {
+        return lifetime.add(std::move(s));
+    }
+    inline void remove(weak_subscription w) const {
+        return lifetime.remove(std::move(w));
+    }
+    inline void clear() const {
+        return lifetime.clear();
+    }
+    inline void unsubscribe() const {
+        return lifetime.unsubscribe();
+    }
+
+    // worker_interface
+    //
+    /// return the current time for this worker
+    inline clock_type::time_point now() const {
+        return inner->now();
+    }
+
+    /// insert the supplied schedulable to be run as soon as possible
+    inline void schedule(const schedulable& scbl) const {
+        // force rebinding scbl to this worker
+        schedule_rebind(scbl);
+    }
+
+    /// insert the supplied schedulable to be run at the time specified
+    inline void schedule(clock_type::time_point when, const schedulable& scbl) const {
+        // force rebinding scbl to this worker
+        schedule_rebind(when, scbl);
+    }
+
+    // helpers
+    //
+
+    /// insert the supplied schedulable to be run at now() + the delay specified
+    inline void schedule(clock_type::duration when, const schedulable& scbl) const {
+        // force rebinding scbl to this worker
+        schedule_rebind(now() + when, scbl);
+    }
+
+    /// insert the supplied schedulable to be run at the initial time specified and then again at initial + (N * period)
+    /// this will continue until the worker or schedulable is unsubscribed.
+    inline void schedule_periodically(clock_type::time_point initial, clock_type::duration period, const schedulable& scbl) const {
+        // force rebinding scbl to this worker
+        schedule_periodically_rebind(initial, period, scbl);
+    }
+
+    /// insert the supplied schedulable to be run at now() + the initial delay specified and then again at now() + initial + (N * period)
+    /// this will continue until the worker or schedulable is unsubscribed.
+    inline void schedule_periodically(clock_type::duration initial, clock_type::duration period, const schedulable& scbl) const {
+        // force rebinding scbl to this worker
+        schedule_periodically_rebind(now() + initial, period, scbl);
+    }
+
+    /// use the supplied arguments to make a schedulable and then insert it to be run
+    template<class Arg0, class... ArgN>
+    auto schedule(Arg0&& a0, ArgN&&... an) const
+        -> typename std::enable_if<
+            (detail::is_action_function<Arg0>::value ||
+            is_subscription<Arg0>::value) &&
+            !is_schedulable<Arg0>::value>::type;
+    template<class... ArgN>
+    /// use the supplied arguments to make a schedulable and then insert it to be run
+    void schedule_rebind(const schedulable& scbl, ArgN&&... an) const;
+
+    /// use the supplied arguments to make a schedulable and then insert it to be run
+    template<class Arg0, class... ArgN>
+    auto schedule(clock_type::time_point when, Arg0&& a0, ArgN&&... an) const
+        -> typename std::enable_if<
+            (detail::is_action_function<Arg0>::value ||
+            is_subscription<Arg0>::value) &&
+            !is_schedulable<Arg0>::value>::type;
+    /// use the supplied arguments to make a schedulable and then insert it to be run
+    template<class... ArgN>
+    void schedule_rebind(clock_type::time_point when, const schedulable& scbl, ArgN&&... an) const;
+
+    /// use the supplied arguments to make a schedulable and then insert it to be run
+    template<class Arg0, class... ArgN>
+    auto schedule_periodically(clock_type::time_point initial, clock_type::duration period, Arg0&& a0, ArgN&&... an) const
+        -> typename std::enable_if<
+            (detail::is_action_function<Arg0>::value ||
+            is_subscription<Arg0>::value) &&
+            !is_schedulable<Arg0>::value>::type;
+    /// use the supplied arguments to make a schedulable and then insert it to be run
+    template<class... ArgN>
+    void schedule_periodically_rebind(clock_type::time_point initial, clock_type::duration period, const schedulable& scbl, ArgN&&... an) const;
+};
+
+inline bool operator==(const worker& lhs, const worker& rhs) {
+    return lhs.inner == rhs.inner && lhs.lifetime == rhs.lifetime;
+}
+inline bool operator!=(const worker& lhs, const worker& rhs) {
+    return !(lhs == rhs);
+}
+
+class scheduler_interface
+    : public std::enable_shared_from_this<scheduler_interface>
+{
+    typedef scheduler_interface this_type;
+
+public:
+    typedef scheduler_base::clock_type clock_type;
+
+    virtual ~scheduler_interface() {}
+
+    virtual clock_type::time_point now() const = 0;
+
+    virtual worker create_worker(composite_subscription cs) const = 0;
+};
+
+
+struct schedulable_base : public subscription_base, public worker_base, public action_base
+{
+    typedef tag_schedulable schedulable_tag;
+};
 
 class scheduler : public scheduler_base
 {
@@ -205,41 +357,19 @@ public:
     {
     }
 
+    /// return the current time for this scheduler
     inline clock_type::time_point now() const {
         return inner->now();
     }
-
-    inline void schedule(const schedulable& scbl) const {
-        inner->schedule(scbl);
+    /// create a worker with a lifetime.
+    /// when the worker is unsubscribed all scheduled items will be unsubscribed.
+    /// items scheduled to a worker will be run one at a time.
+    /// scheduling order is preserved: when more than one item is scheduled for
+    /// time T then at time T they will be run in the order that they were scheduled.
+    inline worker create_worker(composite_subscription cs = composite_subscription()) const {
+        return inner->create_worker(cs);
     }
-    inline void schedule(clock_type::duration when, const schedulable& scbl) const {
-        inner->schedule(when, scbl);
-    }
-    inline void schedule(clock_type::time_point when, const schedulable& scbl) const {
-        inner->schedule(when, scbl);
-    }
-
-    template<class Arg0, class... ArgN>
-    auto schedule(Arg0&& a0, ArgN&&... an) const
-        -> typename std::enable_if<
-            (detail::is_action_function<Arg0>::value ||
-            is_subscription<Arg0>::value) &&
-            !is_schedulable<Arg0>::value>::type;
-    template<class Arg0, class... ArgN>
-    auto schedule(Arg0&& a0, ArgN&&... an) const
-        -> typename std::enable_if<
-            !detail::is_action_function<Arg0>::value &&
-            !is_subscription<Arg0>::value &&
-            !is_scheduler<Arg0>::value &&
-            !is_schedulable<Arg0>::value>::type;
 };
-
-inline bool operator==(const scheduler& lhs, const scheduler& rhs) {
-    return lhs.inner == rhs.inner;
-}
-inline bool operator!=(const scheduler& lhs, const scheduler& rhs) {
-    return !(lhs == rhs);
-}
 
 template<class Scheduler>
 inline scheduler make_scheduler() {
@@ -252,8 +382,10 @@ class schedulable : public schedulable_base
     typedef schedulable this_type;
 
     composite_subscription lifetime;
-    scheduler controller;
+    worker controller;
     action activity;
+    bool scoped;
+    composite_subscription::weak_subscription action_scope;
 
     struct detacher
     {
@@ -320,13 +452,67 @@ public:
     typedef composite_subscription::shared_subscription shared_subscription;
     typedef scheduler_base::clock_type clock_type;
 
+    ~schedulable()
+    {
+        if (scoped) {
+            controller.remove(action_scope);
+        }
+    }
     schedulable()
+        : scoped(false)
     {
     }
-    schedulable(composite_subscription cs, scheduler q, action a)
-        : lifetime(std::move(cs))
-        , controller(std::move(q))
+    schedulable(const schedulable& o)
+        : lifetime(o.lifetime)
+        , controller(o.controller)
+        , activity(o.activity)
+        , scoped(o.scoped)
+        , action_scope(o.scoped ? controller.add(lifetime) : weak_subscription())
+    {
+    }
+    schedulable(schedulable&& o)
+        : lifetime(std::move(o.lifetime))
+        , controller(std::move(o.controller))
+        , activity(std::move(o.activity))
+        , scoped(o.scoped)
+        , action_scope(std::move(o.action_scope))
+    {
+        o.scoped = false;
+    }
+    schedulable& operator =(schedulable o) {
+        using std::swap;
+        swap(lifetime, o.lifetime);
+        swap(controller, o.controller);
+        swap(activity, o.activity);
+        swap(scoped, o.scoped);
+        swap(action_scope, o.action_scope);
+        return *this;
+    }
+
+    /// action and worker share lifetime
+    schedulable(worker q, action a)
+        : lifetime(q.get_subscription())
+        , controller(q)
         , activity(std::move(a))
+        , scoped(false)
+    {
+    }
+    /// action and worker have independent lifetimes
+    schedulable(composite_subscription cs, worker q, action a)
+        : lifetime(cs)
+        , controller(q)
+        , activity(std::move(a))
+        , scoped(true)
+        , action_scope(q.add(cs))
+    {
+    }
+    /// inherit lifetimes
+    schedulable(schedulable scbl, worker q, action a)
+        : lifetime(scbl.get_subscription())
+        , controller(q)
+        , activity(std::move(a))
+        , scoped(scbl.scoped)
+        , action_scope(scbl.scoped ? q.add(scbl.get_subscription()) : weak_subscription())
     {
     }
 
@@ -336,10 +522,10 @@ public:
     inline composite_subscription& get_subscription() {
         return lifetime;
     }
-    inline const scheduler& get_scheduler() const {
+    inline const worker& get_worker() const {
         return controller;
     }
-    inline scheduler& get_scheduler() {
+    inline worker& get_worker() {
         return controller;
     }
     inline const action& get_action() const {
@@ -349,7 +535,7 @@ public:
         return activity;
     }
 
-    inline static schedulable empty(scheduler sc) {
+    inline static schedulable empty(worker sc) {
         return schedulable(composite_subscription::empty(), sc, action::empty());
     }
 
@@ -403,25 +589,26 @@ public:
     }
     /// put this on the queue of the stored scheduler to run asap
     inline void schedule() const {
-        controller.schedule(*this);
-    }
-    /// put this on the queue of the stored scheduler to run after a delay from now
-    inline void schedule(clock_type::duration when) const {
-        controller.schedule(when, *this);
+        if (is_subscribed()) {
+            controller.schedule(*this);
+        }
     }
     /// put this on the queue of the stored scheduler to run at the specified time
     inline void schedule(clock_type::time_point when) const {
-        controller.schedule(when, *this);
+        if (is_subscribed()) {
+            controller.schedule(when, *this);
+        }
+    }
+    /// put this on the queue of the stored scheduler to run after a delay from now
+    inline void schedule(clock_type::duration when) const {
+        if (is_subscribed()) {
+            controller.schedule(when, *this);
+        }
     }
 
     // action
     //
-    /// some schedulers care about how long an action will run
-    /// this is how an action declares its behavior
-    inline action_duration::type get_duration() const {
-        return activity.get_duration();
-    }
-    ///
+    /// invokes the action
     inline void operator()(const recurse& r) const {
         if (!is_subscribed()) {
             abort();
@@ -431,15 +618,6 @@ public:
         protect.that = nullptr;
     }
 };
-
-inline bool operator==(const schedulable& lhs, const schedulable& rhs) {
-    return  lhs.get_action() == rhs.get_action() &&
-            lhs.get_scheduler() == rhs.get_scheduler() &&
-            lhs.get_subscription() == rhs.get_subscription();
-}
-inline bool operator!=(const schedulable& lhs, const schedulable& rhs) {
-    return !(lhs == rhs);
-}
 
 struct current_thread;
 
@@ -454,7 +632,6 @@ public:
     typedef std::function<void(const schedulable&, const recurse&)> function_type;
 
 private:
-    action_duration::type d;
     function_type f;
 
 public:
@@ -462,14 +639,9 @@ public:
     {
     }
 
-    action_type(action_duration::type d, function_type f)
-        : d(d)
-        , f(std::move(f))
+    action_type(function_type f)
+        : f(std::move(f))
     {
-    }
-
-    inline action_duration::type get_duration() const {
-        return d;
     }
 
     inline void operator()(const schedulable& s, const recurse& r) {
@@ -480,11 +652,6 @@ public:
     }
 };
 
-}
-
-
-inline action_duration::type action::get_duration() const {
-    return inner->get_duration();
 }
 
 inline void action::operator()(const schedulable& s, const recurse& r) const {
@@ -500,11 +667,10 @@ inline action make_action_empty() {
 }
 
 template<class F>
-inline action make_action(F&& f, action_duration::type d = action_duration::runs_short) {
+inline action make_action(F&& f) {
     static_assert(detail::is_action_function<F>::value, "action function must be void(schedulable)");
     auto fn = std::forward<F>(f);
     return action(std::make_shared<detail::action_type>(
-        d,
         // tail-recurse inside of the virtual function call
         // until a new action, lifetime or scheduler is returned
         [fn](const schedulable& s, const recurse& r) {
@@ -535,64 +701,96 @@ inline auto make_schedulable(
     return  schedulable(std::move(scbl));
 }
 
-// action
-//
-
 template<class F>
-auto make_schedulable(scheduler sc, F&& f, action_duration::type d = action_duration::runs_short)
+auto make_schedulable(worker sc, F&& f)
     -> typename std::enable_if<detail::is_action_function<F>::value, schedulable>::type {
-    return schedulable(composite_subscription(), sc, make_action(std::forward<F>(f), d));
+    return schedulable(sc, make_action(std::forward<F>(f)));
 }
 template<class F>
-auto make_schedulable(scheduler sc, composite_subscription cs, F&& f, action_duration::type d = action_duration::runs_short)
+auto make_schedulable(worker sc, composite_subscription cs, F&& f)
     -> typename std::enable_if<detail::is_action_function<F>::value, schedulable>::type {
-    return schedulable(cs, sc, make_action(std::forward<F>(f), d));
+    return schedulable(cs, sc, make_action(std::forward<F>(f)));
 }
 template<class F>
-auto make_schedulable(schedulable scbl, composite_subscription cs, F&& f, action_duration::type d = action_duration::runs_short)
+auto make_schedulable(schedulable scbl, composite_subscription cs, F&& f)
     -> typename std::enable_if<detail::is_action_function<F>::value, schedulable>::type {
-    return schedulable(cs, scbl.get_scheduler(), make_action(std::forward<F>(f), d));
+    return schedulable(cs, scbl.get_worker(), make_action(std::forward<F>(f)));
 }
 template<class F>
-auto make_schedulable(schedulable scbl, scheduler sc, F&& f, action_duration::type d = action_duration::runs_short)
+auto make_schedulable(schedulable scbl, worker sc, F&& f)
     -> typename std::enable_if<detail::is_action_function<F>::value, schedulable>::type {
-    return schedulable(scbl.get_subscription(), sc, make_action(std::forward<F>(f), d));
+    return schedulable(scbl, sc, make_action(std::forward<F>(f)));
 }
 template<class F>
-auto make_schedulable(schedulable scbl, F&& f, action_duration::type d = action_duration::runs_short)
+auto make_schedulable(schedulable scbl, F&& f)
     -> typename std::enable_if<detail::is_action_function<F>::value, schedulable>::type {
-    return schedulable(scbl.get_subscription(), scbl.get_scheduler(), make_action(std::forward<F>(f), d));
+    return schedulable(scbl, scbl.get_worker(), make_action(std::forward<F>(f)));
 }
 
 inline auto make_schedulable(schedulable scbl, composite_subscription cs)
     -> schedulable {
-    return schedulable(cs, scbl.get_scheduler(), scbl.get_action());
+    return schedulable(cs, scbl.get_worker(), scbl.get_action());
 }
-inline auto make_schedulable(schedulable scbl, scheduler sc, composite_subscription cs)
+inline auto make_schedulable(schedulable scbl, worker sc, composite_subscription cs)
     -> schedulable {
     return schedulable(cs, sc, scbl.get_action());
 }
-inline auto make_schedulable(schedulable scbl, scheduler sc)
+inline auto make_schedulable(schedulable scbl, worker sc)
     -> schedulable {
-    return schedulable(composite_subscription(), sc, scbl.get_action());
+    return schedulable(scbl, sc, scbl.get_action());
 }
 
 template<class Arg0, class... ArgN>
-auto scheduler::schedule(Arg0&& a0, ArgN&&... an) const
+auto worker::schedule(Arg0&& a0, ArgN&&... an) const
     -> typename std::enable_if<
         (detail::is_action_function<Arg0>::value ||
         is_subscription<Arg0>::value) &&
         !is_schedulable<Arg0>::value>::type {
-    return this->schedule(make_schedulable(*this, std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
+    inner->schedule(make_schedulable(*this, std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
 }
+template<class... ArgN>
+void worker::schedule_rebind(const schedulable& scbl, ArgN&&... an) const {
+    inner->schedule(make_schedulable(scbl, *this, std::forward<ArgN>(an)...));
+}
+
 template<class Arg0, class... ArgN>
-auto scheduler::schedule(Arg0&& a0, ArgN&&... an) const
+auto worker::schedule(clock_type::time_point when, Arg0&& a0, ArgN&&... an) const
     -> typename std::enable_if<
-        !detail::is_action_function<Arg0>::value &&
-        !is_subscription<Arg0>::value &&
-        !is_scheduler<Arg0>::value &&
+        (detail::is_action_function<Arg0>::value ||
+        is_subscription<Arg0>::value) &&
         !is_schedulable<Arg0>::value>::type {
-    return this->schedule(std::forward<Arg0>(a0), make_schedulable(*this, std::forward<ArgN>(an)...));
+    inner->schedule(when, make_schedulable(*this, std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
+}
+template<class... ArgN>
+void worker::schedule_rebind(clock_type::time_point when, const schedulable& scbl, ArgN&&... an) const {
+    inner->schedule(when, make_schedulable(scbl, *this, std::forward<ArgN>(an)...));
+}
+
+template<class Arg0, class... ArgN>
+auto worker::schedule_periodically(clock_type::time_point initial, clock_type::duration period, Arg0&& a0, ArgN&&... an) const
+    -> typename std::enable_if<
+        (detail::is_action_function<Arg0>::value ||
+        is_subscription<Arg0>::value) &&
+        !is_schedulable<Arg0>::value>::type {
+    schedule_periodically_rebind(initial, period, make_schedulable(*this, std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
+}
+template<class... ArgN>
+void worker::schedule_periodically_rebind(clock_type::time_point initial, clock_type::duration period, const schedulable& scbl, ArgN&&... an) const {
+    std::shared_ptr<clock_type::time_point> target(new clock_type::time_point(initial));
+    auto activity = make_schedulable(scbl, *this, std::forward<ArgN>(an)...);
+    auto periodic = make_schedulable(
+        activity,
+        [target, period, activity](schedulable self) {
+            // any recursion requests will be pushed to the scheduler queue
+            recursion r(false);
+            // call action
+            activity(r.get_recurse());
+
+            // schedule next occurance (if the action took longer than 'period' target will be in the past)
+            *target += period;
+            self.schedule(*target);
+        });
+    inner->schedule(*target, periodic);
 }
 
 namespace detail {

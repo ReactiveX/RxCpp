@@ -22,6 +22,7 @@ struct range : public source_base<T>
         size_t remaining;
         ptrdiff_t step;
         rxsc::scheduler sc;
+        rxsc::worker w;
     };
     state_type init;
     range(T b, size_t c, ptrdiff_t s, rxsc::scheduler sc)
@@ -34,8 +35,9 @@ struct range : public source_base<T>
     template<class Subscriber>
     void on_subscribe(Subscriber o) {
         auto state = std::make_shared<state_type>(init);
-        state->sc.schedule(
-            o.get_subscription(),
+        // creates a worker whose lifetime is the same as this subscription
+        state->w = state->sc.create_worker(o.get_subscription());
+        state->w.schedule(
             [=](const rxsc::schedulable& self){
                 if (state->remaining == 0) {
                     o.on_completed();

@@ -22,6 +22,19 @@ public:
     static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_action*>::value;
 };
 
+struct tag_worker {};
+template<class T>
+class is_worker
+{
+    struct not_void {};
+    template<class C>
+    static typename C::worker_tag* check(int);
+    template<class C>
+    static not_void check(...);
+public:
+    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_worker*>::value;
+};
+
 struct tag_scheduler {};
 template<class T>
 class is_scheduler

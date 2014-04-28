@@ -183,7 +183,7 @@ private:
         inline void remove(weak_subscription w) {
             std::unique_lock<decltype(lock)> guard(lock);
 
-            if (issubscribed) {
+            if (issubscribed && !w.expired()) {
                 auto s = w.lock();
                 if (s)
                 {

@@ -23,6 +23,11 @@ public:
     using base::schedule_absolute;
     using base::schedule_relative;
 
+    virtual worker get_worker() const
+    {
+        return base::get_worker();
+    }
+
     virtual void schedule_absolute(long when, const schedulable& a) const
     {
         if (when <= base::clock_now)
@@ -143,11 +148,12 @@ public:
     virtual void on_subscribe(subscriber<T> o) const {
         sv.push_back(rxn::subscription(sc->clock()));
         auto index = sv.size() - 1;
+        auto controller = sc->create_worker(composite_subscription());
 
         for (auto& message : mv) {
             auto n = message.value();
             sc->schedule_relative(message.time(), make_schedulable(
-                scheduler(std::static_pointer_cast<scheduler_interface>(sc)),
+                controller,
                 [n, o](const schedulable& scbl) {
                     if (o.is_subscribed()) {
                         n->accept(o);
@@ -195,10 +201,11 @@ public:
         : sc(sc)
         , mv(mv)
     {
+        auto controller = sc->create_worker(composite_subscription());
         for (auto& message : mv) {
             auto n = message.value();
             sc->schedule_absolute(message.time(), make_schedulable(
-                scheduler(std::static_pointer_cast<scheduler_interface>(sc)),
+                controller,
                 [this, n](const schedulable& scbl) {
                     auto local = this->observers;
                     for (auto& o : local) {
@@ -306,17 +313,22 @@ public:
         tester->schedule_relative(when, a);
     }
 
-    template<class F>
-    typename std::enable_if<!std::is_same<typename std::decay<F>::type, schedulable>::value, void>::type
-    schedule_absolute(long when, F f) const {
-        tester->schedule_absolute(when, make_schedulable(*this, f));
+    template<class Arg0, class... ArgN>
+    auto schedule_absolute(long when, Arg0&& a0, ArgN&&... an) const
+        -> typename std::enable_if<
+            (detail::is_action_function<Arg0>::value ||
+            is_subscription<Arg0>::value) &&
+            !is_schedulable<Arg0>::value>::type {
+        tester->schedule_absolute(when, make_schedulable(tester->get_worker(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
     }
 
-
-    template<class F>
-    typename std::enable_if<!std::is_same<typename std::decay<F>::type, schedulable>::value, void>::type
-    schedule_relative(long when, F f) const {
-        tester->schedule_relative(when, make_schedulable(*this, f));
+    template<class Arg0, class... ArgN>
+    auto schedule_relative(long when, Arg0&& a0, ArgN&&... an) const
+        -> typename std::enable_if<
+            (detail::is_action_function<Arg0>::value ||
+            is_subscription<Arg0>::value) &&
+            !is_schedulable<Arg0>::value>::type {
+        tester->schedule_relative(when, make_schedulable(tester->get_worker(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
     }
 
     template<class T, class F>

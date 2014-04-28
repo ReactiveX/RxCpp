@@ -25,7 +25,7 @@ private:
 
 public:
     struct current_thread_queue_type {
-        scheduler sc;
+        std::shared_ptr<worker_interface> w;
         recursion r;
         queue_item_time queue;
     };
@@ -38,8 +38,8 @@ private:
 
 public:
 
-    static scheduler get_scheduler() {
-        return !!current_thread_queue() ? current_thread_queue()->sc : scheduler();
+    static std::shared_ptr<worker_interface> get_worker_interface() {
+        return !!current_thread_queue() ? current_thread_queue()->w : std::shared_ptr<worker_interface>();
     }
     static recursion& get_recursion() {
         return current_thread_queue()->r;
@@ -79,18 +79,18 @@ public:
         // disallow recursion
         state->r.reset(false);
     }
-    static scheduler ensure(scheduler sc) {
+    static std::shared_ptr<worker_interface> ensure(std::shared_ptr<worker_interface> w) {
         if (!!current_thread_queue()) {
             abort();
         }
         // create and publish new queue
         current_thread_queue() = new current_thread_queue_type();
-        current_thread_queue()->sc = sc;
-        return sc;
+        current_thread_queue()->w = w;
+        return w;
     }
-    static std::unique_ptr<current_thread_queue_type> create(scheduler sc) {
+    static std::unique_ptr<current_thread_queue_type> create(std::shared_ptr<worker_interface> w) {
         std::unique_ptr<current_thread_queue_type> result(new current_thread_queue_type());
-        result->sc = std::move(sc);
+        result->w = std::move(w);
         return result;
     }
     static void set(current_thread_queue_type* queue) {
@@ -123,7 +123,7 @@ private:
 
     typedef detail::action_queue queue;
 
-    struct derecurser : public scheduler_interface
+    struct derecurser : public worker_interface
     {
     private:
         typedef current_thread this_type;
@@ -144,12 +144,77 @@ private:
             queue::push(queue::item_type(now(), scbl));
         }
 
-        virtual void schedule(clock_type::duration when, const schedulable& scbl) const {
-            queue::push(queue::item_type(now() + when, scbl));
+        virtual void schedule(clock_type::time_point when, const schedulable& scbl) const {
+            queue::push(queue::item_type(when, scbl));
+        }
+    };
+
+    struct current_worker : public worker_interface
+    {
+    private:
+        typedef current_thread this_type;
+        composite_subscription lifetime;
+        current_worker(const this_type&);
+    public:
+        explicit current_worker(composite_subscription cs)
+            : lifetime(std::move(cs))
+        {
+        }
+        virtual ~current_worker()
+        {
+        }
+
+        virtual clock_type::time_point now() const {
+            return clock_type::now();
+        }
+
+        virtual void schedule(const schedulable& scbl) const {
+            schedule(now(), scbl);
         }
 
         virtual void schedule(clock_type::time_point when, const schedulable& scbl) const {
+            if (!scbl.is_subscribed()) {
+                return;
+            }
+
+            {
+                auto wi = queue::get_worker_interface();
+                // check ownership
+                if (!!wi) {
+                    // already has an owner - delegate
+                    return worker(lifetime, wi).schedule(when, scbl);
+                }
+
+                // take ownership
+                queue::ensure(std::make_shared<derecurser>());
+            }
+            // release ownership
+            RXCPP_UNWIND_AUTO([]{
+                queue::destroy();
+            });
+
             queue::push(queue::item_type(when, scbl));
+
+            const auto& recursor = queue::get_recursion().get_recurse();
+
+            // loop until queue is empty
+            for (
+                auto when = queue::top().when;
+                (std::this_thread::sleep_until(when), true);
+                when = queue::top().when
+            ) {
+                auto what = queue::top().what;
+
+                queue::pop();
+
+                if (what.is_subscribed()) {
+                    what(recursor);
+                }
+
+                if (queue::empty()) {
+                    break;
+                }
+            }
         }
     };
 
@@ -161,67 +226,19 @@ public:
     {
     }
 
-    static bool is_schedule_required() { return queue::get_scheduler() == scheduler(); }
-
-    virtual clock_type::time_point now() const {
-        return clock_type::now();
-    }
+    static bool is_schedule_required() { return !queue::get_worker_interface(); }
 
     inline bool is_tail_recursion_allowed() const {
         return queue::empty();
     }
 
-    virtual void schedule(const schedulable& scbl) const {
-        schedule(now(), scbl);
+    virtual clock_type::time_point now() const {
+        return clock_type::now();
     }
 
-    virtual void schedule(clock_type::duration when, const schedulable& scbl) const {
-        schedule(now() + when, scbl);
-    }
-
-    virtual void schedule(clock_type::time_point when, const schedulable& scbl) const {
-        if (!scbl.is_subscribed()) {
-            return;
-        }
-
-        auto sc = queue::get_scheduler();
-        // check ownership
-        if (sc != scheduler())
-        {
-            // already has an owner - delegate
-            return sc.schedule(when, scbl);
-        }
-
-        // take ownership
-
-        sc = queue::ensure(make_scheduler<derecurser>());
-        RXCPP_UNWIND_AUTO([]{
-            queue::destroy();
-        });
-
-        queue::push(queue::item_type(when, scbl));
-
-        const auto& recursor = queue::get_recursion().get_recurse();
-
-        // loop until queue is empty
-        for (
-             auto when = queue::top().when;
-             std::this_thread::sleep_until(when), true;
-             when = queue::top().when
-             )
-        {
-            auto what = queue::top().what;
-
-            queue::pop();
-
-            if (what.is_subscribed()) {
-                what(recursor);
-            }
-
-            if (queue::empty()) {
-                break;
-            }
-        }
+    virtual worker create_worker(composite_subscription cs) const {
+        std::shared_ptr<current_worker> wi(new current_worker(cs));
+        return worker(cs, wi);
     }
 };
 

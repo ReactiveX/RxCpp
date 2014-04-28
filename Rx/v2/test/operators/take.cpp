@@ -75,7 +75,6 @@ SCENARIO("take, complete after", "[take][operators]"){
         typedef rxn::subscription life;
         typedef m::recorded_type record;
         auto on_next = m::on_next;
-        auto on_error = m::on_error;
         auto on_completed = m::on_completed;
         auto subscribe = m::subscribe;
 

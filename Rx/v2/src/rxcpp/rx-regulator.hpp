@@ -88,7 +88,7 @@ public:
 		state->isresumed = true;
         auto resumewith = std::move(state->resumewith);
         auto local = state->resumewith;
-        state->resumewith = rxsc::schedulable::empty(local.get_scheduler());
+        state->resumewith = rxsc::schedulable::empty(local.get_worker());
         local.schedule();
 	}
 	inline resumption get_resumption() {
