@@ -279,6 +279,16 @@ public:
                                             rxo::detail::publish<T, this_type, rxsub::subject<T>>(*this));
     }
 
+    /// take ->
+    ///
+    ///
+    template<class Count>
+    auto take(Count&& t) const
+        ->      observable<T,   rxo::detail::take<T, this_type, Count>> {
+        return  observable<T,   rxo::detail::take<T, this_type, Count>>(
+                                rxo::detail::take<T, this_type, Count>(*this, std::forward<Count>(t)));
+    }
+
     /// take_until ->
     ///
     ///

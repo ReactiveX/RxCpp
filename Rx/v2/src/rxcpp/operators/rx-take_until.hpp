@@ -2,8 +2,8 @@
 
 #pragma once
 
-#if !defined(RXCPP_OPERATORS_RX_TAKE_HPP)
-#define RXCPP_OPERATORS_RX_TAKE_HPP
+#if !defined(RXCPP_OPERATORS_RX_TAKE_UNTIL_HPP)
+#define RXCPP_OPERATORS_RX_TAKE_UNTIL_HPP
 
 #include "../rx-includes.hpp"
 
@@ -151,7 +151,7 @@ public:
     auto operator()(Observable&& source)
         ->      observable<typename std::decay<Observable>::type::value_type,   take_until<typename std::decay<Observable>::type::value_type, Observable, trigger_source_type>> {
         return  observable<typename std::decay<Observable>::type::value_type,   take_until<typename std::decay<Observable>::type::value_type, Observable, trigger_source_type>>(
-                                                                                take_until<typename std::decay<Observable>::type::value_type, Observable, trigger_source_type>(std::forward<Observable>(source), std::move(trigger_source)));
+                                                                                take_until<typename std::decay<Observable>::type::value_type, Observable, trigger_source_type>(std::forward<Observable>(source), trigger_source));
     }
 };
 
