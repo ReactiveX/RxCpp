@@ -225,7 +225,9 @@ public:
 
             queue::pop();
 
-            what(recursor);
+            if (what.is_subscribed()) {
+                what(recursor);
+            }
 
             if (queue::empty()) {
                 break;
