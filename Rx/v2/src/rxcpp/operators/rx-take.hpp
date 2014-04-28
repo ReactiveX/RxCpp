@@ -39,7 +39,6 @@ struct take : public operator_base<T>
     {
         enum type {
             taking,
-            clear,
             triggered,
             errored,
             stopped
@@ -75,9 +74,9 @@ struct take : public operator_base<T>
                     if (--state->count > 0) {
                         state->out.on_next(t);
                     } else {
+                        state->mode_value = mode::triggered;
                         state->out.on_next(t);
-                        state->mode_value = mode::clear;
-                        state->out.unsubscribe();
+                        state->out.on_completed();
                     }
                 }
             },
@@ -88,7 +87,7 @@ struct take : public operator_base<T>
             },
         // on_completed
             [state]() {
-                state->mode_value = mode::triggered;
+                state->mode_value = mode::stopped;
                 state->out.on_completed();
             }
         );
