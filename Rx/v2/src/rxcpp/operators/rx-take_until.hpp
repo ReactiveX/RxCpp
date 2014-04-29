@@ -96,9 +96,14 @@ struct take_until : public operator_base<T>
 
         };
 
+        composite_subscription trigger_lifetime;
+        state->out.add(trigger_lifetime);
+
         state->trigger.subscribe(
-        // share subscription lifetime
+        // share parts of subscription
             state->out,
+        // new lifetime
+            trigger_lifetime,
         // on_next
             [state](const typename trigger_source_type::value_type&) {
                 activity finisher(state);
@@ -130,6 +135,9 @@ struct take_until : public operator_base<T>
             state->out,
         // on_next
             [state](T t) {
+                //
+                // everything is crafted to minimize the overhead of this function.
+                //
                 activity finisher(state);
                 if (state->mode_value < mode::triggered) {
                     state->out.on_next(t);
