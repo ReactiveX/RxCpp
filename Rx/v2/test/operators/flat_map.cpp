@@ -12,6 +12,84 @@ namespace rxt=rxcpp::test;
 
 #include "catch.hpp"
 
+static const int static_tripletCount = 500;
+
+SCENARIO("pythagorian for loops", "[hide][for][pythagorian][perf]"){
+    const int& tripletCount = static_tripletCount;
+    GIVEN("a for loop"){
+        WHEN("generating pythagorian triplets"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
+
+            int c = 0;
+            int ct = 0;
+            int n = 1;
+            auto start = clock::now();
+            for(int z = 1;; ++z)
+            {
+                for(int x = 1; x <= z; ++x)
+                {
+                    for(int y = x; y <= z; ++y)
+                    {
+                        ++c;
+                        if(x*x + y*y == z*z)
+                        {
+                            //result += (x + y + z);
+                            //std::cout << x << "," << y << "," << z << std::endl;
+                            ++ct;
+                            if(ct == tripletCount)
+                                goto done;
+                        }
+                    }
+                }
+            }
+            done:
+            auto finish = clock::now();
+            auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
+                   duration_cast<milliseconds>(start.time_since_epoch());
+            std::cout << "pythagorian for : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << std::endl;
+
+        }
+    }
+}
+
+SCENARIO("pythagorian ranges", "[hide][for][pythagorian][perf]"){
+    const int& tripletCount = static_tripletCount;
+    GIVEN("some ranges"){
+        WHEN("generating pythagorian triplets"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
+
+            int c = 0;
+            int ct = 0;
+            int n = 1;
+            auto start = clock::now();
+            auto triples =
+                rxs::range(1)
+                    .flat_map(
+                        [&c](int z){ return rxs::range(1, z)
+                            .flat_map(
+                                [&c, z](int x){ return rxs::range(x, z)
+                                    .filter([&c, z, x](int y){++c; return x*x + y*y == z*z;})
+                                    .map([z, x](int y){return std::make_tuple(x, y, z);});},
+                                [](int x, std::tuple<int,int,int> triplet){return triplet;});},
+                        [](int z, std::tuple<int,int,int> triplet){return triplet;});
+            triples
+                .take(tripletCount)
+                .subscribe(
+                    [&ct](std::tuple<int,int,int> triplet){++ct;
+                        //int x,y,z; std::tie(x,y,z) = triplet; std::cout << x << "," << y << "," << z << std::endl;
+                    },
+                    [](std::exception_ptr){abort();});
+            auto finish = clock::now();
+            auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
+                   duration_cast<milliseconds>(start.time_since_epoch());
+            std::cout << "pythagorian for : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << std::endl;
+
+        }
+    }
+}
+
 SCENARIO("flat_map completes", "[flat_map][map][operators]"){
     GIVEN("two cold observables. one of ints. one of strings."){
         auto sc = rxsc::make_test();
