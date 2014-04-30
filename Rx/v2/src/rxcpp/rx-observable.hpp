@@ -322,10 +322,10 @@ class observable<void, void>
     ~observable();
 public:
     template<class T>
-    static auto range(T start = 0, size_t count = std::numeric_limits<size_t>::max(), ptrdiff_t step = 1, rxsc::scheduler sc = rxsc::make_current_thread())
+    static auto range(T first = 0, T last = std::numeric_limits<T>::max(), ptrdiff_t step = 1, rxsc::scheduler sc = rxsc::make_current_thread())
         ->      observable<T,   rxs::detail::range<T>> {
         return  observable<T,   rxs::detail::range<T>>(
-                                rxs::detail::range<T>(start, count, step, sc));
+                                rxs::detail::range<T>(first, last, step, sc));
     }
 };
 

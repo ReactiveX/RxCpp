@@ -108,7 +108,7 @@ SCENARIO("range calls subscriber", "[hide][range][subscriber][perf]"){
             c = 0;
             auto start = clock::now();
 
-            rxs::range<int>(0, onnextcalls).subscribe(
+            rxs::range<int>(1, onnextcalls).subscribe(
                 [&c](int){
                     ++c;
                 },
@@ -234,7 +234,7 @@ SCENARIO("range calls subject", "[hide][range][subject][subjects][perf]"){
                 }
 
                 auto start = clock::now();
-                rxs::range<int>(0, onnextcalls)
+                rxs::range<int>(1, onnextcalls)
 #if RXCPP_DEBUG_SUBJECT_RACE
                     .filter([c, p, n](int){
                         if (*p != *c) abort();

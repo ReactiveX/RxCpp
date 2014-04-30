@@ -19,16 +19,16 @@ struct range : public source_base<T>
     struct state_type
     {
         T next;
-        size_t remaining;
+        T last;
         ptrdiff_t step;
         rxsc::scheduler sc;
         rxsc::worker w;
     };
     state_type init;
-    range(T b, size_t c, ptrdiff_t s, rxsc::scheduler sc)
+    range(T f, T l, ptrdiff_t s, rxsc::scheduler sc)
     {
-        init.next = b;
-        init.remaining = c;
+        init.next = f;
+        init.last = l;
         init.step = s;
         init.sc = sc;
     }
@@ -39,18 +39,21 @@ struct range : public source_base<T>
         state->w = state->sc.create_worker(o.get_subscription());
         state->w.schedule(
             [=](const rxsc::schedulable& self){
-                if (state->remaining == 0) {
-                    o.on_completed();
-                    // o is unsubscribed
-                }
                 if (!o.is_subscribed()) {
                     // terminate loop
                     return;
                 }
 
                 // send next value
-                --state->remaining;
                 o.on_next(state->next);
+                if (std::abs(state->last - state->next) < std::abs(state->step)) {
+                    if (state->last != state->next) {
+                        o.on_next(state->last);
+                    }
+                    o.on_completed();
+                    // o is unsubscribed
+                    return;
+                }
                 state->next = static_cast<T>(state->step + state->next);
 
                 // tail recurse this same action to continue loop
@@ -62,10 +65,16 @@ struct range : public source_base<T>
 }
 
 template<class T>
-auto range(T start = 0, size_t count = std::numeric_limits<size_t>::max(), ptrdiff_t step = 1, rxsc::scheduler sc = rxsc::make_current_thread())
+auto range(T first = 0, T last = std::numeric_limits<T>::max(), ptrdiff_t step = 1, rxsc::scheduler sc = rxsc::make_current_thread())
     ->      observable<T,   detail::range<T>> {
     return  observable<T,   detail::range<T>>(
-                            detail::range<T>(start, count, step, sc));
+                            detail::range<T>(first, last, step, sc));
+}
+template<class T>
+auto range(T first = 0, rxsc::scheduler sc = rxsc::make_current_thread())
+    ->      observable<T,   detail::range<T>> {
+    return  observable<T,   detail::range<T>>(
+                            detail::range<T>(first, std::numeric_limits<T>::max(), 1, sc));
 }
 
 }
