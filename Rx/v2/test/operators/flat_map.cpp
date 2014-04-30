@@ -12,7 +12,7 @@ namespace rxt=rxcpp::test;
 
 #include "catch.hpp"
 
-static const int static_tripletCount = 2;
+static const int static_tripletCount = 500;
 
 SCENARIO("pythagorian for loops", "[hide][for][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
@@ -32,11 +32,8 @@ SCENARIO("pythagorian for loops", "[hide][for][pythagorian][perf]"){
                     for(int y = x; y <= z; ++y)
                     {
                         ++c;
-                        std::cout << z << "," << y << "," << x << std::endl;
                         if(x*x + y*y == z*z)
                         {
-                            //result += (x + y + z);
-                            //std::cout << x << "," << y << "," << z << std::endl;
                             ++ct;
                             if(ct == tripletCount)
                                 goto done;
@@ -48,7 +45,7 @@ SCENARIO("pythagorian for loops", "[hide][for][pythagorian][perf]"){
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
                    duration_cast<milliseconds>(start.time_since_epoch());
-            std::cout << "pythagorian for : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << std::endl;
+            std::cout << "pythagorian for   : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << std::endl;
 
         }
     }
@@ -61,38 +58,32 @@ SCENARIO("pythagorian ranges", "[hide][for][pythagorian][perf]"){
             using namespace std::chrono;
             typedef steady_clock clock;
 
-            std::vector<std::tuple<int, int, int>> tried;
+            auto sc = rxsc::make_immediate();
+            //auto sc = rxsc::make_current_thread();
+
             int c = 0;
             int ct = 0;
             int n = 1;
             auto start = clock::now();
             auto triples =
-                rxs::range(1)
+                rxs::range(1, sc)
                     .flat_map(
-                        [&c, &tried](int z){ return rxs::range(1, z)
+                        [&c, sc](int z){ return rxs::range(1, z, 1, sc)
                             .flat_map(
-                                [&c, &tried, z](int x){ return rxs::range(x, z)
-                                    .filter([&c, &tried, z, x](int y){++c;
-                                        tried.push_back(std::make_tuple(z, y, x));
-                                        return x*x + y*y == z*z;})
+                                [&c, sc, z](int x){ return rxs::range(x, z, 1, sc)
+                                    .filter([&c, z, x](int y){++c; return x*x + y*y == z*z;})
                                     .map([z, x](int y){return std::make_tuple(x, y, z);});},
                                 [](int x, std::tuple<int,int,int> triplet){return triplet;});},
                         [](int z, std::tuple<int,int,int> triplet){return triplet;});
             triples
                 .take(tripletCount)
                 .subscribe(
-                    [&ct](std::tuple<int,int,int> triplet){++ct;
-                        //int x,y,z; std::tie(x,y,z) = triplet; std::cout << x << "," << y << "," << z << std::endl;
-                    },
+                    [&ct](std::tuple<int,int,int> triplet){++ct;},
                     [](std::exception_ptr){abort();});
-            std::sort(tried.begin(), tried.end());
-            for (auto& t : tried) {
-                int x,y,z; std::tie(z,y,x) = t; std::cout << z << "," << y << "," << x << std::endl;
-            }
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
                    duration_cast<milliseconds>(start.time_since_epoch());
-            std::cout << "pythagorian for : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << std::endl;
+            std::cout << "pythagorian range : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << std::endl;
 
         }
     }
