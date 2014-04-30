@@ -847,6 +847,7 @@ namespace rxsc=schedulers;
 }
 
 #include "schedulers/rx-currentthread.hpp"
+#include "schedulers/rx-immediate.hpp"
 #include "schedulers/rx-virtualtime.hpp"
 
 #endif
