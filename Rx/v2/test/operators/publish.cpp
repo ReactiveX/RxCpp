@@ -50,6 +50,7 @@ SCENARIO("publish range", "[hide][range][subject][publish][operators]"){
 SCENARIO("publish", "[publish][multicast][operators]"){
     GIVEN("a test hot observable of longs"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -77,24 +78,24 @@ SCENARIO("publish", "[publish][multicast][operators]"){
         };
         auto xs = sc.make_hot_observable(messages);
 
-        auto res = sc.make_subscriber<int>();
+        auto res = w.make_subscriber<int>();
 
         rx::connectable_observable<int> ys;
 
         WHEN("subscribed and then connected"){
 
-            sc.schedule_absolute(rxsc::test::created_time,
+            w.schedule_absolute(rxsc::test::created_time,
                 [&invoked, &ys, &xs](const rxsc::schedulable& scbl){
                     ys = xs.publish().as_dynamic();
                     //ys = xs.publish_last().as_dynamic();
                 });
 
-            sc.schedule_absolute(rxsc::test::subscribed_time,
+            w.schedule_absolute(rxsc::test::subscribed_time,
                 [&ys, &res](const rxsc::schedulable& scbl){
                 ys.subscribe(res);
             });
 
-            sc.schedule_absolute(rxsc::test::unsubscribed_time,
+            w.schedule_absolute(rxsc::test::unsubscribed_time,
                 [&res](const rxsc::schedulable& scbl){
                     res.unsubscribe();
                 });
@@ -102,11 +103,11 @@ SCENARIO("publish", "[publish][multicast][operators]"){
             {
                 rx::composite_subscription connection;
 
-                sc.schedule_absolute(300,
+                w.schedule_absolute(300,
                     [connection, &ys](const rxsc::schedulable& scbl){
                         ys.connect(connection);
                     });
-                sc.schedule_absolute(400,
+                w.schedule_absolute(400,
                     [connection](const rxsc::schedulable& scbl){
                         connection.unsubscribe();
                     });
@@ -115,11 +116,11 @@ SCENARIO("publish", "[publish][multicast][operators]"){
             {
                 rx::composite_subscription connection;
 
-                sc.schedule_absolute(500,
+                w.schedule_absolute(500,
                     [connection, &ys](const rxsc::schedulable& scbl){
                         ys.connect(connection);
                     });
-                sc.schedule_absolute(550,
+                w.schedule_absolute(550,
                     [connection](const rxsc::schedulable& scbl){
                         connection.unsubscribe();
                     });
@@ -128,17 +129,17 @@ SCENARIO("publish", "[publish][multicast][operators]"){
             {
                 rx::composite_subscription connection;
 
-                sc.schedule_absolute(650,
+                w.schedule_absolute(650,
                     [connection, &ys](const rxsc::schedulable& scbl){
                         ys.connect(connection);
                     });
-                sc.schedule_absolute(800,
+                w.schedule_absolute(800,
                     [connection](const rxsc::schedulable& scbl){
                         connection.unsubscribe();
                     });
             }
 
-            sc.start();
+            w.start();
 
             THEN("the output only contains items sent while subscribed"){
                 record items[] = {

@@ -31,6 +31,7 @@ bool IsPrime(int x)
 SCENARIO("filter stops on completion", "[filter][operators]"){
     GIVEN("a test hot observable of ints"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -61,7 +62,7 @@ SCENARIO("filter stops on completion", "[filter][operators]"){
         auto xs = sc.make_hot_observable(messages);
 
         WHEN("filtered to ints that are primes"){
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [&xs, &invoked]() {
 #if 0 && RXCPP_USE_OBSERVABLE_MEMBERS
                     return xs
@@ -119,6 +120,7 @@ SCENARIO("filter stops on completion", "[filter][operators]"){
 SCENARIO("filter stops on disposal", "[where][filter][operators]"){
     GIVEN("a test hot observable of ints"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -146,7 +148,7 @@ SCENARIO("filter stops on disposal", "[where][filter][operators]"){
 
         WHEN("filtered to ints that are primes"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [&xs, &invoked]() {
 #if RXCPP_USE_OBSERVABLE_MEMBERS
                     return xs
@@ -199,6 +201,7 @@ SCENARIO("filter stops on disposal", "[where][filter][operators]"){
 SCENARIO("filter stops on error", "[where][filter][operators]"){
     GIVEN("a test hot observable of ints"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -232,7 +235,7 @@ SCENARIO("filter stops on error", "[where][filter][operators]"){
 
         WHEN("filtered to ints that are primes"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [xs, &invoked]() {
 #if RXCPP_USE_OBSERVABLE_MEMBERS
                     return xs
@@ -286,6 +289,7 @@ SCENARIO("filter stops on error", "[where][filter][operators]"){
 SCENARIO("filter stops on throw from predicate", "[where][filter][operators]"){
     GIVEN("a test hot observable of ints"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -319,7 +323,7 @@ SCENARIO("filter stops on throw from predicate", "[where][filter][operators]"){
 
         WHEN("filtered to ints that are primes"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [ex, xs, &invoked]() {
 #if RXCPP_USE_OBSERVABLE_MEMBERS
                     return xs
@@ -377,6 +381,7 @@ SCENARIO("filter stops on throw from predicate", "[where][filter][operators]"){
 SCENARIO("filter stops on dispose from predicate", "[where][filter][operators]"){
     GIVEN("a test hot observable of ints"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -406,13 +411,13 @@ SCENARIO("filter stops on dispose from predicate", "[where][filter][operators]")
         };
         auto xs = sc.make_hot_observable(rxu::to_vector(messages));
 
-        auto res = sc.make_subscriber<int>();
+        auto res = w.make_subscriber<int>();
 
         rx::observable<int, rx::dynamic_observable<int>> ys;
 
         WHEN("filtered to ints that are primes"){
 
-            sc.schedule_absolute(rxsc::test::created_time,
+            w.schedule_absolute(rxsc::test::created_time,
                 [&invoked, &res, &ys, &xs](const rxsc::schedulable& scbl) {
 #if RXCPP_USE_OBSERVABLE_MEMBERS
                     ys = xs
@@ -433,15 +438,15 @@ SCENARIO("filter stops on dispose from predicate", "[where][filter][operators]")
 #endif
                 });
 
-            sc.schedule_absolute(rxsc::test::subscribed_time, [&ys, &res](const rxsc::schedulable& scbl) {
+            w.schedule_absolute(rxsc::test::subscribed_time, [&ys, &res](const rxsc::schedulable& scbl) {
                 ys.subscribe(res);
             });
 
-            sc.schedule_absolute(rxsc::test::unsubscribed_time, [&res](const rxsc::schedulable& scbl) {
+            w.schedule_absolute(rxsc::test::unsubscribed_time, [&res](const rxsc::schedulable& scbl) {
                 res.unsubscribe();
             });
 
-            sc.start();
+            w.start();
 
             THEN("the output only contains primes"){
                 record items[] = {

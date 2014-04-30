@@ -256,6 +256,7 @@ SCENARIO("subject - infinite source", "[subject][subjects]"){
     GIVEN("a subject and an infinite source"){
 
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -279,40 +280,40 @@ SCENARIO("subject - infinite source", "[subject][subjects]"){
 
         rxsub::subject<int> s;
 
-        auto results1 = sc.make_subscriber<int>();
+        auto results1 = w.make_subscriber<int>();
 
-        auto results2 = sc.make_subscriber<int>();
+        auto results2 = w.make_subscriber<int>();
 
-        auto results3 = sc.make_subscriber<int>();
+        auto results3 = w.make_subscriber<int>();
 
         WHEN("multicasting an infinite source"){
 
             auto o = s.get_subscriber();
 
-            sc.schedule_absolute(100, [&s, &o](const rxsc::schedulable& scbl){
+            w.schedule_absolute(100, [&s, &o](const rxsc::schedulable& scbl){
                 s = rxsub::subject<int>(); o = s.get_subscriber();});
-            sc.schedule_absolute(200, [&xs, &o](const rxsc::schedulable& scbl){
+            w.schedule_absolute(200, [&xs, &o](const rxsc::schedulable& scbl){
                 xs.subscribe(o);});
-            sc.schedule_absolute(1000, [&o](const rxsc::schedulable& scbl){
+            w.schedule_absolute(1000, [&o](const rxsc::schedulable& scbl){
                 o.unsubscribe();});
 
-            sc.schedule_absolute(300, [&s, &results1](const rxsc::schedulable& scbl){
+            w.schedule_absolute(300, [&s, &results1](const rxsc::schedulable& scbl){
                 s.get_observable().subscribe(results1);});
-            sc.schedule_absolute(400, [&s, &results2](const rxsc::schedulable& scbl){
+            w.schedule_absolute(400, [&s, &results2](const rxsc::schedulable& scbl){
                 s.get_observable().subscribe(results2);});
-            sc.schedule_absolute(900, [&s, &results3](const rxsc::schedulable& scbl){
+            w.schedule_absolute(900, [&s, &results3](const rxsc::schedulable& scbl){
                 s.get_observable().subscribe(results3);});
 
-            sc.schedule_absolute(600, [&results1](const rxsc::schedulable& scbl){
+            w.schedule_absolute(600, [&results1](const rxsc::schedulable& scbl){
                 results1.unsubscribe();});
-            sc.schedule_absolute(700, [&results2](const rxsc::schedulable& scbl){
+            w.schedule_absolute(700, [&results2](const rxsc::schedulable& scbl){
                 results2.unsubscribe();});
-            sc.schedule_absolute(800, [&results1](const rxsc::schedulable& scbl){
+            w.schedule_absolute(800, [&results1](const rxsc::schedulable& scbl){
                 results1.unsubscribe();});
-            sc.schedule_absolute(950, [&results3](const rxsc::schedulable& scbl){
+            w.schedule_absolute(950, [&results3](const rxsc::schedulable& scbl){
                 results3.unsubscribe();});
 
-            sc.start();
+            w.start();
 
             THEN("result1 contains expected messages"){
                 record items[] = {
@@ -353,6 +354,7 @@ SCENARIO("subject - finite source", "[subject][subjects]"){
     GIVEN("a subject and an finite source"){
 
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -377,40 +379,40 @@ SCENARIO("subject - finite source", "[subject][subjects]"){
 
         rxsub::subject<int> s;
 
-        auto results1 = sc.make_subscriber<int>();
+        auto results1 = w.make_subscriber<int>();
 
-        auto results2 = sc.make_subscriber<int>();
+        auto results2 = w.make_subscriber<int>();
 
-        auto results3 = sc.make_subscriber<int>();
+        auto results3 = w.make_subscriber<int>();
 
         WHEN("multicasting an infinite source"){
 
             auto o = s.get_subscriber();
 
-            sc.schedule_absolute(100, [&s, &o](const rxsc::schedulable& scbl){
+            w.schedule_absolute(100, [&s, &o](const rxsc::schedulable& scbl){
                 s = rxsub::subject<int>(); o = s.get_subscriber();});
-            sc.schedule_absolute(200, [&xs, &o](const rxsc::schedulable& scbl){
+            w.schedule_absolute(200, [&xs, &o](const rxsc::schedulable& scbl){
                 xs.subscribe(o);});
-            sc.schedule_absolute(1000, [&o](const rxsc::schedulable& scbl){
+            w.schedule_absolute(1000, [&o](const rxsc::schedulable& scbl){
                 o.unsubscribe();});
 
-            sc.schedule_absolute(300, [&s, &results1](const rxsc::schedulable& scbl){
+            w.schedule_absolute(300, [&s, &results1](const rxsc::schedulable& scbl){
                 s.get_observable().subscribe(results1);});
-            sc.schedule_absolute(400, [&s, &results2](const rxsc::schedulable& scbl){
+            w.schedule_absolute(400, [&s, &results2](const rxsc::schedulable& scbl){
                 s.get_observable().subscribe(results2);});
-            sc.schedule_absolute(900, [&s, &results3](const rxsc::schedulable& scbl){
+            w.schedule_absolute(900, [&s, &results3](const rxsc::schedulable& scbl){
                 s.get_observable().subscribe(results3);});
 
-            sc.schedule_absolute(600, [&results1](const rxsc::schedulable& scbl){
+            w.schedule_absolute(600, [&results1](const rxsc::schedulable& scbl){
                 results1.unsubscribe();});
-            sc.schedule_absolute(700, [&results2](const rxsc::schedulable& scbl){
+            w.schedule_absolute(700, [&results2](const rxsc::schedulable& scbl){
                 results2.unsubscribe();});
-            sc.schedule_absolute(800, [&results1](const rxsc::schedulable& scbl){
+            w.schedule_absolute(800, [&results1](const rxsc::schedulable& scbl){
                 results1.unsubscribe();});
-            sc.schedule_absolute(950, [&results3](const rxsc::schedulable& scbl){
+            w.schedule_absolute(950, [&results3](const rxsc::schedulable& scbl){
                 results3.unsubscribe();});
 
-            sc.start();
+            w.start();
 
             THEN("result1 contains expected messages"){
                 record items[] = {
@@ -452,6 +454,7 @@ SCENARIO("subject - on_error in source", "[subject][subjects]"){
     GIVEN("a subject and a source with an error"){
 
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -478,40 +481,40 @@ SCENARIO("subject - on_error in source", "[subject][subjects]"){
 
         rxsub::subject<int> s;
 
-        auto results1 = sc.make_subscriber<int>();
+        auto results1 = w.make_subscriber<int>();
 
-        auto results2 = sc.make_subscriber<int>();
+        auto results2 = w.make_subscriber<int>();
 
-        auto results3 = sc.make_subscriber<int>();
+        auto results3 = w.make_subscriber<int>();
 
         WHEN("multicasting an infinite source"){
 
             auto o = s.get_subscriber();
 
-            sc.schedule_absolute(100, [&s, &o](const rxsc::schedulable& scbl){
+            w.schedule_absolute(100, [&s, &o](const rxsc::schedulable& scbl){
                 s = rxsub::subject<int>(); o = s.get_subscriber();});
-            sc.schedule_absolute(200, [&xs, &o](const rxsc::schedulable& scbl){
+            w.schedule_absolute(200, [&xs, &o](const rxsc::schedulable& scbl){
                 xs.subscribe(o);});
-            sc.schedule_absolute(1000, [&o](const rxsc::schedulable& scbl){
+            w.schedule_absolute(1000, [&o](const rxsc::schedulable& scbl){
                 o.unsubscribe();});
 
-            sc.schedule_absolute(300, [&s, &results1](const rxsc::schedulable& scbl){
+            w.schedule_absolute(300, [&s, &results1](const rxsc::schedulable& scbl){
                 s.get_observable().subscribe(results1);});
-            sc.schedule_absolute(400, [&s, &results2](const rxsc::schedulable& scbl){
+            w.schedule_absolute(400, [&s, &results2](const rxsc::schedulable& scbl){
                 s.get_observable().subscribe(results2);});
-            sc.schedule_absolute(900, [&s, &results3](const rxsc::schedulable& scbl){
+            w.schedule_absolute(900, [&s, &results3](const rxsc::schedulable& scbl){
                 s.get_observable().subscribe(results3);});
 
-            sc.schedule_absolute(600, [&results1](const rxsc::schedulable& scbl){
+            w.schedule_absolute(600, [&results1](const rxsc::schedulable& scbl){
                 results1.unsubscribe();});
-            sc.schedule_absolute(700, [&results2](const rxsc::schedulable& scbl){
+            w.schedule_absolute(700, [&results2](const rxsc::schedulable& scbl){
                 results2.unsubscribe();});
-            sc.schedule_absolute(800, [&results1](const rxsc::schedulable& scbl){
+            w.schedule_absolute(800, [&results1](const rxsc::schedulable& scbl){
                 results1.unsubscribe();});
-            sc.schedule_absolute(950, [&results3](const rxsc::schedulable& scbl){
+            w.schedule_absolute(950, [&results3](const rxsc::schedulable& scbl){
                 results3.unsubscribe();});
 
-            sc.start();
+            w.start();
 
             THEN("result1 contains expected messages"){
                 record items[] = {

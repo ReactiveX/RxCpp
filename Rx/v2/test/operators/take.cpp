@@ -15,6 +15,7 @@ namespace rxt=rxcpp::test;
 SCENARIO("take 2", "[take][operators]"){
     GIVEN("a source"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -35,7 +36,7 @@ SCENARIO("take 2", "[take][operators]"){
 
         WHEN("2 values are taken"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [xs]() {
                     return xs
                         .take(2)
@@ -71,6 +72,7 @@ SCENARIO("take 2", "[take][operators]"){
 SCENARIO("take, complete after", "[take][operators]"){
     GIVEN("a source"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -104,7 +106,7 @@ SCENARIO("take, complete after", "[take][operators]"){
 
         WHEN("20 values are taken"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [xs]() {
                     return xs
                         .take(20)
@@ -155,6 +157,7 @@ SCENARIO("take, complete after", "[take][operators]"){
 SCENARIO("take, complete same", "[take][operators]"){
     GIVEN("a source"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -189,7 +192,7 @@ SCENARIO("take, complete same", "[take][operators]"){
 
         WHEN("17 values are taken"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [xs]() {
                     return xs
                         .take(17)
@@ -240,6 +243,7 @@ SCENARIO("take, complete same", "[take][operators]"){
 SCENARIO("take, complete before", "[take][operators]"){
     GIVEN("a source"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -274,7 +278,7 @@ SCENARIO("take, complete before", "[take][operators]"){
 
         WHEN("10 values are taken"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [xs]() {
                     return xs
                         .take(10)
@@ -318,6 +322,7 @@ SCENARIO("take, complete before", "[take][operators]"){
 SCENARIO("take, error after", "[take][operators]"){
     GIVEN("a source"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -354,7 +359,7 @@ SCENARIO("take, error after", "[take][operators]"){
 
         WHEN("20 values are taken"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [xs]() {
                     return xs
                         .take(20)
@@ -405,6 +410,7 @@ SCENARIO("take, error after", "[take][operators]"){
 SCENARIO("take, error same", "[take][operators]"){
     GIVEN("a source"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -439,7 +445,7 @@ SCENARIO("take, error same", "[take][operators]"){
 
         WHEN("17 values are taken"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [xs]() {
                     return xs
                         .take(17)
@@ -490,6 +496,7 @@ SCENARIO("take, error same", "[take][operators]"){
 SCENARIO("take, error before", "[take][operators]"){
     GIVEN("a source"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -524,7 +531,7 @@ SCENARIO("take, error before", "[take][operators]"){
 
         WHEN("3 values are taken"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [xs]() {
                     return xs
                         .take(3)
@@ -561,6 +568,7 @@ SCENARIO("take, error before", "[take][operators]"){
 SCENARIO("take, dispose before", "[take][operators]"){
     GIVEN("a source"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -594,7 +602,7 @@ SCENARIO("take, dispose before", "[take][operators]"){
 
         WHEN("3 values are taken"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [xs]() {
                     return xs
                         .take(3)
@@ -630,6 +638,7 @@ SCENARIO("take, dispose before", "[take][operators]"){
 SCENARIO("take, dispose after", "[take][operators]"){
     GIVEN("a source"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -663,7 +672,7 @@ SCENARIO("take, dispose after", "[take][operators]"){
 
         WHEN("3 values are taken"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [xs]() {
                     return xs
                         .take(3)
@@ -703,6 +712,7 @@ SCENARIO("take, dispose after", "[take][operators]"){
 SCENARIO("take_until trigger on_next", "[take_until][take][operators]"){
     GIVEN("2 sources"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -730,7 +740,7 @@ SCENARIO("take_until trigger on_next", "[take_until][take][operators]"){
 
         WHEN("one is taken until the other emits a marble"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [xs, ys]() {
                     return xs
                         .take_until(ys)
@@ -775,6 +785,7 @@ SCENARIO("take_until trigger on_next", "[take_until][take][operators]"){
 SCENARIO("take_until, preempt some data next", "[take_until][take][operators]"){
     GIVEN("2 sources"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -802,7 +813,7 @@ SCENARIO("take_until, preempt some data next", "[take_until][take][operators]"){
 
         WHEN("one is taken until the other emits a marble"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [l, r]() {
                     return l
                         .take_until(r)
@@ -847,6 +858,7 @@ SCENARIO("take_until, preempt some data next", "[take_until][take][operators]"){
 SCENARIO("take_until, preempt some data error", "[take_until][take][operators]"){
     GIVEN("2 sources"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -875,7 +887,7 @@ SCENARIO("take_until, preempt some data error", "[take_until][take][operators]")
 
         WHEN("one is taken until the other emits a marble"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [l, r]() {
                     return l
                         .take_until(r)
@@ -920,6 +932,7 @@ SCENARIO("take_until, preempt some data error", "[take_until][take][operators]")
 SCENARIO("take_until, no-preempt some data empty", "[take_until][take][operators]"){
     GIVEN("2 sources"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -946,7 +959,7 @@ SCENARIO("take_until, no-preempt some data empty", "[take_until][take][operators
 
         WHEN("one is taken until the other emits a marble"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [l, r]() {
                     return l
                         .take_until(r)
@@ -993,6 +1006,7 @@ SCENARIO("take_until, no-preempt some data empty", "[take_until][take][operators
 SCENARIO("take_until, no-preempt some data never", "[take_until][take][operators]"){
     GIVEN("2 sources"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -1018,7 +1032,7 @@ SCENARIO("take_until, no-preempt some data never", "[take_until][take][operators
 
         WHEN("one is taken until the other emits a marble"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [l, r]() {
                     return l
                         .take_until(r)
@@ -1065,6 +1079,7 @@ SCENARIO("take_until, no-preempt some data never", "[take_until][take][operators
 SCENARIO("take_until, preempt never next", "[take_until][take][operators]"){
     GIVEN("2 sources"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -1087,7 +1102,7 @@ SCENARIO("take_until, preempt never next", "[take_until][take][operators]"){
 
         WHEN("one is taken until the other emits a marble"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [l, r]() {
                     return l
                         .take_until(r)
@@ -1130,6 +1145,7 @@ SCENARIO("take_until, preempt never next", "[take_until][take][operators]"){
 SCENARIO("take_until, preempt never error", "[take_until][take][operators]"){
     GIVEN("2 sources"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -1153,7 +1169,7 @@ SCENARIO("take_until, preempt never error", "[take_until][take][operators]"){
 
         WHEN("one is taken until the other emits a marble"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [l, r]() {
                     return l
                         .take_until(r)
@@ -1196,6 +1212,7 @@ SCENARIO("take_until, preempt never error", "[take_until][take][operators]"){
 SCENARIO("take_until, no-preempt never empty", "[take_until][take][operators]"){
     GIVEN("2 sources"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -1217,7 +1234,7 @@ SCENARIO("take_until, no-preempt never empty", "[take_until][take][operators]"){
 
         WHEN("one is taken until the other emits a marble"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [l, r]() {
                     return l
                         .take_until(r)
@@ -1257,6 +1274,7 @@ SCENARIO("take_until, no-preempt never empty", "[take_until][take][operators]"){
 SCENARIO("take_until, no-preempt never never", "[take_until][take][operators]"){
     GIVEN("2 sources"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -1277,7 +1295,7 @@ SCENARIO("take_until, no-preempt never never", "[take_until][take][operators]"){
 
         WHEN("one is taken until the other emits a marble"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [l, r]() {
                     return l
                         .take_until(r)
@@ -1317,6 +1335,7 @@ SCENARIO("take_until, no-preempt never never", "[take_until][take][operators]"){
 SCENARIO("take_until, preempt before first produced", "[take_until][take][operators]"){
     GIVEN("2 sources"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -1341,7 +1360,7 @@ SCENARIO("take_until, preempt before first produced", "[take_until][take][operat
 
         WHEN("one is taken until the other emits a marble"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [l, r]() {
                     return l
                         .take_until(r)
@@ -1384,6 +1403,7 @@ SCENARIO("take_until, preempt before first produced", "[take_until][take][operat
 SCENARIO("take_until, preempt before first produced, remain silent and proper unsubscribed", "[take_until][take][operators]"){
     GIVEN("2 sources"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -1410,7 +1430,7 @@ SCENARIO("take_until, preempt before first produced, remain silent and proper un
 
         WHEN("one is taken until the other emits a marble"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [l, r, &sourceNotDisposed]() {
                     return l
                         .map([&sourceNotDisposed](int v){sourceNotDisposed = true; return v;})
@@ -1442,6 +1462,7 @@ SCENARIO("take_until, preempt before first produced, remain silent and proper un
 SCENARIO("take_until, no-preempt after last produced, proper unsubscribe signal", "[take_until][take][operators]"){
     GIVEN("2 sources"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -1468,7 +1489,7 @@ SCENARIO("take_until, no-preempt after last produced, proper unsubscribe signal"
 
         WHEN("one is taken until the other emits a marble"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [l, r, &signalNotDisposed]() {
                     return l
                         .take_until(r
@@ -1501,6 +1522,7 @@ SCENARIO("take_until, no-preempt after last produced, proper unsubscribe signal"
 SCENARIO("take_until, error some", "[take_until][take][operators]"){
     GIVEN("2 sources"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -1525,7 +1547,7 @@ SCENARIO("take_until, error some", "[take_until][take][operators]"){
 
         WHEN("one is taken until the other emits a marble"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [l, r]() {
                     return l
                         .take_until(r)

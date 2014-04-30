@@ -14,37 +14,13 @@ namespace schedulers {
 namespace detail {
 
 template<class Absolute, class Relative>
-struct virtual_time_base : public scheduler_interface
+struct virtual_time_base : std::enable_shared_from_this<virtual_time_base<Absolute, Relative>>
 {
 private:
     typedef virtual_time_base<Absolute, Relative> this_type;
     virtual_time_base(const virtual_time_base&);
 
     mutable bool isenabled;
-
-    struct virtual_worker : public worker_interface
-    {
-        std::shared_ptr<virtual_time_base> controller;
-
-        virtual_worker(std::shared_ptr<virtual_time_base> vb)
-            : controller(std::move(vb))
-        {
-        }
-
-        virtual clock_type::time_point now() const {
-            return controller->to_time_point(controller->clock_now);
-        }
-
-        virtual void schedule(const schedulable& scbl) const {
-            controller->schedule_absolute(controller->clock_now, scbl);
-        }
-
-        virtual void schedule(clock_type::time_point when, const schedulable& scbl) const {
-            controller->schedule_absolute(controller->to_relative(when - now()), scbl);
-        }
-    };
-
-    std::shared_ptr<>
 
 public:
     typedef Absolute absolute;
@@ -80,6 +56,7 @@ protected:
     virtual bool empty() const =0;
 
 public:
+
     virtual void schedule_absolute(absolute, const schedulable&) const =0;
 
     virtual void schedule_relative(relative when, const schedulable& a) const {
@@ -129,6 +106,7 @@ public:
 
         if (!isenabled) {
             isenabled = true;
+            rxsc::recursion r;
             while (!empty() && isenabled) {
                 auto next = top();
                 pop();
@@ -136,7 +114,7 @@ public:
                     if (next.when > clock_now) {
                         clock_now = next.when;
                     }
-                    next.what.get_action()(next.what);
+                    next.what(r.get_recurse());
                 }
                 else {
                     isenabled = false;
@@ -181,28 +159,13 @@ public:
         clock_now = dt;
     }
 
-    virtual clock_type::time_point now() const {
-        return to_time_point(clock_now);
-    }
-
-    virtual worker create_worker(composite_subscription cs) const {
-        std::shared_ptr<virtual_worker> wi(new virtual_worker(
-            std::static_pointer_cast<virtual_time_base>(
-                std::const_pointer_cast<scheduler_interface>(shared_from_this()))));
-        return worker(cs, wi);
-    }
-
 };
 
 }
 
 template<class Absolute, class Relative>
-class virtual_time : public detail::virtual_time_base<Absolute, Relative>
+struct virtual_time : public detail::virtual_time_base<Absolute, Relative>
 {
-private:
-    typedef virtual_time this_type;
-    virtual_time(const this_type&);
-
     typedef detail::virtual_time_base<Absolute, Relative> base;
 
     typedef typename base::item_type item_type;
@@ -212,8 +175,6 @@ private:
 
     mutable queue_item_time queue;
 
-    worker controller;
-
 public:
     virtual ~virtual_time()
     {
@@ -222,15 +183,11 @@ public:
 protected:
     virtual_time()
     {
-        controller = base::create_worker(composite_subscription());
     }
     explicit virtual_time(typename base::absolute initialClock)
         : base(initialClock)
     {
-        controller = base::create_worker(composite_subscription());
     }
-
-    virtual worker get_worker() const {return controller;}
 
     virtual item_type top() const {
         return queue.top();
@@ -249,7 +206,7 @@ protected:
     {
         // use a separate subscription here so that a's subscription is not affected
         auto run = make_schedulable(
-            get_worker(),
+            a.get_worker(),
             composite_subscription(),
             [a](const schedulable& scbl) {
                 rxsc::recursion r;
@@ -261,8 +218,8 @@ protected:
             });
         queue.push(item_type(when, run));
     }
-
 };
+
 
 
 }

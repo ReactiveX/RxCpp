@@ -462,32 +462,6 @@ public:
         : scoped(false)
     {
     }
-    schedulable(const schedulable& o)
-        : lifetime(o.lifetime)
-        , controller(o.controller)
-        , activity(o.activity)
-        , scoped(o.scoped)
-        , action_scope(o.scoped ? controller.add(lifetime) : weak_subscription())
-    {
-    }
-    schedulable(schedulable&& o)
-        : lifetime(std::move(o.lifetime))
-        , controller(std::move(o.controller))
-        , activity(std::move(o.activity))
-        , scoped(o.scoped)
-        , action_scope(std::move(o.action_scope))
-    {
-        o.scoped = false;
-    }
-    schedulable& operator =(schedulable o) {
-        using std::swap;
-        swap(lifetime, o.lifetime);
-        swap(controller, o.controller);
-        swap(activity, o.activity);
-        swap(scoped, o.scoped);
-        swap(action_scope, o.action_scope);
-        return *this;
-    }
 
     /// action and worker share lifetime
     schedulable(worker q, action a)

@@ -13,54 +13,141 @@ namespace schedulers {
 
 namespace detail {
 
-class test_type : public virtual_time<long, long>
+class test_type : public scheduler_interface
 {
 public:
-    typedef virtual_time<long, long> base;
-    typedef base::clock_type clock_type;
-    typedef std::shared_ptr<test_type> shared;
 
-    using base::schedule_absolute;
-    using base::schedule_relative;
+    typedef scheduler_interface::clock_type clock_type;
 
-    virtual worker get_worker() const
+    struct test_type_state : public virtual_time<long, long>
     {
-        return base::get_worker();
+        typedef virtual_time<long, long> base;
+
+        using base::schedule_absolute;
+        using base::schedule_relative;
+
+        clock_type::time_point now() const {
+            return to_time_point(clock_now);
+        }
+
+        virtual void schedule_absolute(long when, const schedulable& a) const
+        {
+            if (when <= base::clock_now)
+                when = base::clock_now + 1;
+
+            return base::schedule_absolute(when, a);
+        }
+
+        virtual long add(long absolute, long relative) const
+        {
+            return absolute + relative;
+        }
+
+        virtual clock_type::time_point to_time_point(long absolute) const
+        {
+            return clock_type::time_point(clock_type::duration(absolute));
+        }
+
+        virtual long to_relative(clock_type::duration d) const
+        {
+            return static_cast<long>(d.count());
+        }
+    };
+
+private:
+    mutable std::shared_ptr<test_type_state> state;
+
+public:
+    struct test_type_worker : public worker_interface
+    {
+        mutable std::shared_ptr<test_type_state> state;
+
+        typedef test_type_state::absolute absolute;
+        typedef test_type_state::relative relative;
+
+        test_type_worker(std::shared_ptr<test_type_state> st)
+            : state(std::move(st))
+        {
+        }
+
+        virtual clock_type::time_point now() const {
+            return state->now();
+        }
+
+        virtual void schedule(const schedulable& scbl) const {
+            state->schedule_absolute(state->clock(), scbl);
+        }
+
+        virtual void schedule(clock_type::time_point when, const schedulable& scbl) const {
+            state->schedule_absolute(state->to_relative(when - now()), scbl);
+        }
+
+
+        void schedule_absolute(absolute when, const schedulable& scbl) const {
+            state->schedule_absolute(when, scbl);
+        }
+
+        void schedule_relative(relative when, const schedulable& scbl) const {
+            state->schedule_relative(when, scbl);
+        }
+
+        bool is_enabled() const {return state->is_enabled();}
+        absolute clock() const {return state->clock();}
+
+        void start() const
+        {
+            state->start();
+        }
+
+        void stop() const
+        {
+            state->stop();
+        }
+
+        void advance_to(absolute time) const
+        {
+            state->advance_to(time);
+        }
+
+        void advance_by(relative time) const
+        {
+            state->advance_by(time);
+        }
+
+        void sleep(relative time) const
+        {
+            state->sleep(time);
+        }
+
+        template<class T>
+        subscriber<T, rxt::testable_observer<T>> make_subscriber() const;
+    };
+
+public:
+    test_type()
+        : state(new test_type_state())
+    {
     }
 
-    virtual void schedule_absolute(long when, const schedulable& a) const
-    {
-        if (when <= base::clock_now)
-            when = base::clock_now + 1;
-
-        return base::schedule_absolute(when, a);
+    virtual clock_type::time_point now() const {
+        return state->now();
     }
 
-    virtual long add(long absolute, long relative) const
-    {
-        return absolute + relative;
+    virtual worker create_worker(composite_subscription cs) const {
+        std::shared_ptr<test_type_worker> wi(new test_type_worker(state));
+        return worker(cs, wi);
     }
 
-    virtual clock_type::time_point to_time_point(long absolute) const
-    {
-        return clock_type::time_point(clock_type::duration(absolute));
+    std::shared_ptr<test_type_worker> create_test_type_worker_interface() const {
+        std::shared_ptr<test_type_worker> wi(new test_type_worker(state));
+        return wi;
     }
-
-    virtual long to_relative(clock_type::duration d) const
-    {
-        return static_cast<long>(d.count());
-    }
-
-    using base::start;
 
     template<class T>
     rxt::testable_observable<T> make_hot_observable(std::vector<rxn::recorded<std::shared_ptr<rxn::detail::notification_base<T>>>> messages) const;
 
     template<class T>
     rxt::testable_observable<T> make_cold_observable(std::vector<rxn::recorded<std::shared_ptr<rxn::detail::notification_base<T>>>> messages) const;
-
-    template<class T>
-    subscriber<T, rxt::testable_observer<T>> make_subscriber() const;
 };
 
 template<class T>
@@ -71,12 +158,12 @@ class mock_observer
     typedef rxn::recorded<typename notification_type::type> recorded_type;
 
 public:
-    mock_observer(typename test_type::shared sc)
+    explicit mock_observer(std::shared_ptr<test_type::test_type_state> sc)
         : sc(sc)
     {
     }
 
-    typename test_type::shared sc;
+    std::shared_ptr<test_type::test_type_state> sc;
     std::vector<recorded_type> m;
 
     virtual void on_subscribe(subscriber<T>) const {
@@ -92,12 +179,12 @@ public:
 };
 
 template<class T>
-subscriber<T, rxt::testable_observer<T>> test_type::make_subscriber() const
+subscriber<T, rxt::testable_observer<T>> test_type::test_type_worker::make_subscriber() const
 {
     typedef typename rxn::notification<T> notification_type;
     typedef rxn::recorded<typename notification_type::type> recorded_type;
 
-    std::shared_ptr<mock_observer<T>> ts(new mock_observer<T>(std::const_pointer_cast<test_type>(std::static_pointer_cast<const test_type>(shared_from_this()))));
+    std::shared_ptr<mock_observer<T>> ts(new mock_observer<T>(state));
 
     return rxcpp::make_subscriber<T>(rxt::testable_observer<T>(ts, make_observer_dynamic<T>(
           // on_next
@@ -125,30 +212,32 @@ class cold_observable
     : public rxt::detail::test_subject_base<T>
 {
     typedef cold_observable<T> this_type;
-    typename test_type::shared sc;
+    std::shared_ptr<test_type::test_type_state> sc;
     typedef rxn::recorded<typename rxn::notification<T>::type> recorded_type;
     mutable std::vector<recorded_type> mv;
     mutable std::vector<rxn::subscription> sv;
+    mutable worker controller;
 
 public:
 
-    cold_observable(typename test_type::shared sc, std::vector<recorded_type> mv)
+    cold_observable(std::shared_ptr<test_type::test_type_state> sc, worker w, std::vector<recorded_type> mv)
         : sc(sc)
         , mv(std::move(mv))
+        , controller(w)
     {
     }
 
     template<class Iterator>
-    cold_observable(typename test_type::shared sc, Iterator begin, Iterator end)
+    cold_observable(std::shared_ptr<test_type::test_type_state> sc, worker w, Iterator begin, Iterator end)
         : sc(sc)
         , mv(begin, end)
+        , controller(w)
     {
     }
 
     virtual void on_subscribe(subscriber<T> o) const {
         sv.push_back(rxn::subscription(sc->clock()));
         auto index = sv.size() - 1;
-        auto controller = sc->create_worker(composite_subscription());
 
         for (auto& message : mv) {
             auto n = message.value();
@@ -179,7 +268,7 @@ public:
 template<class T>
 rxt::testable_observable<T> test_type::make_cold_observable(std::vector<rxn::recorded<std::shared_ptr<rxn::detail::notification_base<T>>>> messages) const
 {
-    auto co = std::shared_ptr<cold_observable<T>>(new cold_observable<T>(std::const_pointer_cast<test_type>(std::static_pointer_cast<const test_type>(shared_from_this())), std::move(messages)));
+    auto co = std::shared_ptr<cold_observable<T>>(new cold_observable<T>(state, create_worker(composite_subscription()), std::move(messages)));
     return rxt::testable_observable<T>(co);
 }
 
@@ -188,20 +277,21 @@ class hot_observable
     : public rxt::detail::test_subject_base<T>
 {
     typedef hot_observable<T> this_type;
-    typename test_type::shared sc;
+    std::shared_ptr<test_type::test_type_state> sc;
     typedef rxn::recorded<typename rxn::notification<T>::type> recorded_type;
     typedef subscriber<T> observer_type;
     mutable std::vector<recorded_type> mv;
     mutable std::vector<rxn::subscription> sv;
     mutable std::vector<observer_type> observers;
+    mutable worker controller;
 
 public:
 
-    hot_observable(typename test_type::shared sc, std::vector<recorded_type> mv)
+    hot_observable(std::shared_ptr<test_type::test_type_state> sc, worker w, std::vector<recorded_type> mv)
         : sc(sc)
         , mv(mv)
+        , controller(w)
     {
-        auto controller = sc->create_worker(composite_subscription());
         for (auto& message : mv) {
             auto n = message.value();
             sc->schedule_absolute(message.time(), make_schedulable(
@@ -240,18 +330,18 @@ public:
 template<class T>
 rxt::testable_observable<T> test_type::make_hot_observable(std::vector<rxn::recorded<std::shared_ptr<rxn::detail::notification_base<T>>>> messages) const
 {
-    return rxt::testable_observable<T>(std::make_shared<hot_observable<T>>(
-        std::const_pointer_cast<test_type>(std::static_pointer_cast<const test_type>(shared_from_this())), std::move(messages)));
+    return rxt::testable_observable<T>(
+        std::make_shared<hot_observable<T>>(state, create_worker(composite_subscription()), std::move(messages)));
 }
 
 }
 
 class test : public scheduler
 {
-    detail::test_type::shared tester;
+    std::shared_ptr<detail::test_type> tester;
 public:
 
-    explicit test(detail::test_type::shared t)
+    explicit test(std::shared_ptr<detail::test_type> t)
         : scheduler(std::static_pointer_cast<scheduler_interface>(t))
         , tester(t)
     {
@@ -305,85 +395,110 @@ public:
         ~messages();
     };
 
-    void schedule_absolute(long when, const schedulable& a) const {
-        tester->schedule_absolute(when, a);
-    }
-
-    void schedule_relative(long when, const schedulable& a) const {
-        tester->schedule_relative(when, a);
-    }
-
-    template<class Arg0, class... ArgN>
-    auto schedule_absolute(long when, Arg0&& a0, ArgN&&... an) const
-        -> typename std::enable_if<
-            (detail::is_action_function<Arg0>::value ||
-            is_subscription<Arg0>::value) &&
-            !is_schedulable<Arg0>::value>::type {
-        tester->schedule_absolute(when, make_schedulable(tester->get_worker(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
-    }
-
-    template<class Arg0, class... ArgN>
-    auto schedule_relative(long when, Arg0&& a0, ArgN&&... an) const
-        -> typename std::enable_if<
-            (detail::is_action_function<Arg0>::value ||
-            is_subscription<Arg0>::value) &&
-            !is_schedulable<Arg0>::value>::type {
-        tester->schedule_relative(when, make_schedulable(tester->get_worker(), std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
-    }
-
-    template<class T, class F>
-    auto start(F&& createSource, long created, long subscribed, long unsubscribed) const
-        -> subscriber<T, rxt::testable_observer<T>>
+    class test_worker : public worker
     {
-        typename std::decay<F>::type createSrc = std::forward<F>(createSource);
+        std::shared_ptr<detail::test_type::test_type_worker> tester;
+    public:
 
-        struct state_type
-        : public std::enable_shared_from_this<state_type>
+        explicit test_worker(composite_subscription cs, std::shared_ptr<detail::test_type::test_type_worker> t)
+            : worker(cs, std::static_pointer_cast<worker_interface>(t))
+            , tester(t)
         {
-            typedef decltype(std::forward<F>(createSrc)()) source_type;
+        }
 
-            std::unique_ptr<source_type> source;
-            subscriber<T, rxt::testable_observer<T>> o;
+        void schedule_absolute(long when, const schedulable& a) const {
+            tester->schedule_absolute(when, a);
+        }
 
-            explicit state_type(subscriber<T, rxt::testable_observer<T>> o)
-            : source()
-            , o(o)
+        void schedule_relative(long when, const schedulable& a) const {
+            tester->schedule_relative(when, a);
+        }
+
+        template<class Arg0, class... ArgN>
+        auto schedule_absolute(long when, Arg0&& a0, ArgN&&... an) const
+            -> typename std::enable_if<
+                (detail::is_action_function<Arg0>::value ||
+                is_subscription<Arg0>::value) &&
+                !is_schedulable<Arg0>::value>::type {
+            tester->schedule_absolute(when, make_schedulable(*this, std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
+        }
+
+        template<class Arg0, class... ArgN>
+        auto schedule_relative(long when, Arg0&& a0, ArgN&&... an) const
+            -> typename std::enable_if<
+                (detail::is_action_function<Arg0>::value ||
+                is_subscription<Arg0>::value) &&
+                !is_schedulable<Arg0>::value>::type {
+            tester->schedule_relative(when, make_schedulable(*this, std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
+        }
+
+        template<class T, class F>
+        auto start(F&& createSource, long created, long subscribed, long unsubscribed) const
+            -> subscriber<T, rxt::testable_observer<T>>
+        {
+            typename std::decay<F>::type createSrc = std::forward<F>(createSource);
+
+            struct state_type
+            : public std::enable_shared_from_this<state_type>
             {
-            }
-        };
-        std::shared_ptr<state_type> state(new state_type(this->make_subscriber<T>()));
+                typedef decltype(std::forward<F>(createSrc)()) source_type;
 
-        schedule_absolute(created, [createSrc, state](const schedulable& scbl) {
-            state->source.reset(new typename state_type::source_type(createSrc()));
-        });
-        schedule_absolute(subscribed, [state](const schedulable& scbl) {
-            state->source->subscribe(state->o);
-        });
-        schedule_absolute(unsubscribed, [state](const schedulable& scbl) {
-            state->o.unsubscribe();
-        });
+                std::unique_ptr<source_type> source;
+                subscriber<T, rxt::testable_observer<T>> o;
 
-        tester->start();
+                explicit state_type(subscriber<T, rxt::testable_observer<T>> o)
+                : source()
+                , o(o)
+                {
+                }
+            };
+            std::shared_ptr<state_type> state(new state_type(this->make_subscriber<T>()));
 
-        return state->o;
+            schedule_absolute(created, [createSrc, state](const schedulable& scbl) {
+                state->source.reset(new typename state_type::source_type(createSrc()));
+            });
+            schedule_absolute(subscribed, [state](const schedulable& scbl) {
+                state->source->subscribe(state->o);
+            });
+            schedule_absolute(unsubscribed, [state](const schedulable& scbl) {
+                state->o.unsubscribe();
+            });
+
+            tester->start();
+
+            return state->o;
+        }
+
+        template<class T, class F>
+        auto start(F&& createSource, long unsubscribed) const
+            -> subscriber<T, rxt::testable_observer<T>>
+        {
+            return start<T>(std::forward<F>(createSource), created_time, subscribed_time, unsubscribed);
+        }
+
+        template<class T, class F>
+        auto start(F&& createSource) const
+            -> subscriber<T, rxt::testable_observer<T>>
+        {
+            return start<T>(std::forward<F>(createSource), created_time, subscribed_time, unsubscribed_time);
+        }
+
+        void start() const {
+            tester->start();
+        }
+
+        template<class T>
+        subscriber<T, rxt::testable_observer<T>> make_subscriber() const {
+            return tester->make_subscriber<T>();
+        }
+    };
+
+    clock_type::time_point now() const {
+        return tester->now();
     }
 
-    template<class T, class F>
-    auto start(F&& createSource, long unsubscribed) const
-        -> subscriber<T, rxt::testable_observer<T>>
-    {
-        return start<T>(std::forward<F>(createSource), created_time, subscribed_time, unsubscribed);
-    }
-
-    template<class T, class F>
-    auto start(F&& createSource) const
-        -> subscriber<T, rxt::testable_observer<T>>
-    {
-        return start<T>(std::forward<F>(createSource), created_time, subscribed_time, unsubscribed_time);
-    }
-
-    void start() const {
-        tester->start();
+    test_worker create_worker(composite_subscription cs = composite_subscription()) const {
+        return test_worker(cs, tester->create_test_type_worker_interface());
     }
 
     template<class T>
@@ -406,11 +521,6 @@ public:
     auto make_cold_observable(const T (&arr) [size]) const
         -> decltype(tester->make_cold_observable(std::vector<T>())) {
         return      tester->make_cold_observable(rxu::to_vector(arr));
-    }
-
-    template<class T>
-    subscriber<T, rxt::testable_observer<T>> make_subscriber() const {
-        return tester->make_subscriber<T>();
     }
 };
 

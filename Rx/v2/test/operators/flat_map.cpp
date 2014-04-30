@@ -12,7 +12,7 @@ namespace rxt=rxcpp::test;
 
 #include "catch.hpp"
 
-static const int static_tripletCount = 500;
+static const int static_tripletCount = 2;
 
 SCENARIO("pythagorian for loops", "[hide][for][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
@@ -32,6 +32,7 @@ SCENARIO("pythagorian for loops", "[hide][for][pythagorian][perf]"){
                     for(int y = x; y <= z; ++y)
                     {
                         ++c;
+                        std::cout << z << "," << y << "," << x << std::endl;
                         if(x*x + y*y == z*z)
                         {
                             //result += (x + y + z);
@@ -60,6 +61,7 @@ SCENARIO("pythagorian ranges", "[hide][for][pythagorian][perf]"){
             using namespace std::chrono;
             typedef steady_clock clock;
 
+            std::vector<std::tuple<int, int, int>> tried;
             int c = 0;
             int ct = 0;
             int n = 1;
@@ -67,10 +69,12 @@ SCENARIO("pythagorian ranges", "[hide][for][pythagorian][perf]"){
             auto triples =
                 rxs::range(1)
                     .flat_map(
-                        [&c](int z){ return rxs::range(1, z)
+                        [&c, &tried](int z){ return rxs::range(1, z)
                             .flat_map(
-                                [&c, z](int x){ return rxs::range(x, z)
-                                    .filter([&c, z, x](int y){++c; return x*x + y*y == z*z;})
+                                [&c, &tried, z](int x){ return rxs::range(x, z)
+                                    .filter([&c, &tried, z, x](int y){++c;
+                                        tried.push_back(std::make_tuple(z, y, x));
+                                        return x*x + y*y == z*z;})
                                     .map([z, x](int y){return std::make_tuple(x, y, z);});},
                                 [](int x, std::tuple<int,int,int> triplet){return triplet;});},
                         [](int z, std::tuple<int,int,int> triplet){return triplet;});
@@ -81,6 +85,10 @@ SCENARIO("pythagorian ranges", "[hide][for][pythagorian][perf]"){
                         //int x,y,z; std::tie(x,y,z) = triplet; std::cout << x << "," << y << "," << z << std::endl;
                     },
                     [](std::exception_ptr){abort();});
+            std::sort(tried.begin(), tried.end());
+            for (auto& t : tried) {
+                int x,y,z; std::tie(z,y,x) = t; std::cout << z << "," << y << "," << x << std::endl;
+            }
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
                    duration_cast<milliseconds>(start.time_since_epoch());
@@ -93,6 +101,7 @@ SCENARIO("pythagorian ranges", "[hide][for][pythagorian][perf]"){
 SCENARIO("flat_map completes", "[flat_map][map][operators]"){
     GIVEN("two cold observables. one of ints. one of strings."){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxsc::test::messages<std::string> ms;
         typedef rxn::subscription life;
@@ -127,7 +136,7 @@ SCENARIO("flat_map completes", "[flat_map][map][operators]"){
 
         WHEN("each int is mapped to the strings"){
 
-            auto res = sc.start<std::string>(
+            auto res = w.start<std::string>(
                 [&]() {
                     return xs
                         .flat_map(
@@ -193,6 +202,7 @@ SCENARIO("flat_map completes", "[flat_map][map][operators]"){
 SCENARIO("flat_map source never ends", "[flat_map][map][operators]"){
     GIVEN("two cold observables. one of ints. one of strings."){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxsc::test::messages<std::string> ms;
         typedef rxn::subscription life;
@@ -227,7 +237,7 @@ SCENARIO("flat_map source never ends", "[flat_map][map][operators]"){
 
         WHEN("each int is mapped to the strings"){
 
-            auto res = sc.start<std::string>(
+            auto res = w.start<std::string>(
                 [&]() {
                     return xs
                         .flat_map([&](int){return ys;}, [](int, std::string s){return s;})
@@ -294,6 +304,7 @@ SCENARIO("flat_map source never ends", "[flat_map][map][operators]"){
 SCENARIO("flat_map inner error", "[flat_map][map][operators]"){
     GIVEN("two cold observables. one of ints. one of strings."){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxsc::test::messages<std::string> ms;
         typedef rxn::subscription life;
@@ -330,7 +341,7 @@ SCENARIO("flat_map inner error", "[flat_map][map][operators]"){
 
         WHEN("each int is mapped to the strings"){
 
-            auto res = sc.start<std::string>(
+            auto res = w.start<std::string>(
                 [&]() {
                     return xs
                         .flat_map([&](int){return ys;}, [](int, std::string s){return s;})

@@ -16,6 +16,7 @@ namespace rxt=rxcpp::test;
 SCENARIO("map stops on completion", "[map][operators]"){
     GIVEN("a test hot observable of ints"){
         auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
         typedef rxsc::test::messages<int> m;
         typedef rxn::subscription life;
         typedef m::recorded_type record;
@@ -41,7 +42,7 @@ SCENARIO("map stops on completion", "[map][operators]"){
 
         WHEN("mapped to ints that are one larger"){
 
-            auto res = sc.start<int>(
+            auto res = w.start<int>(
                 [xs, &invoked]() {
                     return xs
                         .map([&invoked](int x) {
