@@ -50,11 +50,11 @@ struct take_until : public operator_base<T>
     void on_subscribe(const Subscriber& s) {
 
         typedef Subscriber output_type;
-        struct state_type
-            : public std::enable_shared_from_this<state_type>
+        struct take_until_state_type
+            : public std::enable_shared_from_this<take_until_state_type>
             , public values
         {
-            state_type(const values& i, const output_type& oarg)
+            take_until_state_type(const values& i, const output_type& oarg)
                 : values(i)
                 , mode_value(mode::taking)
                 , busy(0)
@@ -63,32 +63,33 @@ struct take_until : public operator_base<T>
             }
             mutable std::atomic<typename mode::type> mode_value;
             mutable std::atomic<int> busy;
-            mutable std::mutex error_lock;
+            mutable std::mutex finish_lock;
             mutable std::exception_ptr exception;
             output_type out;
         };
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<state_type>(new state_type(initial, s));
+        auto state = std::shared_ptr<take_until_state_type>(new take_until_state_type(initial, s));
 
         struct activity
         {
-            const std::shared_ptr<state_type>& st;
+            const std::shared_ptr<take_until_state_type>& st;
             ~activity() {
                 if (--st->busy == 0 && st->mode_value > mode::clear) {
                     // need to finish
-                    if (st->mode_value < mode::stopped && ++st->busy == 1) {
-                        // this is the finish owner
-                        auto fin = st->mode_value.exchange(mode::stopped);
-                        if (fin == mode::triggered) {
-                            st->out.on_completed();
-                        } else if (fin == mode::errored) {
-                            std::unique_lock<std::mutex> guard(st->error_lock);
-                            st->out.on_error(st->exception);
-                        }
+                    // this is the finish owner
+                    std::unique_lock<std::mutex> guard(st->finish_lock);
+                    typename mode::type fin = st->mode_value;
+                    auto ex = st->exception;
+                    st->mode_value.exchange(mode::stopped);
+                    guard.unlock();
+                    if (fin == mode::triggered) {
+                        st->out.on_completed();
+                    } else if (fin == mode::errored) {
+                        st->out.on_error(ex);
                     }
                 }
             }
-            explicit activity(const std::shared_ptr<state_type>& st)
+            explicit activity(const std::shared_ptr<take_until_state_type>& st)
                 : st(st)
             {
                 ++st->busy;
@@ -107,26 +108,24 @@ struct take_until : public operator_base<T>
         // on_next
             [state](const typename trigger_source_type::value_type&) {
                 activity finisher(state);
-                typename mode::type v = state->mode_value;
-                if (v != mode::taking) {return;}
-                state->mode_value.compare_exchange_strong(v, mode::triggered);
+                std::unique_lock<std::mutex> guard(state->finish_lock);
+                if (state->mode_value != mode::taking) {return;}
+                state->mode_value.exchange(mode::triggered);
             },
         // on_error
             [state](std::exception_ptr e) {
                 activity finisher(state);
-                std::unique_lock<std::mutex> guard(state->error_lock);
-                typename mode::type v = state->mode_value;
-                if (v != mode::taking) {return;}
-                if (state->mode_value.compare_exchange_strong(v, mode::errored)) {
-                    state->exception = e;
-                }
+                std::unique_lock<std::mutex> guard(state->finish_lock);
+                if (state->mode_value != mode::taking) {return;}
+                state->mode_value.exchange(mode::errored);
+                state->exception = e;
             },
         // on_completed
             [state]() {
                 activity finisher(state);
-                typename mode::type v = state->mode_value;
-                if (v != mode::taking) {return;}
-                state->mode_value.compare_exchange_strong(v, mode::clear);
+                std::unique_lock<std::mutex> guard(state->finish_lock);
+                if (state->mode_value != mode::taking) {return;}
+                state->mode_value.exchange(mode::clear);
             }
         );
 
@@ -146,19 +145,17 @@ struct take_until : public operator_base<T>
         // on_error
             [state](std::exception_ptr e) {
                 activity finisher(state);
-                std::unique_lock<std::mutex> guard(state->error_lock);
-                typename mode::type v = state->mode_value;
-                if (v < mode::triggered) {return;}
-                if (state->mode_value.compare_exchange_strong(v, mode::errored)) {
-                    state->exception = e;
-                }
+                std::unique_lock<std::mutex> guard(state->finish_lock);
+                if (state->mode_value > mode::clear) {return;}
+                state->mode_value.exchange(mode::errored);
+                state->exception = e;
             },
         // on_completed
             [state]() {
                 activity finisher(state);
-                typename mode::type v = state->mode_value;
-                if (v < mode::triggered) {return;}
-                state->mode_value.compare_exchange_strong(v, mode::triggered);
+                std::unique_lock<std::mutex> guard(state->finish_lock);
+                if (state->mode_value > mode::clear) {return;}
+                state->mode_value.exchange(mode::triggered);
             }
         );
     }
