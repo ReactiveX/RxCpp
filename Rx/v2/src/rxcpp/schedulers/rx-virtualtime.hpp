@@ -187,21 +187,32 @@ private:
     typedef detail::virtual_time_base<Absolute, Relative> base;
 
     typedef typename base::item_type item_type;
+    
+    // second value in queue_elem_type is used to maintain FIFO
+    // ordering of elements where item_type.when are equal
+    typedef typename std::pair<item_type, long> queue_elem_type;
 
     struct compare_item_time
     {
-        bool operator()(const item_type& lhs, const item_type& rhs) const {
-            return lhs.when > rhs.when;
+        bool operator()(const queue_elem_type& lhs, const queue_elem_type& rhs) const {
+            if (lhs.first.when == rhs.first.when) {
+                return lhs.second > rhs.second;
+            }
+            else {
+                return lhs.first.when > rhs.first.when;
+            }
         }
     };
 
     typedef std::priority_queue<
-        item_type,
-        std::vector<item_type>,
+        queue_elem_type,
+        std::vector< queue_elem_type >,
         compare_item_time
     > queue_item_time;
 
     mutable queue_item_time queue;
+    
+    mutable long counter;
 
 public:
     virtual ~virtual_time()
@@ -214,11 +225,12 @@ protected:
     }
     explicit virtual_time(typename base::absolute initialClock)
         : base(initialClock)
+        , queue_elem_type(0)
     {
     }
 
     virtual item_type top() const {
-        return queue.top();
+        return queue.top().first;
     }
     virtual void pop() const {
         queue.pop();
@@ -243,7 +255,7 @@ protected:
                     a(r.get_recurse());
                 }
             });
-        queue.push(item_type(when, run));
+        queue.push(queue_elem_type(item_type(when, run), counter++));
     }
 
 };
