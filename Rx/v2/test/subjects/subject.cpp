@@ -163,7 +163,7 @@ SCENARIO("for loop calls ready on_next(int)", "[hide][for][asyncobserver][ready]
             asyncwithready::async_subscriber<int, decltype(onnext)> scbr(onnext);
             asyncwithready::ready::onthen_type chunk;
             int i = 0;
-            chunk = [&chunk, scbr, i]() mutable {
+            chunk = [&chunk, scbr, i, onnextcalls]() mutable {
                 for (; i < onnextcalls && scbr.is_subscribed(); i++) {
                     auto controller = scbr.on_next(i);
                     if (!controller.is_ready()) {

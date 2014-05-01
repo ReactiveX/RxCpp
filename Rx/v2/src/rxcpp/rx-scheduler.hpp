@@ -332,7 +332,10 @@ public:
 };
 
 
-struct schedulable_base : public subscription_base, public worker_base, public action_base
+struct schedulable_base :
+    // public subscription_base, <- already in worker base
+    public worker_base,
+    public action_base
 {
     typedef tag_schedulable schedulable_tag;
 };
@@ -773,7 +776,7 @@ template<class TimePoint>
 struct time_schedulable
 {
     typedef TimePoint time_point_type;
-    
+
     time_schedulable(TimePoint when, schedulable a)
         : when(when)
         , what(std::move(a))
@@ -783,7 +786,7 @@ struct time_schedulable
     schedulable what;
 };
 
-    
+
 // Sorts time_schedulable items in priority order sorted
 // on value of time_schedulable.when. Items with equal
 // values for when are sorted in fifo order.
@@ -791,10 +794,10 @@ template<class TimePoint>
 class schedulable_queue {
 public:
     typedef time_schedulable<TimePoint> item_type;
-    typedef std::pair<item_type, std::int64_t> elem_type;
+    typedef std::pair<item_type, int64_t> elem_type;
     typedef std::vector<elem_type> container_type;
     typedef const item_type& const_reference;
-    
+
 private:
     struct compare_elem
     {
@@ -807,38 +810,38 @@ private:
             }
         }
     };
-    
+
     typedef std::priority_queue<
         elem_type,
         container_type,
         compare_elem
     > queue_type;
-    
+
     queue_type queue;
-    
-    std::int64_t ordinal;
+
+    int64_t ordinal;
 public:
     const_reference top() const {
         return queue.top().first;
     }
-    
+
     void pop() {
         queue.pop();
     }
-    
+
     bool empty() const {
         return queue.empty();
     }
-    
+
     void push(const item_type& value) {
         queue.push(elem_type(value, ordinal++));
     }
-    
+
     void push(item_type&& value) {
         queue.push(elem_type(std::move(value), ordinal++));
     }
 };
-    
+
 }
 
 }
