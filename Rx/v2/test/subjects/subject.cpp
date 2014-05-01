@@ -15,8 +15,11 @@ namespace rxt=rxcpp::test;
 
 #include "catch.hpp"
 
+#include <future>
+
 
 const int static_onnextcalls = 100000000;
+int aliased = 0;
 
 SCENARIO("for loop locks mutex", "[hide][for][mutex][perf]"){
     const int& onnextcalls = static_onnextcalls;
@@ -41,7 +44,156 @@ SCENARIO("for loop locks mutex", "[hide][for][mutex][perf]"){
     }
 }
 
-int aliased = 0;
+namespace syncwithvoid {
+template<class T, class OnNext>
+class sync_subscriber
+{
+public:
+    OnNext onnext;
+    bool issubscribed;
+    explicit sync_subscriber(OnNext on)
+        : onnext(on)
+        , issubscribed(true)
+    {
+    }
+    bool is_subscribed() {return issubscribed;}
+    void unsubscribe() {issubscribed = false;}
+    void on_next(T v) {
+        onnext(v);
+    }
+};
+}
+SCENARIO("for loop calls void on_next(int)", "[hide][for][asyncobserver][baseline][perf]"){
+    const int& onnextcalls = static_onnextcalls;
+    GIVEN("a for loop"){
+        WHEN("calling on_next 100 million times"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
+
+            auto c = std::addressof(aliased);
+            *c = 0;
+            int n = 1;
+            auto start = clock::now();
+            auto onnext = [c](int){++*c;};
+            syncwithvoid::sync_subscriber<int, decltype(onnext)> scbr(onnext);
+            for (int i = 0; i < onnextcalls && scbr.is_subscribed(); i++) {
+                scbr.on_next(i);
+            }
+            auto finish = clock::now();
+            auto msElapsed = duration_cast<milliseconds>(finish-start);
+            std::cout << "loop void           : " << n << " subscribed, " << *c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+
+        }
+    }
+}
+
+namespace asyncwithready {
+class ready
+{
+public:
+    typedef std::function<void()> onthen_type;
+    std::function<void(onthen_type)> setthen;
+    bool is_ready() {return !setthen;}
+    void then(onthen_type ot) {
+        if (is_ready()) {
+            abort();
+        }
+        setthen(ot);
+    }
+};
+template<class T, class OnNext>
+class async_subscriber
+{
+public:
+    OnNext onnext;
+    bool issubscribed;
+    explicit async_subscriber(OnNext on)
+        : onnext(on)
+        , issubscribed(true)
+    {
+    }
+    bool is_subscribed() {return issubscribed;}
+    void unsubscribe() {issubscribed = false;}
+    ready on_next(T v) {
+        onnext(v); return ready();}
+};
+}
+SCENARIO("for loop calls ready on_next(int)", "[hide][for][asyncobserver][ready][perf]"){
+    const int& onnextcalls = static_onnextcalls;
+    GIVEN("a for loop"){
+        WHEN("calling on_next 100 million times"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
+
+            auto c = std::addressof(aliased);
+            *c = 0;
+            int n = 1;
+            auto start = clock::now();
+            auto onnext = [&c](int){++*c;};
+            asyncwithready::async_subscriber<int, decltype(onnext)> scbr(onnext);
+            for (int i = 0; i < onnextcalls && scbr.is_subscribed(); i++) {
+                auto controller = scbr.on_next(i);
+                if (!controller.is_ready()) {
+                    controller.then([](){
+                        // todo continue
+                    });
+                }
+            }
+            auto finish = clock::now();
+            auto msElapsed = duration_cast<milliseconds>(finish-start);
+            std::cout << "loop ready          : " << n << " subscribed, " << *c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+
+        }
+    }
+}
+
+namespace asyncwithfuture {
+class unit {};
+template<class T, class OnNext>
+class async_subscriber
+{
+public:
+    OnNext onnext;
+    bool issubscribed;
+    explicit async_subscriber(OnNext on)
+        : onnext(on)
+        , issubscribed(true)
+    {
+    }
+    bool is_subscribed() {return issubscribed;}
+    void unsubscribe() {issubscribed = false;}
+    std::future<unit> on_next(T v) {
+        std::promise<unit> ready;
+        ready.set_value(unit());
+        onnext(v); return ready.get_future();}
+};
+}
+SCENARIO("for loop calls std::future<unit> on_next(int)", "[hide][for][asyncobserver][future][perf]"){
+    const int& onnextcalls = static_onnextcalls;
+    GIVEN("a for loop"){
+        WHEN("calling on_next 100 million times"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
+
+            auto c = std::addressof(aliased);
+            *c = 0;
+            int n = 1;
+            auto start = clock::now();
+            auto onnext = [&c](int){++*c;};
+            asyncwithfuture::async_subscriber<int, decltype(onnext)> scbr(onnext);
+            for (int i = 0; i < onnextcalls && scbr.is_subscribed(); i++) {
+                auto isready = scbr.on_next(i);
+                if (isready.wait_for(std::chrono::milliseconds(0)) == std::future_status::timeout) {
+                    isready.wait();
+                }
+            }
+            auto finish = clock::now();
+            auto msElapsed = duration_cast<milliseconds>(finish-start);
+            std::cout << "loop future<unit>   : " << n << " subscribed, " << *c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+
+        }
+    }
+}
 
 SCENARIO("for loop calls observer", "[hide][for][observer][perf]"){
     const int& onnextcalls = static_onnextcalls;
