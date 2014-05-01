@@ -188,18 +188,8 @@ private:
 
     typedef typename base::item_type item_type;
 
-    struct compare_item_time
-    {
-        bool operator()(const item_type& lhs, const item_type& rhs) const {
-            return lhs.when > rhs.when;
-        }
-    };
-
-    typedef std::priority_queue<
-        item_type,
-        std::vector<item_type>,
-        compare_item_time
-    > queue_item_time;
+    typedef detail::schedulable_queue<
+        typename item_type::time_point_type> queue_item_time;
 
     mutable queue_item_time queue;
 
