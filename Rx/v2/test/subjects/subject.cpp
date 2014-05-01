@@ -88,11 +88,16 @@ SCENARIO("for loop calls void on_next(int)", "[hide][for][asyncobserver][baselin
 }
 
 namespace asyncwithready {
+// ready is an immutable class.
 class ready
 {
 public:
     typedef std::function<void()> onthen_type;
+private:
     std::function<void(onthen_type)> setthen;
+public:
+    ready() {}
+    ready(std::function<void(onthen_type)> st) : setthen(st) {}
     bool is_ready() {return !setthen;}
     void then(onthen_type ot) {
         if (is_ready()) {
@@ -107,15 +112,40 @@ class async_subscriber
 public:
     OnNext onnext;
     bool issubscribed;
+    int count;
     explicit async_subscriber(OnNext on)
         : onnext(on)
         , issubscribed(true)
+        , count(0)
     {
     }
     bool is_subscribed() {return issubscribed;}
     void unsubscribe() {issubscribed = false;}
     ready on_next(T v) {
-        onnext(v); return ready();}
+        // push v onto queue
+
+        // under some condition pop v off of queue and pass it on
+        onnext(v);
+
+        // for demo purposes
+        // simulate queue full every 100000 items
+        if (count == 100000) {
+            // 'queue is full'
+            ready no([this](ready::onthen_type ot){
+                // full version will sync producer and consumer (in producer push and consumer pop)
+                // and decide when to restart the producer
+                if (!this->count) {
+                    ot();
+                }
+            });
+            // set queue empty since the demo has no separate consumer thread
+            count = 0;
+            // 'queue is empty'
+            return no;
+        }
+        static const ready yes;
+        return yes;
+    }
 };
 }
 SCENARIO("for loop calls ready on_next(int)", "[hide][for][asyncobserver][ready][perf]"){
@@ -131,14 +161,17 @@ SCENARIO("for loop calls ready on_next(int)", "[hide][for][asyncobserver][ready]
             auto start = clock::now();
             auto onnext = [&c](int){++*c;};
             asyncwithready::async_subscriber<int, decltype(onnext)> scbr(onnext);
-            for (int i = 0; i < onnextcalls && scbr.is_subscribed(); i++) {
-                auto controller = scbr.on_next(i);
-                if (!controller.is_ready()) {
-                    controller.then([](){
-                        // todo continue
-                    });
+            asyncwithready::ready::onthen_type chunk;
+            int i = 0;
+            chunk = [&chunk, scbr, i]() mutable {
+                for (; i < onnextcalls && scbr.is_subscribed(); i++) {
+                    auto controller = scbr.on_next(i);
+                    if (!controller.is_ready()) {
+                        controller.then(chunk);
+                    }
                 }
-            }
+            };
+            chunk();
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish-start);
             std::cout << "loop ready          : " << n << " subscribed, " << *c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
@@ -403,7 +436,72 @@ SCENARIO("range calls subject", "[hide][range][subject][subjects][perf]"){
     }
 }
 
+SCENARIO("schedule_periodically", "[hide][periodically][scheduler][perf]"){
+    const int& onnextcalls = static_onnextcalls;
+    GIVEN("schedule_periodically"){
+        WHEN("the period is 1sec and the initial is 2sec"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
 
+            int c = 0;
+            auto sc = rxsc::make_current_thread();
+            auto w = sc.create_worker();
+            auto start = w.now() + seconds(2);
+            auto period = seconds(1);
+            w.schedule_periodically(start, period,
+                [=, &c](rxsc::schedulable scbl){
+                    auto nsDelta = duration_cast<milliseconds>(scbl.now() - (start + (period * c)));
+                    ++c;
+                    std::cout << "schedule_periodically          : period " << c << ", " << nsDelta.count() << "ms delta from target time" << std::endl;
+                    if (c == 9) {scbl.unsubscribe();}
+                });
+        }
+    }
+}
+
+SCENARIO("schedule_periodically by duration", "[hide][periodically][scheduler][perf]"){
+    const int& onnextcalls = static_onnextcalls;
+    GIVEN("schedule_periodically_duration"){
+        WHEN("the period is 1sec and the initial is 2sec"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
+
+            int c = 0;
+            auto sc = rxsc::make_current_thread();
+            auto w = sc.create_worker();
+
+            auto schedule_periodically_duration = [w](
+                    rxsc::current_thread::clock_type::duration initial,
+                    rxsc::current_thread::clock_type::duration period,
+                    rxsc::schedulable activity){
+                auto periodic = rxsc::make_schedulable(
+                    activity,
+                    [period, activity](rxsc::schedulable self) {
+                        auto start = clock::now();
+                        // any recursion requests will be pushed to the scheduler queue
+                        rxsc::recursion r(false);
+                        // call action
+                        activity(r.get_recurse());
+                        auto finish = clock::now();
+
+                        // schedule next occurance (if the action took longer than 'period' target will be in the past)
+                        self.schedule(period - (finish - start));
+                    });
+                w.schedule(initial, periodic);
+            };
+
+            auto start = w.now() + seconds(2);
+            auto period = seconds(1);
+            schedule_periodically_duration(seconds(2), period,
+                rxsc::make_schedulable(w, [=, &c](rxsc::schedulable scbl){
+                    auto nsDelta = duration_cast<milliseconds>(scbl.now() - (start + (period * c)));
+                    ++c;
+                    std::cout << "schedule_periodically_duration : period " << c << ", " << nsDelta.count() << "ms delta from target time" << std::endl;
+                    if (c == 9) {scbl.unsubscribe();}
+                }));
+        }
+    }
+}
 SCENARIO("subject - infinite source", "[subject][subjects]"){
     GIVEN("a subject and an infinite source"){
 
