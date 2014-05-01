@@ -21,18 +21,7 @@ struct action_queue
     typedef time_schedulable<clock::time_point> item_type;
 
 private:
-    struct compare_item_time
-    {
-        bool operator()(const item_type& lhs, const item_type& rhs) const {
-            return lhs.when > rhs.when;
-        }
-    };
-
-    typedef std::priority_queue<
-        item_type,
-        std::vector<item_type>,
-        compare_item_time
-    > queue_item_time;
+    typedef schedulable_queue<item_type::time_point_type> queue_item_time;
 
 public:
     struct current_thread_queue_type {

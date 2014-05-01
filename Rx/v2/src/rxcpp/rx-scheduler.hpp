@@ -600,6 +600,8 @@ namespace detail {
 template<class TimePoint>
 struct time_schedulable
 {
+    typedef TimePoint time_point_type;
+    
     time_schedulable(TimePoint when, schedulable a)
         : when(when)
         , what(std::move(a))
@@ -609,6 +611,62 @@ struct time_schedulable
     schedulable what;
 };
 
+    
+// Sorts time_schedulable items in priority order sorted
+// on value of time_schedulable.when. Items with equal
+// values for when are sorted in fifo order.
+template<class TimePoint>
+class schedulable_queue {
+public:
+    typedef time_schedulable<TimePoint> item_type;
+    typedef std::pair<item_type, std::int64_t> elem_type;
+    typedef std::vector<elem_type> container_type;
+    typedef const item_type& const_reference;
+    
+private:
+    struct compare_elem
+    {
+        bool operator()(const elem_type& lhs, const elem_type& rhs) const {
+            if (lhs.first.when == rhs.first.when) {
+                return lhs.second > rhs.second;
+            }
+            else {
+                return lhs.first.when > rhs.first.when;
+            }
+        }
+    };
+    
+    typedef std::priority_queue<
+        elem_type,
+        container_type,
+        compare_elem
+    > queue_type;
+    
+    queue_type queue;
+    
+    std::int64_t ordinal;
+public:
+    const_reference top() const {
+        return queue.top().first;
+    }
+    
+    void pop() {
+        queue.pop();
+    }
+    
+    bool empty() const {
+        return queue.empty();
+    }
+    
+    void push(const item_type& value) {
+        queue.push(elem_type(value, ordinal++));
+    }
+    
+    void push(item_type&& value) {
+        queue.push(elem_type(std::move(value), ordinal++));
+    }
+};
+    
 }
 
 }
