@@ -168,6 +168,7 @@ SCENARIO("for loop calls ready on_next(int)", "[hide][for][asyncobserver][ready]
                     auto controller = scbr.on_next(i);
                     if (!controller.is_ready()) {
                         controller.then(chunk);
+                        return;
                     }
                 }
             };
