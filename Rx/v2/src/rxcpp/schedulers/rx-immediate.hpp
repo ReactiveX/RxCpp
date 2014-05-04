@@ -20,7 +20,7 @@ private:
     struct immediate_worker : public worker_interface
     {
     private:
-        typedef immediate this_type;
+        typedef immediate_worker this_type;
         immediate_worker(const this_type&);
     public:
         virtual ~immediate_worker()

@@ -374,9 +374,9 @@ public:
     }
 };
 
-template<class Scheduler>
-inline scheduler make_scheduler() {
-    return scheduler(std::static_pointer_cast<scheduler_interface>(std::make_shared<Scheduler>()));
+template<class Scheduler, class... ArgN>
+inline scheduler make_scheduler(ArgN&&... an) {
+    return scheduler(std::static_pointer_cast<scheduler_interface>(std::make_shared<Scheduler>(std::forward<ArgN>(an)...)));
 }
 
 
@@ -850,6 +850,7 @@ namespace rxsc=schedulers;
 }
 
 #include "schedulers/rx-currentthread.hpp"
+#include "schedulers/rx-newthread.hpp"
 #include "schedulers/rx-immediate.hpp"
 #include "schedulers/rx-virtualtime.hpp"
 
