@@ -243,7 +243,8 @@ public:
 };
 
 inline scheduler make_current_thread() {
-    return make_scheduler<current_thread>();
+    static auto ct = make_scheduler<current_thread>();
+    return ct;
 }
 
 }

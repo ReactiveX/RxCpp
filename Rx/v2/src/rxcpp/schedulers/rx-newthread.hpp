@@ -127,7 +127,8 @@ public:
 };
 
 inline scheduler make_new_thread() {
-    return make_scheduler<new_thread>();
+    static auto nt = make_scheduler<new_thread>();
+    return nt;
 }
 inline scheduler make_new_thread(thread_factory tf) {
     return make_scheduler<new_thread>(tf);

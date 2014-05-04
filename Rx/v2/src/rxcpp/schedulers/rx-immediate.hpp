@@ -73,7 +73,8 @@ public:
 };
 
 inline scheduler make_immediate() {
-    return make_scheduler<immediate>();
+    static auto i = make_scheduler<immediate>();
+    return i;
 }
 
 }
