@@ -678,6 +678,13 @@ inline auto make_schedulable(
     return  schedulable(std::move(scbl));
 }
 
+inline schedulable make_schedulable(worker sc, action a) {
+    return schedulable(sc, a);
+}
+inline schedulable make_schedulable(worker sc, composite_subscription cs, action a) {
+    return schedulable(cs, sc, a);
+}
+
 template<class F>
 auto make_schedulable(worker sc, F&& f)
     -> typename std::enable_if<detail::is_action_function<F>::value, schedulable>::type {
@@ -851,6 +858,7 @@ namespace rxsc=schedulers;
 
 #include "schedulers/rx-currentthread.hpp"
 #include "schedulers/rx-newthread.hpp"
+#include "schedulers/rx-eventloop.hpp"
 #include "schedulers/rx-immediate.hpp"
 #include "schedulers/rx-virtualtime.hpp"
 
