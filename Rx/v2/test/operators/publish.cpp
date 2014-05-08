@@ -35,9 +35,9 @@ SCENARIO("publish range", "[hide][range][subject][publish][operators]"){
             // on_completed
                 [](){std::cout << " done." << std::endl;});
         }
-        WHEN("connect_now is used"){
-            auto published = rxs::range<int>(0, 10).publish().connect_now();
-            std::cout << "subscribe to connect_now" << std::endl;
+        WHEN("connect_forever is used"){
+            auto published = rxs::range<int>(0, 10).publish().connect_forever();
+            std::cout << "subscribe to connect_forever" << std::endl;
             published.subscribe(
             // on_next
                 [](int v){std::cout << v << ", ";},

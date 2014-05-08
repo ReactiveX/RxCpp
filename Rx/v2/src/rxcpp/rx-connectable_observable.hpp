@@ -184,16 +184,16 @@ public:
                                 rxo::detail::ref_count<T, this_type>(*this));
     }
 
-    /// connect_now ->
+    /// connect_forever ->
     /// takes a connectable_observable source and calls connect during
     /// the construction of the expression. This means that the source
     /// starts running without any subscribers and continues running
     /// after all subscriptions have been unsubscribed.
     ///
-    auto connect_now() const
-        ->      observable<T,   rxo::detail::connect_now<T, this_type>> {
-        return  observable<T,   rxo::detail::connect_now<T, this_type>>(
-                                rxo::detail::connect_now<T, this_type>(*this));
+    auto connect_forever() const
+        ->      observable<T,   rxo::detail::connect_forever<T, this_type>> {
+        return  observable<T,   rxo::detail::connect_forever<T, this_type>>(
+                                rxo::detail::connect_forever<T, this_type>(*this));
     }
 };
 
