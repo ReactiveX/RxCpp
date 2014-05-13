@@ -45,7 +45,7 @@ struct filter : public operator_base<T>
                     return;
                 }
                 if (!filtered) {
-                    o.on_next(std::move(t));
+                    o.on_next(t);
                 }
             },
         // on_error
