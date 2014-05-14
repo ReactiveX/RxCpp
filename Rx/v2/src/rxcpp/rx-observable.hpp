@@ -20,8 +20,11 @@ struct is_operator_factory_for
     template<class CS, class CF>
     static not_void check(...);
 
-    typedef decltype(check<typename std::decay<Source>::type, typename std::decay<F>::type>(0)) detail_result;
-    static const bool value = !std::is_same<detail_result, not_void>::value;
+    typedef typename std::decay<Source>::type source_type;
+    typedef typename std::decay<F>::type function_type;
+
+    typedef decltype(check<source_type, function_type>(0)) detail_result;
+    static const bool value = !std::is_same<detail_result, not_void>::value && is_observable<source_type>::value;
 };
 
 template<class Subscriber, class T>
@@ -35,6 +38,38 @@ struct has_on_subscribe_for
 
     typedef decltype(check<typename std::decay<Subscriber>::type, T>(0)) detail_result;
     static const bool value = std::is_same<detail_result, void>::value;
+};
+
+struct lift_function {
+template<class SourceObservable, class OperatorFactory>
+static auto chain(const SourceObservable& source, OperatorFactory&& of)
+    -> decltype(source.lift(std::forward<OperatorFactory>(of))) {
+    return      source.lift(std::forward<OperatorFactory>(of));
+}
+};
+struct operator_factory {
+template<class SourceObservable, class OperatorFactory>
+static auto chain(const SourceObservable& source, OperatorFactory&& of)
+    -> decltype(source.op(std::forward<OperatorFactory>(of))) {
+    return      source.op(std::forward<OperatorFactory>(of));
+}
+};
+struct not_chainable {
+};
+
+template<class T, class SourceObservable, class OperatorFactory>
+struct select_chain
+{
+    typedef
+        typename std::conditional<
+            rxcpp::detail::is_lift_function_for<subscriber<T>, OperatorFactory>::value,
+            lift_function,
+            typename std::conditional<
+                rxcpp::detail::is_operator_factory_for<SourceObservable, OperatorFactory>::value,
+                operator_factory,
+                not_chainable
+            >::type
+        >::type type;
 };
 
 }
@@ -51,16 +86,6 @@ class dynamic_observable
         onsubscribe_type on_subscribe;
     };
     std::shared_ptr<state_type> state;
-
-    template<class U>
-    void construct(const dynamic_observable<U>& o, tag_dynamic_observable&&) {
-        state = o.state;
-    }
-
-    template<class U>
-    void construct(dynamic_observable<U>&& o, tag_dynamic_observable&&) {
-        state = std::move(o.state);
-    }
 
     template<class SO>
     void construct(SO&& source, rxs::tag_source&&) {
@@ -85,11 +110,11 @@ public:
     }
 
     template<class SOF>
-    explicit dynamic_observable(SOF&& sof)
+    explicit dynamic_observable(SOF&& sof, typename std::enable_if<!is_dynamic_observable<SOF>::value, void**>::type = 0)
         : state(std::make_shared<state_type>())
     {
         construct(std::forward<SOF>(sof),
-                  typename std::conditional<is_dynamic_observable<SOF>::value, tag_dynamic_observable, typename std::conditional<rxs::is_source<SOF>::value || rxo::is_operator<SOF>::value, rxs::tag_source, tag_function>::type>::type());
+                  typename std::conditional<rxs::is_source<SOF>::value || rxo::is_operator<SOF>::value, rxs::tag_source, tag_function>::type());
     }
 
     void on_subscribe(subscriber<T> o) const {
@@ -226,6 +251,31 @@ public:
     }
 
     ///
+    /// takes any function that will take this observable and produce a result value.
+    /// this is intended to allow externally defined operators, that use subscribe,
+    /// to be connected into the expression.
+    ///
+    template<class OperatorFactory>
+    auto op(OperatorFactory&& of) const
+        -> decltype(of(*(const this_type*)nullptr)) {
+        return      of(*this);
+        static_assert(detail::is_operator_factory_for<this_type, OperatorFactory>::value, "Function passed for op() must have the signature Result(SourceObservable)");
+    }
+
+    ///
+    /// takes any function that will take a subscriber for this observable and produce a subscriber.
+    /// this is intended to allow externally defined operators, that use make_subscriber, to be connected
+    /// into the expression.
+    ///
+    template<class Operator>
+    auto lift(Operator&& op) const
+        ->      observable<typename rxo::detail::lift<source_operator_type, Operator>::value_type,  rxo::detail::lift<source_operator_type, Operator>> {
+        return  observable<typename rxo::detail::lift<source_operator_type, Operator>::value_type,  rxo::detail::lift<source_operator_type, Operator>>(
+                                                                                                    rxo::detail::lift<source_operator_type, Operator>(source_operator, std::forward<Operator>(op)));
+        static_assert(detail::is_lift_function_for<subscriber<T>, Operator>::value, "Function passed for lift() must have the signature subscriber<...>(subscriber<T, ...>)");
+    }
+
+    ///
     /// subscribe will cause this observable to emit values to the provided subscriber.
     /// callers must provide enough arguments to make a subscriber.
     /// overrides are supported. thus
@@ -300,18 +350,6 @@ public:
         return  observable<T,   rxo::detail::take_until<T, this_type, TriggerSource>>(
                                 rxo::detail::take_until<T, this_type, TriggerSource>(*this, std::forward<TriggerSource>(t)));
     }
-
-    ///
-    /// takes any function that will take this observable and produce a result value.
-    /// this is intended to allow externally defined operators to be connected into the expression.
-    ///
-    template<class OperatorFactory>
-    auto op(OperatorFactory&& of) const
-        -> decltype(of(*(const this_type*)nullptr)) {
-        static_assert(detail::is_operator_factory_for<this_type, OperatorFactory>::value, "Function passed for op() must have the signature Result(SourceObservable)");
-        return      of(*this);
-    }
-
 };
 
 // observable<> has static methods to construct observable sources and adaptors.
@@ -337,8 +375,8 @@ public:
 //
 template<class T, class SourceOperator, class OperatorFactory>
 auto operator >> (const rxcpp::observable<T, SourceOperator>& source, OperatorFactory&& of)
-    -> decltype(source.op(std::forward<OperatorFactory>(of))) {
-    return      source.op(std::forward<OperatorFactory>(of));
+    -> decltype(rxcpp::detail::select_chain<T, rxcpp::observable<T, SourceOperator>, OperatorFactory>::type::chain(source, std::forward<OperatorFactory>(of))) {
+    return      rxcpp::detail::select_chain<T, rxcpp::observable<T, SourceOperator>, OperatorFactory>::type::chain(source, std::forward<OperatorFactory>(of));
 }
 
 //
@@ -347,8 +385,8 @@ auto operator >> (const rxcpp::observable<T, SourceOperator>& source, OperatorFa
 //
 template<class T, class SourceOperator, class OperatorFactory>
 auto operator | (const rxcpp::observable<T, SourceOperator>& source, OperatorFactory&& of)
-    -> decltype(source.op(std::forward<OperatorFactory>(of))) {
-    return      source.op(std::forward<OperatorFactory>(of));
+    -> decltype(rxcpp::detail::select_chain<T, rxcpp::observable<T, SourceOperator>, OperatorFactory>::type::chain(source, std::forward<OperatorFactory>(of))) {
+    return      rxcpp::detail::select_chain<T, rxcpp::observable<T, SourceOperator>, OperatorFactory>::type::chain(source, std::forward<OperatorFactory>(of));
 }
 
 #endif

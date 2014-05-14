@@ -127,8 +127,8 @@ namespace rxt=test;
 //
 template<class T, class OperatorFactory>
 auto operator >> (const rxcpp::test::testable_observable<T>& source, OperatorFactory&& of)
-    -> decltype(source.op(std::forward<OperatorFactory>(of))) {
-    return      source.op(std::forward<OperatorFactory>(of));
+    -> decltype(rxcpp::detail::select_chain<T, rxcpp::test::testable_observable<T>, OperatorFactory>::type::chain(source, std::forward<OperatorFactory>(of))) {
+    return      rxcpp::detail::select_chain<T, rxcpp::test::testable_observable<T>, OperatorFactory>::type::chain(source, std::forward<OperatorFactory>(of));
 }
 
 //
@@ -137,8 +137,8 @@ auto operator >> (const rxcpp::test::testable_observable<T>& source, OperatorFac
 //
 template<class T, class OperatorFactory>
 auto operator | (const rxcpp::test::testable_observable<T>& source, OperatorFactory&& of)
-    -> decltype(source.op(std::forward<OperatorFactory>(of))) {
-    return      source.op(std::forward<OperatorFactory>(of));
+    -> decltype(rxcpp::detail::select_chain<T, rxcpp::test::testable_observable<T>, OperatorFactory>::type::chain(source, std::forward<OperatorFactory>(of))) {
+    return      rxcpp::detail::select_chain<T, rxcpp::test::testable_observable<T>, OperatorFactory>::type::chain(source, std::forward<OperatorFactory>(of));
 }
 
 #include "schedulers/rx-test.hpp"

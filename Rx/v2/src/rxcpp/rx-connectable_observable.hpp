@@ -200,4 +200,24 @@ public:
 
 }
 
+//
+// support range() >> filter() >> subscribe() syntax
+// '>>' is spelled 'stream'
+//
+template<class T, class SourceOperator, class OperatorFactory>
+auto operator >> (const rxcpp::connectable_observable<T, SourceOperator>& source, OperatorFactory&& of)
+    -> decltype(rxcpp::detail::select_chain<T, rxcpp::connectable_observable<T, SourceOperator>, OperatorFactory>::type::chain(source, std::forward<OperatorFactory>(of))) {
+    return      rxcpp::detail::select_chain<T, rxcpp::connectable_observable<T, SourceOperator>, OperatorFactory>::type::chain(source, std::forward<OperatorFactory>(of));
+}
+
+//
+// support range() | filter() | subscribe() syntax
+// '|' is spelled 'pipe'
+//
+template<class T, class SourceOperator, class OperatorFactory>
+auto operator | (const rxcpp::connectable_observable<T, SourceOperator>& source, OperatorFactory&& of)
+    -> decltype(rxcpp::detail::select_chain<T, rxcpp::connectable_observable<T, SourceOperator>, OperatorFactory>::type::chain(source, std::forward<OperatorFactory>(of))) {
+    return      rxcpp::detail::select_chain<T, rxcpp::connectable_observable<T, SourceOperator>, OperatorFactory>::type::chain(source, std::forward<OperatorFactory>(of));
+}
+
 #endif
