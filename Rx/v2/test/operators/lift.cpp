@@ -169,7 +169,7 @@ SCENARIO("lift liftfilter stops on disposal", "[where][filter][lift][operators]"
     }
 }
 
-SCENARIO("stream lift liftfilter stops on disposal", "[where][filter][lift][operators]"){
+SCENARIO("stream lift liftfilter stops on disposal", "[where][filter][lift][stream][operators]"){
     GIVEN("a test hot observable of ints"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -239,3 +239,86 @@ SCENARIO("stream lift liftfilter stops on disposal", "[where][filter][lift][oper
         }
     }
 }
+
+SCENARIO("lift lambda filter stops on disposal", "[where][filter][lift][lambda][operators]"){
+    GIVEN("a test hot observable of ints"){
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        typedef rxsc::test::messages<int> m;
+        typedef rxn::subscription life;
+        typedef m::recorded_type record;
+        auto on_next = m::on_next;
+        auto on_completed = m::on_completed;
+        auto subscribe = m::subscribe;
+
+        long invoked = 0;
+
+        record messages[] = {
+            on_next(110, 1),
+            on_next(180, 2),
+            on_next(230, 3),
+            on_next(270, 4),
+            on_next(340, 5),
+            on_next(380, 6),
+            on_next(390, 7),
+            on_next(450, 8),
+            on_next(470, 9),
+            on_next(560, 10),
+            on_next(580, 11),
+            on_completed(600)
+        };
+        auto xs = sc.make_hot_observable(rxu::to_vector(messages));
+
+        WHEN("filtered to ints that are primes"){
+
+            auto res = w.start<int>(
+                [&xs, &invoked]() {
+                    auto predicate = [&](int x){
+                        invoked++;
+                        return IsPrime(x);
+                    };
+                    return xs
+                        .lift([=](rx::subscriber<int> dest){
+                            return rx::make_subscriber<int>(
+                                dest,
+                                [=](int n){
+                                    bool pass = false;
+                                    try{pass = predicate(n);} catch(...){dest.on_error(std::current_exception());};
+                                    if (pass) {dest.on_next(n);}
+                                },
+                                [=](std::exception_ptr e){dest.on_error(e);},
+                                [=](){dest.on_completed();});
+                        })
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
+                },
+                400
+            );
+
+            THEN("the output only contains primes that arrived before disposal"){
+                record items[] = {
+                    on_next(230, 3),
+                    on_next(340, 5),
+                    on_next(390, 7)
+                };
+                auto required = rxu::to_vector(items);
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription"){
+                life items[] = {
+                    subscribe(200, 400)
+                };
+                auto required = rxu::to_vector(items);
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+
+            THEN("where was called until disposed"){
+                REQUIRE(5 == invoked);
+            }
+        }
+    }
+}
+
