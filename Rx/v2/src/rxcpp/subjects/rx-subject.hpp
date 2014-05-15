@@ -74,9 +74,10 @@ class multicast_observer
     struct binder_type
         : public std::enable_shared_from_this<binder_type>
     {
-        binder_type()
+        explicit binder_type(composite_subscription cs)
             : state(std::make_shared<state_type>())
             , current_generation(0)
+            , lifetime(cs)
         {
         }
 
@@ -88,6 +89,8 @@ class multicast_observer
 
         // must only be accessed under state->lock
         mutable std::shared_ptr<completer_type> completer;
+
+        composite_subscription lifetime;
     };
 
     std::shared_ptr<binder_type> b;
@@ -95,13 +98,8 @@ class multicast_observer
 
 
 public:
-    multicast_observer()
-        : b(std::make_shared<binder_type>())
-    {
-    }
-    multicast_observer(composite_subscription cs)
-        : observer_base<T>(std::move(cs))
-        , b(std::make_shared<binder_type>())
+    explicit multicast_observer(composite_subscription cs)
+        : b(std::make_shared<binder_type>(cs))
     {
     }
     bool has_observers() const {
@@ -170,6 +168,7 @@ public:
                     }
                 }
             }
+            b->lifetime.unsubscribe();
         }
     }
     void on_completed() const {
@@ -185,6 +184,7 @@ public:
                     }
                 }
             }
+            b->lifetime.unsubscribe();
         }
     }
 };
@@ -195,14 +195,13 @@ public:
 template<class T>
 class subject
 {
+    composite_subscription lifetime;
     detail::multicast_observer<T> s;
 
 public:
-    subject()
-    {
-    }
-    subject(composite_subscription cs)
-        : s(std::move(cs))
+    explicit subject(composite_subscription cs = composite_subscription())
+        : lifetime(cs)
+        , s(cs)
     {
     }
 
@@ -211,8 +210,12 @@ public:
     }
 
     subscriber<T, observer<T, detail::multicast_observer<T>>> get_subscriber(composite_subscription cs = composite_subscription()) const {
+        auto lt = lifetime;
+        auto token = lt.add(cs);
+        cs.add(make_subscription([token, lt](){lt.remove(token);}));
         return make_subscriber<T>(cs, observer<T, detail::multicast_observer<T>>(s));
     }
+
     observable<T> get_observable() const {
         return make_dynamic_observable<T>([this](subscriber<T> o){
             this->s.add(std::move(o));
