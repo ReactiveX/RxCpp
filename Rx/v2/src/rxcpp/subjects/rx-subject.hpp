@@ -36,14 +36,16 @@ class multicast_observer
     struct state_type
         : public std::enable_shared_from_this<state_type>
     {
-        state_type()
+        explicit state_type(composite_subscription cs)
             : current(mode::Casting)
+            , lifetime(cs)
         {
         }
         std::atomic<int> generation;
         std::mutex lock;
         typename mode::type current;
         std::exception_ptr error;
+        composite_subscription lifetime;
     };
 
     struct completer_type
@@ -75,9 +77,8 @@ class multicast_observer
         : public std::enable_shared_from_this<binder_type>
     {
         explicit binder_type(composite_subscription cs)
-            : state(std::make_shared<state_type>())
+            : state(std::make_shared<state_type>(cs))
             , current_generation(0)
-            , lifetime(cs)
         {
         }
 
@@ -89,8 +90,6 @@ class multicast_observer
 
         // must only be accessed under state->lock
         mutable std::shared_ptr<completer_type> completer;
-
-        composite_subscription lifetime;
     };
 
     std::shared_ptr<binder_type> b;
@@ -159,6 +158,7 @@ public:
         if (b->state->current == mode::Casting) {
             b->state->error = e;
             b->state->current = mode::Errored;
+            auto s = b->state->lifetime;
             auto c = std::move(b->completer);
             guard.unlock();
             if (c) {
@@ -168,13 +168,14 @@ public:
                     }
                 }
             }
-            b->lifetime.unsubscribe();
+            s.unsubscribe();
         }
     }
     void on_completed() const {
         std::unique_lock<std::mutex> guard(b->state->lock);
         if (b->state->current == mode::Casting) {
             b->state->current = mode::Completed;
+            auto s = b->state->lifetime;
             auto c = std::move(b->completer);
             guard.unlock();
             if (c) {
@@ -184,7 +185,7 @@ public:
                     }
                 }
             }
-            b->lifetime.unsubscribe();
+            s.unsubscribe();
         }
     }
 };
