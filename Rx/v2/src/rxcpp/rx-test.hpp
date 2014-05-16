@@ -37,28 +37,12 @@ struct test_source
         ts->on_subscribe(std::move(o));
     }
     template<class Subscriber>
-    typename std::enable_if<!std::is_same<typename std::decay<Subscriber>::type, subscriber<T>>::value, void>::type
-    on_subscribe(Subscriber&& o) const {
+    typename std::enable_if<!std::is_same<Subscriber, subscriber<T>>::value, void>::type
+    on_subscribe(Subscriber o) const {
 
         static_assert(is_subscriber<Subscriber>::value, "on_subscribe must be passed a subscriber.");
 
-        auto so = std::make_shared<typename std::decay<Subscriber>::type>(std::forward<Subscriber>(o));
-        ts->on_subscribe(
-            make_subscriber<T>(
-                *so,
-                make_observer_dynamic<T>(
-                // on_next
-                    [so](T t){
-                        so->on_next(t);
-                    },
-                // on_error
-                    [so](std::exception_ptr e){
-                        so->on_error(e);
-                    },
-                // on_completed
-                    [so](){
-                        so->on_completed();
-                    })));
+        ts->on_subscribe(make_subscriber<T>(o, make_observer_dynamic<T>(o.get_observer())));
     }
 };
 

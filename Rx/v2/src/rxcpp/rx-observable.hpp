@@ -122,24 +122,9 @@ public:
     }
 
     template<class Subscriber>
-    typename std::enable_if<!std::is_same<typename std::decay<Subscriber>::type, observer<T>>::value, void>::type
-    on_subscribe(Subscriber&& o) const {
-        auto so = std::make_shared<typename std::decay<Subscriber>::type>(std::forward<Subscriber>(o));
-        state->on_subscribe(make_subscriber<T>(
-            *so,
-            make_observer_dynamic<T>(
-            // on_next
-                [so](T t){
-                    so->on_next(t);
-                },
-            // on_error
-                [so](std::exception_ptr e){
-                    so->on_error(e);
-                },
-            // on_completed
-                [so](){
-                    so->on_completed();
-                })));
+    typename std::enable_if<!std::is_same<Subscriber, observer<T>>::value, void>::type
+    on_subscribe(Subscriber o) const {
+        state->on_subscribe(make_subscriber<T>(o, make_observer_dynamic<T>(o.get_observer())));
     }
 };
 

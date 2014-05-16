@@ -71,70 +71,6 @@ struct is_on_completed
 
 }
 
-template<class T>
-class dynamic_observer
-{
-public:
-    typedef tag_dynamic_observer dynamic_observer_tag;
-
-    typedef std::function<void(T)> on_next_t;
-    typedef std::function<void(std::exception_ptr)> on_error_t;
-    typedef std::function<void()> on_completed_t;
-private:
-    typedef observer_base<T> base_type;
-
-    on_next_t onnext;
-    on_error_t onerror;
-    on_completed_t oncompleted;
-
-public:
-    dynamic_observer()
-    {
-    }
-
-    template<class OnNext, class OnError, class OnCompleted>
-    dynamic_observer(OnNext&& n, OnError&& e, OnCompleted&& c)
-        : onnext(std::forward<OnNext>(n))
-        , onerror(std::forward<OnError>(e))
-        , oncompleted(std::forward<OnCompleted>(c))
-    {
-        static_assert(detail::is_on_next_of<T, OnNext>::value || std::is_same<OnNext, std::nullptr_t>::value,
-                "Function supplied for on_next must be a function with the signature void(T);");
-        static_assert(detail::is_on_error<OnError>::value || std::is_same<OnError, std::nullptr_t>::value,
-                "Function supplied for on_error must be a function with the signature void(std::exception_ptr);");
-        static_assert(detail::is_on_completed<OnCompleted>::value || std::is_same<OnCompleted, std::nullptr_t>::value,
-                "Function supplied for on_completed must be a function with the signature void();");
-    }
-
-    dynamic_observer& operator=(dynamic_observer o) {
-        swap(o);
-        return *this;
-    }
-    void swap(dynamic_observer& o) {
-        using std::swap;
-        swap(onnext, o.onnext);
-        swap(onerror, o.onerror);
-        swap(oncompleted, o.oncompleted);
-    }
-
-    template<class V>
-    void on_next(V&& v) const {
-        if (onnext) {
-            onnext(std::forward<V>(v));
-        }
-    }
-    void on_error(std::exception_ptr e) const {
-        if (onerror) {
-            onerror(e);
-        }
-    }
-    void on_completed() const {
-        if (oncompleted) {
-            oncompleted();
-        }
-    }
-};
-
 template<class T, class OnNext, class OnError = detail::OnErrorEmpty, class OnCompleted = detail::OnCompletedEmpty>
 class static_observer
 {
@@ -183,9 +119,10 @@ public:
         swap(oncompleted, o.oncompleted);
     }
 
+    // use V so that std::move can be used safely
     template<class V>
-    void on_next(V&& v) const {
-        onnext(std::forward<V>(v));
+    void on_next(V v) const {
+        onnext(std::move(v));
     }
     void on_error(std::exception_ptr e) const {
         onerror(e);
@@ -241,22 +178,102 @@ public:
 };
 
 template<class T>
+class dynamic_observer
+{
+public:
+    typedef tag_dynamic_observer dynamic_observer_tag;
+
+private:
+    typedef observer_base<T> base_type;
+
+    struct virtual_observer : public std::enable_shared_from_this<virtual_observer>
+    {
+        virtual void on_next(T) const =0;
+        virtual void on_error(std::exception_ptr e) const =0;
+        virtual void on_completed() const =0;
+    };
+
+    template<class Observer>
+    struct specific_observer : public virtual_observer
+    {
+        explicit specific_observer(Observer o)
+            : destination(std::move(o))
+        {
+        }
+
+        Observer destination;
+        virtual void on_next(T t) const {
+            destination.on_next(std::move(t));
+        }
+        virtual void on_error(std::exception_ptr e) const {
+            destination.on_error(e);
+        }
+        virtual void on_completed() const {
+            destination.on_completed();
+        }
+    };
+
+    std::shared_ptr<virtual_observer> destination;
+
+    template<class Observer>
+    static auto make_destination(Observer o)
+        -> typename std::enable_if<is_observer<Observer>::value, std::shared_ptr<virtual_observer>>::type {
+        return std::make_shared<specific_observer<Observer>>(std::move(o));
+    }
+
+public:
+    dynamic_observer()
+    {
+    }
+    dynamic_observer(const dynamic_observer& o)
+        : destination(o.destination)
+    {
+    }
+    dynamic_observer(dynamic_observer&& o)
+        : destination(std::move(o.destination))
+    {
+    }
+
+    template<class Observer>
+    explicit dynamic_observer(Observer o)
+        : destination(make_destination(std::move(o)))
+    {
+    }
+
+    dynamic_observer& operator=(dynamic_observer o) {
+        destination = std::move(o.destination);
+        return *this;
+    }
+
+    // perfect forwarding delays the copy of the value.
+    template<class V>
+    void on_next(V&& v) const {
+        if (destination) {
+            destination->on_next(std::forward<V>(v));
+        }
+    }
+    void on_error(std::exception_ptr e) const {
+        if (destination) {
+            destination->on_error(e);
+        }
+    }
+    void on_completed() const {
+        if (destination) {
+            destination->on_completed();
+        }
+    }
+};
+
+template<class T>
 auto make_observer()
     ->     observer<T, void> {
     return observer<T, void>();
 }
 
-template<class T, class I>
-auto make_observer(const observer<T, I>& o)
+template<class T, class U, class I>
+auto make_observer(observer<U, I> o)
     ->      observer<T, I> {
-    return  observer<T, I>(
-                        I(o));
-}
-template<class T, class I>
-auto make_observer(observer<T, I>&& o)
-    ->      observer<T, I> {
-    return  observer<T, I>(
-                        I(std::move(o)));
+    return  observer<T, I>(std::move(o));
 }
 template<class T, class OnNext>
 auto make_observer(const OnNext& on)
@@ -295,17 +312,13 @@ auto make_observer(const OnNext& on, const OnError& oe, const OnCompleted& oc)
                         static_observer<T, OnNext, OnError, OnCompleted>(on, oe, oc));
 }
 
-template<class T>
-auto make_observer_dynamic(const observer<T>& o)
-    ->      observer<T> {
-    return  observer<T>(
-                dynamic_observer<T>(o));
-}
-template<class T>
-auto make_observer_dynamic(observer<T>&& o)
-    ->      observer<T> {
-    return  observer<T>(
-                dynamic_observer<T>(std::move(o)));
+
+template<class T, class Observer>
+auto make_observer_dynamic(Observer o)
+    -> typename std::enable_if<
+        is_observer<Observer>::value,
+            observer<T>>::type {
+    return  observer<T>(dynamic_observer<T>(std::move(o)));
 }
 template<class T, class OnNext>
 auto make_observer_dynamic(OnNext&& on)
@@ -313,7 +326,7 @@ auto make_observer_dynamic(OnNext&& on)
         detail::is_on_next_of<T, OnNext>::value,
             observer<T, dynamic_observer<T>>>::type {
     return  observer<T, dynamic_observer<T>>(
-                        dynamic_observer<T>(std::forward<OnNext>(on), nullptr, nullptr));
+                        dynamic_observer<T>(make_observer<T>(std::forward<OnNext>(on))));
 }
 template<class T, class OnNext, class OnError>
 auto make_observer_dynamic(OnNext&& on, OnError&& oe)
@@ -322,7 +335,7 @@ auto make_observer_dynamic(OnNext&& on, OnError&& oe)
         detail::is_on_error<OnError>::value,
             observer<T, dynamic_observer<T>>>::type {
     return  observer<T, dynamic_observer<T>>(
-                        dynamic_observer<T>(std::forward<OnNext>(on), std::forward<OnError>(oe), nullptr));
+                        dynamic_observer<T>(make_observer<T>(std::forward<OnNext>(on), std::forward<OnError>(oe))));
 }
 template<class T, class OnNext, class OnCompleted>
 auto make_observer_dynamic(OnNext&& on, OnCompleted&& oc)
@@ -331,7 +344,7 @@ auto make_observer_dynamic(OnNext&& on, OnCompleted&& oc)
         detail::is_on_completed<OnCompleted>::value,
             observer<T, dynamic_observer<T>>>::type {
     return  observer<T, dynamic_observer<T>>(
-                        dynamic_observer<T>(std::forward<OnNext>(on), nullptr, std::forward<OnCompleted>(oc)));
+                        dynamic_observer<T>(make_observer<T>(std::forward<OnNext>(on), std::forward<OnCompleted>(oc))));
 }
 template<class T, class OnNext, class OnError, class OnCompleted>
 auto make_observer_dynamic(OnNext&& on, OnError&& oe, OnCompleted&& oc)
@@ -341,7 +354,7 @@ auto make_observer_dynamic(OnNext&& on, OnError&& oe, OnCompleted&& oc)
         detail::is_on_completed<OnCompleted>::value,
             observer<T, dynamic_observer<T>>>::type {
     return  observer<T, dynamic_observer<T>>(
-                        dynamic_observer<T>(std::forward<OnNext>(on), std::forward<OnError>(oe), std::forward<OnCompleted>(oc)));
+                        dynamic_observer<T>(make_observer<T>(std::forward<OnNext>(on), std::forward<OnError>(oe), std::forward<OnCompleted>(oc))));
 }
 
 }
