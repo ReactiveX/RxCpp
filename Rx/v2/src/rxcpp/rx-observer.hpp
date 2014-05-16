@@ -108,15 +108,11 @@ public:
         , oncompleted(std::move(o.oncompleted))
     {
     }
-    static_observer& operator=(this_type o) {
-        swap(o);
+    this_type& operator=(this_type o) {
+        onnext = std::move(o.onnext);
+        onerror = std::move(o.onerror);
+        oncompleted = std::move(o.oncompleted);
         return *this;
-    }
-    void swap(this_type& o) {
-        using std::swap;
-        swap(onnext, o.onnext);
-        swap(onerror, o.onerror);
-        swap(oncompleted, o.oncompleted);
     }
 
     // use V so that std::move can be used safely
@@ -145,9 +141,21 @@ public:
     ~observer()
     {
     }
+    observer(const this_type& o)
+        : inner(o.inner)
+    {
+    }
+    observer(this_type&& o)
+        : inner(std::move(o.inner))
+    {
+    }
     explicit observer(inner_t inner)
         : inner(std::move(inner))
     {
+    }
+    this_type& operator=(this_type o) {
+        inner = std::move(o.inner);
+        return *this;
     }
     template<class V>
     void on_next(V&& v) const {
@@ -184,6 +192,7 @@ public:
     typedef tag_dynamic_observer dynamic_observer_tag;
 
 private:
+    typedef dynamic_observer<T> this_type;
     typedef observer_base<T> base_type;
 
     struct virtual_observer : public std::enable_shared_from_this<virtual_observer>
@@ -225,11 +234,11 @@ public:
     dynamic_observer()
     {
     }
-    dynamic_observer(const dynamic_observer& o)
+    dynamic_observer(const this_type& o)
         : destination(o.destination)
     {
     }
-    dynamic_observer(dynamic_observer&& o)
+    dynamic_observer(this_type&& o)
         : destination(std::move(o.destination))
     {
     }
@@ -240,7 +249,7 @@ public:
     {
     }
 
-    dynamic_observer& operator=(dynamic_observer o) {
+    this_type& operator=(this_type o) {
         destination = std::move(o.destination);
         return *this;
     }
@@ -276,40 +285,40 @@ auto make_observer(observer<U, I> o)
     return  observer<T, I>(std::move(o));
 }
 template<class T, class OnNext>
-auto make_observer(const OnNext& on)
+auto make_observer(OnNext on)
     -> typename std::enable_if<
         detail::is_on_next_of<T, OnNext>::value,
             observer<T, static_observer<T, OnNext>>>::type {
     return  observer<T, static_observer<T, OnNext>>(
-                        static_observer<T, OnNext>(on));
+                        static_observer<T, OnNext>(std::move(on)));
 }
 template<class T, class OnNext, class OnError>
-auto make_observer(const OnNext& on, const OnError& oe)
+auto make_observer(OnNext on, OnError oe)
     -> typename std::enable_if<
         detail::is_on_next_of<T, OnNext>::value &&
         detail::is_on_error<OnError>::value,
             observer<T, static_observer<T, OnNext, OnError>>>::type {
     return  observer<T, static_observer<T, OnNext, OnError>>(
-                        static_observer<T, OnNext, OnError>(on, oe));
+                        static_observer<T, OnNext, OnError>(std::move(on), std::move(oe)));
 }
 template<class T, class OnNext, class OnCompleted>
-auto make_observer(const OnNext& on, const OnCompleted& oc)
+auto make_observer(OnNext on, OnCompleted oc)
     -> typename std::enable_if<
         detail::is_on_next_of<T, OnNext>::value &&
         detail::is_on_completed<OnCompleted>::value,
             observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>>::type {
     return  observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>(
-                        static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>(on, detail::OnErrorEmpty(), oc));
+                        static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>(std::move(on), detail::OnErrorEmpty(), std::move(oc)));
 }
 template<class T, class OnNext, class OnError, class OnCompleted>
-auto make_observer(const OnNext& on, const OnError& oe, const OnCompleted& oc)
+auto make_observer(OnNext on, OnError oe, OnCompleted oc)
     -> typename std::enable_if<
         detail::is_on_next_of<T, OnNext>::value &&
         detail::is_on_error<OnError>::value &&
         detail::is_on_completed<OnCompleted>::value,
             observer<T, static_observer<T, OnNext, OnError, OnCompleted>>>::type {
     return  observer<T, static_observer<T, OnNext, OnError, OnCompleted>>(
-                        static_observer<T, OnNext, OnError, OnCompleted>(on, oe, oc));
+                        static_observer<T, OnNext, OnError, OnCompleted>(std::move(on), std::move(oe), std::move(oc)));
 }
 
 
