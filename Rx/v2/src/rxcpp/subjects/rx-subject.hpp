@@ -218,7 +218,7 @@ public:
     }
 
     observable<T> get_observable() const {
-        return make_dynamic_observable<T>([this](subscriber<T> o){
+        return make_observable_dynamic<T>([this](subscriber<T> o){
             this->s.add(std::move(o));
         });
     }

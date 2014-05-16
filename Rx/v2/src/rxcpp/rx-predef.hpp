@@ -129,7 +129,7 @@ template<
 class observable;
 
 template<class T, class Source>
-observable<T> make_dynamic_observable(Source&&);
+observable<T> make_observable_dynamic(Source&&);
 
 struct tag_observable {};
 template<class T>

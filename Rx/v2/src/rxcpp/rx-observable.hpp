@@ -129,7 +129,7 @@ public:
 };
 
 template<class T, class Source>
-observable<T> make_dynamic_observable(Source&& s) {
+observable<T> make_observable_dynamic(Source&& s) {
     return observable<T>(dynamic_observable<T>(std::forward<Source>(s)));
 }
 
