@@ -37,6 +37,82 @@ std::vector<T> to_vector(const T (&arr) [size]) {
     return std::vector<T>(std::begin(arr), std::end(arr));
 }
 
+template<class T, T... ValueN>
+struct values {};
+
+template<class T, int Remaining, T Step = 1, T Cursor = 0, T... ValueN>
+struct values_from;
+
+template<class T, T Step, T Cursor, T... ValueN>
+struct values_from<T, 0, Step, Cursor, ValueN...>
+{
+    typedef values<T, ValueN...> type;
+};
+
+template<class T, int Remaining, T Step, T Cursor, T... ValueN>
+struct values_from
+{
+    typedef typename values_from<T, Remaining - 1, Step, Cursor + Step, ValueN..., Cursor>::type type;
+};
+
+namespace detail {
+
+template<class F, class... ParamN, int... IndexN>
+auto apply(std::tuple<ParamN...> p, values<int, IndexN...>, F& f)
+    -> decltype(f(std::forward<ParamN>(std::get<IndexN>(p))...)) {
+    return      f(std::forward<ParamN>(std::get<IndexN>(p))...);
+}
+template<class F, class... ParamN, int... IndexN>
+auto apply(std::tuple<ParamN...> p, values<int, IndexN...>, const F& f)
+    -> decltype(f(std::forward<ParamN>(std::get<IndexN>(p))...)) {
+    return      f(std::forward<ParamN>(std::get<IndexN>(p))...);
+}
+
+}
+
+template<class F, class... ParamN>
+auto apply(std::tuple<ParamN...> p, F& f)
+    -> decltype(detail::apply(std::move(p), typename values_from<int, sizeof...(ParamN)>::type(), f)) {
+    return      detail::apply(std::move(p), typename values_from<int, sizeof...(ParamN)>::type(), f);
+}
+template<class F, class... ParamN>
+auto apply(std::tuple<ParamN...> p, const F& f)
+    -> decltype(detail::apply(std::move(p), typename values_from<int, sizeof...(ParamN)>::type(), f)) {
+    return      detail::apply(std::move(p), typename values_from<int, sizeof...(ParamN)>::type(), f);
+}
+
+namespace detail {
+
+template<class F>
+struct apply_to
+{
+    F to;
+
+    explicit apply_to(F f)
+        : to(std::move(f))
+    {
+    }
+
+    template<class... ParamN>
+    auto operator()(std::tuple<ParamN...> p)
+        -> decltype(rxcpp::util::apply(std::move(p), to)) {
+        return      rxcpp::util::apply(std::move(p), to);
+    }
+    template<class... ParamN>
+    auto operator()(std::tuple<ParamN...> p) const
+        -> decltype(rxcpp::util::apply(std::move(p), to)) {
+        return      rxcpp::util::apply(std::move(p), to);
+    }
+};
+
+}
+
+template<class F>
+auto apply_to(F f)
+    ->      detail::apply_to<F> {
+    return  detail::apply_to<F>(std::move(f));
+}
+
 namespace detail {
 
 template <class T>
