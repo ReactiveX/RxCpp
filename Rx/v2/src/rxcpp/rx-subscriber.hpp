@@ -45,12 +45,32 @@ public:
     typedef typename composite_subscription::weak_subscription weak_subscription;
     typedef typename composite_subscription::shared_subscription shared_subscription;
 
+    subscriber(const this_type& o)
+        : lifetime(o.lifetime)
+        , controller(o.controller)
+        , destination(o.destination)
+    {
+    }
+    subscriber(this_type&& o)
+        : lifetime(std::move(o.lifetime))
+        , controller(std::move(o.controller))
+        , destination(std::move(o.destination))
+    {
+    }
+
     template<class U>
     subscriber(composite_subscription cs, resumption r, U&& o)
         : lifetime(std::move(cs))
         , controller(std::move(r))
         , destination(std::forward<U>(o))
     {
+    }
+
+    this_type& operator=(this_type o) {
+        lifetime = std::move(o.lifetime);
+        controller = std::move(o.controller);
+        destination = std::move(o.destination);
+        return *this;
     }
 
     const observer_type& get_observer() const {
@@ -130,17 +150,9 @@ public:
 
 };
 
-// copy
 template<class T, class Observer>
 auto make_subscriber(
-    const   subscriber<T,   Observer>& o)
-    ->      subscriber<T,   Observer> {
-    return  subscriber<T,   Observer>(o);
-}
-// move
-template<class T, class Observer>
-auto make_subscriber(
-            subscriber<T,   Observer>&& o)
+            subscriber<T,   Observer> o)
     ->      subscriber<T,   Observer> {
     return  subscriber<T,   Observer>(std::move(o));
 }
