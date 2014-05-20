@@ -251,9 +251,9 @@ public:
         }
 
         auto sharedThis = std::static_pointer_cast<const this_type>(this->shared_from_this());
-        o.add(dynamic_subscription([sharedThis, index]() {
+        o.add([sharedThis, index]() {
             sharedThis->sv[index] = rxn::subscription(sharedThis->sv[index].subscribe(), sharedThis->sc->clock());
-        }));
+        });
     }
 
     virtual std::vector<rxn::subscription> subscriptions() const {
@@ -313,9 +313,9 @@ public:
         auto index = sv.size() - 1;
 
         auto sharedThis = std::static_pointer_cast<const this_type>(this->shared_from_this());
-        o.add(dynamic_subscription([sharedThis, index]() {
+        o.add([sharedThis, index]() {
             sharedThis->sv[index] = rxn::subscription(sharedThis->sv[index].subscribe(), sharedThis->sc->clock());
-        }));
+        });
     }
 
     virtual std::vector<rxn::subscription> subscriptions() const {

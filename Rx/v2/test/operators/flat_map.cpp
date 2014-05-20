@@ -12,7 +12,7 @@ namespace rxt=rxcpp::test;
 
 #include "catch.hpp"
 
-static const int static_tripletCount = 500;
+static const int static_tripletCount = 50;
 
 SCENARIO("pythagorian for loops", "[hide][for][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
@@ -51,7 +51,7 @@ SCENARIO("pythagorian for loops", "[hide][for][pythagorian][perf]"){
     }
 }
 
-SCENARIO("pythagorian ranges", "[hide][for][pythagorian][perf]"){
+SCENARIO("pythagorian ranges", "[hide][range][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("some ranges"){
         WHEN("generating pythagorian triplets"){
@@ -68,22 +68,81 @@ SCENARIO("pythagorian ranges", "[hide][for][pythagorian][perf]"){
             auto triples =
                 rxs::range(1, sc)
                     .flat_map(
-                        [&c, sc](int z){ return rxs::range(1, z, 1, sc)
-                            .flat_map(
-                                [&c, sc, z](int x){ return rxs::range(x, z, 1, sc)
-                                    .filter([&c, z, x](int y){++c; return x*x + y*y == z*z;})
-                                    .map([z, x](int y){return std::make_tuple(x, y, z);})
-                                    // forget type to workaround lambda deduction bug on msvc 2013
-                                    .as_dynamic();},
-                                [](int x, std::tuple<int,int,int> triplet){return triplet;})
-                            // forget type to workaround lambda deduction bug on msvc 2013
-                            .as_dynamic();},
+                        [&c, sc](int z){
+                            return rxs::range(1, z, 1, sc)
+                                .flat_map(
+                                    [&c, sc, z](int x){
+                                        return rxs::range(x, z, 1, sc)
+                                            .filter([&c, z, x](int y){++c; return x*x + y*y == z*z;})
+                                            .map([z, x](int y){return std::make_tuple(x, y, z);})
+                                            // forget type to workaround lambda deduction bug on msvc 2013
+                                            .as_dynamic();},
+                                    [](int x, std::tuple<int,int,int> triplet){return triplet;})
+                                // forget type to workaround lambda deduction bug on msvc 2013
+                                .as_dynamic();},
                         [](int z, std::tuple<int,int,int> triplet){return triplet;});
             triples
                 .take(tripletCount)
                 .subscribe(
-                    [&ct](std::tuple<int,int,int> triplet){++ct;},
+                    rxu::apply_to([&ct](int x,int y,int z){++ct;}),
                     [](std::exception_ptr){abort();});
+            auto finish = clock::now();
+            auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
+                   duration_cast<milliseconds>(start.time_since_epoch());
+            std::cout << "pythagorian range : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << std::endl;
+
+        }
+    }
+}
+
+SCENARIO("synchronize pythagorian ranges", "[hide][range][synchronize][pythagorian][perf]"){
+    const int& tripletCount = static_tripletCount;
+    GIVEN("some ranges"){
+        WHEN("generating pythagorian triplets"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
+
+            std::mutex lock;
+            std::condition_variable wake;
+
+            rx::composite_subscription lifetime;
+
+            auto sc = rxsc::make_event_loop();
+            auto so = rxsub::synchronize_observable(sc);
+
+            int c = 0;
+            int ct = 0;
+            int n = 1;
+            auto start = clock::now();
+            auto triples =
+                rxs::range(1, sc)
+                    .flat_map(
+                        [&c, sc, so](int z){
+                            return rxs::range(1, z, 1, sc)
+                                .flat_map(
+                                    [&c, sc, z](int x){
+                                        return rxs::range(x, z, 1, sc)
+                                            .filter([&c, z, x](int y){++c; return x*x + y*y == z*z;})
+                                            .map([z, x](int y){return std::make_tuple(x, y, z);});},
+                                    [](int x, std::tuple<int,int,int> triplet){return triplet;},
+                                    so)
+                                // forget type to workaround lambda deduction bug on msvc 2013
+                                .as_dynamic();},
+                        [](int z, std::tuple<int,int,int> triplet){return triplet;},
+                        so);
+            triples
+                .take(tripletCount)
+                .subscribe(
+                    lifetime,
+                    rxu::apply_to([&ct](int x,int y,int z){++ct;}),
+                    [](std::exception_ptr){abort();},
+                    [&](){
+                        lifetime.unsubscribe();
+                        wake.notify_one();});
+
+            std::unique_lock<std::mutex> guard(lock);
+            wake.wait(guard, [&](){return !lifetime.is_subscribed();});
+
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
                    duration_cast<milliseconds>(start.time_since_epoch());

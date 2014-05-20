@@ -366,6 +366,31 @@ auto make_observer_dynamic(OnNext&& on, OnError&& oe, OnCompleted&& oc)
                         dynamic_observer<T>(make_observer<T>(std::forward<OnNext>(on), std::forward<OnError>(oe), std::forward<OnCompleted>(oc))));
 }
 
+
+template<class F, class OnError>
+auto on_exception(const F& f, const OnError& c)
+    ->  typename std::enable_if<detail::is_on_error<OnError>::value, rxu::detail::maybe<decltype(f())>>::type {
+    rxu::detail::maybe<decltype(f())> r;
+    try {
+        r.reset(f());
+    } catch (...) {
+        c(std::current_exception());
+    }
+    return r;
+}
+
+template<class F, class Subscriber>
+auto on_exception(const F& f, const Subscriber& s)
+    ->  typename std::enable_if<is_subscriber<Subscriber>::value, rxu::detail::maybe<decltype(f())>>::type {
+    rxu::detail::maybe<decltype(f())> r;
+    try {
+        r.reset(f());
+    } catch (...) {
+        s.on_error(std::current_exception());
+    }
+    return r;
+}
+
 }
 
 #endif

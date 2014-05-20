@@ -74,6 +74,20 @@ struct select_chain
 
 }
 
+//
+// this type is the default used by operators that subscribe to
+// multiple sources. It assumes that the sources are already synchronized
+//
+struct identity_observable
+{
+    template<class Observable>
+    auto operator()(Observable o)
+        -> Observable {
+        return      std::move(o);
+        static_assert(is_observable<Observable>::value, "only support observables");
+    }
+};
+
 template<class T>
 class dynamic_observable
     : public rxs::source_base<T>
@@ -150,7 +164,7 @@ private:
 
     template<class Subscriber>
     auto detail_subscribe(Subscriber&& scrbr) const
-    -> decltype(make_subscription(*(typename std::decay<Subscriber>::type*)nullptr)) {
+        -> composite_subscription {
 
         typedef typename std::decay<Subscriber>::type subscriber_type;
         subscriber_type o = std::forward<Subscriber>(scrbr);
@@ -160,7 +174,7 @@ private:
         static_assert(detail::has_on_subscribe_for<subscriber_type, source_operator_type>::value, "inner must have on_subscribe method that accepts this subscriber ");
 
         if (!o.is_subscribed()) {
-            return make_subscription(o);
+            return o.get_subscription();
         }
 
         auto safe_subscribe = [=]() {
@@ -189,7 +203,7 @@ private:
             safe_subscribe();
         }
 
-        return make_subscription(o);
+        return o.get_subscription();
     }
 
 public:
@@ -302,18 +316,46 @@ public:
     ///
     template<class CollectionSelector, class ResultSelector>
     auto flat_map(CollectionSelector&& s, ResultSelector&& rs) const
-        ->      observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector>::value_type,  rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector>> {
-        return  observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector>::value_type,  rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector>>(
-                                                                                                                       rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs)));
+        ->      observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_observable>::value_type,  rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_observable>> {
+        return  observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_observable>::value_type,  rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_observable>>(
+                                                                                                                                            rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_observable>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), identity_observable()));
+    }
+
+    /// flat_map (AKA SelectMany) ->
+    /// for each item from this observable use the CollectionSelector to select an observable and subscribe to that observable.
+    /// for each item from all of the selected observables use the ResultSelector to select a value to emit from the new observable that is returned.
+    ///
+    template<class CollectionSelector, class ResultSelector, class SourceFilter>
+    auto flat_map(CollectionSelector&& s, ResultSelector&& rs, SourceFilter&& sf) const
+        ->      observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>::value_type, rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>> {
+        return  observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>::value_type, rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>>(
+                                                                                                                                    rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<SourceFilter>(sf)));
+    }
+
+    /// multicast ->
+    /// allows connections to the source to be independent of subscriptions
+    ///
+    template<class Subject>
+    auto multicast(Subject sub) const
+        ->      connectable_observable<T,   rxo::detail::multicast<T, this_type, Subject>> {
+        return  connectable_observable<T,   rxo::detail::multicast<T, this_type, Subject>>(
+                                            rxo::detail::multicast<T, this_type, Subject>(*this, std::move(sub)));
+    }
+
+    /// synchronize ->
+    /// turns a cold observable hot and allows connections to the source to be independent of subscriptions
+    ///
+    auto synchronize(rxsc::worker w, composite_subscription cs = composite_subscription()) const
+        -> decltype(multicast(rxsub::synchronize<T>(w, cs))) {
+        return      multicast(rxsub::synchronize<T>(w, cs));
     }
 
     /// publish ->
     /// turns a cold observable hot and allows connections to the source to be independent of subscriptions
     ///
-    auto publish() const
-        ->      connectable_observable<T,   rxo::detail::publish<T, this_type, rxsub::subject<T>>> {
-        return  connectable_observable<T,   rxo::detail::publish<T, this_type, rxsub::subject<T>>>(
-                                            rxo::detail::publish<T, this_type, rxsub::subject<T>>(*this));
+    auto publish(composite_subscription cs = composite_subscription()) const
+        -> decltype(multicast(rxsub::subject<T>(cs))) {
+        return      multicast(rxsub::subject<T>(cs));
     }
 
     /// take ->

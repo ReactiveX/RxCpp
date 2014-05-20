@@ -2,8 +2,8 @@
 
 #pragma once
 
-#if !defined(RXCPP_RX_SCHEDULER_SUBJECT_HPP)
-#define RXCPP_RX_SCHEDULER_SUBJECT_HPP
+#if !defined(RXCPP_RX_SUBJECT_HPP)
+#define RXCPP_RX_SUBJECT_HPP
 
 #include "../rx-includes.hpp"
 
@@ -200,7 +200,11 @@ class subject
     detail::multicast_observer<T> s;
 
 public:
-    explicit subject(composite_subscription cs = composite_subscription())
+    subject()
+        : s(lifetime)
+    {
+    }
+    explicit subject(composite_subscription cs)
         : lifetime(cs)
         , s(cs)
     {
@@ -210,11 +214,8 @@ public:
         return s.has_observers();
     }
 
-    subscriber<T, observer<T, detail::multicast_observer<T>>> get_subscriber(composite_subscription cs = composite_subscription()) const {
-        auto lt = lifetime;
-        auto token = lt.add(cs);
-        cs.add(make_subscription([token, lt](){lt.remove(token);}));
-        return make_subscriber<T>(cs, observer<T, detail::multicast_observer<T>>(s));
+    subscriber<T, observer<T, detail::multicast_observer<T>>> get_subscriber() const {
+        return make_subscriber<T>(lifetime, observer<T, detail::multicast_observer<T>>(s));
     }
 
     observable<T> get_observable() const {

@@ -39,6 +39,7 @@ namespace rxo=operators;
 #include "operators/rx-filter.hpp"
 #include "operators/rx-map.hpp"
 #include "operators/rx-flat_map.hpp"
+#include "operators/rx-multicast.hpp"
 #include "operators/rx-publish.hpp"
 #include "operators/rx-ref_count.hpp"
 #include "operators/rx-connect_forever.hpp"

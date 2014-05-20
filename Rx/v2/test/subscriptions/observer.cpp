@@ -84,14 +84,10 @@ SCENARIO("observer traits", "[observer][traits]"){
 SCENARIO("non-observer traits", "[observer][traits]"){
     GIVEN("given some subscription types"){
         auto empty = [](){};
-        rx::dynamic_subscription ds(empty);
         rx::static_subscription<decltype(empty)> ss(empty);
         auto es = rx::make_subscription();
         rx::composite_subscription cs;
         WHEN("tested"){
-            THEN("is_observer value is false for dynamic_subscription"){
-                REQUIRE(!rx::is_observer<decltype(ds)>::value);
-            }
             THEN("is_observer value is false for static_subscription"){
                 REQUIRE(!rx::is_observer<decltype(ss)>::value);
             }

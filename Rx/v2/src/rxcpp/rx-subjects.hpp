@@ -17,5 +17,6 @@ namespace rxsub=subjects;
 }
 
 #include "subjects/rx-subject.hpp"
+#include "subjects/rx-synchronize.hpp"
 
 #endif

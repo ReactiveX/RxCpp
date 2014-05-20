@@ -56,6 +56,24 @@ struct notification_base
     virtual void accept(const observer_type& o) const =0;
 };
 
+template<class T>
+auto to_stream(std::ostream& os, const T& t, int, int)
+    -> decltype(os << t) {
+    return      os << t;
+}
+
+template<class T>
+auto to_stream(std::ostream& os, const T&, int, ...)
+    -> decltype(os << typeid(T).name() << "") {
+    return      os << "< " << typeid(T).name() << " does not support ostream>";
+}
+
+template<class T>
+auto to_stream(std::ostream& os, const T&, ...)
+    -> decltype(os << "") {
+    return      os << "<the value does not support ostream>";
+}
+
 }
 
 template<typename T>
@@ -71,7 +89,9 @@ private:
         on_next_notification(T value) : value(std::move(value)) {
         }
         virtual void out(std::ostream& os) const {
-            os << "on_next( " << value << ")";
+            os << "on_next( ";
+            detail::to_stream(os, value, 0, 0);
+            os << ")";
         }
         virtual bool equals(const typename base::type& other) const {
             bool result = false;

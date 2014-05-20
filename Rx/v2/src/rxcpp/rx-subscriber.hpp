@@ -43,7 +43,6 @@ class subscriber : public subscriber_base<T>
     subscriber();
 public:
     typedef typename composite_subscription::weak_subscription weak_subscription;
-    typedef typename composite_subscription::shared_subscription shared_subscription;
 
     subscriber(const this_type& o)
         : lifetime(o.lifetime)
@@ -132,11 +131,13 @@ public:
     bool is_subscribed() const {
         return lifetime.is_subscribed();
     }
-    weak_subscription add(shared_subscription s) const {
+    weak_subscription add(subscription s) const {
         return lifetime.add(std::move(s));
     }
-    weak_subscription add(dynamic_subscription s) const {
-        return lifetime.add(std::move(s));
+    template<class F>
+    auto add(F f) const
+    -> typename std::enable_if<detail::is_unsubscribe_function<F>::value, weak_subscription>::type {
+        return lifetime.add(make_subscription(std::move(f)));
     }
     void remove(weak_subscription w) const {
         return lifetime.remove(std::move(w));

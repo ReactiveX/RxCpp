@@ -193,7 +193,6 @@ class worker : public worker_base
     friend bool operator==(const worker&, const worker&);
 public:
     typedef scheduler_base::clock_type clock_type;
-    typedef composite_subscription::shared_subscription shared_subscription;
     typedef composite_subscription::weak_subscription weak_subscription;
 
     worker()
@@ -217,10 +216,7 @@ public:
     inline bool is_subscribed() const {
         return lifetime.is_subscribed();
     }
-    inline weak_subscription add(shared_subscription s) const {
-        return lifetime.add(std::move(s));
-    }
-    inline weak_subscription add(dynamic_subscription s) const {
+    inline weak_subscription add(subscription s) const {
         return lifetime.add(std::move(s));
     }
     inline void remove(weak_subscription w) const {
@@ -452,7 +448,6 @@ class schedulable : public schedulable_base
 
 public:
     typedef composite_subscription::weak_subscription weak_subscription;
-    typedef composite_subscription::shared_subscription shared_subscription;
     typedef scheduler_base::clock_type clock_type;
 
     ~schedulable()
@@ -543,11 +538,13 @@ public:
     inline bool is_subscribed() const {
         return lifetime.is_subscribed();
     }
-    inline weak_subscription add(shared_subscription s) const {
+    inline weak_subscription add(subscription s) const {
         return lifetime.add(std::move(s));
     }
-    inline weak_subscription add(dynamic_subscription s) const {
-        return lifetime.add(std::move(s));
+    template<class F>
+    auto add(F f) const
+    -> typename std::enable_if<rxcpp::detail::is_unsubscribe_function<F>::value, weak_subscription>::type {
+        return lifetime.add(make_subscription(std::move(f)));
     }
     inline void remove(weak_subscription w) const {
         return lifetime.remove(std::move(w));

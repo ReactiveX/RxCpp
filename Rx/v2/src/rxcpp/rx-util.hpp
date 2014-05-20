@@ -227,12 +227,12 @@ public:
     }
 
     maybe& operator=(const T& other) {
-        set(other);
+        reset(other);
         return *this;
     }
     maybe& operator=(const maybe& other) {
         if (const T* pother = other.get()) {
-            set(*pother);
+            reset(*pother);
         } else {
             reset();
         }

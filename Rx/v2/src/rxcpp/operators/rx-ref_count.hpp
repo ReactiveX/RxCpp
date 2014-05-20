@@ -31,12 +31,12 @@ struct ref_count : public operator_base<T>
     template<class Subscriber>
     void on_subscribe(Subscriber&& o) {
         auto needConnect = ++subscribers == 1;
-        o.add(make_subscription(
+        o.add(
             [this](){
                 if (--this->subscribers == 0) {
                     this->connection.unsubscribe();
                 }
-            }));
+            });
         source.subscribe(std::forward<Subscriber>(o));
         if (needConnect) {
             connection = source.connect();

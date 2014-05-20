@@ -85,6 +85,7 @@
 #include <algorithm>
 #include <atomic>
 #include <map>
+#include <set>
 #include <mutex>
 #include <deque>
 #include <thread>
@@ -94,6 +95,7 @@
 #include <queue>
 #include <chrono>
 #include <condition_variable>
+#include <typeinfo>
 
 #include "rx-util.hpp"
 #include "rx-predef.hpp"
