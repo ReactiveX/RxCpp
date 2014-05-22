@@ -202,7 +202,7 @@ public:
         onnext(v); return ready.get_future();}
 };
 }
-SCENARIO("for loop calls std::future<unit> on_next(int)", "[hide][for][asyncobserver][future][perf]"){
+SCENARIO("for loop calls std::future<unit> on_next(int)", "[hide][for][asyncobserver][future][long][perf]"){
     const int& onnextcalls = static_onnextcalls;
     GIVEN("a for loop"){
         WHEN("calling on_next 100 million times"){
@@ -307,7 +307,7 @@ SCENARIO("range calls subscriber", "[hide][range][subscriber][perf]"){
     }
 }
 
-SCENARIO("for loop calls subject", "[hide][for][subject][subjects][perf]"){
+SCENARIO("for loop calls subject", "[hide][for][subject][subjects][long][perf]"){
     const int& onnextcalls = static_onnextcalls;
     GIVEN("a for loop and a subject"){
         WHEN("multicasting a million ints"){
@@ -373,7 +373,7 @@ SCENARIO("for loop calls subject", "[hide][for][subject][subjects][perf]"){
     }
 }
 
-SCENARIO("range calls subject", "[hide][range][subject][subjects][perf]"){
+SCENARIO("range calls subject", "[hide][range][subject][subjects][long][perf]"){
     const int& onnextcalls = static_onnextcalls;
     GIVEN("a range and a subject"){
         WHEN("multicasting a million ints"){
@@ -437,7 +437,7 @@ SCENARIO("range calls subject", "[hide][range][subject][subjects][perf]"){
     }
 }
 
-SCENARIO("schedule_periodically", "[hide][periodically][scheduler][perf]"){
+SCENARIO("schedule_periodically", "[hide][periodically][scheduler][long][perf]"){
     const int& onnextcalls = static_onnextcalls;
     GIVEN("schedule_periodically"){
         WHEN("the period is 1sec and the initial is 2sec"){
@@ -460,7 +460,7 @@ SCENARIO("schedule_periodically", "[hide][periodically][scheduler][perf]"){
     }
 }
 
-SCENARIO("schedule_periodically by duration", "[hide][periodically][scheduler][perf]"){
+SCENARIO("schedule_periodically by duration", "[hide][periodically][scheduler][long][perf]"){
     const int& onnextcalls = static_onnextcalls;
     GIVEN("schedule_periodically_duration"){
         WHEN("the period is 1sec and the initial is 2sec"){
@@ -503,6 +503,7 @@ SCENARIO("schedule_periodically by duration", "[hide][periodically][scheduler][p
         }
     }
 }
+
 SCENARIO("subject - infinite source", "[subject][subjects]"){
     GIVEN("a subject and an infinite source"){
 
