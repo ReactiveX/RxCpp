@@ -194,7 +194,6 @@ private:
         if (rxsc::current_thread::is_schedule_required()) {
             auto sc = rxsc::make_current_thread();
             sc.create_worker(o.get_subscription()).schedule(
-                o.get_subscription(),
                 [=](const rxsc::schedulable& scbl) {
                     safe_subscribe();
                 });

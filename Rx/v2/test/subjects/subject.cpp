@@ -21,7 +21,7 @@ namespace rxt=rxcpp::test;
 const int static_onnextcalls = 100000000;
 int aliased = 0;
 
-SCENARIO("for loop locks mutex", "[hide][for][mutex][perf]"){
+SCENARIO("for loop locks mutex", "[hide][for][mutex][long][perf]"){
     const int& onnextcalls = static_onnextcalls;
     GIVEN("a for loop"){
         WHEN("locking mutex 100 million times"){

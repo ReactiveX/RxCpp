@@ -123,7 +123,9 @@ SCENARIO("synchronize pythagorian ranges", "[hide][range][synchronize][pythagori
                                     [&c, sc, z](int x){
                                         return rxs::range(x, z, 1, sc)
                                             .filter([&c, z, x](int y){++c; return x*x + y*y == z*z;})
-                                            .map([z, x](int y){return std::make_tuple(x, y, z);});},
+                                            .map([z, x](int y){return std::make_tuple(x, y, z);})
+                                            // forget type to workaround lambda deduction bug on msvc 2013
+                                            .as_dynamic();},
                                     [](int x, std::tuple<int,int,int> triplet){return triplet;},
                                     so)
                                 // forget type to workaround lambda deduction bug on msvc 2013

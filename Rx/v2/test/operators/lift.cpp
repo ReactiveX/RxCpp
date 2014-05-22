@@ -279,15 +279,17 @@ SCENARIO("lift lambda filter stops on disposal", "[where][filter][lift][lambda][
                     };
                     return xs
                         .lift([=](rx::subscriber<int> dest){
+                            // VS2013 deduction issue requires dynamic (type-forgetting)
                             return rx::make_subscriber<int>(
                                 dest,
-                                [=](int n){
-                                    bool pass = false;
-                                    try{pass = predicate(n);} catch(...){dest.on_error(std::current_exception());};
-                                    if (pass) {dest.on_next(n);}
-                                },
-                                [=](std::exception_ptr e){dest.on_error(e);},
-                                [=](){dest.on_completed();});
+                                rx::make_observer_dynamic<int>(
+                                    [=](int n){
+                                        bool pass = false;
+                                        try{pass = predicate(n);} catch(...){dest.on_error(std::current_exception());};
+                                        if (pass) {dest.on_next(n);}
+                                    },
+                                    [=](std::exception_ptr e){dest.on_error(e);},
+                                    [=](){dest.on_completed();}));
                         })
                         // forget type to workaround lambda deduction bug on msvc 2013
                         .as_dynamic();

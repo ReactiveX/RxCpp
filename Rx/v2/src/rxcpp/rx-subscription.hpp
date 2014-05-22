@@ -132,7 +132,7 @@ public:
     template<class U>
     explicit subscription(U u, typename std::enable_if<!std::is_same<subscription, U>::value && is_subscription<U>::value, void**>::type = nullptr)
         // intentionally slice
-        : state(std::move(static_cast<subscription&>(u).state))
+        : state(std::move((*static_cast<subscription*>(&u)).state))
     {
         if (!state) {
             abort();
@@ -321,11 +321,6 @@ public:
         if (!state) {
             abort();
         }
-        if (s == static_cast<const subscription&>(*this)) {
-            // do not nest the same subscription
-            abort();
-            //return s.get_weak();
-        }
         return state->add(std::move(s));
     }
     inline void remove(weak_subscription w) const {
@@ -370,7 +365,7 @@ public:
 
     composite_subscription()
         : inner_type()
-        , subscription(static_cast<const inner_type&>(*this))
+        , subscription(*static_cast<const inner_type* const>(this))
     {
     }
 
@@ -388,7 +383,7 @@ public:
     composite_subscription& operator=(composite_subscription o)
     {
         inner_type::operator=(std::move(o));
-        subscription::operator=(std::move(static_cast<subscription&>(o)));
+        subscription::operator=(std::move(*static_cast<subscription*>(&o)));
         return *this;
     }
 
@@ -399,14 +394,22 @@ public:
     using subscription::is_subscribed;
     using subscription::unsubscribe;
 
-    using inner_type::add;
     using inner_type::remove;
     using inner_type::clear;
+
+    inline weak_subscription add(subscription s) const {
+        if (s == static_cast<const subscription&>(*this)) {
+            // do not nest the same subscription
+            abort();
+            //return s.get_weak();
+        }
+        return inner_type::add(std::move(s));
+    }
 
     template<class F>
     auto add(F f) const
     -> typename std::enable_if<detail::is_unsubscribe_function<F>::value, weak_subscription>::type {
-        return inner_type::add(make_subscription(std::move(f)));
+        return add(make_subscription(std::move(f)));
     }
 };
 
