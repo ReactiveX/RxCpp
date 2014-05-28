@@ -65,17 +65,23 @@ struct take : public operator_base<T>
         // take a copy of the values for each subscription
         auto state = std::shared_ptr<state_type>(new state_type(initial, s));
 
+        composite_subscription source_lifetime;
+
+        s.add(source_lifetime);
+
         state->source.subscribe(
-        // share subscription lifetime
-            state->out,
+        // split subscription lifetime
+            source_lifetime,
         // on_next
-            [state](T t) {
+            [state, source_lifetime](T t) {
                 if (state->mode_value < mode::triggered) {
                     if (--state->count > 0) {
                         state->out.on_next(t);
                     } else {
                         state->mode_value = mode::triggered;
                         state->out.on_next(t);
+                        // must shutdown source before signaling completion
+                        source_lifetime.unsubscribe();
                         state->out.on_completed();
                     }
                 }

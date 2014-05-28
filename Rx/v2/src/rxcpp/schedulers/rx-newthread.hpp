@@ -25,59 +25,80 @@ private:
         typedef new_worker this_type;
         new_worker(const this_type&);
 
-        typedef detail::schedulable_queue<
-            typename clock_type::time_point> queue_item_time;
+        struct new_worker_state : public std::enable_shared_from_this<new_worker_state>
+        {
+            typedef detail::schedulable_queue<
+                typename clock_type::time_point> queue_item_time;
 
-        typedef queue_item_time::item_type item_type;
+            typedef queue_item_time::item_type item_type;
 
-        composite_subscription lifetime;
-        mutable std::mutex lock;
-        mutable std::condition_variable wake;
-        mutable queue_item_time queue;
-        std::thread worker;
-        recursion r;
+            virtual ~new_worker_state()
+            {
+                std::unique_lock<std::mutex> guard(lock);
+                if (worker.joinable() && worker.get_id() != std::this_thread::get_id()) {
+                    lifetime.unsubscribe();
+                    guard.unlock();
+                    worker.join();
+                }
+                else {
+                    lifetime.unsubscribe();
+                    worker.detach();
+                }
+            }
+
+            explicit new_worker_state(composite_subscription cs)
+                : lifetime(cs)
+            {
+            }
+
+            composite_subscription lifetime;
+            mutable std::mutex lock;
+            mutable std::condition_variable wake;
+            mutable queue_item_time queue;
+            std::thread worker;
+            recursion r;
+        };
+
+        std::shared_ptr<new_worker_state> state;
 
     public:
         virtual ~new_worker()
         {
-            {
-                std::unique_lock<std::mutex> guard(lock);
-                lifetime.unsubscribe();
-            }
-            worker.join();
         }
         new_worker(composite_subscription cs, thread_factory& tf)
-            : lifetime(cs)
+            : state(std::make_shared<new_worker_state>(cs))
         {
-            lifetime.add(make_subscription([this](){
-                wake.notify_one();
-            }));
+            auto keepAlive = state;
 
-            worker = tf([this](){
+            state->lifetime.add([keepAlive](){
+                keepAlive->wake.notify_one();
+            });
+
+            state->worker = tf([keepAlive](){
                 for(;;) {
-                    std::unique_lock<std::mutex> guard(lock);
-                    if (queue.empty()) {
-                        wake.wait(guard, [this](){
-                            return !lifetime.is_subscribed() || !queue.empty();
+                    std::unique_lock<std::mutex> guard(keepAlive->lock);
+                    if (keepAlive->queue.empty()) {
+                        keepAlive->wake.wait(guard, [keepAlive](){
+                            return !keepAlive->lifetime.is_subscribed() || !keepAlive->queue.empty();
                         });
                     }
-                    if (!lifetime.is_subscribed()) {
+                    if (!keepAlive->lifetime.is_subscribed()) {
                         break;
                     }
-                    auto& peek = queue.top();
+                    auto& peek = keepAlive->queue.top();
                     if (!peek.what.is_subscribed()) {
-                        queue.pop();
+                        keepAlive->queue.pop();
                         continue;
                     }
                     if (clock_type::now() < peek.when) {
-                        wake.wait_until(guard, peek.when);
+                        keepAlive->wake.wait_until(guard, peek.when);
                         continue;
                     }
                     auto what = peek.what;
-                    queue.pop();
-                    r.reset(queue.empty());
+                    keepAlive->queue.pop();
+                    keepAlive->r.reset(keepAlive->queue.empty());
                     guard.unlock();
-                    what(r.get_recurse());
+                    what(keepAlive->r.get_recurse());
                 }
             });
         }
@@ -92,11 +113,11 @@ private:
 
         virtual void schedule(clock_type::time_point when, const schedulable& scbl) const {
             if (scbl.is_subscribed()) {
-                std::unique_lock<std::mutex> guard(lock);
-                queue.push(item_type(when, scbl));
-                r.reset(false);
+                std::unique_lock<std::mutex> guard(state->lock);
+                state->queue.push(new_worker_state::item_type(when, scbl));
+                state->r.reset(false);
             }
-            wake.notify_one();
+            state->wake.notify_one();
         }
     };
 

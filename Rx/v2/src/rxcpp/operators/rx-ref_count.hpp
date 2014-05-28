@@ -18,28 +18,43 @@ struct ref_count : public operator_base<T>
 {
     typedef typename std::decay<ConnectableObservable>::type source_type;
 
-    source_type source;
-    long subscribers;
-    composite_subscription connection;
+    struct ref_count_state : public std::enable_shared_from_this<ref_count_state>
+    {
+        explicit ref_count_state(source_type o)
+            : source(std::move(o))
+            , subscribers(0)
+        {
+        }
+
+        source_type source;
+        std::mutex lock;
+        long subscribers;
+        composite_subscription connection;
+    };
+    std::shared_ptr<ref_count_state> state;
 
     explicit ref_count(source_type o)
-        : source(std::move(o))
-        , subscribers(0)
+        : state(std::make_shared<ref_count_state>(std::move(o)))
     {
     }
 
     template<class Subscriber>
     void on_subscribe(Subscriber&& o) {
-        auto needConnect = ++subscribers == 1;
+        std::unique_lock<std::mutex> guard(state->lock);
+        auto needConnect = ++state->subscribers == 1;
+        auto keepAlive = state;
+        guard.unlock();
         o.add(
-            [this](){
-                if (--this->subscribers == 0) {
-                    this->connection.unsubscribe();
+            [keepAlive](){
+                std::unique_lock<std::mutex> guard(keepAlive->lock);
+                if (--keepAlive->subscribers == 0) {
+                    keepAlive->connection.unsubscribe();
+                    keepAlive->connection = composite_subscription();
                 }
             });
-        source.subscribe(std::forward<Subscriber>(o));
+        keepAlive->source.subscribe(std::forward<Subscriber>(o));
         if (needConnect) {
-            connection = source.connect();
+            keepAlive->source.connect(keepAlive->connection);
         }
     }
 };

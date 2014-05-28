@@ -60,11 +60,15 @@ struct take_until : public operator_base<T>
                 , busy(0)
                 , out(oarg)
             {
+                out.add(trigger_lifetime);
+                out.add(source_lifetime);
             }
             mutable std::atomic<typename mode::type> mode_value;
             mutable std::atomic<int> busy;
             mutable std::mutex finish_lock;
             mutable std::exception_ptr exception;
+            composite_subscription trigger_lifetime;
+            composite_subscription source_lifetime;
             output_type out;
         };
         // take a copy of the values for each subscription
@@ -83,6 +87,8 @@ struct take_until : public operator_base<T>
                     st->mode_value.exchange(mode::stopped);
                     guard.unlock();
                     if (fin == mode::triggered) {
+                        st->trigger_lifetime.unsubscribe();
+                        st->source_lifetime.unsubscribe();
                         st->out.on_completed();
                     } else if (fin == mode::errored) {
                         st->out.on_error(ex);
@@ -97,14 +103,11 @@ struct take_until : public operator_base<T>
 
         };
 
-        composite_subscription trigger_lifetime;
-        state->out.add(trigger_lifetime);
-
         state->trigger.subscribe(
         // share parts of subscription
             state->out,
         // new lifetime
-            trigger_lifetime,
+            state->trigger_lifetime,
         // on_next
             [state](const typename trigger_source_type::value_type&) {
                 activity finisher(state);
@@ -130,8 +133,8 @@ struct take_until : public operator_base<T>
         );
 
         state->source.subscribe(
-        // share subscription lifetime
-            state->out,
+        // split subscription lifetime
+            state->source_lifetime,
         // on_next
             [state](T t) {
                 //
