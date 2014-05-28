@@ -105,7 +105,7 @@ public:
     template<class V>
     void on_next(V&& v) const {
         if (!is_subscribed()) {
-            abort();
+            return;
         }
         detacher protect(this);
         destination.on_next(std::forward<V>(v));
@@ -113,14 +113,14 @@ public:
     }
     void on_error(std::exception_ptr e) const {
         if (!is_subscribed()) {
-            abort();
+            return;
         }
         detacher protect(this);
         destination.on_error(e);
     }
     void on_completed() const {
         if (!is_subscribed()) {
-            abort();
+            return;
         }
         detacher protect(this);
         destination.on_completed();

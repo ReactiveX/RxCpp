@@ -585,7 +585,7 @@ public:
     /// invokes the action
     inline void operator()(const recurse& r) const {
         if (!is_subscribed()) {
-            abort();
+            return;
         }
         detacher protect(this);
         activity(*this, r);
