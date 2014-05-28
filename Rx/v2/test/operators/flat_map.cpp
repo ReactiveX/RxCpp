@@ -105,9 +105,8 @@ SCENARIO("synchronize pythagorian ranges", "[hide][range][synchronize][pythagori
             std::mutex lock;
             std::condition_variable wake;
 
-            rx::composite_subscription lifetime;
-
             auto sc = rxsc::make_event_loop();
+            //auto sc = rxsc::make_new_thread();
             auto so = rxsub::synchronize_observable(sc);
 
             int c = 0;
@@ -122,7 +121,12 @@ SCENARIO("synchronize pythagorian ranges", "[hide][range][synchronize][pythagori
                                 .flat_map(
                                     [&c, sc, z](int x){
                                         return rxs::range(x, z, 1, sc)
-                                            .filter([&c, z, x](int y){++c; return x*x + y*y == z*z;})
+                                            .filter([&c, z, x](int y){
+                                                ++c; 
+                                                if (x*x + y*y == z*z) {
+                                                    return true;}
+                                                else {
+                                                    return false;}})
                                             .map([z, x](int y){return std::make_tuple(x, y, z);})
                                             // forget type to workaround lambda deduction bug on msvc 2013
                                             .as_dynamic();},
@@ -135,21 +139,19 @@ SCENARIO("synchronize pythagorian ranges", "[hide][range][synchronize][pythagori
             triples
                 .take(tripletCount)
                 .subscribe(
-                    lifetime,
-                    rxu::apply_to([&ct](int x,int y,int z){++ct;}),
+                    rxu::apply_to([&ct](int x,int y,int z){
+                        ++ct;}),
                     [](std::exception_ptr){abort();},
                     [&](){
-                        lifetime.unsubscribe();
                         wake.notify_one();});
 
             std::unique_lock<std::mutex> guard(lock);
-            wake.wait(guard, [&](){return !lifetime.is_subscribed();});
+            wake.wait(guard);
 
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
                    duration_cast<milliseconds>(start.time_since_epoch());
             std::cout << "pythagorian range : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << std::endl;
-
         }
     }
 }
