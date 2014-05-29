@@ -20,6 +20,7 @@ struct merge : public operator_base<typename std::decay<Observable>::type::value
 
     typedef typename std::decay<Observable>::type source_type;
     typedef typename source_type::value_type source_value_type;
+    typedef typename source_value_type::value_type value_type;
     typedef typename std::decay<SourceFilter>::type source_filter_type;
 
     struct values
