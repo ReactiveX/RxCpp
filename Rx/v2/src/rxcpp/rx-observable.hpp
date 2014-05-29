@@ -101,6 +101,9 @@ class dynamic_observable
     };
     std::shared_ptr<state_type> state;
 
+    template<class U>
+    friend bool operator==(const dynamic_observable<U>&, const dynamic_observable<U>&);
+
     template<class SO>
     void construct(SO&& source, rxs::tag_source&&) {
         typename std::decay<SO>::type so = std::forward<SO>(source);
@@ -142,6 +145,15 @@ public:
     }
 };
 
+template<class T>
+inline bool operator==(const dynamic_observable<T>& lhs, const dynamic_observable<T>& rhs) {
+    return lhs.state == rhs.state;
+}
+template<class T>
+inline bool operator!=(const dynamic_observable<T>& lhs, const dynamic_observable<T>& rhs) {
+    return !(lhs == rhs);
+}
+
 template<class T, class Source>
 observable<T> make_observable_dynamic(Source&& s) {
     return observable<T>(dynamic_observable<T>(std::forward<Source>(s)));
@@ -161,6 +173,9 @@ protected:
 private:
     template<class U, class SO>
     friend class observable;
+
+    template<class U, class SO>
+    friend bool operator==(const observable<U, SO>&, const observable<U, SO>&);
 
     template<class Subscriber>
     auto detail_subscribe(Subscriber&& scrbr) const
@@ -309,6 +324,51 @@ public:
                                                                                        rxo::detail::map<this_type, Selector>(*this, std::forward<Selector>(s)));
     }
 
+    template<class SourceFilter, bool IsObservable = is_observable<value_type>::value>
+    struct merge_result;
+
+    template<class SourceFilter>
+    struct merge_result<SourceFilter, true>
+    {
+        typedef 
+            observable<
+                typename this_type::value_type::value_type, 
+                rxo::detail::merge<observable<typename this_type::value_type>, SourceFilter>> 
+        type;
+        static type make(const this_type* that, SourceFilter sf) {
+            return type(rxo::detail::merge<observable<typename this_type::value_type>, SourceFilter>(*that, sf));
+        }
+    };
+    template<class SourceFilter>
+    struct merge_result<SourceFilter, false>
+    {
+        typedef this_type type;
+        static type make(const this_type* that, SourceFilter) {
+            return *that;
+        }
+    };
+
+    /// merge ->
+    /// for each item from this observable subscribe.
+    /// for each item from all of the nested observables deliver from the new observable that is returned.
+    ///
+    auto merge() const
+        -> typename merge_result<identity_observable>::type {
+        return  merge_result<identity_observable>::make(this, identity_observable());
+    }
+
+    /// merge ->
+    /// for each item from this observable subscribe.
+    /// for each item from all of the nested observables deliver from the new observable that is returned.
+    ///
+    template<class SourceFilter>
+    auto merge(SourceFilter&& sf) const
+        -> typename std::enable_if<is_observable<value_type>::value, 
+                observable<typename rxo::detail::merge<this_type, SourceFilter>::value_type,    rxo::detail::merge<this_type, SourceFilter>>>::type {
+        return  observable<typename rxo::detail::merge<this_type, SourceFilter>::value_type,    rxo::detail::merge<this_type, SourceFilter>>(
+                                                                                                rxo::detail::merge<this_type, SourceFilter>(*this, std::forward<SourceFilter>(sf)));
+    }
+
     /// flat_map (AKA SelectMany) ->
     /// for each item from this observable use the CollectionSelector to select an observable and subscribe to that observable.
     /// for each item from all of the selected observables use the ResultSelector to select a value to emit from the new observable that is returned.
@@ -377,6 +437,15 @@ public:
                                 rxo::detail::take_until<T, this_type, TriggerSource>(*this, std::forward<TriggerSource>(t)));
     }
 };
+
+template<class T, class SourceOperator>
+inline bool operator==(const observable<T, SourceOperator>& lhs, const observable<T, SourceOperator>& rhs) {
+    return lhs.source_operator == rhs.source_operator;
+}
+template<class T, class SourceOperator>
+inline bool operator!=(const observable<T, SourceOperator>& lhs, const observable<T, SourceOperator>& rhs) {
+    return !(lhs == rhs);
+}
 
 // observable<> has static methods to construct observable sources and adaptors.
 // observable<> is not constructable

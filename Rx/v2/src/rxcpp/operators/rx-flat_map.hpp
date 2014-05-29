@@ -220,7 +220,7 @@ public:
     auto operator()(Observable&& source)
         ->      observable<typename flat_map<Observable, CollectionSelector, ResultSelector, SourceFilter>::value_type, flat_map<Observable, CollectionSelector, ResultSelector, SourceFilter>> {
         return  observable<typename flat_map<Observable, CollectionSelector, ResultSelector, SourceFilter>::value_type, flat_map<Observable, CollectionSelector, ResultSelector, SourceFilter>>(
-                                    flat_map<Observable, CollectionSelector, ResultSelector, SourceFilter>(std::forward<Observable>(source), std::move(selectorCollection), std::move(selectorResult), std::move(sourceFilter)));
+                                    flat_map<Observable, CollectionSelector, ResultSelector, SourceFilter>(std::forward<Observable>(source), selectorCollection, selectorResult, sourceFilter));
     }
 };
 

@@ -38,6 +38,7 @@ namespace rxo=operators;
 #include "operators/rx-subscribe.hpp"
 #include "operators/rx-filter.hpp"
 #include "operators/rx-map.hpp"
+#include "operators/rx-merge.hpp"
 #include "operators/rx-flat_map.hpp"
 #include "operators/rx-multicast.hpp"
 #include "operators/rx-publish.hpp"
