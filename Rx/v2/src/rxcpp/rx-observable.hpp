@@ -330,10 +330,10 @@ public:
     template<class SourceFilter>
     struct merge_result<SourceFilter, true>
     {
-        typedef 
+        typedef
             observable<
-                typename this_type::value_type::value_type, 
-                rxo::detail::merge<observable<typename this_type::value_type>, SourceFilter>> 
+                typename this_type::value_type::value_type,
+                rxo::detail::merge<observable<typename this_type::value_type>, SourceFilter>>
         type;
         static type make(const this_type* that, SourceFilter sf) {
             return type(rxo::detail::merge<observable<typename this_type::value_type>, SourceFilter>(*that, sf));
@@ -363,7 +363,7 @@ public:
     ///
     template<class SourceFilter>
     auto merge(SourceFilter&& sf) const
-        -> typename std::enable_if<is_observable<value_type>::value, 
+        -> typename std::enable_if<is_observable<value_type>::value,
                 observable<typename rxo::detail::merge<this_type, SourceFilter>::value_type,    rxo::detail::merge<this_type, SourceFilter>>>::type {
         return  observable<typename rxo::detail::merge<this_type, SourceFilter>::value_type,    rxo::detail::merge<this_type, SourceFilter>>(
                                                                                                 rxo::detail::merge<this_type, SourceFilter>(*this, std::forward<SourceFilter>(sf)));
@@ -389,6 +389,28 @@ public:
         ->      observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>::value_type, rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>> {
         return  observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>::value_type, rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>>(
                                                                                                                                     rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<SourceFilter>(sf)));
+    }
+
+    /// concat_map ->
+    /// for each item from this observable use the CollectionSelector to select an observable and subscribe to that observable.
+    /// for each item from all of the selected observables use the ResultSelector to select a value to emit from the new observable that is returned.
+    ///
+    template<class CollectionSelector, class ResultSelector>
+    auto concat_map(CollectionSelector&& s, ResultSelector&& rs) const
+        ->      observable<typename rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_observable>::value_type,    rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_observable>> {
+        return  observable<typename rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_observable>::value_type,    rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_observable>>(
+                                                                                                                                                rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_observable>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), identity_observable()));
+    }
+
+    /// concat_map ->
+    /// for each item from this observable use the CollectionSelector to select an observable and subscribe to that observable.
+    /// for each item from all of the selected observables use the ResultSelector to select a value to emit from the new observable that is returned.
+    ///
+    template<class CollectionSelector, class ResultSelector, class SourceFilter>
+    auto concat_map(CollectionSelector&& s, ResultSelector&& rs, SourceFilter&& sf) const
+        ->      observable<typename rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>::value_type,   rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>> {
+        return  observable<typename rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>::value_type,   rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>>(
+                                                                                                                                        rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<SourceFilter>(sf)));
     }
 
     /// multicast ->

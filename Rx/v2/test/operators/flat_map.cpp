@@ -12,7 +12,7 @@ namespace rxt=rxcpp::test;
 
 #include "catch.hpp"
 
-static const int static_tripletCount = 50;
+static const int static_tripletCount = 20;
 
 SCENARIO("pythagorian for loops", "[hide][for][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
@@ -89,7 +89,7 @@ SCENARIO("pythagorian ranges", "[hide][range][pythagorian][perf]"){
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
                    duration_cast<milliseconds>(start.time_since_epoch());
-            std::cout << "pythagorian range : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << std::endl;
+            std::cout << "merge pythagorian range : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << std::endl;
 
         }
     }
@@ -122,7 +122,7 @@ SCENARIO("synchronize pythagorian ranges", "[hide][range][synchronize][pythagori
                                     [&c, sc, z](int x){
                                         return rxs::range(x, z, 1, sc)
                                             .filter([&c, z, x](int y){
-                                                ++c; 
+                                                ++c;
                                                 if (x*x + y*y == z*z) {
                                                     return true;}
                                                 else {
@@ -151,7 +151,7 @@ SCENARIO("synchronize pythagorian ranges", "[hide][range][synchronize][pythagori
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
                    duration_cast<milliseconds>(start.time_since_epoch());
-            std::cout << "pythagorian range : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << std::endl;
+            std::cout << "merge sync pythagorian range : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << std::endl;
         }
     }
 }

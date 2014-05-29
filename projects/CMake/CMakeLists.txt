@@ -51,6 +51,7 @@ set(V2_TEST_SOURCES
     ${V2_TEST_DIR}/subjects/subject.cpp
     ${V2_TEST_DIR}/subscriptions/subscription.cpp
     ${V2_TEST_DIR}/operators/flat_map.cpp
+    ${V2_TEST_DIR}/operators/concat_map.cpp
     ${V2_TEST_DIR}/operators/map.cpp
 )
 add_executable(rxcppv2_test ${V2_TEST_SOURCES})
