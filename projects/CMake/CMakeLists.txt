@@ -42,6 +42,7 @@ add_executable(testbench ${TESTBENCH_SOURCES})
 # define the sources of the self test
 set(V2_TEST_SOURCES
     ${V2_TEST_DIR}/test.cpp
+    ${V2_TEST_DIR}/operators/concat.cpp
     ${V2_TEST_DIR}/operators/merge.cpp
     ${V2_TEST_DIR}/operators/lift.cpp
     ${V2_TEST_DIR}/operators/filter.cpp

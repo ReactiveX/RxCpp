@@ -349,6 +349,7 @@ public:
     };
 
     /// merge ->
+    /// All sources must be syncronized! This means that calls across all the subscribers must be serial.
     /// for each item from this observable subscribe.
     /// for each item from all of the nested observables deliver from the new observable that is returned.
     ///
@@ -358,6 +359,7 @@ public:
     }
 
     /// merge ->
+    /// The source filter can be used to syncronize sources from different contexts.
     /// for each item from this observable subscribe.
     /// for each item from all of the nested observables deliver from the new observable that is returned.
     ///
@@ -370,6 +372,7 @@ public:
     }
 
     /// flat_map (AKA SelectMany) ->
+    /// All sources must be syncronized! This means that calls across all the subscribers must be serial.
     /// for each item from this observable use the CollectionSelector to select an observable and subscribe to that observable.
     /// for each item from all of the selected observables use the ResultSelector to select a value to emit from the new observable that is returned.
     ///
@@ -381,6 +384,7 @@ public:
     }
 
     /// flat_map (AKA SelectMany) ->
+    /// The source filter can be used to syncronize sources from different contexts.
     /// for each item from this observable use the CollectionSelector to select an observable and subscribe to that observable.
     /// for each item from all of the selected observables use the ResultSelector to select a value to emit from the new observable that is returned.
     ///
@@ -391,7 +395,55 @@ public:
                                                                                                                                     rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<SourceFilter>(sf)));
     }
 
+    template<class SourceFilter, bool IsObservable = is_observable<value_type>::value>
+    struct concat_result;
+
+    template<class SourceFilter>
+    struct concat_result<SourceFilter, true>
+    {
+        typedef
+            observable<
+                typename this_type::value_type::value_type,
+                rxo::detail::concat<observable<typename this_type::value_type>, SourceFilter>>
+        type;
+        static type make(const this_type* that, SourceFilter sf) {
+            return type(rxo::detail::concat<observable<typename this_type::value_type>, SourceFilter>(*that, sf));
+        }
+    };
+    template<class SourceFilter>
+    struct concat_result<SourceFilter, false>
+    {
+        typedef this_type type;
+        static type make(const this_type* that, SourceFilter) {
+            return *that;
+        }
+    };
+
+    /// concat ->
+    /// All sources must be syncronized! This means that calls across all the subscribers must be serial.
+    /// for each item from this observable subscribe to one at a time. in the order received.
+    /// for each item from all of the nested observables deliver from the new observable that is returned.
+    ///
+    auto concat() const
+        -> typename concat_result<identity_observable>::type {
+        return  concat_result<identity_observable>::make(this, identity_observable());
+    }
+
+    /// concat ->
+    /// The source filter can be used to syncronize sources from different contexts.
+    /// for each item from this observable subscribe to one at a time. in the order received.
+    /// for each item from all of the nested observables deliver from the new observable that is returned.
+    ///
+    template<class SourceFilter>
+    auto concat(SourceFilter&& sf) const
+        -> typename std::enable_if<is_observable<value_type>::value,
+                observable<typename rxo::detail::concat<this_type, SourceFilter>::value_type,   rxo::detail::concat<this_type, SourceFilter>>>::type {
+        return  observable<typename rxo::detail::concat<this_type, SourceFilter>::value_type,   rxo::detail::concat<this_type, SourceFilter>>(
+                                                                                                rxo::detail::concat<this_type, SourceFilter>(*this, std::forward<SourceFilter>(sf)));
+    }
+
     /// concat_map ->
+    /// All sources must be syncronized! This means that calls across all the subscribers must be serial.
     /// for each item from this observable use the CollectionSelector to select an observable and subscribe to that observable.
     /// for each item from all of the selected observables use the ResultSelector to select a value to emit from the new observable that is returned.
     ///
@@ -403,6 +455,7 @@ public:
     }
 
     /// concat_map ->
+    /// The source filter can be used to syncronize sources from different contexts.
     /// for each item from this observable use the CollectionSelector to select an observable and subscribe to that observable.
     /// for each item from all of the selected observables use the ResultSelector to select a value to emit from the new observable that is returned.
     ///

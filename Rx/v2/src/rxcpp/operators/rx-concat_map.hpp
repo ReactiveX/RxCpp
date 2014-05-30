@@ -92,11 +92,11 @@ struct concat_map
 
         typedef typename std::decay<Subscriber>::type output_type;
 
-        struct state_type
-            : public std::enable_shared_from_this<state_type>
+        struct concat_map_state_type
+            : public std::enable_shared_from_this<concat_map_state_type>
             , public values
         {
-            state_type(values i, output_type oarg)
+            concat_map_state_type(values i, output_type oarg)
                 : values(std::move(i))
                 , sourceLifetime(composite_subscription::empty())
                 , collectionLifetime(composite_subscription::empty())
@@ -156,6 +156,7 @@ struct concat_map
                         if (!state->selectedCollections.empty()) {
                             auto value = state->selectedCollections.front();
                             state->selectedCollections.pop_front();
+                            state->collectionLifetime.unsubscribe();
                             state->subscribe_to(value);
                         } else if (!state->sourceLifetime.is_subscribed()) {
                             state->out.on_completed();
@@ -169,7 +170,7 @@ struct concat_map
             output_type out;
         };
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<state_type>(new state_type(initial, std::forward<Subscriber>(scbr)));
+        auto state = std::shared_ptr<concat_map_state_type>(new concat_map_state_type(initial, std::forward<Subscriber>(scbr)));
 
         state->sourceLifetime = composite_subscription();
 
@@ -194,7 +195,7 @@ struct concat_map
             [state](source_value_type st) {
                 if (state->collectionLifetime.is_subscribed()) {
                     state->selectedCollections.push_back(st);
-                } else {
+                } else if (state->selectedCollections.empty()) {
                     state->subscribe_to(st);
                 }
             },

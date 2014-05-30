@@ -13,7 +13,7 @@ namespace rxt=rxcpp::test;
 #include "catch.hpp"
 
 
-SCENARIO("merge completes", "[merge][join][operators]"){
+SCENARIO("concat completes", "[concat][join][operators]"){
     GIVEN("1 hot observable with 3 cold observables of ints."){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -74,7 +74,7 @@ SCENARIO("merge completes", "[merge][join][operators]"){
             auto res = w.start<int>(
                 [&]() {
                     return xs
-                        .merge()
+                        .concat()
                         // forget type to workaround lambda deduction bug on msvc 2013
                         .as_dynamic();
                 }
@@ -85,19 +85,19 @@ SCENARIO("merge completes", "[merge][join][operators]"){
 	                on_next(310, 101),
 	                on_next(320, 102),
 	                on_next(410, 103),
-	                on_next(410, 201),
 	                on_next(420, 104),
-	                on_next(420, 202),
-	                on_next(430, 203),
-	                on_next(440, 204),
 	                on_next(510, 105),
-	                on_next(510, 301),
-	                on_next(520, 106),
-	                on_next(520, 302),
-	                on_next(530, 303),
-	                on_next(540, 304),
-	                on_next(620, 305),
-	                on_completed(650)
+                    on_next(520, 106),
+                    on_next(540, 201),
+                    on_next(550, 202),
+                    on_next(560, 203),
+                    on_next(570, 204),
+	                on_next(590, 301),
+	                on_next(600, 302),
+	                on_next(610, 303),
+	                on_next(620, 304),
+	                on_next(700, 305),
+	                on_completed(730)
                 };
                 auto required = rxu::to_vector(items);
                 auto actual = res.get_observer().messages();
@@ -124,7 +124,7 @@ SCENARIO("merge completes", "[merge][join][operators]"){
 
             THEN("there was one subscription and one unsubscription to the ys2"){
                 life items[] = {
-                    subscribe(400, 450)
+                    subscribe(530, 580)
                 };
                 auto required = rxu::to_vector(items);
                 auto actual = ys2.subscriptions();
@@ -133,7 +133,7 @@ SCENARIO("merge completes", "[merge][join][operators]"){
 
             THEN("there was one subscription and one unsubscription to the ys3"){
                 life items[] = {
-                    subscribe(500, 650)
+                    subscribe(580, 730)
                 };
                 auto required = rxu::to_vector(items);
                 auto actual = ys3.subscriptions();
