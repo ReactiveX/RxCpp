@@ -503,13 +503,25 @@ public:
     }
 
     /// take_until ->
+    /// All sources must be syncronized! This means that calls across all the subscribers must be serial.
     ///
     ///
     template<class TriggerSource>
     auto take_until(TriggerSource&& t) const
-        ->      observable<T,   rxo::detail::take_until<T, this_type, TriggerSource>> {
-        return  observable<T,   rxo::detail::take_until<T, this_type, TriggerSource>>(
-                                rxo::detail::take_until<T, this_type, TriggerSource>(*this, std::forward<TriggerSource>(t)));
+        ->      observable<T,   rxo::detail::take_until<T, this_type, TriggerSource, identity_observable>> {
+        return  observable<T,   rxo::detail::take_until<T, this_type, TriggerSource, identity_observable>>(
+                                rxo::detail::take_until<T, this_type, TriggerSource, identity_observable>(*this, std::forward<TriggerSource>(t), identity_observable()));
+    }
+
+    /// take_until ->
+    /// The source filter can be used to syncronize sources from different contexts.
+    ///
+    ///
+    template<class TriggerSource, class SourceFilter>
+    auto take_until(TriggerSource&& t, SourceFilter&& sf) const
+        ->      observable<T,   rxo::detail::take_until<T, this_type, TriggerSource, SourceFilter>> {
+        return  observable<T,   rxo::detail::take_until<T, this_type, TriggerSource, SourceFilter>>(
+                                rxo::detail::take_until<T, this_type, TriggerSource, SourceFilter>(*this, std::forward<TriggerSource>(t), std::forward<SourceFilter>(sf)));
     }
 };
 

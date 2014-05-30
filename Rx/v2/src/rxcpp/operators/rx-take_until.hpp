@@ -13,25 +13,28 @@ namespace operators {
 
 namespace detail {
 
-template<class T, class Observable, class TriggerObservable>
+template<class T, class Observable, class TriggerObservable, class SourceFilter>
 struct take_until : public operator_base<T>
 {
     typedef typename std::decay<Observable>::type source_type;
     typedef typename std::decay<TriggerObservable>::type trigger_source_type;
+    typedef typename std::decay<SourceFilter>::type source_filter_type;
     struct values
     {
-        values(source_type s, trigger_source_type t)
+        values(source_type s, trigger_source_type t, source_filter_type sf)
             : source(std::move(s))
             , trigger(std::move(t))
+            , sourceFilter(std::move(sf))
         {
         }
         source_type source;
         trigger_source_type trigger;
+        source_filter_type sourceFilter;
     };
     values initial;
 
-    take_until(source_type s, trigger_source_type t)
-        : initial(std::move(s), std::move(t))
+    take_until(source_type s, trigger_source_type t, source_filter_type sf)
+        : initial(std::move(s), std::move(t), std::move(sf))
     {
     }
 
@@ -57,16 +60,12 @@ struct take_until : public operator_base<T>
             take_until_state_type(const values& i, const output_type& oarg)
                 : values(i)
                 , mode_value(mode::taking)
-                , busy(0)
                 , out(oarg)
             {
                 out.add(trigger_lifetime);
                 out.add(source_lifetime);
             }
-            mutable std::atomic<typename mode::type> mode_value;
-            mutable std::atomic<int> busy;
-            mutable std::mutex finish_lock;
-            mutable std::exception_ptr exception;
+            typename mode::type mode_value;
             composite_subscription trigger_lifetime;
             composite_subscription source_lifetime;
             output_type out;
@@ -74,65 +73,45 @@ struct take_until : public operator_base<T>
         // take a copy of the values for each subscription
         auto state = std::shared_ptr<take_until_state_type>(new take_until_state_type(initial, s));
 
-        struct activity
-        {
-            const std::shared_ptr<take_until_state_type>& st;
-            ~activity() {
-                if (--st->busy == 0 && st->mode_value > mode::clear) {
-                    // need to finish
-                    // this is the finish owner
-                    std::unique_lock<std::mutex> guard(st->finish_lock);
-                    typename mode::type fin = st->mode_value;
-                    auto ex = st->exception;
-                    st->mode_value.exchange(mode::stopped);
-                    guard.unlock();
-                    if (fin == mode::triggered) {
-                        st->trigger_lifetime.unsubscribe();
-                        st->source_lifetime.unsubscribe();
-                        st->out.on_completed();
-                    } else if (fin == mode::errored) {
-                        st->out.on_error(ex);
-                    }
-                }
-            }
-            explicit activity(const std::shared_ptr<take_until_state_type>& st)
-                : st(st)
-            {
-                ++st->busy;
-            }
+        auto trigger = on_exception(
+            [&](){return state->sourceFilter(state->trigger);},
+            state->out);
+        if (trigger.empty()) {
+            return;
+        }
 
-        };
+        auto source = on_exception(
+            [&](){return state->sourceFilter(state->source);},
+            state->out);
+        if (source.empty()) {
+            return;
+        }
 
-        state->trigger.subscribe(
+        trigger.get().subscribe(
         // share parts of subscription
             state->out,
         // new lifetime
             state->trigger_lifetime,
         // on_next
             [state](const typename trigger_source_type::value_type&) {
-                activity finisher(state);
-                std::unique_lock<std::mutex> guard(state->finish_lock);
                 if (state->mode_value != mode::taking) {return;}
-                state->mode_value.exchange(mode::triggered);
+                state->mode_value = mode::triggered;
+                state->out.on_completed();
             },
         // on_error
             [state](std::exception_ptr e) {
-                activity finisher(state);
-                std::unique_lock<std::mutex> guard(state->finish_lock);
                 if (state->mode_value != mode::taking) {return;}
-                state->mode_value.exchange(mode::errored);
-                state->exception = e;
+                state->mode_value = mode::errored;
+                state->out.on_error(e);
             },
         // on_completed
             [state]() {
-                activity finisher(state);
-                std::unique_lock<std::mutex> guard(state->finish_lock);
                 if (state->mode_value != mode::taking) {return;}
-                state->mode_value.exchange(mode::clear);
+                state->mode_value = mode::clear;
             }
         );
 
-        state->source.subscribe(
+        source.get().subscribe(
         // split subscription lifetime
             state->source_lifetime,
         // on_next
@@ -140,51 +119,54 @@ struct take_until : public operator_base<T>
                 //
                 // everything is crafted to minimize the overhead of this function.
                 //
-                activity finisher(state);
                 if (state->mode_value < mode::triggered) {
                     state->out.on_next(t);
                 }
             },
         // on_error
             [state](std::exception_ptr e) {
-                activity finisher(state);
-                std::unique_lock<std::mutex> guard(state->finish_lock);
                 if (state->mode_value > mode::clear) {return;}
-                state->mode_value.exchange(mode::errored);
-                state->exception = e;
+                state->mode_value = mode::errored;
+                state->out.on_error(e);
             },
         // on_completed
             [state]() {
-                activity finisher(state);
-                std::unique_lock<std::mutex> guard(state->finish_lock);
                 if (state->mode_value > mode::clear) {return;}
-                state->mode_value.exchange(mode::triggered);
+                state->mode_value = mode::triggered;
+                state->out.on_completed();
             }
         );
     }
 };
 
-template<class TriggerObservable>
+template<class TriggerObservable, class SourceFilter>
 class take_until_factory
 {
     typedef typename std::decay<TriggerObservable>::type trigger_source_type;
+    typedef typename std::decay<SourceFilter>::type source_filter_type;
+
     trigger_source_type trigger_source;
+    source_filter_type source_filter;
 public:
-    take_until_factory(trigger_source_type t) : trigger_source(std::move(t)) {}
+    take_until_factory(trigger_source_type t, source_filter_type sf)
+        : trigger_source(std::move(t))
+        , source_filter(std::move(sf))
+    {
+    }
     template<class Observable>
     auto operator()(Observable&& source)
-        ->      observable<typename std::decay<Observable>::type::value_type,   take_until<typename std::decay<Observable>::type::value_type, Observable, trigger_source_type>> {
-        return  observable<typename std::decay<Observable>::type::value_type,   take_until<typename std::decay<Observable>::type::value_type, Observable, trigger_source_type>>(
-                                                                                take_until<typename std::decay<Observable>::type::value_type, Observable, trigger_source_type>(std::forward<Observable>(source), trigger_source));
+        ->      observable<typename std::decay<Observable>::type::value_type,   take_until<typename std::decay<Observable>::type::value_type, Observable, trigger_source_type, SourceFilter>> {
+        return  observable<typename std::decay<Observable>::type::value_type,   take_until<typename std::decay<Observable>::type::value_type, Observable, trigger_source_type, SourceFilter>>(
+                                                                                take_until<typename std::decay<Observable>::type::value_type, Observable, trigger_source_type, SourceFilter>(std::forward<Observable>(source), trigger_source, source_filter));
     }
 };
 
 }
 
-template<class TriggerObservable>
-auto take_until(TriggerObservable&& t)
-    ->      detail::take_until_factory<TriggerObservable> {
-    return  detail::take_until_factory<TriggerObservable>(std::forward<TriggerObservable>(t));
+template<class TriggerObservable, class SourceFilter>
+auto take_until(TriggerObservable&& t, SourceFilter&& sf)
+    ->      detail::take_until_factory<TriggerObservable, SourceFilter> {
+    return  detail::take_until_factory<TriggerObservable, SourceFilter>(std::forward<TriggerObservable>(t), std::forward<SourceFilter>(sf));
 }
 
 }
