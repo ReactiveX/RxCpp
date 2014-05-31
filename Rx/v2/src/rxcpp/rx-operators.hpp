@@ -46,6 +46,7 @@ namespace rxo=operators;
 #include "operators/rx-publish.hpp"
 #include "operators/rx-ref_count.hpp"
 #include "operators/rx-connect_forever.hpp"
+#include "operators/rx-scan.hpp"
 #include "operators/rx-take.hpp"
 #include "operators/rx-take_until.hpp"
 

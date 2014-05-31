@@ -492,6 +492,16 @@ public:
         return      multicast(rxsub::subject<T>(cs));
     }
 
+    /// scan ->
+    /// for each item from this observable use Predicate to combine items into a final value that will be emitted from the new observable that is returned.
+    ///
+    template<class Seed, class Accumulator>
+    auto scan(Seed seed, Accumulator&& a) const
+        ->      observable<Seed,    rxo::detail::scan<T, this_type, Accumulator, Seed>> {
+        return  observable<Seed,    rxo::detail::scan<T, this_type, Accumulator, Seed>>(
+                                    rxo::detail::scan<T, this_type, Accumulator, Seed>(*this, std::forward<Accumulator>(a), seed));
+    }
+
     /// take ->
     ///
     ///

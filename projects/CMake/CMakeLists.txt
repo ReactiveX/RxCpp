@@ -47,6 +47,7 @@ set(V2_TEST_SOURCES
     ${V2_TEST_DIR}/operators/lift.cpp
     ${V2_TEST_DIR}/operators/filter.cpp
     ${V2_TEST_DIR}/subscriptions/observer.cpp
+    ${V2_TEST_DIR}/operators/scan.cpp
     ${V2_TEST_DIR}/operators/take.cpp
     ${V2_TEST_DIR}/operators/publish.cpp
     ${V2_TEST_DIR}/subjects/subject.cpp
