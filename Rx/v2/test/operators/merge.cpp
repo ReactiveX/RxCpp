@@ -104,7 +104,7 @@ SCENARIO("merge completes", "[merge][join][operators]"){
                 REQUIRE(required == actual);
             }
 
-            THEN("there was one subscription and one unsubscription to the ints"){
+            THEN("there was one subscription and one unsubscription to the xs"){
                 life items[] = {
                     subscribe(200, 600)
                 };
@@ -134,6 +134,117 @@ SCENARIO("merge completes", "[merge][join][operators]"){
             THEN("there was one subscription and one unsubscription to the ys3"){
                 life items[] = {
                     subscribe(500, 650)
+                };
+                auto required = rxu::to_vector(items);
+                auto actual = ys3.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("variadic merge completes", "[merge][join][operators]"){
+    GIVEN("1 hot observable with 3 cold observables of ints."){
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        typedef rxsc::test::messages<int> m;
+        typedef rxsc::test::messages<rx::observable<int>> mo;
+        typedef rxn::subscription life;
+
+        typedef m::recorded_type record;
+        auto on_next = m::on_next;
+        auto on_completed = m::on_completed;
+        auto subscribe = m::subscribe;
+
+        typedef mo::recorded_type orecord;
+        auto oon_next = mo::on_next;
+        auto oon_completed = mo::on_completed;
+        auto osubscribe = mo::subscribe;
+
+        record messages1[] = {
+            on_next(10, 101),
+            on_next(20, 102),
+            on_next(110, 103),
+            on_next(120, 104),
+            on_next(210, 105),
+            on_next(220, 106),
+            on_completed(230)
+        };
+        auto ys1 = sc.make_cold_observable(messages1);
+
+        record messages2[] = {
+            on_next(10, 201),
+            on_next(20, 202),
+            on_next(30, 203),
+            on_next(40, 204),
+            on_completed(50)
+        };
+        auto ys2 = sc.make_cold_observable(messages2);
+
+        record messages3[] = {
+            on_next(10, 301),
+            on_next(20, 302),
+            on_next(30, 303),
+            on_next(40, 304),
+            on_next(120, 305),
+            on_completed(150)
+        };
+        auto ys3 = sc.make_cold_observable(messages3);
+
+        WHEN("each int is merged"){
+
+            auto res = w.start<int>(
+                [&]() {
+                    return ys1
+                        .merge(ys2, ys3);
+                }
+            );
+
+            THEN("the output contains merged ints"){
+                record items[] = {
+                    on_next(210, 101),
+                    on_next(210, 201),
+                    on_next(210, 301),
+                    on_next(220, 102),
+                    on_next(220, 202),
+                    on_next(220, 302),
+                    on_next(230, 203),
+                    on_next(230, 303),
+                    on_next(240, 204),
+                    on_next(240, 304),
+                    on_next(310, 103),
+                    on_next(320, 104),
+                    on_next(320, 305),
+                    on_next(410, 105),
+                    on_next(420, 106),
+                    on_completed(430)
+                };
+                auto required = rxu::to_vector(items);
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription to the ys1"){
+                life items[] = {
+                    subscribe(200, 430)
+                };
+                auto required = rxu::to_vector(items);
+                auto actual = ys1.subscriptions();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription to the ys2"){
+                life items[] = {
+                    subscribe(200, 250)
+                };
+                auto required = rxu::to_vector(items);
+                auto actual = ys2.subscriptions();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription to the ys3"){
+                life items[] = {
+                    subscribe(200, 350)
                 };
                 auto required = rxu::to_vector(items);
                 auto actual = ys3.subscriptions();

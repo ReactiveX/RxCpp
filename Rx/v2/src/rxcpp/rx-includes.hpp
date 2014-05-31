@@ -81,6 +81,7 @@
 #include <exception>
 #include <functional>
 #include <memory>
+#include <array>
 #include <vector>
 #include <algorithm>
 #include <atomic>

@@ -159,6 +159,42 @@ observable<T> make_observable_dynamic(Source&& s) {
     return observable<T>(dynamic_observable<T>(std::forward<Source>(s)));
 }
 
+// observable<> has static methods to construct observable sources and adaptors.
+// observable<> is not constructable
+template<>
+class observable<void, void>
+{
+    ~observable();
+public:
+    template<class T>
+    static auto range(T first = 0, T last = std::numeric_limits<T>::max(), ptrdiff_t step = 1, rxsc::scheduler sc = rxsc::make_current_thread())
+        ->      observable<T,   rxs::detail::range<T>> {
+        return  observable<T,   rxs::detail::range<T>>(
+                                rxs::detail::range<T>(first, last, step, sc));
+    }
+    template<class Collection>
+    static auto iterate(Collection c, rxsc::scheduler sc = rxsc::make_current_thread())
+        ->      observable<typename rxs::detail::iterate<Collection>::value_type,   rxs::detail::iterate<Collection>> {
+        return  observable<typename rxs::detail::iterate<Collection>::value_type,   rxs::detail::iterate<Collection>>(
+                                                                                    rxs::detail::iterate<Collection>(std::move(c), sc));
+    }
+    template<class Value0, class... ValueN>
+    static auto iterate(Value0 v0, ValueN... vn)
+        ->      observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>> {
+        std::array<Value0, sizeof...(ValueN) + 1> c = {v0, vn...};
+        return  observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>>(
+                                    rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>(std::move(c), rxsc::make_current_thread()));
+    }
+    template<class Value0, class... ValueN>
+    static auto iterate(Value0 v0, ValueN... vn, rxsc::scheduler sc)
+        ->      observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>> {
+        std::array<Value0, sizeof...(ValueN) + 1> c = {v0, vn...};
+        return  observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>>(
+                                    rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>(std::move(c), sc));
+    }
+};
+
+
 template<class T, class SourceOperator>
 class observable
     : public observable_base<T>
@@ -259,7 +295,7 @@ public:
     ///
     /// performs type-forgetting conversion to a new observable
     ///
-    observable<T> as_dynamic() {
+    observable<T> as_dynamic() const {
         return *this;
     }
 
@@ -370,6 +406,29 @@ public:
         return  observable<typename rxo::detail::merge<this_type, SourceFilter>::value_type,    rxo::detail::merge<this_type, SourceFilter>>(
                                                                                                 rxo::detail::merge<this_type, SourceFilter>(*this, std::forward<SourceFilter>(sf)));
     }
+
+    /// merge ->
+    /// All sources must be syncronized! This means that calls across all the subscribers must be serial.
+    /// for each item from this observable subscribe.
+    /// for each item from all of the nested observables deliver from the new observable that is returned.
+    ///
+    template<class... ValueN>
+    auto merge(ValueN... vn) const
+        -> observable<T> {
+        return      observable<>::iterate(this->as_dynamic(), vn.as_dynamic()...).merge();
+    }
+
+    /// merge ->
+    /// The source filter can be used to syncronize sources from different contexts.
+    /// for each item from this observable subscribe.
+    /// for each item from all of the nested observables deliver from the new observable that is returned.
+    ///
+    template<class... ValueN, class SourceFilter>
+    auto merge(ValueN... vn, SourceFilter&& sf) const
+        -> observable<T> {
+        return      observable<>::iterate(this->as_dynamic(), vn.as_dynamic()...).merge(std::forward<SourceFilter>(sf));
+    }
+
 
     /// flat_map (AKA SelectMany) ->
     /// All sources must be syncronized! This means that calls across all the subscribers must be serial.
@@ -543,21 +602,6 @@ template<class T, class SourceOperator>
 inline bool operator!=(const observable<T, SourceOperator>& lhs, const observable<T, SourceOperator>& rhs) {
     return !(lhs == rhs);
 }
-
-// observable<> has static methods to construct observable sources and adaptors.
-// observable<> is not constructable
-template<>
-class observable<void, void>
-{
-    ~observable();
-public:
-    template<class T>
-    static auto range(T first = 0, T last = std::numeric_limits<T>::max(), ptrdiff_t step = 1, rxsc::scheduler sc = rxsc::make_current_thread())
-        ->      observable<T,   rxs::detail::range<T>> {
-        return  observable<T,   rxs::detail::range<T>>(
-                                rxs::detail::range<T>(first, last, step, sc));
-    }
-};
 
 }
 
