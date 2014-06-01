@@ -401,7 +401,7 @@ public:
     ///
     template<class SourceFilter>
     auto merge(SourceFilter&& sf) const
-        -> typename std::enable_if<is_observable<value_type>::value,
+        -> typename std::enable_if<is_observable<value_type>::value && !is_observable<SourceFilter>::value,
                 observable<typename rxo::detail::merge<this_type, SourceFilter>::value_type,    rxo::detail::merge<this_type, SourceFilter>>>::type {
         return  observable<typename rxo::detail::merge<this_type, SourceFilter>::value_type,    rxo::detail::merge<this_type, SourceFilter>>(
                                                                                                 rxo::detail::merge<this_type, SourceFilter>(*this, std::forward<SourceFilter>(sf)));
@@ -412,10 +412,10 @@ public:
     /// for each item from this observable subscribe.
     /// for each item from all of the nested observables deliver from the new observable that is returned.
     ///
-    template<class... ValueN>
-    auto merge(ValueN... vn) const
-        -> observable<T> {
-        return      observable<>::iterate(this->as_dynamic(), vn.as_dynamic()...).merge();
+    template<class Value0, class... ValueN>
+    auto merge(Value0 v0, ValueN... vn) const
+        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value, observable<T>>::type {
+        return      observable<>::iterate(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).merge();
     }
 
     /// merge ->
@@ -423,10 +423,10 @@ public:
     /// for each item from this observable subscribe.
     /// for each item from all of the nested observables deliver from the new observable that is returned.
     ///
-    template<class... ValueN, class SourceFilter>
-    auto merge(ValueN... vn, SourceFilter&& sf) const
-        -> observable<T> {
-        return      observable<>::iterate(this->as_dynamic(), vn.as_dynamic()...).merge(std::forward<SourceFilter>(sf));
+    template<class SourceFilter, class Value0, class... ValueN>
+    auto merge(SourceFilter&& sf, Value0 v0, ValueN... vn) const
+        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value && !is_observable<SourceFilter>::value, observable<T>>::type {
+        return      observable<>::iterate(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).merge(std::forward<SourceFilter>(sf));
     }
 
 
