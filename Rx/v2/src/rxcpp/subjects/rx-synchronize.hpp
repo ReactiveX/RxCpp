@@ -53,12 +53,11 @@ class synchronize_observer : public detail::multicast_observer<T>
                 processor.schedule(lifetime, [keepAlive, this](const rxsc::schedulable& self){
                     try {
                         std::unique_lock<std::mutex> guard(lock);
-                        if (!lifetime.is_subscribed() || !destination.is_subscribed()) {
+                        if (!destination.is_subscribed()) {
                             current = mode::Disposed;
                             queue.clear();
                             guard.unlock();
                             lifetime.unsubscribe();
-                            destination.unsubscribe();
                             return;
                         }
                         if (queue.empty()) {
@@ -92,35 +91,35 @@ class synchronize_observer : public detail::multicast_observer<T>
             if (lifetime.is_subscribed()) {
                 std::unique_lock<std::mutex> guard(lock);
                 queue.push_back(notification_type::on_next(std::move(v)));
-                wake.notify_one();
                 ensure_processing(guard);
             }
+            wake.notify_one();
         }
         void on_error(std::exception_ptr e) const {
             if (lifetime.is_subscribed()) {
                 std::unique_lock<std::mutex> guard(lock);
                 queue.push_back(notification_type::on_error(e));
-                wake.notify_one();
                 ensure_processing(guard);
             }
+            wake.notify_one();
         }
         void on_completed() const {
             if (lifetime.is_subscribed()) {
                 std::unique_lock<std::mutex> guard(lock);
                 queue.push_back(notification_type::on_completed());
-                wake.notify_one();
                 ensure_processing(guard);
             }
+            wake.notify_one();
         }
     };
 
     std::shared_ptr<synchronize_observer_state> state;
 
 public:
-    synchronize_observer(rxsc::worker w, composite_subscription cs)
-        : base_type(cs)
+    synchronize_observer(rxsc::worker w, composite_subscription dl, composite_subscription il)
+        : base_type(dl)
         , state(std::make_shared<synchronize_observer_state>(
-            w, cs, make_subscriber<T>(cs, make_observer_dynamic<T>( *static_cast<base_type*>(this) ))))
+            w, il, make_subscriber<T>(dl, make_observer_dynamic<T>( *static_cast<base_type*>(this) ))))
     {}
 
     template<class V>
@@ -147,8 +146,8 @@ class synchronize
 public:
     explicit synchronize(rxsc::worker w, composite_subscription cs = composite_subscription())
         : controller(w)
-        , lifetime(cs)
-        , s(w, cs)
+        , lifetime(composite_subscription())
+        , s(w, cs, lifetime)
     {
     }
 
