@@ -12,9 +12,9 @@ namespace rxt=rxcpp::test;
 
 #include "catch.hpp"
 
-static const int static_tripletCount = 20;
+static const int static_tripletCount = 50;
 
-SCENARIO("concat pythagorian ranges", "[hide][range][concat][pythagorian][perf]"){
+SCENARIO("concat_map pythagorian ranges", "[hide][range][concat_map][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("some ranges"){
         WHEN("generating pythagorian triplets"){
@@ -54,6 +54,67 @@ SCENARIO("concat pythagorian ranges", "[hide][range][concat][pythagorian][perf]"
                    duration_cast<milliseconds>(start.time_since_epoch());
             std::cout << "concat pythagorian range : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << std::endl;
 
+        }
+    }
+}
+
+SCENARIO("synchronize concat_map pythagorian ranges", "[hide][range][concat_map][synchronize][pythagorian][perf]"){
+    const int& tripletCount = static_tripletCount;
+    GIVEN("some ranges"){
+        WHEN("generating pythagorian triplets"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
+
+            std::mutex lock;
+            std::condition_variable wake;
+
+            auto sc = rxsc::make_event_loop();
+            //auto sc = rxsc::make_new_thread();
+            auto so = rxsub::synchronize_observable(sc);
+
+            int c = 0;
+            int ct = 0;
+            int n = 1;
+            auto start = clock::now();
+            auto triples =
+                rxs::range(1, sc)
+                    .concat_map(
+                        [&c, sc, so](int z){
+                            return rxs::range(1, z, 1, sc)
+                                .concat_map(
+                                    [&c, sc, z](int x){
+                                        return rxs::range(x, z, 1, sc)
+                                            .filter([&c, z, x](int y){
+                                                ++c;
+                                                if (x*x + y*y == z*z) {
+                                                    return true;}
+                                                else {
+                                                    return false;}})
+                                            .map([z, x](int y){return std::make_tuple(x, y, z);})
+                                            // forget type to workaround lambda deduction bug on msvc 2013
+                                            .as_dynamic();},
+                                    [](int x, std::tuple<int,int,int> triplet){return triplet;},
+                                    so)
+                                // forget type to workaround lambda deduction bug on msvc 2013
+                                .as_dynamic();},
+                        [](int z, std::tuple<int,int,int> triplet){return triplet;},
+                        so);
+            triples
+                .take(tripletCount)
+                .subscribe(
+                    rxu::apply_to([&ct](int x,int y,int z){
+                        ++ct;}),
+                    [](std::exception_ptr){abort();},
+                    [&](){
+                        wake.notify_one();});
+
+            std::unique_lock<std::mutex> guard(lock);
+            wake.wait(guard);
+
+            auto finish = clock::now();
+            auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
+                   duration_cast<milliseconds>(start.time_since_epoch());
+            std::cout << "concat sync pythagorian range : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << std::endl;
         }
     }
 }

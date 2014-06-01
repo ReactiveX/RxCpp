@@ -12,7 +12,7 @@ namespace rxt=rxcpp::test;
 
 #include "catch.hpp"
 
-static const int static_tripletCount = 20;
+static const int static_tripletCount = 50;
 
 SCENARIO("pythagorian for loops", "[hide][for][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
@@ -51,7 +51,7 @@ SCENARIO("pythagorian for loops", "[hide][for][pythagorian][perf]"){
     }
 }
 
-SCENARIO("pythagorian ranges", "[hide][range][pythagorian][perf]"){
+SCENARIO("flat_map pythagorian ranges", "[hide][range][flat_map][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("some ranges"){
         WHEN("generating pythagorian triplets"){
@@ -95,7 +95,7 @@ SCENARIO("pythagorian ranges", "[hide][range][pythagorian][perf]"){
     }
 }
 
-SCENARIO("synchronize pythagorian ranges", "[hide][range][synchronize][pythagorian][perf]"){
+SCENARIO("synchronize flat_map pythagorian ranges", "[hide][range][flat_map][synchronize][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("some ranges"){
         WHEN("generating pythagorian triplets"){
