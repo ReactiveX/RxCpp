@@ -495,12 +495,33 @@ public:
     ///
     template<class SourceFilter>
     auto concat(SourceFilter&& sf) const
-        -> typename std::enable_if<is_observable<value_type>::value,
+        -> typename std::enable_if<is_observable<value_type>::value && !is_observable<SourceFilter>::value,
                 observable<typename rxo::detail::concat<this_type, SourceFilter>::value_type,   rxo::detail::concat<this_type, SourceFilter>>>::type {
         return  observable<typename rxo::detail::concat<this_type, SourceFilter>::value_type,   rxo::detail::concat<this_type, SourceFilter>>(
                                                                                                 rxo::detail::concat<this_type, SourceFilter>(*this, std::forward<SourceFilter>(sf)));
     }
 
+    /// concat ->
+    /// All sources must be syncronized! This means that calls across all the subscribers must be serial.
+    /// for each item from this observable subscribe to one at a time. in the order received.
+    /// for each item from all of the nested observables deliver from the new observable that is returned.
+    ///
+    template<class Value0, class... ValueN>
+    auto concat(Value0 v0, ValueN... vn) const
+        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value, observable<T>>::type {
+        return      observable<>::iterate(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).concat();
+    }
+
+    /// concat ->
+    /// The source filter can be used to syncronize sources from different contexts.
+    /// for each item from this observable subscribe to one at a time. in the order received.
+    /// for each item from all of the nested observables deliver from the new observable that is returned.
+    ///
+    template<class SourceFilter, class Value0, class... ValueN>
+    auto concat(SourceFilter&& sf, Value0 v0, ValueN... vn) const
+        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value && !is_observable<SourceFilter>::value, observable<T>>::type {
+        return      observable<>::iterate(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).concat(std::forward<SourceFilter>(sf));
+    }
     /// concat_map ->
     /// All sources must be syncronized! This means that calls across all the subscribers must be serial.
     /// for each item from this observable use the CollectionSelector to select an observable and subscribe to that observable.
