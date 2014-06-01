@@ -55,6 +55,20 @@ struct values_from
     typedef typename values_from<T, Remaining - 1, Step, Cursor + Step, ValueN..., Cursor>::type type;
 };
 
+template<bool... BN>
+struct all_true;
+
+template<bool B0>
+struct all_true<B0>
+{
+    static const bool value = B0;
+};
+template<bool B0, bool... BN>
+struct all_true<B0, BN...>
+{
+    static const bool value = B0 && all_true<BN...>::value;
+};
+
 namespace detail {
 
 template<class F, class... ParamN, int... IndexN>
