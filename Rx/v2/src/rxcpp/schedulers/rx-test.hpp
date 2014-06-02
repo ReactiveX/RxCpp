@@ -82,7 +82,6 @@ public:
             state->schedule_absolute(state->to_relative(when - now()), scbl);
         }
 
-
         void schedule_absolute(absolute when, const schedulable& scbl) const {
             state->schedule_absolute(when, scbl);
         }
@@ -136,6 +135,11 @@ public:
     virtual worker create_worker(composite_subscription cs) const {
         std::shared_ptr<test_type_worker> wi(new test_type_worker(state));
         return worker(cs, wi);
+    }
+
+    bool is_enabled() const {return state->is_enabled();}
+    long clock() {
+        return state->clock();
     }
 
     std::shared_ptr<test_type_worker> create_test_type_worker_interface() const {
@@ -406,6 +410,9 @@ public:
         {
         }
 
+        bool is_enabled() const {return tester->is_enabled();}
+        long clock() const {return tester->clock();}
+
         void schedule_absolute(long when, const schedulable& a) const {
             tester->schedule_absolute(when, a);
         }
@@ -500,6 +507,9 @@ public:
     test_worker create_worker(composite_subscription cs = composite_subscription()) const {
         return test_worker(cs, tester->create_test_type_worker_interface());
     }
+
+    bool is_enabled() const {return tester->is_enabled();}
+    long clock() const {return tester->clock();}
 
     template<class T>
     rxt::testable_observable<T> make_hot_observable(std::vector<rxn::recorded<std::shared_ptr<rxn::detail::notification_base<T>>>> messages) const{

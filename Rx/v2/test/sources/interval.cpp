@@ -1,6 +1,4 @@
 
-#define RXCPP_SUBJECT_TEST_ASYNC 1
-
 #include "rxcpp/rx.hpp"
 namespace rx=rxcpp;
 namespace rxu=rxcpp::util;

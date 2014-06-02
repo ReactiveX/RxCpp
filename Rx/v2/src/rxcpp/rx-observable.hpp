@@ -605,6 +605,12 @@ public:
         return  observable<T,   rxs::detail::range<T>>(
                                 rxs::detail::range<T>(first, last, step, sc));
     }
+    template<class ObservableFactory>
+    static auto defer(ObservableFactory of)
+        ->      observable<typename rxs::detail::defer<ObservableFactory>::value_type,  rxs::detail::defer<ObservableFactory>> {
+        return  observable<typename rxs::detail::defer<ObservableFactory>::value_type,  rxs::detail::defer<ObservableFactory>>(
+                                                                                        rxs::detail::defer<ObservableFactory>(std::move(of)));
+    }
     static auto interval(rxsc::scheduler::clock_type::time_point initial, rxsc::scheduler::clock_type::duration period, rxsc::scheduler sc = rxsc::make_current_thread())
         ->      observable<long,   rxs::detail::interval> {
         return  observable<long,   rxs::detail::interval>(rxs::detail::interval(initial, period, sc));
