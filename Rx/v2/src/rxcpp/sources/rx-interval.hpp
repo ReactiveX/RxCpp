@@ -38,6 +38,7 @@ struct interval : public source_base<long>
     template<class Subscriber>
     void on_subscribe(Subscriber o) {
 
+        // creates a worker whose lifetime is the same as this subscription
         auto controller = initial.factory.create_worker(o.get_subscription());
         auto counter = std::make_shared<long>(0);
 

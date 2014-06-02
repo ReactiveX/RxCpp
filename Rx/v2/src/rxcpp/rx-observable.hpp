@@ -601,20 +601,18 @@ class observable<void, void>
 public:
     template<class T>
     static auto range(T first = 0, T last = std::numeric_limits<T>::max(), ptrdiff_t step = 1, rxsc::scheduler sc = rxsc::make_current_thread())
-        ->      observable<T,   rxs::detail::range<T>> {
-        return  observable<T,   rxs::detail::range<T>>(
-                                rxs::detail::range<T>(first, last, step, sc));
+        -> decltype(rxs::range<T>(first, last, step, sc)) {
+        return      rxs::range<T>(first, last, step, sc);
     }
     template<class T>
     static auto never()
-        ->      observable<T,  rxs::detail::never<T>> {
-        return  observable<T,  rxs::detail::never<T>>(rxs::detail::never<T>());
+        -> decltype(rxs::never<T>()) {
+        return      rxs::never<T>();
     }
     template<class ObservableFactory>
     static auto defer(ObservableFactory of)
-        ->      observable<typename rxs::detail::defer<ObservableFactory>::value_type,  rxs::detail::defer<ObservableFactory>> {
-        return  observable<typename rxs::detail::defer<ObservableFactory>::value_type,  rxs::detail::defer<ObservableFactory>>(
-                                                                                        rxs::detail::defer<ObservableFactory>(std::move(of)));
+        -> decltype(rxs::defer(std::move(of))) {
+        return      rxs::defer(std::move(of));
     }
     static auto interval(rxsc::scheduler::clock_type::time_point initial, rxsc::scheduler::clock_type::duration period, rxsc::scheduler sc = rxsc::make_current_thread())
         ->      observable<long,   rxs::detail::interval> {
@@ -622,35 +620,34 @@ public:
     }
     template<class Collection>
     static auto iterate(Collection c, rxsc::scheduler sc = rxsc::make_current_thread())
-        -> typename std::enable_if<rxs::detail::is_iterable<Collection>::value,
-                observable<typename rxs::detail::iterate<Collection>::value_type,   rxs::detail::iterate<Collection>>>::type {
-        return  observable<typename rxs::detail::iterate<Collection>::value_type,   rxs::detail::iterate<Collection>>(
-                                                                                    rxs::detail::iterate<Collection>(std::move(c), sc));
+        -> decltype(rxs::iterate(std::move(c), sc)) {
+        return      rxs::iterate(std::move(c), sc);
     }
     template<class Value0, class... ValueN>
     static auto from(Value0 v0, ValueN... vn)
-        ->      observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>> {
-        std::array<Value0, sizeof...(ValueN) + 1> c = {v0, vn...};
-        return  observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>>(
-                                    rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>(std::move(c), rxsc::make_current_thread()));
+        -> decltype(rxs::from(v0, vn...)) {
+        return      rxs::from(v0, vn...);
     }
     template<class Value0, class... ValueN>
     static auto from(Value0 v0, ValueN... vn, rxsc::scheduler sc)
-        ->      observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>> {
-        std::array<Value0, sizeof...(ValueN) + 1> c = {v0, vn...};
-        return  observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>>(
-                                    rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>(std::move(c), sc));
+        -> decltype(rxs::from(v0, vn..., sc)) {
+        return      rxs::from(v0, vn..., sc);
     }
     template<class T>
-    static auto empty(rxsc::scheduler sc = rxsc::make_current_thread())
+    static auto empty(rxsc::scheduler sc = rxsc::make_immediate())
         ->      observable<T, rxs::detail::iterate<std::array<T, 0>>> {
         std::array<T, 0> c;
         return  observable<T, rxs::detail::iterate<std::array<T, 0>>>(rxs::detail::iterate<std::array<T, 0>>(std::move(c), sc));
     }
     template<class T>
-    static auto just(T v, rxsc::scheduler sc = rxsc::make_current_thread())
-        ->      decltype(from(v)) {
-        return  from(v);
+    static auto just(T v, rxsc::scheduler sc = rxsc::make_immediate())
+        -> decltype(rxs::from(v, sc)) {
+        return      rxs::from(v, sc);
+    }
+    template<class T, class Exception>
+    static auto error(Exception&& e, rxsc::scheduler sc = rxsc::make_immediate())
+        ->      observable<T,  rxs::detail::error<T>> {
+        return  rxs::error<T>(std::forward<Exception>(e), sc);
     }
 };
 
