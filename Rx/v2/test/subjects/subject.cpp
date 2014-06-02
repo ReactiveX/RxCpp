@@ -438,7 +438,6 @@ SCENARIO("range calls subject", "[hide][range][subject][subjects][long][perf]"){
 }
 
 SCENARIO("schedule_periodically", "[hide][periodically][scheduler][long][perf]"){
-    const int& onnextcalls = static_onnextcalls;
     GIVEN("schedule_periodically"){
         WHEN("the period is 1sec and the initial is 2sec"){
             using namespace std::chrono;
@@ -461,7 +460,6 @@ SCENARIO("schedule_periodically", "[hide][periodically][scheduler][long][perf]")
 }
 
 SCENARIO("schedule_periodically by duration", "[hide][periodically][scheduler][long][perf]"){
-    const int& onnextcalls = static_onnextcalls;
     GIVEN("schedule_periodically_duration"){
         WHEN("the period is 1sec and the initial is 2sec"){
             using namespace std::chrono;
@@ -500,6 +498,31 @@ SCENARIO("schedule_periodically by duration", "[hide][periodically][scheduler][l
                     std::cout << "schedule_periodically_duration : period " << c << ", " << nsDelta.count() << "ms delta from target time" << std::endl;
                     if (c == 9) {scbl.unsubscribe();}
                 }));
+        }
+    }
+}
+
+SCENARIO("intervals", "[hide][periodically][interval][scheduler][long][perf]"){
+    GIVEN("10 intervals of 1 seconds"){
+        WHEN("the period is 1sec and the initial is 2sec"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
+
+            int c = 0;
+            auto sc = rxsc::make_current_thread();
+            auto start = sc.now() + seconds(2);
+            auto period = seconds(1);
+            rx::composite_subscription cs;
+            rx::observable<>::interval(start, period, sc)
+                .subscribe(
+                    cs,
+                    [=, &c](long counter){
+                        auto nsDelta = duration_cast<milliseconds>(sc.now() - (start + (period * (counter - 1))));
+                        c = counter - 1;
+                        std::cout << "interval          : period " << counter << ", " << nsDelta.count() << "ms delta from target time" << std::endl;
+                        if (counter == 10) {cs.unsubscribe();}
+                    },
+                    [](std::exception_ptr){abort();});
         }
     }
 }

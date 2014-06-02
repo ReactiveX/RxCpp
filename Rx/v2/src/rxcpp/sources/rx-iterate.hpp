@@ -102,6 +102,21 @@ auto iterate(Collection c, rxsc::scheduler sc = rxsc::make_current_thread())
                                                                                 detail::iterate<Collection>(std::move(c), sc));
 }
 
+template<class Value0, class... ValueN>
+auto iterate(Value0 v0, ValueN... vn)
+    ->      observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>> {
+    std::array<Value0, sizeof...(ValueN) + 1> c = {v0, vn...};
+    return  observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>>(
+                                rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>(std::move(c), rxsc::make_current_thread()));
+}
+template<class Value0, class... ValueN>
+auto iterate(Value0 v0, ValueN... vn, rxsc::scheduler sc)
+    ->      observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>> {
+    std::array<Value0, sizeof...(ValueN) + 1> c = {v0, vn...};
+    return  observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>>(
+                                rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>(std::move(c), sc));
+}
+
 }
 
 }
