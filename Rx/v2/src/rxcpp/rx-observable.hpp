@@ -383,7 +383,7 @@ public:
     template<class Value0, class... ValueN>
     auto merge(Value0 v0, ValueN... vn) const
         -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value, observable<T>>::type {
-        return      rxs::iterate(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).merge();
+        return      rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).merge();
     }
 
     /// merge ->
@@ -394,7 +394,7 @@ public:
     template<class SourceFilter, class Value0, class... ValueN>
     auto merge(SourceFilter&& sf, Value0 v0, ValueN... vn) const
         -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value && !is_observable<SourceFilter>::value, observable<T>>::type {
-        return      rxs::iterate(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).merge(std::forward<SourceFilter>(sf));
+        return      rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).merge(std::forward<SourceFilter>(sf));
     }
 
 
@@ -477,7 +477,7 @@ public:
     template<class Value0, class... ValueN>
     auto concat(Value0 v0, ValueN... vn) const
         -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value, observable<T>>::type {
-        return      rxs::iterate(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).concat();
+        return      rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).concat();
     }
 
     /// concat ->
@@ -488,7 +488,7 @@ public:
     template<class SourceFilter, class Value0, class... ValueN>
     auto concat(SourceFilter&& sf, Value0 v0, ValueN... vn) const
         -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value && !is_observable<SourceFilter>::value, observable<T>>::type {
-        return      rxs::iterate(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).concat(std::forward<SourceFilter>(sf));
+        return      rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).concat(std::forward<SourceFilter>(sf));
     }
     /// concat_map ->
     /// All sources must be syncronized! This means that calls across all the subscribers must be serial.
@@ -622,23 +622,35 @@ public:
     }
     template<class Collection>
     static auto iterate(Collection c, rxsc::scheduler sc = rxsc::make_current_thread())
-        ->      observable<typename rxs::detail::iterate<Collection>::value_type,   rxs::detail::iterate<Collection>> {
+        -> typename std::enable_if<rxs::detail::is_iterable<Collection>::value,
+                observable<typename rxs::detail::iterate<Collection>::value_type,   rxs::detail::iterate<Collection>>>::type {
         return  observable<typename rxs::detail::iterate<Collection>::value_type,   rxs::detail::iterate<Collection>>(
                                                                                     rxs::detail::iterate<Collection>(std::move(c), sc));
     }
     template<class Value0, class... ValueN>
-    static auto iterate(Value0 v0, ValueN... vn)
+    static auto from(Value0 v0, ValueN... vn)
         ->      observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>> {
         std::array<Value0, sizeof...(ValueN) + 1> c = {v0, vn...};
         return  observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>>(
                                     rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>(std::move(c), rxsc::make_current_thread()));
     }
     template<class Value0, class... ValueN>
-    static auto iterate(Value0 v0, ValueN... vn, rxsc::scheduler sc)
+    static auto from(Value0 v0, ValueN... vn, rxsc::scheduler sc)
         ->      observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>> {
         std::array<Value0, sizeof...(ValueN) + 1> c = {v0, vn...};
         return  observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>>(
                                     rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>(std::move(c), sc));
+    }
+    template<class T>
+    static auto empty(rxsc::scheduler sc = rxsc::make_current_thread())
+        ->      observable<T, rxs::detail::iterate<std::array<T, 0>>> {
+        std::array<T, 0> c;
+        return  observable<T, rxs::detail::iterate<std::array<T, 0>>>(rxs::detail::iterate<std::array<T, 0>>(std::move(c), sc));
+    }
+    template<class T>
+    static auto just(T v, rxsc::scheduler sc = rxsc::make_current_thread())
+        ->      decltype(from(v)) {
+        return  from(v);
     }
 };
 

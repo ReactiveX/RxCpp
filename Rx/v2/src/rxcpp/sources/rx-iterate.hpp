@@ -14,6 +14,20 @@ namespace sources {
 namespace detail {
 
 template<class Collection>
+struct is_iterable
+{
+    typedef typename std::decay<Collection>::type collection_type;
+
+    struct not_void {};
+    template<class CC>
+    static auto check(int) -> decltype(std::begin(*(CC*)nullptr));
+    template<class CC>
+    static not_void check(...);
+
+    static const bool value = !std::is_same<decltype(check<collection_type>(0)), not_void>::value;
+};
+
+template<class Collection>
 struct iterate_traits
 {
     typedef typename std::decay<Collection>::type collection_type;
@@ -103,14 +117,14 @@ auto iterate(Collection c, rxsc::scheduler sc = rxsc::make_current_thread())
 }
 
 template<class Value0, class... ValueN>
-auto iterate(Value0 v0, ValueN... vn)
+auto from(Value0 v0, ValueN... vn)
     ->      observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>> {
     std::array<Value0, sizeof...(ValueN) + 1> c = {v0, vn...};
     return  observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>>(
                                 rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>(std::move(c), rxsc::make_current_thread()));
 }
 template<class Value0, class... ValueN>
-auto iterate(Value0 v0, ValueN... vn, rxsc::scheduler sc)
+auto from(Value0 v0, ValueN... vn, rxsc::scheduler sc)
     ->      observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>> {
     std::array<Value0, sizeof...(ValueN) + 1> c = {v0, vn...};
     return  observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>>(
