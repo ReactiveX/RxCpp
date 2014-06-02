@@ -605,6 +605,11 @@ public:
         return  observable<T,   rxs::detail::range<T>>(
                                 rxs::detail::range<T>(first, last, step, sc));
     }
+    template<class T>
+    static auto never()
+        ->      observable<T,  rxs::detail::never<T>> {
+        return  observable<T,  rxs::detail::never<T>>(rxs::detail::never<T>());
+    }
     template<class ObservableFactory>
     static auto defer(ObservableFactory of)
         ->      observable<typename rxs::detail::defer<ObservableFactory>::value_type,  rxs::detail::defer<ObservableFactory>> {
