@@ -164,47 +164,70 @@ public:
     }
 };
 
-//
-// this type is used by operators that subscribe to
-// multiple sources to ensure that the notifications are serialized
-//
-class synchronize_observable
+}
+
+class syncronize_in_one_worker : public coordination_base
 {
     rxsc::scheduler factory;
-    rxsc::worker controller;
+
+    class input_type
+    {
+        rxsc::worker controller;
+        rxsc::scheduler factory;
+    public:
+        explicit input_type(rxsc::worker w)
+            : controller(w)
+            , factory(rxsc::make_same_worker(w))
+        {
+        }
+        rxsc::worker get_worker() const {
+            return controller;
+        }
+        rxsc::scheduler get_scheduler() const {
+            return factory;
+        }
+        template<class Observable>
+        auto operator()(Observable o) const
+            -> decltype(o.synchronize(controller).ref_count()) {
+            return      o.synchronize(controller).ref_count();
+            static_assert(is_observable<Observable>::value, "can only synchronize observables");
+        }
+    };
+
+    class output_type
+    {
+        rxsc::worker controller;
+        rxsc::scheduler factory;
+    public:
+        explicit output_type(rxsc::worker w)
+            : controller(w)
+            , factory(rxsc::make_same_worker(w))
+        {
+        }
+        rxsc::worker get_worker() const {
+            return controller;
+        }
+        rxsc::scheduler get_scheduler() const {
+            return factory;
+        }
+        template<class Subscriber>
+        Subscriber operator()(Subscriber s) const {
+            return std::move(s);
+            static_assert(is_subscriber<Subscriber>::value, "can only synchronize subscribers");
+        }
+    };
+
 public:
-    synchronize_observable(rxsc::scheduler sc)
-        : factory(sc)
-        , controller(sc.create_worker())
-    {
-    }
-    synchronize_observable(const synchronize_observable& o)
-        : factory(o.factory)
-        // new worker for each copy. this spreads work across threads
-        // but keeps each use serialized
-        , controller(factory.create_worker())
-    {
-    }
-    synchronize_observable(synchronize_observable&& o)
-        : factory(std::move(o.factory))
-        , controller(std::move(o.controller))
-    {
-    }
-    synchronize_observable& operator=(synchronize_observable o)
-    {
-        factory = std::move(o.factory);
-        controller = std::move(o.controller);
-        return *this;
-    }
-    template<class Observable>
-    auto operator()(Observable o)
-        -> decltype(o.synchronize(controller).ref_count()) {
-        return      o.synchronize(controller).ref_count();
-        static_assert(is_observable<Observable>::value, "can only synchronize observables");
+
+    explicit syncronize_in_one_worker(rxsc::scheduler sc) : factory(sc) {}
+
+    typedef coordinator<input_type, output_type> coordinator_type;
+
+    coordinator_type create_coordinator() const {
+        auto w = factory.create_worker();
+        return coordinator_type(input_type(w), output_type(w));
     }
 };
-
-}
 
 }
 

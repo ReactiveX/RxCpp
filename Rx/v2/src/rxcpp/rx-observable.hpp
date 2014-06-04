@@ -325,55 +325,55 @@ public:
         return      lift(rxo::detail::map<T, Selector>(std::move(s)));
     }
 
-    template<class SourceFilter, bool IsObservable = is_observable<value_type>::value>
+    template<class Coordination, bool IsObservable = is_observable<value_type>::value>
     struct merge_result;
 
-    template<class SourceFilter>
-    struct merge_result<SourceFilter, true>
+    template<class Coordination>
+    struct merge_result<Coordination, true>
     {
         typedef
             observable<
                 typename this_type::value_type::value_type,
-                rxo::detail::merge<observable<typename this_type::value_type>, SourceFilter>>
+                rxo::detail::merge<observable<typename this_type::value_type>, Coordination>>
         type;
-        static type make(const this_type* that, SourceFilter sf) {
-            return type(rxo::detail::merge<observable<typename this_type::value_type>, SourceFilter>(*that, sf));
+        static type make(const this_type* that, Coordination sf) {
+            return type(rxo::detail::merge<observable<typename this_type::value_type>, Coordination>(*that, sf));
         }
     };
-    template<class SourceFilter>
-    struct merge_result<SourceFilter, false>
+    template<class Coordination>
+    struct merge_result<Coordination, false>
     {
         typedef this_type type;
-        static type make(const this_type* that, SourceFilter) {
+        static type make(const this_type* that, Coordination) {
             return *that;
         }
     };
 
     /// merge ->
-    /// All sources must be syncronized! This means that calls across all the subscribers must be serial.
+    /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
     /// for each item from this observable subscribe.
     /// for each item from all of the nested observables deliver from the new observable that is returned.
     ///
     auto merge() const
-        -> typename merge_result<identity_observable>::type {
-        return  merge_result<identity_observable>::make(this, identity_observable());
+        -> typename merge_result<identity_one_worker>::type {
+        return  merge_result<identity_one_worker>::make(this, identity_one_worker(rxsc::make_current_thread()));
     }
 
     /// merge ->
-    /// The source filter can be used to syncronize sources from different contexts.
+    /// The coordination is used to synchronize sources from different contexts.
     /// for each item from this observable subscribe.
     /// for each item from all of the nested observables deliver from the new observable that is returned.
     ///
-    template<class SourceFilter>
-    auto merge(SourceFilter&& sf) const
-        -> typename std::enable_if<is_observable<value_type>::value && !is_observable<SourceFilter>::value,
-                observable<typename rxo::detail::merge<this_type, SourceFilter>::value_type,    rxo::detail::merge<this_type, SourceFilter>>>::type {
-        return  observable<typename rxo::detail::merge<this_type, SourceFilter>::value_type,    rxo::detail::merge<this_type, SourceFilter>>(
-                                                                                                rxo::detail::merge<this_type, SourceFilter>(*this, std::forward<SourceFilter>(sf)));
+    template<class Coordination>
+    auto merge(Coordination&& sf) const
+        -> typename std::enable_if<is_observable<value_type>::value && !is_observable<Coordination>::value,
+                observable<typename rxo::detail::merge<this_type, Coordination>::value_type,    rxo::detail::merge<this_type, Coordination>>>::type {
+        return  observable<typename rxo::detail::merge<this_type, Coordination>::value_type,    rxo::detail::merge<this_type, Coordination>>(
+                                                                                                rxo::detail::merge<this_type, Coordination>(*this, std::forward<Coordination>(sf)));
     }
 
     /// merge ->
-    /// All sources must be syncronized! This means that calls across all the subscribers must be serial.
+    /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
     /// for each item from this observable subscribe.
     /// for each item from all of the nested observables deliver from the new observable that is returned.
     ///
@@ -384,90 +384,90 @@ public:
     }
 
     /// merge ->
-    /// The source filter can be used to syncronize sources from different contexts.
+    /// The coordination is used to synchronize sources from different contexts.
     /// for each item from this observable subscribe.
     /// for each item from all of the nested observables deliver from the new observable that is returned.
     ///
-    template<class SourceFilter, class Value0, class... ValueN>
-    auto merge(SourceFilter&& sf, Value0 v0, ValueN... vn) const
-        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value && !is_observable<SourceFilter>::value, observable<T>>::type {
-        return      rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).merge(std::forward<SourceFilter>(sf));
+    template<class Coordination, class Value0, class... ValueN>
+    auto merge(Coordination&& sf, Value0 v0, ValueN... vn) const
+        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value && !is_observable<Coordination>::value, observable<T>>::type {
+        return      rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).merge(std::forward<Coordination>(sf));
     }
 
 
     /// flat_map (AKA SelectMany) ->
-    /// All sources must be syncronized! This means that calls across all the subscribers must be serial.
+    /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
     /// for each item from this observable use the CollectionSelector to select an observable and subscribe to that observable.
     /// for each item from all of the selected observables use the ResultSelector to select a value to emit from the new observable that is returned.
     ///
     template<class CollectionSelector, class ResultSelector>
     auto flat_map(CollectionSelector&& s, ResultSelector&& rs) const
-        ->      observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_observable>::value_type,  rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_observable>> {
-        return  observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_observable>::value_type,  rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_observable>>(
-                                                                                                                                            rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_observable>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), identity_observable()));
+        ->      observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>::value_type,  rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>> {
+        return  observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>::value_type,  rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>>(
+                                                                                                                                            rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), identity_one_worker(rxsc::make_current_thread())));
     }
 
     /// flat_map (AKA SelectMany) ->
-    /// The source filter can be used to syncronize sources from different contexts.
+    /// The coodination is used to synchronize sources from different contexts.
     /// for each item from this observable use the CollectionSelector to select an observable and subscribe to that observable.
     /// for each item from all of the selected observables use the ResultSelector to select a value to emit from the new observable that is returned.
     ///
-    template<class CollectionSelector, class ResultSelector, class SourceFilter>
-    auto flat_map(CollectionSelector&& s, ResultSelector&& rs, SourceFilter&& sf) const
-        ->      observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>::value_type, rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>> {
-        return  observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>::value_type, rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>>(
-                                                                                                                                    rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<SourceFilter>(sf)));
+    template<class CollectionSelector, class ResultSelector, class Coordination>
+    auto flat_map(CollectionSelector&& s, ResultSelector&& rs, Coordination&& sf) const
+        ->      observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, Coordination>::value_type, rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, Coordination>> {
+        return  observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, Coordination>::value_type, rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, Coordination>>(
+                                                                                                                                    rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, Coordination>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<Coordination>(sf)));
     }
 
-    template<class SourceFilter, bool IsObservable = is_observable<value_type>::value>
+    template<class Coordination, bool IsObservable = is_observable<value_type>::value>
     struct concat_result;
 
-    template<class SourceFilter>
-    struct concat_result<SourceFilter, true>
+    template<class Coordination>
+    struct concat_result<Coordination, true>
     {
         typedef
             observable<
                 typename this_type::value_type::value_type,
-                rxo::detail::concat<observable<typename this_type::value_type>, SourceFilter>>
+                rxo::detail::concat<observable<typename this_type::value_type>, Coordination>>
         type;
-        static type make(const this_type* that, SourceFilter sf) {
-            return type(rxo::detail::concat<observable<typename this_type::value_type>, SourceFilter>(*that, sf));
+        static type make(const this_type* that, Coordination sf) {
+            return type(rxo::detail::concat<observable<typename this_type::value_type>, Coordination>(*that, sf));
         }
     };
-    template<class SourceFilter>
-    struct concat_result<SourceFilter, false>
+    template<class Coordination>
+    struct concat_result<Coordination, false>
     {
         typedef this_type type;
-        static type make(const this_type* that, SourceFilter) {
+        static type make(const this_type* that, Coordination) {
             return *that;
         }
     };
 
     /// concat ->
-    /// All sources must be syncronized! This means that calls across all the subscribers must be serial.
+    /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
     /// for each item from this observable subscribe to one at a time. in the order received.
     /// for each item from all of the nested observables deliver from the new observable that is returned.
     ///
     auto concat() const
-        -> typename concat_result<identity_observable>::type {
-        return  concat_result<identity_observable>::make(this, identity_observable());
+        -> typename concat_result<identity_one_worker>::type {
+        return  concat_result<identity_one_worker>::make(this, identity_one_worker(rxsc::make_current_thread()));
     }
 
     /// concat ->
-    /// The source filter can be used to syncronize sources from different contexts.
+    /// The coordination is used to synchronize sources from different contexts.
     /// for each item from this observable subscribe to one at a time. in the order received.
     /// for each item from all of the nested observables deliver from the new observable that is returned.
     ///
-    template<class SourceFilter>
-    auto concat(SourceFilter&& sf) const
-        -> typename std::enable_if<is_observable<value_type>::value && !is_observable<SourceFilter>::value,
-                observable<typename rxo::detail::concat<this_type, SourceFilter>::value_type,   rxo::detail::concat<this_type, SourceFilter>>>::type {
-        return  observable<typename rxo::detail::concat<this_type, SourceFilter>::value_type,   rxo::detail::concat<this_type, SourceFilter>>(
-                                                                                                rxo::detail::concat<this_type, SourceFilter>(*this, std::forward<SourceFilter>(sf)));
+    template<class Coordination>
+    auto concat(Coordination&& sf) const
+        -> typename std::enable_if<is_observable<value_type>::value && !is_observable<Coordination>::value,
+                observable<typename rxo::detail::concat<this_type, Coordination>::value_type,   rxo::detail::concat<this_type, Coordination>>>::type {
+        return  observable<typename rxo::detail::concat<this_type, Coordination>::value_type,   rxo::detail::concat<this_type, Coordination>>(
+                                                                                                rxo::detail::concat<this_type, Coordination>(*this, std::forward<Coordination>(sf)));
     }
 
     /// concat ->
-    /// All sources must be syncronized! This means that calls across all the subscribers must be serial.
+    /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
     /// for each item from this observable subscribe to one at a time. in the order received.
     /// for each item from all of the nested observables deliver from the new observable that is returned.
     ///
@@ -478,37 +478,37 @@ public:
     }
 
     /// concat ->
-    /// The source filter can be used to syncronize sources from different contexts.
+    /// The coordination is used to synchronize sources from different contexts.
     /// for each item from this observable subscribe to one at a time. in the order received.
     /// for each item from all of the nested observables deliver from the new observable that is returned.
     ///
-    template<class SourceFilter, class Value0, class... ValueN>
-    auto concat(SourceFilter&& sf, Value0 v0, ValueN... vn) const
-        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value && !is_observable<SourceFilter>::value, observable<T>>::type {
-        return      rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).concat(std::forward<SourceFilter>(sf));
+    template<class Coordination, class Value0, class... ValueN>
+    auto concat(Coordination&& sf, Value0 v0, ValueN... vn) const
+        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value && !is_observable<Coordination>::value, observable<T>>::type {
+        return      rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).concat(std::forward<Coordination>(sf));
     }
     /// concat_map ->
-    /// All sources must be syncronized! This means that calls across all the subscribers must be serial.
+    /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
     /// for each item from this observable use the CollectionSelector to select an observable and subscribe to that observable.
     /// for each item from all of the selected observables use the ResultSelector to select a value to emit from the new observable that is returned.
     ///
     template<class CollectionSelector, class ResultSelector>
     auto concat_map(CollectionSelector&& s, ResultSelector&& rs) const
-        ->      observable<typename rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_observable>::value_type,    rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_observable>> {
-        return  observable<typename rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_observable>::value_type,    rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_observable>>(
-                                                                                                                                                rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_observable>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), identity_observable()));
+        ->      observable<typename rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>::value_type,    rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>> {
+        return  observable<typename rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>::value_type,    rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>>(
+                                                                                                                                                rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), identity_one_worker(rxsc::make_current_thread())));
     }
 
     /// concat_map ->
-    /// The source filter can be used to syncronize sources from different contexts.
+    /// The coordination is used to synchronize sources from different contexts.
     /// for each item from this observable use the CollectionSelector to select an observable and subscribe to that observable.
     /// for each item from all of the selected observables use the ResultSelector to select a value to emit from the new observable that is returned.
     ///
-    template<class CollectionSelector, class ResultSelector, class SourceFilter>
-    auto concat_map(CollectionSelector&& s, ResultSelector&& rs, SourceFilter&& sf) const
-        ->      observable<typename rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>::value_type,   rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>> {
-        return  observable<typename rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>::value_type,   rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>>(
-                                                                                                                                        rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, SourceFilter>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<SourceFilter>(sf)));
+    template<class CollectionSelector, class ResultSelector, class Coordination>
+    auto concat_map(CollectionSelector&& s, ResultSelector&& rs, Coordination&& sf) const
+        ->      observable<typename rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, Coordination>::value_type,   rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, Coordination>> {
+        return  observable<typename rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, Coordination>::value_type,   rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, Coordination>>(
+                                                                                                                                        rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, Coordination>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<Coordination>(sf)));
     }
 
     /// multicast ->
@@ -538,7 +538,7 @@ public:
     }
 
     /// scan ->
-    /// for each item from this observable use Predicate to combine items into a final value that will be emitted from the new observable that is returned.
+    /// for each item from this observable use Accumulator to combine items into a value that will be emitted from the new observable that is returned.
     ///
     template<class Seed, class Accumulator>
     auto scan(Seed seed, Accumulator&& a) const
@@ -548,35 +548,40 @@ public:
     }
 
     /// take ->
+    /// for the first count items from this observable emit them from the new observable that is returned.
     ///
     ///
     template<class Count>
-    auto take(Count&& t) const
+    auto take(Count t) const
         ->      observable<T,   rxo::detail::take<T, this_type, Count>> {
         return  observable<T,   rxo::detail::take<T, this_type, Count>>(
-                                rxo::detail::take<T, this_type, Count>(*this, std::forward<Count>(t)));
+                                rxo::detail::take<T, this_type, Count>(*this, t));
     }
 
     /// take_until ->
-    /// All sources must be syncronized! This means that calls across all the subscribers must be serial.
+    /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
+    /// for each item from this observable until on_next occurs on the TriggerSource, emit them from the new observable that is returned.
     ///
     ///
     template<class TriggerSource>
     auto take_until(TriggerSource&& t) const
-        ->      observable<T,   rxo::detail::take_until<T, this_type, TriggerSource, identity_observable>> {
-        return  observable<T,   rxo::detail::take_until<T, this_type, TriggerSource, identity_observable>>(
-                                rxo::detail::take_until<T, this_type, TriggerSource, identity_observable>(*this, std::forward<TriggerSource>(t), identity_observable()));
+        -> typename std::enable_if<is_observable<TriggerSource>::value,
+                observable<T,   rxo::detail::take_until<T, this_type, TriggerSource, identity_one_worker>>>::type {
+        return  observable<T,   rxo::detail::take_until<T, this_type, TriggerSource, identity_one_worker>>(
+                                rxo::detail::take_until<T, this_type, TriggerSource, identity_one_worker>(*this, std::forward<TriggerSource>(t), identity_one_worker(rxsc::make_current_thread())));
     }
 
     /// take_until ->
-    /// The source filter can be used to syncronize sources from different contexts.
+    /// The coordination is used to synchronize sources from different contexts.
+    /// for each item from this observable until on_next occurs on the TriggerSource, emit them from the new observable that is returned.
     ///
     ///
-    template<class TriggerSource, class SourceFilter>
-    auto take_until(TriggerSource&& t, SourceFilter&& sf) const
-        ->      observable<T,   rxo::detail::take_until<T, this_type, TriggerSource, SourceFilter>> {
-        return  observable<T,   rxo::detail::take_until<T, this_type, TriggerSource, SourceFilter>>(
-                                rxo::detail::take_until<T, this_type, TriggerSource, SourceFilter>(*this, std::forward<TriggerSource>(t), std::forward<SourceFilter>(sf)));
+    template<class TriggerSource, class Coordination>
+    auto take_until(TriggerSource&& t, Coordination&& sf) const
+        -> typename std::enable_if<is_observable<TriggerSource>::value && is_coordination<Coordination>::value,
+                observable<T,   rxo::detail::take_until<T, this_type, TriggerSource, Coordination>>>::type {
+        return  observable<T,   rxo::detail::take_until<T, this_type, TriggerSource, Coordination>>(
+                                rxo::detail::take_until<T, this_type, TriggerSource, Coordination>(*this, std::forward<TriggerSource>(t), std::forward<Coordination>(sf)));
     }
 };
 

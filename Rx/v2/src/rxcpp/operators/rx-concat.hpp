@@ -13,49 +13,52 @@ namespace operators {
 
 namespace detail {
 
-template<class Observable, class SourceFilter>
+template<class Observable, class Coordination>
 struct concat
     : public operator_base<typename std::decay<Observable>::type::value_type::value_type>
 {
-    typedef concat<Observable, SourceFilter> this_type;
+    typedef concat<Observable, Coordination> this_type;
 
     typedef typename std::decay<Observable>::type source_type;
-    typedef typename std::decay<SourceFilter>::type source_filter_type;
+    typedef typename std::decay<Coordination>::type coordination_type;
+
+    typedef typename coordination_type::coordinator_type coordinator_type;
 
     typedef typename source_type::value_type collection_type;
     typedef typename collection_type::value_type value_type;
 
     struct values
     {
-        values(source_type o, source_filter_type sf)
+        values(source_type o, coordination_type sf)
             : source(std::move(o))
-            , sourceFilter(std::move(sf))
+            , coordination(std::move(sf))
         {
         }
         source_type source;
-        source_filter_type sourceFilter;
+        coordination_type coordination;
     };
     values initial;
 
-    concat(source_type o, source_filter_type sf)
+    concat(source_type o, coordination_type sf)
         : initial(std::move(o), std::move(sf))
     {
     }
 
     template<class Subscriber>
-    void on_subscribe(Subscriber&& scbr) const {
+    void on_subscribe(Subscriber scbr) const {
         static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
 
-        typedef typename std::decay<Subscriber>::type output_type;
+        typedef typename coordinator_type::template get<Subscriber>::type output_type;
 
         struct concat_state_type
             : public std::enable_shared_from_this<concat_state_type>
             , public values
         {
-            concat_state_type(values i, output_type oarg)
+            concat_state_type(values i, coordinator_type coor, output_type oarg)
                 : values(std::move(i))
                 , sourceLifetime(composite_subscription::empty())
                 , collectionLifetime(composite_subscription::empty())
+                , coordinator(std::move(coor))
                 , out(std::move(oarg))
             {
             }
@@ -75,7 +78,7 @@ struct concat
                 }));
 
                 auto selectedSource = on_exception(
-                    [&](){return state->sourceFilter(st);},
+                    [&](){return state->coordinator(std::move(st));},
                     state->out);
                 if (selectedSource.empty()) {
                     return;
@@ -110,10 +113,20 @@ struct concat
             composite_subscription sourceLifetime;
             composite_subscription collectionLifetime;
             std::deque<collection_type> selectedCollections;
+            coordinator_type coordinator;
             output_type out;
         };
+
+        auto coordinator = initial.coordination.create_coordinator();
+        auto selectedDest = on_exception(
+            [&](){return coordinator(scbr);},
+            scbr);
+        if (selectedDest.empty()) {
+            return;
+        }
+
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<concat_state_type>(new concat_state_type(initial, std::forward<Subscriber>(scbr)));
+        auto state = std::shared_ptr<concat_state_type>(new concat_state_type(initial, std::move(coordinator), std::move(selectedDest.get())));
 
         state->sourceLifetime = composite_subscription();
 
@@ -122,7 +135,7 @@ struct concat
         state->out.add(state->sourceLifetime);
 
         auto source = on_exception(
-            [&](){return state->sourceFilter(state->source);},
+            [&](){return state->coordinator(state->source);},
             state->out);
         if (source.empty()) {
             return;
@@ -156,32 +169,32 @@ struct concat
     }
 };
 
-template<class SourceFilter>
+template<class Coordination>
 class concat_factory
 {
-    typedef typename std::decay<SourceFilter>::type source_filter_type;
+    typedef typename std::decay<Coordination>::type coordination_type;
 
-    source_filter_type sourceFilter;
+    coordination_type coordination;
 public:
-    concat_factory(source_filter_type sf)
-        : sourceFilter(std::move(sf))
+    concat_factory(coordination_type sf)
+        : coordination(std::move(sf))
     {
     }
 
     template<class Observable>
     auto operator()(Observable&& source)
-        ->      observable<typename concat<Observable, SourceFilter>::value_type, concat<Observable, SourceFilter>> {
-        return  observable<typename concat<Observable, SourceFilter>::value_type, concat<Observable, SourceFilter>>(
-                                    concat<Observable, SourceFilter>(std::forward<Observable>(source), sourceFilter));
+        ->      observable<typename concat<Observable, Coordination>::value_type, concat<Observable, Coordination>> {
+        return  observable<typename concat<Observable, Coordination>::value_type, concat<Observable, Coordination>>(
+                                    concat<Observable, Coordination>(std::forward<Observable>(source), coordination));
     }
 };
 
 }
 
-template<class SourceFilter>
-auto concat(SourceFilter&& sf)
-    ->      detail::concat_factory<SourceFilter> {
-    return  detail::concat_factory<SourceFilter>(std::forward<SourceFilter>(sf));
+template<class Coordination>
+auto concat(Coordination&& sf)
+    ->      detail::concat_factory<Coordination> {
+    return  detail::concat_factory<Coordination>(std::forward<Coordination>(sf));
 }
 
 }

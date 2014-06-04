@@ -19,14 +19,14 @@ SCENARIO("subscriber traits", "[observer][traits]"){
 //        static_assert(std::tuple_element<1, decltype(argset)>::type::is_arg, "resumption is a required parameter");
 //        auto scrbResult = rx::detail::make_subscriber_resolved<int>(rx::rxu::detail::resolve_arg_set(rx::detail::tag_subscriber_set<int>(), rx::resumption(), next, error, completed));
 //        auto scrbResult = rx::detail::make_subscriber_resolved<int>(argset);
-        auto scrbResult = rx::make_subscriber<int>(rx::resumption(), next, error, completed);
+        auto scrbResult = rx::make_subscriber<int>(next, error, completed);
         auto scrbdup = rx::make_subscriber<int>(scrbResult);
         auto scrbop = rx::make_subscriber<int>(scrbResult, next, error, completed);
-        auto scrbsharelifetime = rx::make_subscriber<int>(scrbResult, scrbop.get_resumption(), scrbop.get_observer());
+        auto scrbsharelifetime = rx::make_subscriber<int>(scrbResult, scrbop.get_observer());
         auto scrbuniquelifetime = rx::make_subscriber<int>(scrbResult, rx::composite_subscription());
 
         auto emptyNext = [](int){};
-        auto scrb = rx::make_subscriber<int>(rx::resumption(), emptyNext);
+        auto scrb = rx::make_subscriber<int>(emptyNext);
         WHEN("tested"){
             THEN("is_observer value is true for subscriber"){
                 REQUIRE(rx::is_observer<decltype(scrb)>::value);

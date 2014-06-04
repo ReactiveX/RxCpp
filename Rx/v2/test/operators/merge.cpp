@@ -27,7 +27,7 @@ SCENARIO("synchronize merge ranges", "[hide][range][synchronize][merge][perf]"){
 
             auto sc = rxsc::make_event_loop();
             //auto sc = rxsc::make_new_thread();
-            auto so = rxsub::synchronize_observable(sc);
+            auto so = rx::syncronize_in_one_worker(sc);
 
             std::atomic<int> c(0);
             int n = 1;

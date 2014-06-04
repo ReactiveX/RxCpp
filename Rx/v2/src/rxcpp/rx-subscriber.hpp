@@ -10,7 +10,7 @@
 namespace rxcpp {
 
 template<class T>
-struct subscriber_base : public observer_base<T>, public subscription_base, public resumption_base
+struct subscriber_base : public observer_base<T>, public subscription_base
 {
     typedef tag_subscriber subscriber_tag;
 };
@@ -22,7 +22,6 @@ class subscriber : public subscriber_base<T>
     typedef typename std::decay<Observer>::type observer_type;
 
     composite_subscription lifetime;
-    resumption controller;
     observer_type destination;
 
     struct detacher
@@ -46,28 +45,24 @@ public:
 
     subscriber(const this_type& o)
         : lifetime(o.lifetime)
-        , controller(o.controller)
         , destination(o.destination)
     {
     }
     subscriber(this_type&& o)
         : lifetime(std::move(o.lifetime))
-        , controller(std::move(o.controller))
         , destination(std::move(o.destination))
     {
     }
 
     template<class U>
-    subscriber(composite_subscription cs, resumption r, U&& o)
+    subscriber(composite_subscription cs, U&& o)
         : lifetime(std::move(cs))
-        , controller(std::move(r))
         , destination(std::forward<U>(o))
     {
     }
 
     this_type& operator=(this_type o) {
         lifetime = std::move(o.lifetime);
-        controller = std::move(o.controller);
         destination = std::move(o.destination);
         return *this;
     }
@@ -78,26 +73,11 @@ public:
     observer_type& get_observer() {
         return destination;
     }
-    const resumption& get_resumption() const {
-        return controller;
-    }
-    resumption& get_resumption() {
-        return controller;
-    }
     const composite_subscription& get_subscription() const {
         return lifetime;
     }
     composite_subscription& get_subscription() {
         return lifetime;
-    }
-
-    // resumption
-    //
-    bool is_resumed() const {
-        return controller.is_resumed();
-    }
-    void resume_with(rxsc::schedulable rw) {
-        controller.resume_with(std::move(rw));
     }
 
     // observer
@@ -165,21 +145,21 @@ template<class T, class I>
 auto make_subscriber(
     const                   observer<T, I>& o)
     ->      subscriber<T,   observer<T, I>> {
-    return  subscriber<T,   observer<T, I>>(composite_subscription(), resumption(), o);
+    return  subscriber<T,   observer<T, I>>(composite_subscription(), o);
 }
 template<class T, class Observer>
 auto make_subscriber(const Observer& o)
     -> typename std::enable_if<
         is_observer<Observer>::value,
             subscriber<T,   Observer>>::type {
-    return  subscriber<T,   Observer>(composite_subscription(), resumption(), o);
+    return  subscriber<T,   Observer>(composite_subscription(), o);
 }
 template<class T, class OnNext>
 auto make_subscriber(const OnNext& on)
     -> typename std::enable_if<
         detail::is_on_next_of<T, OnNext>::value,
             subscriber<T,   observer<T, static_observer<T, OnNext>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext>>>(composite_subscription(), resumption(),
+    return  subscriber<T,   observer<T, static_observer<T, OnNext>>>(composite_subscription(),
                             observer<T, static_observer<T, OnNext>>(
                                         static_observer<T, OnNext>(on)));
 }
@@ -189,7 +169,7 @@ auto make_subscriber(const OnNext& on, const OnError& oe)
         detail::is_on_next_of<T, OnNext>::value &&
         detail::is_on_error<OnError>::value,
             subscriber<T,   observer<T, static_observer<T, OnNext, OnError>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext, OnError>>>(composite_subscription(), resumption(),
+    return  subscriber<T,   observer<T, static_observer<T, OnNext, OnError>>>(composite_subscription(),
                             observer<T, static_observer<T, OnNext, OnError>>(
                                         static_observer<T, OnNext, OnError>(on, oe)));
 }
@@ -199,7 +179,7 @@ auto make_subscriber(const OnNext& on, const OnCompleted& oc)
         detail::is_on_next_of<T, OnNext>::value &&
         detail::is_on_completed<OnCompleted>::value,
             subscriber<T,   observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>>(composite_subscription(), resumption(),
+    return  subscriber<T,   observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>>(composite_subscription(),
                             observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>(
                                         static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>(on, detail::OnErrorEmpty(), oc)));
 }
@@ -210,7 +190,7 @@ auto make_subscriber(const OnNext& on, const OnError& oe, const OnCompleted& oc)
         detail::is_on_error<OnError>::value &&
         detail::is_on_completed<OnCompleted>::value,
             subscriber<T,   observer<T, static_observer<T, OnNext, OnError, OnCompleted>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext, OnError, OnCompleted>>>(composite_subscription(), resumption(),
+    return  subscriber<T,   observer<T, static_observer<T, OnNext, OnError, OnCompleted>>>(composite_subscription(),
                             observer<T, static_observer<T, OnNext, OnError, OnCompleted>>(
                                         static_observer<T, OnNext, OnError, OnCompleted>(on, oe, oc)));
 }
@@ -221,21 +201,21 @@ template<class T, class I>
 auto make_subscriber(const composite_subscription& cs,
     const                   observer<T, I>& o)
     ->      subscriber<T,   observer<T, I>> {
-    return  subscriber<T,   observer<T, I>>(cs, resumption(), o);
+    return  subscriber<T,   observer<T, I>>(cs, o);
 }
 template<class T, class Observer>
 auto make_subscriber(const composite_subscription& cs, const Observer& o)
     -> typename std::enable_if<
         is_observer<Observer>::value,
             subscriber<T,   Observer>>::type {
-    return  subscriber<T,   Observer>(cs, resumption(), o);
+    return  subscriber<T,   Observer>(cs, o);
 }
 template<class T, class OnNext>
 auto make_subscriber(const composite_subscription& cs, const OnNext& on)
     -> typename std::enable_if<
         detail::is_on_next_of<T, OnNext>::value,
             subscriber<T,   observer<T, static_observer<T, OnNext>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext>>>(cs, resumption(),
+    return  subscriber<T,   observer<T, static_observer<T, OnNext>>>(cs,
                             observer<T, static_observer<T, OnNext>>(
                                         static_observer<T, OnNext>(on)));
 }
@@ -245,7 +225,7 @@ auto make_subscriber(const composite_subscription& cs, const OnNext& on, const O
         detail::is_on_next_of<T, OnNext>::value &&
         detail::is_on_error<OnError>::value,
             subscriber<T,   observer<T, static_observer<T, OnNext, OnError>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext, OnError>>>(cs, resumption(),
+    return  subscriber<T,   observer<T, static_observer<T, OnNext, OnError>>>(cs,
                             observer<T, static_observer<T, OnNext, OnError>>(
                                         static_observer<T, OnNext, OnError>(on, oe)));
 }
@@ -255,7 +235,7 @@ auto make_subscriber(const composite_subscription& cs, const OnNext& on, const O
         detail::is_on_next_of<T, OnNext>::value &&
         detail::is_on_completed<OnCompleted>::value,
             subscriber<T,   observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>>(cs, resumption(),
+    return  subscriber<T,   observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>>(cs,
                             observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>(
                                         static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>(on, detail::OnErrorEmpty(), oc)));
 }
@@ -266,61 +246,7 @@ auto make_subscriber(const composite_subscription& cs, const OnNext& on, const O
         detail::is_on_error<OnError>::value &&
         detail::is_on_completed<OnCompleted>::value,
             subscriber<T,   observer<T, static_observer<T, OnNext, OnError, OnCompleted>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext, OnError, OnCompleted>>>(cs, resumption(),
-                            observer<T, static_observer<T, OnNext, OnError, OnCompleted>>(
-                                        static_observer<T, OnNext, OnError, OnCompleted>(on, oe, oc)));
-}
-
-template<class T, class I>
-auto make_subscriber(const resumption& r,
-    const                   observer<T, I>& o)
-    ->      subscriber<T,   observer<T, I>> {
-    return  subscriber<T,   observer<T, I>>(composite_subscription(), r, o);
-}
-template<class T, class Observer>
-auto make_subscriber(const resumption& r, const Observer& o)
-    -> typename std::enable_if<
-        is_observer<Observer>::value,
-            subscriber<T,   Observer>>::type {
-    return  subscriber<T,   Observer>(composite_subscription(), r, o);
-}
-template<class T, class OnNext>
-auto make_subscriber(const resumption& r, const OnNext& on)
-    -> typename std::enable_if<
-        detail::is_on_next_of<T, OnNext>::value,
-            subscriber<T,   observer<T, static_observer<T, OnNext>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext>>>(composite_subscription(), r,
-                            observer<T, static_observer<T, OnNext>>(
-                                        static_observer<T, OnNext>(on)));
-}
-template<class T, class OnNext, class OnError>
-auto make_subscriber(const resumption& r, const OnNext& on, const OnError& oe)
-    -> typename std::enable_if<
-        detail::is_on_next_of<T, OnNext>::value &&
-        detail::is_on_error<OnError>::value,
-            subscriber<T,   observer<T, static_observer<T, OnNext, OnError>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext, OnError>>>(composite_subscription(), r,
-                            observer<T, static_observer<T, OnNext, OnError>>(
-                                        static_observer<T, OnNext, OnError>(on, oe)));
-}
-template<class T, class OnNext, class OnCompleted>
-auto make_subscriber(const resumption& r, const OnNext& on, const OnCompleted& oc)
-    -> typename std::enable_if<
-        detail::is_on_next_of<T, OnNext>::value &&
-        detail::is_on_completed<OnCompleted>::value,
-            subscriber<T,   observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>>(composite_subscription(), r,
-                            observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>(
-                                        static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>(on, detail::OnErrorEmpty(), oc)));
-}
-template<class T, class OnNext, class OnError, class OnCompleted>
-auto make_subscriber(const resumption& r, const OnNext& on, const OnError& oe, const OnCompleted& oc)
-    -> typename std::enable_if<
-        detail::is_on_next_of<T, OnNext>::value &&
-        detail::is_on_error<OnError>::value &&
-        detail::is_on_completed<OnCompleted>::value,
-            subscriber<T,   observer<T, static_observer<T, OnNext, OnError, OnCompleted>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext, OnError, OnCompleted>>>(composite_subscription(), r,
+    return  subscriber<T,   observer<T, static_observer<T, OnNext, OnError, OnCompleted>>>(cs,
                             observer<T, static_observer<T, OnNext, OnError, OnCompleted>>(
                                         static_observer<T, OnNext, OnError, OnCompleted>(on, oe, oc)));
 }
@@ -331,21 +257,21 @@ template<class T, class OtherT, class OtherObserver, class I>
 auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr,
     const                   observer<T, I>& o)
     ->      subscriber<T,   observer<T, I>> {
-    return  subscriber<T,   observer<T, I>>(scbr.get_subscription(), scbr.get_resumption(), o);
+    return  subscriber<T,   observer<T, I>>(scbr.get_subscription(), o);
 }
 template<class T, class OtherT, class OtherObserver, class Observer>
 auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const Observer& o)
     -> typename std::enable_if<
         is_observer<Observer>::value,
             subscriber<T,   Observer>>::type {
-    return  subscriber<T,   Observer>(scbr.get_subscription(), scbr.get_resumption(), o);
+    return  subscriber<T,   Observer>(scbr.get_subscription(), o);
 }
 template<class T, class OtherT, class OtherObserver, class OnNext>
 auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const OnNext& on)
     -> typename std::enable_if<
         detail::is_on_next_of<T, OnNext>::value,
             subscriber<T,   observer<T, static_observer<T, OnNext>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext>>>(scbr.get_subscription(), scbr.get_resumption(),
+    return  subscriber<T,   observer<T, static_observer<T, OnNext>>>(scbr.get_subscription(),
                             observer<T, static_observer<T, OnNext>>(
                                         static_observer<T, OnNext>(on)));
 }
@@ -355,7 +281,7 @@ auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const OnNext
         detail::is_on_next_of<T, OnNext>::value &&
         detail::is_on_error<OnError>::value,
             subscriber<T,   observer<T, static_observer<T, OnNext, OnError>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext, OnError>>>(scbr.get_subscription(), scbr.get_resumption(),
+    return  subscriber<T,   observer<T, static_observer<T, OnNext, OnError>>>(scbr.get_subscription(),
                             observer<T, static_observer<T, OnNext, OnError>>(
                                         static_observer<T, OnNext, OnError>(on, oe)));
 }
@@ -365,7 +291,7 @@ auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const OnNext
         detail::is_on_next_of<T, OnNext>::value &&
         detail::is_on_completed<OnCompleted>::value,
             subscriber<T,   observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>>(scbr.get_subscription(), scbr.get_resumption(),
+    return  subscriber<T,   observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>>(scbr.get_subscription(),
                             observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>(
                                         static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>(on, detail::OnErrorEmpty(), oc)));
 }
@@ -376,7 +302,7 @@ auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const OnNext
         detail::is_on_error<OnError>::value &&
         detail::is_on_completed<OnCompleted>::value,
             subscriber<T,   observer<T, static_observer<T, OnNext, OnError, OnCompleted>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext, OnError, OnCompleted>>>(scbr.get_subscription(), scbr.get_resumption(),
+    return  subscriber<T,   observer<T, static_observer<T, OnNext, OnError, OnCompleted>>>(scbr.get_subscription(),
                             observer<T, static_observer<T, OnNext, OnError, OnCompleted>>(
                                         static_observer<T, OnNext, OnError, OnCompleted>(on, oe, oc)));
 }
@@ -385,21 +311,21 @@ template<class T, class OtherT, class OtherObserver, class I>
 auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const composite_subscription& cs,
     const                   observer<T, I>& o)
     ->      subscriber<T,   observer<T, I>> {
-    return  subscriber<T,   observer<T, I>>(cs, scbr.get_resumption(), o);
+    return  subscriber<T,   observer<T, I>>(cs, o);
 }
 template<class T, class OtherT, class OtherObserver, class Observer>
 auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const composite_subscription& cs, const Observer& o)
     -> typename std::enable_if<
         is_observer<Observer>::value,
             subscriber<T,   Observer>>::type {
-    return  subscriber<T,   Observer>(cs, scbr.get_resumption(), o);
+    return  subscriber<T,   Observer>(cs, o);
 }
 template<class T, class OtherT, class OtherObserver, class OnNext>
 auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const composite_subscription& cs, const OnNext& on)
     -> typename std::enable_if<
         detail::is_on_next_of<T, OnNext>::value,
             subscriber<T,   observer<T, static_observer<T, OnNext>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext>>>(cs, scbr.get_resumption(),
+    return  subscriber<T,   observer<T, static_observer<T, OnNext>>>(cs,
                             observer<T, static_observer<T, OnNext>>(
                                         static_observer<T, OnNext>(on)));
 }
@@ -409,7 +335,7 @@ auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const compos
         detail::is_on_next_of<T, OnNext>::value &&
         detail::is_on_error<OnError>::value,
             subscriber<T,   observer<T, static_observer<T, OnNext, OnError>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext, OnError>>>(cs, scbr.get_resumption(),
+    return  subscriber<T,   observer<T, static_observer<T, OnNext, OnError>>>(cs,
                             observer<T, static_observer<T, OnNext, OnError>>(
                                         static_observer<T, OnNext, OnError>(on, oe)));
 }
@@ -419,7 +345,7 @@ auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const compos
         detail::is_on_next_of<T, OnNext>::value &&
         detail::is_on_completed<OnCompleted>::value,
             subscriber<T,   observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>>(cs, scbr.get_resumption(),
+    return  subscriber<T,   observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>>(cs,
                             observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>(
                                         static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>(on, detail::OnErrorEmpty(), oc)));
 }
@@ -430,61 +356,7 @@ auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const compos
         detail::is_on_error<OnError>::value &&
         detail::is_on_completed<OnCompleted>::value,
             subscriber<T,   observer<T, static_observer<T, OnNext, OnError, OnCompleted>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext, OnError, OnCompleted>>>(cs, scbr.get_resumption(),
-                            observer<T, static_observer<T, OnNext, OnError, OnCompleted>>(
-                                        static_observer<T, OnNext, OnError, OnCompleted>(on, oe, oc)));
-}
-
-template<class T, class OtherT, class OtherObserver, class I>
-auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const resumption& r,
-    const                   observer<T, I>& o)
-    ->      subscriber<T,   observer<T, I>> {
-    return  subscriber<T,   observer<T, I>>(scbr.get_subscription(), r, o);
-}
-template<class T, class OtherT, class OtherObserver, class Observer>
-auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const resumption& r, const Observer& o)
-    -> typename std::enable_if<
-        is_observer<Observer>::value,
-            subscriber<T,   Observer>>::type {
-    return  subscriber<T,   Observer>(scbr.get_subscription(), r, o);
-}
-template<class T, class OtherT, class OtherObserver, class OnNext>
-auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const resumption& r, const OnNext& on)
-    -> typename std::enable_if<
-        detail::is_on_next_of<T, OnNext>::value,
-            subscriber<T,   observer<T, static_observer<T, OnNext>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext>>>(scbr.get_subscription(), r,
-                            observer<T, static_observer<T, OnNext>>(
-                                        static_observer<T, OnNext>(on)));
-}
-template<class T, class OtherT, class OtherObserver, class OnNext, class OnError>
-auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const resumption& r, const OnNext& on, const OnError& oe)
-    -> typename std::enable_if<
-        detail::is_on_next_of<T, OnNext>::value &&
-        detail::is_on_error<OnError>::value,
-            subscriber<T,   observer<T, static_observer<T, OnNext, OnError>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext, OnError>>>(scbr.get_subscription(), r,
-                            observer<T, static_observer<T, OnNext, OnError>>(
-                                        static_observer<T, OnNext, OnError>(on, oe)));
-}
-template<class T, class OtherT, class OtherObserver, class OnNext, class OnCompleted>
-auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const resumption& r, const OnNext& on, const OnCompleted& oc)
-    -> typename std::enable_if<
-        detail::is_on_next_of<T, OnNext>::value &&
-        detail::is_on_completed<OnCompleted>::value,
-            subscriber<T,   observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>>(scbr.get_subscription(), r,
-                            observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>(
-                                        static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>(on, detail::OnErrorEmpty(), oc)));
-}
-template<class T, class OtherT, class OtherObserver, class OnNext, class OnError, class OnCompleted>
-auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const resumption& r, const OnNext& on, const OnError& oe, const OnCompleted& oc)
-    -> typename std::enable_if<
-        detail::is_on_next_of<T, OnNext>::value &&
-        detail::is_on_error<OnError>::value &&
-        detail::is_on_completed<OnCompleted>::value,
-            subscriber<T,   observer<T, static_observer<T, OnNext, OnError, OnCompleted>>>>::type {
-    return  subscriber<T,   observer<T, static_observer<T, OnNext, OnError, OnCompleted>>>(scbr.get_subscription(), r,
+    return  subscriber<T,   observer<T, static_observer<T, OnNext, OnError, OnCompleted>>>(cs,
                             observer<T, static_observer<T, OnNext, OnError, OnCompleted>>(
                                         static_observer<T, OnNext, OnError, OnCompleted>(on, oe, oc)));
 }
@@ -494,21 +366,7 @@ auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const resump
 template<class T, class Observer>
 auto make_subscriber(const subscriber<T, Observer>& scbr, const composite_subscription& cs)
     ->      subscriber<T,   Observer> {
-    return  subscriber<T,   Observer>(cs, scbr.get_resumption(), scbr.get_observer());
-}
-// override back-pressure
-//
-template<class T, class Observer>
-auto make_subscriber(const subscriber<T, Observer>& scbr, const resumption& r)
-    ->      subscriber<T,   Observer> {
-    return  subscriber<T,   Observer>(scbr.get_subscription(), r, scbr.get_observer());
-}
-// only keep observer
-//
-template<class T, class Observer>
-auto make_subscriber(const subscriber<T, Observer>& scbr, const composite_subscription& cs, const resumption& r)
-    ->      subscriber<T,   Observer> {
-    return  subscriber<T,   Observer>(cs, r, scbr.get_observer());
+    return  subscriber<T,   Observer>(cs, scbr.get_observer());
 }
 
 }

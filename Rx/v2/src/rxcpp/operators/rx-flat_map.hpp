@@ -13,12 +13,12 @@ namespace operators {
 
 namespace detail {
 
-template<class Observable, class CollectionSelector, class ResultSelector, class SourceFilter>
+template<class Observable, class CollectionSelector, class ResultSelector, class Coordination>
 struct flat_map_traits {
     typedef typename std::decay<Observable>::type source_type;
     typedef typename std::decay<CollectionSelector>::type collection_selector_type;
     typedef typename std::decay<ResultSelector>::type result_selector_type;
-    typedef typename std::decay<SourceFilter>::type source_filter_type;
+    typedef typename std::decay<Coordination>::type coordination_type;
 
     typedef typename source_type::value_type source_value_type;
 
@@ -48,12 +48,12 @@ struct flat_map_traits {
     typedef decltype((*(result_selector_type*)nullptr)(*(source_value_type*)nullptr, *(collection_value_type*)nullptr)) value_type;
 };
 
-template<class Observable, class CollectionSelector, class ResultSelector, class SourceFilter>
+template<class Observable, class CollectionSelector, class ResultSelector, class Coordination>
 struct flat_map
-    : public operator_base<typename flat_map_traits<Observable, CollectionSelector, ResultSelector, SourceFilter>::value_type>
+    : public operator_base<typename flat_map_traits<Observable, CollectionSelector, ResultSelector, Coordination>::value_type>
 {
-    typedef flat_map<Observable, CollectionSelector, ResultSelector, SourceFilter> this_type;
-    typedef flat_map_traits<Observable, CollectionSelector, ResultSelector, SourceFilter> traits;
+    typedef flat_map<Observable, CollectionSelector, ResultSelector, Coordination> this_type;
+    typedef flat_map_traits<Observable, CollectionSelector, ResultSelector, Coordination> traits;
 
     typedef typename traits::source_type source_type;
     typedef typename traits::collection_selector_type collection_selector_type;
@@ -63,52 +63,64 @@ struct flat_map
     typedef typename traits::collection_type collection_type;
     typedef typename traits::collection_value_type collection_value_type;
 
-    typedef typename traits::source_filter_type source_filter_type;
+    typedef typename traits::coordination_type coordination_type;
+    typedef typename coordination_type::coordinator_type coordinator_type;
 
     struct values
     {
-        values(source_type o, collection_selector_type s, result_selector_type rs, source_filter_type sf)
+        values(source_type o, collection_selector_type s, result_selector_type rs, coordination_type sf)
             : source(std::move(o))
             , selectCollection(std::move(s))
             , selectResult(std::move(rs))
-            , sourceFilter(std::move(sf))
+            , coordination(std::move(sf))
         {
         }
         source_type source;
         collection_selector_type selectCollection;
         result_selector_type selectResult;
-        source_filter_type sourceFilter;
+        coordination_type coordination;
     };
     values initial;
 
-    flat_map(source_type o, collection_selector_type s, result_selector_type rs, source_filter_type sf)
+    flat_map(source_type o, collection_selector_type s, result_selector_type rs, coordination_type sf)
         : initial(std::move(o), std::move(s), std::move(rs), std::move(sf))
     {
     }
 
     template<class Subscriber>
-    void on_subscribe(Subscriber&& scbr) const {
+    void on_subscribe(Subscriber scbr) const {
         static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
 
-        typedef typename std::decay<Subscriber>::type output_type;
+        typedef typename coordinator_type::template get<Subscriber>::type output_type;
 
         struct state_type
             : public std::enable_shared_from_this<state_type>
             , public values
         {
-            state_type(values i, output_type oarg)
+            state_type(values i, coordinator_type coor, output_type oarg)
                 : values(std::move(i))
                 , pendingCompletions(0)
+                , coordinator(std::move(coor))
                 , out(std::move(oarg))
             {
             }
             // on_completed on the output must wait until all the
             // subscriptions have received on_completed
             int pendingCompletions;
+            coordinator_type coordinator;
             output_type out;
         };
+
+        auto coordinator = initial.coordination.create_coordinator();
+        auto selectedDest = on_exception(
+            [&](){return coordinator(scbr);},
+            scbr);
+        if (selectedDest.empty()) {
+            return;
+        }
+
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<state_type>(new state_type(initial, std::forward<Subscriber>(scbr)));
+        auto state = std::shared_ptr<state_type>(new state_type(initial, std::move(coordinator), std::move(selectedDest.get())));
 
         composite_subscription outercs;
 
@@ -117,7 +129,7 @@ struct flat_map
         state->out.add(outercs);
 
         auto source = on_exception(
-            [&](){return state->sourceFilter(state->source);},
+            [&](){return state->coordinator(state->source);},
             state->out);
         if (source.empty()) {
             return;
@@ -150,7 +162,7 @@ struct flat_map
                 }));
 
                 auto selectedSource = on_exception(
-                    [&](){return state->sourceFilter(selectedCollection.get());},
+                    [&](){return state->coordinator(selectedCollection.get());},
                     state->out);
                 if (selectedSource.empty()) {
                     return;
@@ -198,38 +210,38 @@ struct flat_map
     }
 };
 
-template<class CollectionSelector, class ResultSelector, class SourceFilter>
+template<class CollectionSelector, class ResultSelector, class Coordination>
 class flat_map_factory
 {
     typedef typename std::decay<CollectionSelector>::type collection_selector_type;
     typedef typename std::decay<ResultSelector>::type result_selector_type;
-    typedef typename std::decay<SourceFilter>::type source_filter_type;
+    typedef typename std::decay<Coordination>::type coordination_type;
 
     collection_selector_type selectorCollection;
     result_selector_type selectorResult;
-    source_filter_type sourceFilter;
+    coordination_type coordination;
 public:
-    flat_map_factory(collection_selector_type s, result_selector_type rs, source_filter_type sf)
+    flat_map_factory(collection_selector_type s, result_selector_type rs, coordination_type sf)
         : selectorCollection(std::move(rs))
         , selectorResult(std::move(s))
-        , sourceFilter(std::move(sf))
+        , coordination(std::move(sf))
     {
     }
 
     template<class Observable>
     auto operator()(Observable&& source)
-        ->      observable<typename flat_map<Observable, CollectionSelector, ResultSelector, SourceFilter>::value_type, flat_map<Observable, CollectionSelector, ResultSelector, SourceFilter>> {
-        return  observable<typename flat_map<Observable, CollectionSelector, ResultSelector, SourceFilter>::value_type, flat_map<Observable, CollectionSelector, ResultSelector, SourceFilter>>(
-                                    flat_map<Observable, CollectionSelector, ResultSelector, SourceFilter>(std::forward<Observable>(source), selectorCollection, selectorResult, sourceFilter));
+        ->      observable<typename flat_map<Observable, CollectionSelector, ResultSelector, Coordination>::value_type, flat_map<Observable, CollectionSelector, ResultSelector, Coordination>> {
+        return  observable<typename flat_map<Observable, CollectionSelector, ResultSelector, Coordination>::value_type, flat_map<Observable, CollectionSelector, ResultSelector, Coordination>>(
+                                    flat_map<Observable, CollectionSelector, ResultSelector, Coordination>(std::forward<Observable>(source), selectorCollection, selectorResult, coordination));
     }
 };
 
 }
 
-template<class CollectionSelector, class ResultSelector, class SourceFilter>
-auto flat_map(CollectionSelector&& s, ResultSelector&& rs, SourceFilter&& sf)
-    ->      detail::flat_map_factory<CollectionSelector, ResultSelector, SourceFilter> {
-    return  detail::flat_map_factory<CollectionSelector, ResultSelector, SourceFilter>(std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<SourceFilter>(sf));
+template<class CollectionSelector, class ResultSelector, class Coordination>
+auto flat_map(CollectionSelector&& s, ResultSelector&& rs, Coordination&& sf)
+    ->      detail::flat_map_factory<CollectionSelector, ResultSelector, Coordination> {
+    return  detail::flat_map_factory<CollectionSelector, ResultSelector, Coordination>(std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<Coordination>(sf));
 }
 
 }

@@ -12,7 +12,7 @@ namespace rxt=rxcpp::test;
 
 #include "catch.hpp"
 
-static const int static_tripletCount = 50;
+static const int static_tripletCount = 100;
 
 SCENARIO("concat_map pythagorian ranges", "[hide][range][concat_map][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
@@ -70,7 +70,7 @@ SCENARIO("synchronize concat_map pythagorian ranges", "[hide][range][concat_map]
 
             auto sc = rxsc::make_event_loop();
             //auto sc = rxsc::make_new_thread();
-            auto so = rxsub::synchronize_observable(sc);
+            auto so = rx::syncronize_in_one_worker(sc);
 
             int c = 0;
             std::atomic<int> ct(0);

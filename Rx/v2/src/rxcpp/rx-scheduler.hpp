@@ -203,6 +203,11 @@ public:
         , lifetime(std::move(cs))
     {
     }
+    worker(composite_subscription cs, worker o)
+        : inner(o.inner)
+        , lifetime(std::move(cs))
+    {
+    }
 
     inline const composite_subscription& get_subscription() const {
         return lifetime;
@@ -858,5 +863,6 @@ namespace rxsc=schedulers;
 #include "schedulers/rx-eventloop.hpp"
 #include "schedulers/rx-immediate.hpp"
 #include "schedulers/rx-virtualtime.hpp"
+#include "schedulers/rx-sameworker.hpp"
 
 #endif
