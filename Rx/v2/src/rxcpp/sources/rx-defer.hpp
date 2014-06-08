@@ -37,7 +37,7 @@ struct defer : public source_base<typename defer_traits<ObservableFactory>::valu
     {
     }
     template<class Subscriber>
-    void on_subscribe(Subscriber o) {
+    void on_subscribe(Subscriber o) const {
 
         auto selectedCollection = on_exception(
             [this](){return this->observable_factory();},

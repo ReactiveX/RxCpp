@@ -79,10 +79,10 @@ class synchronize_observer : public detail::multicast_observer<T>
         }
 
         synchronize_observer_state(rxsc::worker w, composite_subscription cs, subscriber<T> scbr)
-            : lifetime(cs)
-            , processor(w)
+            : lifetime(std::move(cs))
+            , processor(std::move(w))
             , current(mode::Empty)
-            , destination(scbr)
+            , destination(std::move(scbr))
         {
         }
 
@@ -119,7 +119,7 @@ public:
     synchronize_observer(rxsc::worker w, composite_subscription dl, composite_subscription il)
         : base_type(dl)
         , state(std::make_shared<synchronize_observer_state>(
-            w, il, make_subscriber<T>(dl, make_observer_dynamic<T>( *static_cast<base_type*>(this) ))))
+            std::move(w), std::move(il), make_subscriber<T>(dl, make_observer_dynamic<T>( *static_cast<base_type*>(this) ))))
     {}
 
     template<class V>
@@ -139,15 +139,13 @@ public:
 template<class T>
 class synchronize
 {
-    rxsc::worker controller;
     composite_subscription lifetime;
     detail::synchronize_observer<T> s;
 
 public:
     explicit synchronize(rxsc::worker w, composite_subscription cs = composite_subscription())
-        : controller(w)
-        , lifetime(composite_subscription())
-        , s(w, cs, lifetime)
+        : lifetime(composite_subscription())
+        , s(std::move(w), std::move(cs), lifetime)
     {
     }
 

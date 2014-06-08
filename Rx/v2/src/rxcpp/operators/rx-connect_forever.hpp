@@ -27,7 +27,7 @@ struct connect_forever : public operator_base<T>
     }
 
     template<class Subscriber>
-    void on_subscribe(Subscriber&& o) {
+    void on_subscribe(Subscriber&& o) const {
         source.subscribe(std::forward<Subscriber>(o));
     }
 };

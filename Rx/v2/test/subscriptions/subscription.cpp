@@ -1,7 +1,161 @@
 #include "rxcpp/rx.hpp"
 namespace rx=rxcpp;
+namespace rxs=rx::rxs;
+namespace rxsc=rx::rxsc;
 
 #include "catch.hpp"
+
+static const int static_subscriptions = 500000;
+
+SCENARIO("for loop subscribes", "[hide][for][just][subscribe][long][perf]"){
+    const int& subscriptions = static_subscriptions;
+    GIVEN("a for loop"){
+        WHEN("subscribe 10 million times"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
+
+            auto sc = rxsc::make_current_thread();
+            auto w = sc.create_worker();
+            int runs = 10;
+
+            auto loop = [&](const rxsc::schedulable& self) {
+                int c = 0;
+                int n = 1;
+                auto start = clock::now();
+                for (int i = 0; i < subscriptions; i++) {
+                    rx::observable<>::just(1)
+                        .map([](int i) {
+                            return (std::stringstream() << i).str();
+                            //return std::string("1");
+                        })
+                        .map([](const std::string& s) {
+                            int i;
+                            std::stringstream(s) >> i;
+                            return i;
+                            //return 1;
+                        })
+                        .subscribe([&](int i){
+                            ++c;
+                        });
+                }
+                auto finish = clock::now();
+                auto msElapsed = duration_cast<milliseconds>(finish-start);
+                std::cout << "loop subscribe     : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed, " << c / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
+
+                if (--runs > 0) {
+                    self();
+                }
+            };
+
+            w.schedule(loop);
+        }
+    }
+}
+
+SCENARIO("synchronized range", "[hide][subscribe][range][synchronize][long][perf]"){
+    GIVEN("range"){
+        WHEN("syncronized"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
+
+            auto sc = rxsc::make_current_thread();
+            auto w = sc.create_worker();
+
+            auto el = rxsc::make_event_loop();
+
+            int runs = 10;
+
+            auto loop = [&](const rxsc::schedulable& self) {
+                std::atomic<int> c(0);
+                int n = 1;
+                auto liftrequirecompletion = [&](rx::subscriber<int> dest){
+                    auto completionstate = std::make_shared<std::pair<long, rx::subscriber<int>>>(0, std::move(dest));
+                    completionstate->second.add([=](){
+                        if (completionstate->first != 500) {
+                            abort();
+                        }
+                    });
+                    // VS2013 deduction issue requires dynamic (type-forgetting)
+                    return rx::make_subscriber<int>(
+                        completionstate->second,
+                        rx::make_observer_dynamic<int>(
+                            [=](int n){
+                                ++completionstate->first;
+                                completionstate->second.on_next(n);
+                            },
+                            [=](std::exception_ptr e){
+                                abort();
+                                completionstate->second.on_error(e);
+                            },
+                            [=](){
+                                if (completionstate->first != 500) {
+                                    abort();
+                                }
+                                completionstate->second.on_completed();
+                            }));
+                };
+                auto start = clock::now();
+                auto ew = el.create_worker();
+                std::atomic<int> v(0);
+                auto s0 = rxs::range(0, 499, 1, el)
+                    .lift(liftrequirecompletion)
+                    .as_dynamic()
+                    .synchronize(ew)
+                    .ref_count()
+                    .lift(liftrequirecompletion)
+                    .subscribe(
+                        rx::make_observer_dynamic<int>(
+                        [&](int i){
+                            ++v;
+                        },
+                        [&](){
+                            ++c;
+                        }));
+                auto s1 = rxs::range(500, 999, 1, el)
+                    .lift(liftrequirecompletion)
+                    .as_dynamic()
+                    .synchronize(ew)
+                    .ref_count()
+                    .lift(liftrequirecompletion)
+                    .subscribe(
+                        rx::make_observer_dynamic<int>(
+                        [&](int i){
+                            ++v;
+                        },
+                        [&](){
+                            ++c;
+                        }));
+                auto s2 = rxs::range(1000, 1499, 1, el)
+                    .lift(liftrequirecompletion)
+                    .as_dynamic()
+                    .synchronize(ew)
+                    .ref_count()
+                    .lift(liftrequirecompletion)
+                    .subscribe(
+                        rx::make_observer_dynamic<int>(
+                        [&](int i){
+                            ++v;
+                        },
+                        [&](){
+                            ++c;
+                        }));
+                while(v != 1500 || c != 3);
+                s0.unsubscribe();
+                s1.unsubscribe();
+                s2.unsubscribe();
+                auto finish = clock::now();
+                auto msElapsed = duration_cast<milliseconds>(finish-start);
+                std::cout << "range syncronize     : " << n << " subscribed, " << v << " on_next calls, " << msElapsed.count() << "ms elapsed, " << v / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
+
+                if (--runs > 0) {
+                    self();
+                }
+            };
+
+            w.schedule(loop);
+        }
+    }
+}
 
 SCENARIO("subscription traits", "[subscription][traits]"){
     GIVEN("given some subscription types"){

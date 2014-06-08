@@ -68,11 +68,11 @@ public:
     }
 
     virtual worker create_worker(composite_subscription cs) const {
-        return worker(cs, wi);
+        return worker(std::move(cs), wi);
     }
 };
 
-inline scheduler make_immediate() {
+inline const scheduler& make_immediate() {
     static auto i = make_scheduler<immediate>();
     return i;
 }

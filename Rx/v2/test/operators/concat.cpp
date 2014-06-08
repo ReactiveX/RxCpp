@@ -29,7 +29,7 @@ SCENARIO("synchronize concat ranges", "[hide][range][synchronize][concat][perf]"
             //auto sc = rxsc::make_new_thread();
             auto so = rxsub::synchronize_observable(sc);
 
-            int c = 0;
+            std::atomic<int> c(0);
             int n = 1;
             auto sectionCount = onnextcalls / 3;
             auto start = clock::now();
@@ -46,7 +46,7 @@ SCENARIO("synchronize concat ranges", "[hide][range][synchronize][concat][perf]"
                         wake.notify_one();});
 
             std::unique_lock<std::mutex> guard(lock);
-            wake.wait(guard);
+            wake.wait(guard, [&](){return c == onnextcalls;});
 
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -

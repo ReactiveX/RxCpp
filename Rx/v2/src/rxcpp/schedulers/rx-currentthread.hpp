@@ -38,8 +38,11 @@ private:
 
 public:
 
-    static std::shared_ptr<worker_interface> get_worker_interface() {
-        return !!current_thread_queue() ? current_thread_queue()->w : std::shared_ptr<worker_interface>();
+    static bool owned() {
+        return !!current_thread_queue();
+    }
+    static const std::shared_ptr<worker_interface>& get_worker_interface() {
+        return current_thread_queue()->w;
     }
     static recursion& get_recursion() {
         return current_thread_queue()->r;
@@ -153,11 +156,9 @@ private:
     {
     private:
         typedef current_thread this_type;
-        composite_subscription lifetime;
         current_worker(const this_type&);
     public:
-        explicit current_worker(composite_subscription cs)
-            : lifetime(std::move(cs))
+        current_worker()
         {
         }
         virtual ~current_worker()
@@ -178,11 +179,11 @@ private:
             }
 
             {
-                auto wi = queue::get_worker_interface();
                 // check ownership
-                if (!!wi) {
+                if (queue::owned()) {
                     // already has an owner - delegate
-                    return worker(lifetime, wi).schedule(when, scbl);
+                    queue::get_worker_interface()->schedule(when, scbl);
+                    return;
                 }
 
                 // take ownership
@@ -193,9 +194,14 @@ private:
                 queue::destroy();
             });
 
-            queue::push(queue::item_type(when, scbl));
-
             const auto& recursor = queue::get_recursion().get_recurse();
+            std::this_thread::sleep_until(when);
+            if (scbl.is_subscribed()) {
+                scbl(recursor);
+            }
+            if (queue::empty()) {
+                return;
+            }
 
             // loop until queue is empty
             for (
@@ -218,15 +224,18 @@ private:
         }
     };
 
+    std::shared_ptr<current_worker> wi;
+
 public:
     current_thread()
+        : wi(new current_worker())
     {
     }
     virtual ~current_thread()
     {
     }
 
-    static bool is_schedule_required() { return !queue::get_worker_interface(); }
+    static bool is_schedule_required() { return !queue::owned(); }
 
     inline bool is_tail_recursion_allowed() const {
         return queue::empty();
@@ -237,12 +246,11 @@ public:
     }
 
     virtual worker create_worker(composite_subscription cs) const {
-        std::shared_ptr<current_worker> wi(new current_worker(cs));
-        return worker(cs, wi);
+        return worker(std::move(cs), wi);
     }
 };
 
-inline scheduler make_current_thread() {
+inline const scheduler& make_current_thread() {
     static auto ct = make_scheduler<current_thread>();
     return ct;
 }

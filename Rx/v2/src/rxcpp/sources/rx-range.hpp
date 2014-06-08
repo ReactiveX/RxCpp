@@ -33,7 +33,7 @@ struct range : public source_base<T>
         init.sc = sc;
     }
     template<class Subscriber>
-    void on_subscribe(Subscriber o) {
+    void on_subscribe(Subscriber o) const {
         auto state = std::make_shared<state_type>(init);
         // creates a worker whose lifetime is the same as this subscription
         state->w = state->sc.create_worker(o.get_subscription());

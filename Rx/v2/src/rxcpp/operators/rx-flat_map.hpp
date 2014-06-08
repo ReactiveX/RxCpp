@@ -87,7 +87,7 @@ struct flat_map
     }
 
     template<class Subscriber>
-    void on_subscribe(Subscriber&& scbr) {
+    void on_subscribe(Subscriber&& scbr) const {
         static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
 
         typedef typename std::decay<Subscriber>::type output_type;

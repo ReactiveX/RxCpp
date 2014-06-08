@@ -29,24 +29,25 @@ SCENARIO("synchronize merge ranges", "[hide][range][synchronize][merge][perf]"){
             //auto sc = rxsc::make_new_thread();
             auto so = rxsub::synchronize_observable(sc);
 
-            int c = 0;
+            std::atomic<int> c(0);
             int n = 1;
             auto sectionCount = onnextcalls / 3;
             auto start = clock::now();
             rxs::range(0, sectionCount - 1, 1, sc)
                 .merge(
                     so,
-                    rxs::range(sectionCount, sectionCount * 2 - 1, 1, sc),
+                    rxs::range(sectionCount, (sectionCount * 2) - 1, 1, sc),
                     rxs::range(sectionCount * 2, onnextcalls - 1, 1, sc))
                 .subscribe(
                     [&c](int x){
                         ++c;},
                     [](std::exception_ptr){abort();},
                     [&](){
-                        wake.notify_one();});
+                        wake.notify_one();
+                    });
 
             std::unique_lock<std::mutex> guard(lock);
-            wake.wait(guard);
+            wake.wait(guard, [&](){return c == onnextcalls;});
 
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -

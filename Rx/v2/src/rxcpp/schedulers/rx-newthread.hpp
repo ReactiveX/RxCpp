@@ -23,6 +23,9 @@ private:
     {
     private:
         typedef new_worker this_type;
+
+        typedef detail::action_queue queue;
+
         new_worker(const this_type&);
 
         struct new_worker_state : public std::enable_shared_from_this<new_worker_state>
@@ -65,6 +68,12 @@ private:
         virtual ~new_worker()
         {
         }
+
+        explicit new_worker(std::shared_ptr<new_worker_state> ws)
+            : state(ws)
+        {
+        }
+
         new_worker(composite_subscription cs, thread_factory& tf)
             : state(std::make_shared<new_worker_state>(cs))
         {
@@ -75,6 +84,14 @@ private:
             });
 
             state->worker = tf([keepAlive](){
+
+                // take ownership
+                queue::ensure(std::make_shared<new_worker>(keepAlive));
+                // release ownership
+                RXCPP_UNWIND_AUTO([]{
+                    queue::destroy();
+                });
+
                 for(;;) {
                     std::unique_lock<std::mutex> guard(keepAlive->lock);
                     if (keepAlive->queue.empty()) {

@@ -57,46 +57,52 @@ struct iterate : public source_base<typename iterate_traits<Collection>::value_t
     iterate_initial_type initial;
 
     iterate(collection_type c, rxsc::scheduler sc)
-        : initial(std::move(c), sc)
+        : initial(std::move(c), std::move(sc))
     {
     }
     template<class Subscriber>
-    void on_subscribe(Subscriber o) {
+    void on_subscribe(Subscriber o) const {
         struct iterate_state_type
             : public iterate_initial_type
-            , public std::enable_shared_from_this<iterate_state_type>
         {
-            iterate_state_type(iterate_initial_type i, Subscriber o)
+            iterate_state_type(const iterate_initial_type& i, Subscriber o)
                 : iterate_initial_type(i)
-                // creates a worker whose lifetime is the same as this subscription
-                , controller(iterate_initial_type::factory.create_worker(o.get_subscription()))
                 , cursor(std::begin(iterate_initial_type::collection))
                 , end(std::end(iterate_initial_type::collection))
-                , out(o)
+                , out(std::move(o))
             {
             }
-            rxsc::worker controller;
-            iterator_type cursor;
+            iterate_state_type(const iterate_state_type& o)
+                : iterate_initial_type(o)
+                , cursor(std::begin(iterate_initial_type::collection))
+                , end(std::end(iterate_initial_type::collection))
+                , out(std::move(o.out)) // since lambda capture does not yet support move
+            {
+            }
+            mutable iterator_type cursor;
             iterator_type end;
-            Subscriber out;
+            mutable Subscriber out;
         };
-        auto state = std::make_shared<iterate_state_type>(initial, o);
+        iterate_state_type state(initial, std::move(o));
 
-        state->controller.schedule(
+        // creates a worker whose lifetime is the same as this subscription
+        auto controller = state.factory.create_worker(state.out.get_subscription());
+
+        controller.schedule(
             [state](const rxsc::schedulable& self){
-                if (!state->out.is_subscribed()) {
+                if (!state.out.is_subscribed()) {
                     // terminate loop
                     return;
                 }
 
-                if (state->cursor != state->end) {
+                if (state.cursor != state.end) {
                     // send next value
-                    state->out.on_next(*state->cursor);
-                    ++state->cursor;
+                    state.out.on_next(*state.cursor);
+                    ++state.cursor;
                 }
 
-                if (state->cursor == state->end) {
-                    state->out.on_completed();
+                if (state.cursor == state.end) {
+                    state.out.on_completed();
                     // o is unsubscribed
                     return;
                 }

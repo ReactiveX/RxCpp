@@ -182,11 +182,10 @@ private:
     friend bool operator==(const observable<U, SO>&, const observable<U, SO>&);
 
     template<class Subscriber>
-    auto detail_subscribe(Subscriber&& scrbr) const
+    auto detail_subscribe(Subscriber o) const
         -> composite_subscription {
 
         typedef typename std::decay<Subscriber>::type subscriber_type;
-        subscriber_type o = std::forward<Subscriber>(scrbr);
 
         static_assert(is_observer<subscriber_type>::value, "subscribe must be passed an observer");
         static_assert(std::is_same<typename source_operator_type::value_type, T>::value && std::is_convertible<T*, typename subscriber_type::value_type*>::value, "the value types in the sequence must match or be convertible");
@@ -196,7 +195,7 @@ private:
             return o.get_subscription();
         }
 
-        auto safe_subscribe = [=]() {
+        auto safe_subscribe = [&]() {
             try {
                 source_operator.on_subscribe(o);
             }
@@ -211,9 +210,9 @@ private:
 
         // make sure to let current_thread take ownership of the thread as early as possible.
         if (rxsc::current_thread::is_schedule_required()) {
-            auto sc = rxsc::make_current_thread();
+            const auto& sc = rxsc::make_current_thread();
             sc.create_worker(o.get_subscription()).schedule(
-                [=](const rxsc::schedulable& scbl) {
+                [&](const rxsc::schedulable& scbl) {
                     safe_subscribe();
                 });
         } else {
@@ -304,18 +303,17 @@ public:
     ///
     template<class Arg0, class... ArgN>
     auto subscribe(Arg0&& a0, ArgN&&... an) const
-        -> decltype(detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<ArgN>(an)...))) {
-        return      detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
+        -> composite_subscription {
+        return detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
     }
 
     /// filter (AKA Where) ->
     /// for each item from this observable use Predicate to select which items to emit from the new observable that is returned.
     ///
     template<class Predicate>
-    auto filter(Predicate&& p) const
-        ->      observable<T,   rxo::detail::filter<T, this_type, Predicate>> {
-        return  observable<T,   rxo::detail::filter<T, this_type, Predicate>>(
-                                rxo::detail::filter<T, this_type, Predicate>(*this, std::forward<Predicate>(p)));
+    auto filter(Predicate p) const
+        -> decltype(lift(rxo::detail::filter<T, Predicate>(std::move(p)))) {
+        return      lift(rxo::detail::filter<T, Predicate>(std::move(p)));
     }
 
     /// map (AKA Select) ->
@@ -323,9 +321,8 @@ public:
     ///
     template<class Selector>
     auto map(Selector&& s) const
-        ->      observable<typename rxo::detail::map<this_type, Selector>::value_type, rxo::detail::map<this_type, Selector>> {
-        return  observable<typename rxo::detail::map<this_type, Selector>::value_type, rxo::detail::map<this_type, Selector>>(
-                                                                                       rxo::detail::map<this_type, Selector>(*this, std::forward<Selector>(s)));
+        -> decltype(lift(rxo::detail::map<T, Selector>(std::move(s)))) {
+        return      lift(rxo::detail::map<T, Selector>(std::move(s)));
     }
 
     template<class SourceFilter, bool IsObservable = is_observable<value_type>::value>

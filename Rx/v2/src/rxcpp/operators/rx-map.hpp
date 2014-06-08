@@ -13,82 +13,62 @@ namespace operators {
 
 namespace detail {
 
-template<class Observable, class Selector>
+
+template<class T, class Selector>
 struct map
-    : public operator_base<decltype((*(Selector*)nullptr)(*(typename Observable::value_type*)nullptr))>
 {
-    typedef map<Observable, Selector> this_type;
-
-    typedef typename std::decay<Observable>::type source_type;
+    typedef typename std::decay<T>::type source_value_type;
     typedef typename std::decay<Selector>::type select_type;
+    select_type selector;
 
-    struct values
-    {
-        values(source_type o, select_type s)
-            : source(std::move(o))
-            , select(std::move(s))
-        {
-        }
-        source_type source;
-        select_type select;
-    };
-    values initial;
-
-    typedef typename Observable::value_type source_value_type;
-
-    struct tag_not_valid {};
-    template<class CF, class CP>
-    static auto check(int) -> decltype((*(CP*)nullptr)(*(CF*)nullptr));
-    template<class CF, class CP>
-    static tag_not_valid check(...);
-
-    static_assert(!std::is_same<decltype(check<source_value_type, select_type>(0)), tag_not_valid>::value, "map Selector must be a function with the signature map::value_type(map::source_value_type)");
-
-    map(source_type o, select_type s)
-        : initial(std::move(o), std::move(s))
+    map(select_type s)
+        : selector(std::move(s))
     {
     }
 
     template<class Subscriber>
-    void on_subscribe(const Subscriber& o) {
+    struct map_observer : public observer_base<decltype((*(Selector*)nullptr)(*(source_value_type*)nullptr))>
+    {
+        typedef map_observer<Subscriber> this_type;
+        typedef observer_base<decltype((*(Selector*)nullptr)(*(source_value_type*)nullptr))> base_type;
+        typedef typename base_type::value_type value_type;
+        typedef typename std::decay<Subscriber>::type dest_type;
+        typedef observer<value_type, this_type> observer_type;
+        dest_type dest;
+        select_type selector;
 
-        typedef Subscriber output_type;
-        struct state_type
-            : public std::enable_shared_from_this<state_type>
-            , public values
+        map_observer(dest_type d, select_type s)
+            : dest(std::move(d))
+            , selector(std::move(s))
         {
-            state_type(values i, output_type oarg)
-                : values(std::move(i))
-                , out(std::move(oarg))
-            {
+        }
+        void on_next(source_value_type v) const {
+            auto selected = on_exception(
+                [&](){
+                    return this->selector(std::move(v));},
+                dest);
+            if (selected.empty()) {
+                return;
             }
-            output_type out;
-        };
-        // take a copy of the values for each subscription
-        auto state = std::shared_ptr<state_type>(new state_type(initial, std::move(o)));
+            dest.on_next(std::move(selected.get()));
+        }
+        void on_error(std::exception_ptr e) const {
+            dest.on_error(e);
+        }
+        void on_completed() const {
+            dest.on_completed();
+        }
 
-        state->source.subscribe(
-            state->out,
-        // on_next
-            [state](typename this_type::source_value_type st) {
-                util::detail::maybe<typename this_type::value_type> selected;
-                try {
-                   selected.reset(state->select(st));
-                } catch(...) {
-                    state->out.on_error(std::current_exception());
-                    return;
-                }
-                state->out.on_next(std::move(*selected));
-            },
-        // on_error
-            [state](std::exception_ptr e) {
-                state->out.on_error(e);
-            },
-        // on_completed
-            [state]() {
-                state->out.on_completed();
-            }
-        );
+        static subscriber<value_type, this_type> make(dest_type d, select_type s) {
+            auto cs = d.get_subscription();
+            return make_subscriber<value_type>(std::move(cs), this_type(std::move(d), std::move(s)));
+        }
+    };
+
+    template<class Subscriber>
+    auto operator()(Subscriber dest) const
+        -> decltype(map_observer<Subscriber>::make(std::move(dest), selector)) {
+        return      map_observer<Subscriber>::make(std::move(dest), selector);
     }
 };
 
@@ -98,12 +78,11 @@ class map_factory
     typedef typename std::decay<Selector>::type select_type;
     select_type selector;
 public:
-    map_factory(select_type p) : selector(std::move(p)) {}
+    map_factory(select_type s) : selector(std::move(s)) {}
     template<class Observable>
     auto operator()(Observable&& source)
-        ->      observable<typename map<Observable, Selector>::value_type,  map<Observable, Selector>> {
-        return  observable<typename map<Observable, Selector>::value_type,  map<Observable, Selector>>(
-                                                                            map<Observable, Selector>(std::forward<Observable>(source), std::move(selector)));
+        -> decltype(source.lift(map<typename std::decay<Observable>::type::value_type, select_type>(selector))) {
+        return      source.lift(map<typename std::decay<Observable>::type::value_type, select_type>(selector));
     }
 };
 

@@ -38,10 +38,10 @@ struct multicast : public operator_base<T>
     {
     }
     template<class Subscriber>
-    void on_subscribe(Subscriber&& o) {
+    void on_subscribe(Subscriber&& o) const {
         state->subject_value.get_observable().subscribe(std::forward<Subscriber>(o));
     }
-    void on_connect(composite_subscription cs) {
+    void on_connect(composite_subscription cs) const {
         if (state->connection.empty()) {
             auto destination = state->subject_value.get_subscriber();
 

@@ -50,7 +50,7 @@ struct take_until : public operator_base<T>
     };
 
     template<class Subscriber>
-    void on_subscribe(const Subscriber& s) {
+    void on_subscribe(const Subscriber& s) const {
 
         typedef Subscriber output_type;
         struct take_until_state_type

@@ -39,7 +39,7 @@ struct ref_count : public operator_base<T>
     }
 
     template<class Subscriber>
-    void on_subscribe(Subscriber&& o) {
+    void on_subscribe(Subscriber&& o) const {
         std::unique_lock<std::mutex> guard(state->lock);
         auto needConnect = ++state->subscribers == 1;
         auto keepAlive = state;

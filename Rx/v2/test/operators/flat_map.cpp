@@ -110,7 +110,7 @@ SCENARIO("synchronize flat_map pythagorian ranges", "[hide][range][flat_map][syn
             auto so = rxsub::synchronize_observable(sc);
 
             int c = 0;
-            int ct = 0;
+            std::atomic<int> ct(0);
             int n = 1;
             auto start = clock::now();
             auto triples =
@@ -146,7 +146,7 @@ SCENARIO("synchronize flat_map pythagorian ranges", "[hide][range][flat_map][syn
                         wake.notify_one();});
 
             std::unique_lock<std::mutex> guard(lock);
-            wake.wait(guard);
+            wake.wait(guard, [&](){return ct == tripletCount;});
 
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -

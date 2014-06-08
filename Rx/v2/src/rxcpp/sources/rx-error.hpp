@@ -36,7 +36,7 @@ struct error : public source_base<T>
     }
 
     template<class Subscriber>
-    void on_subscribe(Subscriber o) {
+    void on_subscribe(Subscriber o) const {
 
         // creates a worker whose lifetime is the same as this subscription
         auto controller = initial.factory.create_worker(o.get_subscription());

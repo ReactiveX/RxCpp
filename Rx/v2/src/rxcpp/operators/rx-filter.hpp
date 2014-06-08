@@ -13,50 +13,61 @@ namespace operators {
 
 namespace detail {
 
-template<class T, class Observable, class Predicate>
-struct filter : public operator_base<T>
+template<class T, class Predicate>
+struct filter
 {
-    typedef typename std::decay<Observable>::type source_type;
+    typedef typename std::decay<T>::type source_value_type;
     typedef typename std::decay<Predicate>::type test_type;
-    source_type source;
     test_type test;
 
-    template<class CT, class CP>
-    static auto check(int) -> decltype((*(CP*)nullptr)(*(CT*)nullptr));
-    template<class CT, class CP>
-    static void check(...);
-    filter(source_type o, test_type p)
-        : source(std::move(o))
-        , test(std::move(p))
+    filter(test_type t)
+        : test(std::move(t))
     {
-        static_assert(std::is_convertible<decltype(check<T, test_type>(0)), bool>::value, "filter Predicate must be a function with the signature bool(T)");
     }
+
     template<class Subscriber>
-    void on_subscribe(const Subscriber& o) {
-        source.subscribe(
-            o,
-        // on_next
-            [this, o](T t) {
-                bool filtered = false;
-                try {
-                   filtered = !this->test(t);
-                } catch(...) {
-                    o.on_error(std::current_exception());
-                    return;
-                }
-                if (!filtered) {
-                    o.on_next(t);
-                }
-            },
-        // on_error
-            [o](std::exception_ptr e) {
-                o.on_error(e);
-            },
-        // on_completed
-            [o]() {
-                o.on_completed();
+    struct filter_observer : public observer_base<source_value_type>
+    {
+        typedef filter_observer<Subscriber> this_type;
+        typedef observer_base<source_value_type> base_type;
+        typedef typename base_type::value_type value_type;
+        typedef typename std::decay<Subscriber>::type dest_type;
+        typedef observer<value_type, this_type> observer_type;
+        dest_type dest;
+        test_type test;
+
+        filter_observer(dest_type d, test_type t)
+            : dest(d)
+            , test(t)
+        {
+        }
+        void on_next(source_value_type v) const {
+            auto filtered = on_exception([&](){
+                return !this->test(v);},
+                dest);
+            if (filtered.empty()) {
+                return;
             }
-        );
+            if (!filtered.get()) {
+                dest.on_next(v);
+            }
+        }
+        void on_error(std::exception_ptr e) const {
+            dest.on_error(e);
+        }
+        void on_completed() const {
+            dest.on_completed();
+        }
+
+        static subscriber<value_type, this_type> make(dest_type d, test_type t) {
+            return make_subscriber<value_type>(d, this_type(d, std::move(t)));
+        }
+    };
+
+    template<class Subscriber>
+    auto operator()(Subscriber dest) const
+        -> decltype(filter_observer<Subscriber>::make(std::move(dest), test)) {
+        return      filter_observer<Subscriber>::make(std::move(dest), test);
     }
 };
 
@@ -69,9 +80,8 @@ public:
     filter_factory(test_type p) : predicate(std::move(p)) {}
     template<class Observable>
     auto operator()(Observable&& source)
-        ->      observable<typename std::decay<Observable>::type::value_type,   filter<typename std::decay<Observable>::type::value_type, Observable, Predicate>> {
-        return  observable<typename std::decay<Observable>::type::value_type,   filter<typename std::decay<Observable>::type::value_type, Observable, Predicate>>(
-                                                                                filter<typename std::decay<Observable>::type::value_type, Observable, Predicate>(std::forward<Observable>(source), std::move(predicate)));
+        -> decltype(source.lift(filter<typename std::decay<Observable>::type::value_type, test_type>(predicate))) {
+        return      source.lift(filter<typename std::decay<Observable>::type::value_type, test_type>(predicate));
     }
 };
 

@@ -62,8 +62,8 @@ struct lift : public operator_base<typename lift_traits<SourceOperator, Operator
     {
     }
     template<class Subscriber>
-    void on_subscribe(const Subscriber& o) const {
-        source.on_subscribe(chain(o));
+    void on_subscribe(Subscriber o) const {
+        source.on_subscribe(chain(std::move(o)));
     }
 };
 

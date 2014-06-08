@@ -464,27 +464,27 @@ public:
     /// action and worker share lifetime
     schedulable(worker q, action a)
         : lifetime(q.get_subscription())
-        , controller(q)
+        , controller(std::move(q))
         , activity(std::move(a))
         , scoped(false)
     {
     }
     /// action and worker have independent lifetimes
     schedulable(composite_subscription cs, worker q, action a)
-        : lifetime(cs)
-        , controller(q)
+        : lifetime(std::move(cs))
+        , controller(std::move(q))
         , activity(std::move(a))
         , scoped(true)
-        , action_scope(q.add(cs))
+        , action_scope(controller.add(lifetime))
     {
     }
     /// inherit lifetimes
     schedulable(schedulable scbl, worker q, action a)
         : lifetime(scbl.get_subscription())
-        , controller(q)
+        , controller(std::move(q))
         , activity(std::move(a))
         , scoped(scbl.scoped)
-        , action_scope(scbl.scoped ? q.add(scbl.get_subscription()) : weak_subscription())
+        , action_scope(scbl.scoped ? controller.add(lifetime) : weak_subscription())
     {
     }
 

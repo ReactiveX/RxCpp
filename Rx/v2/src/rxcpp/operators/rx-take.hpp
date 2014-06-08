@@ -46,7 +46,7 @@ struct take : public operator_base<T>
     };
 
     template<class Subscriber>
-    void on_subscribe(const Subscriber& s) {
+    void on_subscribe(const Subscriber& s) const {
 
         typedef Subscriber output_type;
         struct state_type
