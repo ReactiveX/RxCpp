@@ -37,7 +37,8 @@ class multicast_observer
         : public std::enable_shared_from_this<state_type>
     {
         explicit state_type(composite_subscription cs)
-            : current(mode::Casting)
+            : generation(0)
+            , current(mode::Casting)
             , lifetime(cs)
         {
         }
@@ -102,6 +103,7 @@ public:
     {
     }
     bool has_observers() const {
+        std::unique_lock<std::mutex> guard(b->state->lock);
         return b->current_completer && !b->current_completer->observers.empty();
     }
     void add(observer_type o) const {
@@ -160,6 +162,7 @@ public:
             b->state->current = mode::Errored;
             auto s = b->state->lifetime;
             auto c = std::move(b->completer);
+            ++b->state->generation;
             guard.unlock();
             if (c) {
                 for (auto& o : c->observers) {
@@ -177,6 +180,7 @@ public:
             b->state->current = mode::Completed;
             auto s = b->state->lifetime;
             auto c = std::move(b->completer);
+            ++b->state->generation;
             guard.unlock();
             if (c) {
                 for (auto& o : c->observers) {
@@ -219,8 +223,9 @@ public:
     }
 
     observable<T> get_observable() const {
-        return make_observable_dynamic<T>([this](subscriber<T> o){
-            this->s.add(std::move(o));
+        auto keepAlive = s;
+        return make_observable_dynamic<T>([=](subscriber<T> o){
+            keepAlive.add(std::move(o));
         });
     }
 };
