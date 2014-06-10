@@ -78,7 +78,7 @@ struct concat
                 }));
 
                 auto selectedSource = on_exception(
-                    [&](){return state->coordinator(std::move(st));},
+                    [&](){return state->coordinator.in(std::move(st));},
                     state->out);
                 if (selectedSource.empty()) {
                     return;
@@ -117,9 +117,9 @@ struct concat
             output_type out;
         };
 
-        auto coordinator = initial.coordination.create_coordinator();
+        auto coordinator = initial.coordination.create_coordinator(scbr.get_subscription());
         auto selectedDest = on_exception(
-            [&](){return coordinator(scbr);},
+            [&](){return coordinator.out(scbr);},
             scbr);
         if (selectedDest.empty()) {
             return;
@@ -135,7 +135,7 @@ struct concat
         state->out.add(state->sourceLifetime);
 
         auto source = on_exception(
-            [&](){return state->coordinator(state->source);},
+            [&](){return state->coordinator.in(state->source);},
             state->out);
         if (source.empty()) {
             return;

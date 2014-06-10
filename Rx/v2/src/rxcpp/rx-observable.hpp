@@ -524,9 +524,10 @@ public:
     /// synchronize ->
     /// turns a cold observable hot and allows connections to the source to be independent of subscriptions
     ///
-    auto synchronize(rxsc::worker w, composite_subscription cs = composite_subscription()) const
-        -> decltype(multicast(rxsub::synchronize<T>(w, cs))) {
-        return      multicast(rxsub::synchronize<T>(w, cs));
+    template<class Coordination>
+    auto synchronize(Coordination cn, composite_subscription cs = composite_subscription()) const
+        -> decltype(multicast(rxsub::synchronize<T, Coordination>(std::move(cn), cs))) {
+        return      multicast(rxsub::synchronize<T, Coordination>(std::move(cn), cs));
     }
 
     /// publish ->
@@ -602,9 +603,24 @@ class observable<void, void>
     ~observable();
 public:
     template<class T>
-    static auto range(T first = 0, T last = std::numeric_limits<T>::max(), ptrdiff_t step = 1, rxsc::scheduler sc = rxsc::make_current_thread())
-        -> decltype(rxs::range<T>(first, last, step, sc)) {
-        return      rxs::range<T>(first, last, step, sc);
+    static auto range(T first = 0, T last = std::numeric_limits<T>::max(), ptrdiff_t step = 1)
+        -> decltype(rxs::range<T>(first, last, step, identity_one_worker(rxsc::make_current_thread()))) {
+        return      rxs::range<T>(first, last, step, identity_one_worker(rxsc::make_current_thread()));
+    }
+    template<class T, class Coordination>
+    static auto range(T first, T last, ptrdiff_t step, Coordination cn)
+        -> decltype(rxs::range<T>(first, last, step, std::move(cn))) {
+        return      rxs::range<T>(first, last, step, std::move(cn));
+    }
+    template<class T, class Coordination>
+    static auto range(T first, T last, Coordination cn)
+        -> decltype(rxs::range<T>(first, last, std::move(cn))) {
+        return      rxs::range<T>(first, last, std::move(cn));
+    }
+    template<class T, class Coordination>
+    static auto range(T first, Coordination cn)
+        -> decltype(rxs::range<T>(first, std::move(cn))) {
+        return      rxs::range<T>(first, std::move(cn));
     }
     template<class T>
     static auto never()
@@ -616,40 +632,77 @@ public:
         -> decltype(rxs::defer(std::move(of))) {
         return      rxs::defer(std::move(of));
     }
-    static auto interval(rxsc::scheduler::clock_type::time_point initial, rxsc::scheduler::clock_type::duration period, rxsc::scheduler sc = rxsc::make_current_thread())
-        ->      observable<long,   rxs::detail::interval> {
-        return  observable<long,   rxs::detail::interval>(rxs::detail::interval(initial, period, sc));
+    static auto interval(rxsc::scheduler::clock_type::time_point initial, rxsc::scheduler::clock_type::duration period)
+        -> decltype(rxs::interval(initial, period)) {
+        return      rxs::interval(initial, period);
+    }
+    template<class Coordination>
+    static auto interval(rxsc::scheduler::clock_type::time_point initial, rxsc::scheduler::clock_type::duration period, Coordination cn)
+        -> decltype(rxs::interval(initial, period, std::move(cn))) {
+        return      rxs::interval(initial, period, std::move(cn));
     }
     template<class Collection>
-    static auto iterate(Collection c, rxsc::scheduler sc = rxsc::make_current_thread())
-        -> decltype(rxs::iterate(std::move(c), sc)) {
-        return      rxs::iterate(std::move(c), sc);
+    static auto iterate(Collection c)
+        -> decltype(rxs::iterate(std::move(c), identity_one_worker(rxsc::make_current_thread()))) {
+        return      rxs::iterate(std::move(c), identity_one_worker(rxsc::make_current_thread()));
+    }
+    template<class Collection, class Coordination>
+    static auto iterate(Collection c, Coordination cn)
+        -> decltype(rxs::iterate(std::move(c), std::move(cn))) {
+        return      rxs::iterate(std::move(c), std::move(cn));
+    }
+    template<class T>
+    static auto from()
+        -> decltype(    rxs::from<T>()) {
+        return          rxs::from<T>();
+    }
+    template<class T, class Coordination>
+    static auto from(Coordination cn)
+        -> typename std::enable_if<is_coordination<Coordination>::value, 
+            decltype(   rxs::from<T>(std::move(cn)))>::type {
+        return          rxs::from<T>(std::move(cn));
     }
     template<class Value0, class... ValueN>
     static auto from(Value0 v0, ValueN... vn)
-        -> decltype(rxs::from(v0, vn...)) {
-        return      rxs::from(v0, vn...);
+        -> typename std::enable_if<!is_coordination<Value0>::value, 
+            decltype(   rxs::from(v0, vn...))>::type {
+        return          rxs::from(v0, vn...);
     }
-    template<class Value0, class... ValueN>
-    static auto from(Value0 v0, ValueN... vn, rxsc::scheduler sc)
-        -> decltype(rxs::from(v0, vn..., sc)) {
-        return      rxs::from(v0, vn..., sc);
-    }
-    template<class T>
-    static auto empty(rxsc::scheduler sc = rxsc::make_immediate())
-        ->      observable<T, rxs::detail::iterate<std::array<T, 0>>> {
-        std::array<T, 0> c;
-        return  observable<T, rxs::detail::iterate<std::array<T, 0>>>(rxs::detail::iterate<std::array<T, 0>>(std::move(c), sc));
+    template<class Coordination, class Value0, class... ValueN>
+    static auto from(Coordination cn, Value0 v0, ValueN... vn)
+        -> typename std::enable_if<is_coordination<Coordination>::value, 
+            decltype(   rxs::from(std::move(cn), v0, vn...))>::type {
+        return          rxs::from(std::move(cn), v0, vn...);
     }
     template<class T>
-    static auto just(T v, rxsc::scheduler sc = rxsc::make_immediate())
-        -> decltype(rxs::from(v, sc)) {
-        return      rxs::from(v, sc);
+    static auto empty()
+        -> decltype(from<T>()) {
+        return      from<T>();
+    }
+    template<class T, class Coordination>
+    static auto empty(Coordination cn)
+        -> decltype(from(std::move(cn), std::array<T, 0>())) {
+        return      from(std::move(cn), std::array<T, 0>());
+    }
+    template<class T>
+    static auto just(T v)
+        -> decltype(from(std::move(v))) {
+        return      from(std::move(v));
+    }
+    template<class T, class Coordination>
+    static auto just(T v, Coordination cn)
+        -> decltype(from(std::move(cn), std::move(v))) {
+        return      from(std::move(cn), std::move(v));
     }
     template<class T, class Exception>
-    static auto error(Exception&& e, rxsc::scheduler sc = rxsc::make_immediate())
-        ->      observable<T,  rxs::detail::error<T>> {
-        return  rxs::error<T>(std::forward<Exception>(e), sc);
+    static auto error(Exception&& e)
+        -> decltype(rxs::error<T>(std::forward<Exception>(e))) {
+        return      rxs::error<T>(std::forward<Exception>(e));
+    }
+    template<class T, class Exception, class Coordination>
+    static auto error(Exception&& e, Coordination cn)
+        -> decltype(rxs::error<T>(std::forward<Exception>(e), std::move(cn))) {
+        return      rxs::error<T>(std::forward<Exception>(e), std::move(cn));
     }
 };
 

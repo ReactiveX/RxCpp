@@ -35,37 +35,44 @@ struct iterate_traits
     typedef typename std::iterator_traits<iterator_type>::value_type value_type;
 };
 
-template<class Collection>
+template<class Collection, class Coordination>
 struct iterate : public source_base<typename iterate_traits<Collection>::value_type>
 {
-    typedef iterate<Collection> this_type;
+    typedef iterate<Collection, Coordination> this_type;
     typedef iterate_traits<Collection> traits;
+
+    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef typename coordination_type::coordinator_type coordinator_type;
 
     typedef typename traits::collection_type collection_type;
     typedef typename traits::iterator_type iterator_type;
 
     struct iterate_initial_type
     {
-        iterate_initial_type(collection_type c, rxsc::scheduler sc)
+        iterate_initial_type(collection_type c, coordination_type cn)
             : collection(std::move(c))
-            , factory(sc)
+            , coordination(std::move(cn))
         {
         }
         collection_type collection;
-        rxsc::scheduler factory;
+        coordination_type coordination;
     };
     iterate_initial_type initial;
 
-    iterate(collection_type c, rxsc::scheduler sc)
-        : initial(std::move(c), std::move(sc))
+    iterate(collection_type c, coordination_type cn)
+        : initial(std::move(c), std::move(cn))
     {
     }
     template<class Subscriber>
     void on_subscribe(Subscriber o) const {
+        static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
+
+        typedef typename coordinator_type::template get<Subscriber>::type output_type;
+
         struct iterate_state_type
             : public iterate_initial_type
         {
-            iterate_state_type(const iterate_initial_type& i, Subscriber o)
+            iterate_state_type(const iterate_initial_type& i, output_type o)
                 : iterate_initial_type(i)
                 , cursor(std::begin(iterate_initial_type::collection))
                 , end(std::end(iterate_initial_type::collection))
@@ -81,12 +88,21 @@ struct iterate : public source_base<typename iterate_traits<Collection>::value_t
             }
             mutable iterator_type cursor;
             iterator_type end;
-            mutable Subscriber out;
+            mutable output_type out;
         };
-        iterate_state_type state(initial, std::move(o));
 
         // creates a worker whose lifetime is the same as this subscription
-        auto controller = state.factory.create_worker(state.out.get_subscription());
+        auto coordinator = initial.coordination.create_coordinator(o.get_subscription());
+        auto selectedDest = on_exception(
+            [&](){return coordinator.out(o);},
+            o);
+        if (selectedDest.empty()) {
+            return;
+        }
+
+        iterate_state_type state(initial, std::move(selectedDest.get()));
+
+        auto controller = coordinator.get_output().get_worker();
 
         controller.schedule(
             [state](const rxsc::schedulable& self){
@@ -116,25 +132,42 @@ struct iterate : public source_base<typename iterate_traits<Collection>::value_t
 }
 
 template<class Collection>
-auto iterate(Collection c, rxsc::scheduler sc = rxsc::make_current_thread())
-    ->      observable<typename detail::iterate_traits<Collection>::value_type, detail::iterate<Collection>> {
-    return  observable<typename detail::iterate_traits<Collection>::value_type, detail::iterate<Collection>>(
-                                                                                detail::iterate<Collection>(std::move(c), sc));
+auto iterate(Collection c)
+    ->      observable<typename detail::iterate_traits<Collection>::value_type, detail::iterate<Collection, identity_one_worker>> {
+    return  observable<typename detail::iterate_traits<Collection>::value_type, detail::iterate<Collection, identity_one_worker>>(
+                                                                                detail::iterate<Collection, identity_one_worker>(std::move(c), identity_one_worker(rxsc::make_current_thread())));
+}
+template<class Collection, class Coordination>
+auto iterate(Collection c, Coordination cn)
+    ->      observable<typename detail::iterate_traits<Collection>::value_type, detail::iterate<Collection, Coordination>> {
+    return  observable<typename detail::iterate_traits<Collection>::value_type, detail::iterate<Collection, Coordination>>(
+                                                                                detail::iterate<Collection, Coordination>(std::move(c), std::move(cn)));
 }
 
-template<class Value0, class... ValueN>
-auto from(Value0 v0, ValueN... vn)
-    ->      observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>> {
-    std::array<Value0, sizeof...(ValueN) + 1> c = {v0, vn...};
-    return  observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>>(
-                                rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>(std::move(c), rxsc::make_current_thread()));
+template<class T>
+auto from()
+    -> decltype(iterate(std::array<T, 0>(), identity_one_worker(rxsc::make_immediate()))) {
+    return      iterate(std::array<T, 0>(), identity_one_worker(rxsc::make_immediate()));
+}
+template<class T, class Coordination>
+auto from(Coordination cn)
+    -> typename std::enable_if<is_coordination<Coordination>::value, 
+        decltype(   iterate(std::array<T, 0>(), std::move(cn)))>::type {
+    return          iterate(std::array<T, 0>(), std::move(cn));
 }
 template<class Value0, class... ValueN>
-auto from(Value0 v0, ValueN... vn, rxsc::scheduler sc)
-    ->      observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>> {
-    std::array<Value0, sizeof...(ValueN) + 1> c = {v0, vn...};
-    return  observable<Value0,  rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>>(
-                                rxs::detail::iterate<std::array<Value0, sizeof...(ValueN) + 1>>(std::move(c), sc));
+auto from(Value0 v0, ValueN... vn)
+    -> typename std::enable_if<!is_coordination<Value0>::value, 
+        decltype(iterate(std::array<Value0, sizeof...(ValueN) + 1>(), identity_one_worker()))>::type {
+    std::array<Value0, sizeof...(ValueN) + 1> c = {v0, vn...};    
+    return iterate(std::move(c), identity_one_worker(rxsc::make_immediate()));
+}
+template<class Coordination, class Value0, class... ValueN>
+auto from(Coordination cn, Value0 v0, ValueN... vn)
+    -> typename std::enable_if<is_coordination<Coordination>::value, 
+        decltype(iterate(std::array<Value0, sizeof...(ValueN) + 1>(), std::move(cn)))>::type {
+    std::array<Value0, sizeof...(ValueN) + 1> c = {v0, vn...};    
+    return iterate(std::move(c), std::move(cn));
 }
 
 }

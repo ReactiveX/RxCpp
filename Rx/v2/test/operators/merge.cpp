@@ -33,11 +33,11 @@ SCENARIO("synchronize merge ranges", "[hide][range][synchronize][merge][perf]"){
             int n = 1;
             auto sectionCount = onnextcalls / 3;
             auto start = clock::now();
-            rxs::range(0, sectionCount - 1, 1, sc)
+            rxs::range(0, sectionCount - 1, 1, so)
                 .merge(
                     so,
-                    rxs::range(sectionCount, (sectionCount * 2) - 1, 1, sc),
-                    rxs::range(sectionCount * 2, onnextcalls - 1, 1, sc))
+                    rxs::range(sectionCount, (sectionCount * 2) - 1, 1, so),
+                    rxs::range(sectionCount * 2, onnextcalls - 1, 1, so))
                 .subscribe(
                     [&c](int x){
                         ++c;},

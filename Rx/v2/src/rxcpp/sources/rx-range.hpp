@@ -13,48 +13,74 @@ namespace sources {
 
 namespace detail {
 
-template<class T>
+template<class T, class Coordination>
 struct range : public source_base<T>
 {
-    struct state_type
+    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef typename coordination_type::coordinator_type coordinator_type;
+
+    struct range_state_type
     {
-        T next;
+        range_state_type(T f, T l, ptrdiff_t s, coordination_type cn)
+            : next(f)
+            , last(l)
+            , step(s)
+            , coordination(std::move(cn))
+        {
+        }
+        mutable T next;
         T last;
         ptrdiff_t step;
-        rxsc::scheduler sc;
-        rxsc::worker w;
+        coordination_type coordination;
     };
-    state_type init;
-    range(T f, T l, ptrdiff_t s, rxsc::scheduler sc)
+    range_state_type initial;
+    range(T f, T l, ptrdiff_t s, coordination_type cn)
+        : initial(f, l, s, std::move(cn))
     {
-        init.next = f;
-        init.last = l;
-        init.step = s;
-        init.sc = sc;
     }
     template<class Subscriber>
     void on_subscribe(Subscriber o) const {
-        auto state = std::make_shared<state_type>(init);
+        static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
+
+        typedef typename coordinator_type::template get<Subscriber>::type output_type;
+
         // creates a worker whose lifetime is the same as this subscription
-        state->w = state->sc.create_worker(o.get_subscription());
-        state->w.schedule(
+        auto coordinator = initial.coordination.create_coordinator(o.get_subscription());
+        auto selectedDest = on_exception(
+            [&](){return coordinator.out(o);},
+            o);
+        if (selectedDest.empty()) {
+            return;
+        }
+
+        auto controller = coordinator.get_output().get_worker();
+
+        auto state = initial;
+
+        controller.schedule(
             [=](const rxsc::schedulable& self){
-                if (!o.is_subscribed()) {
+                auto& dest = selectedDest.get();
+                if (!dest.is_subscribed()) {
                     // terminate loop
                     return;
                 }
 
                 // send next value
-                o.on_next(state->next);
-                if (std::abs(state->last - state->next) < std::abs(state->step)) {
-                    if (state->last != state->next) {
-                        o.on_next(state->last);
+                dest.on_next(state.next);
+                if (!dest.is_subscribed()) {
+                    // terminate loop
+                    return;
+                }
+
+                if (std::abs(state.last - state.next) < std::abs(state.step)) {
+                    if (state.last != state.next) {
+                        dest.on_next(state.last);
                     }
-                    o.on_completed();
+                    dest.on_completed();
                     // o is unsubscribed
                     return;
                 }
-                state->next = static_cast<T>(state->step + state->next);
+                state.next = static_cast<T>(state.step + state.next);
 
                 // tail recurse this same action to continue loop
                 self();
@@ -65,16 +91,30 @@ struct range : public source_base<T>
 }
 
 template<class T>
-auto range(T first = 0, T last = std::numeric_limits<T>::max(), ptrdiff_t step = 1, rxsc::scheduler sc = rxsc::make_current_thread())
-    ->      observable<T,   detail::range<T>> {
-    return  observable<T,   detail::range<T>>(
-                            detail::range<T>(first, last, step, sc));
+auto range(T first = 0, T last = std::numeric_limits<T>::max(), ptrdiff_t step = 1)
+    ->      observable<T,   detail::range<T, identity_one_worker>> {
+    return  observable<T,   detail::range<T, identity_one_worker>>(
+                            detail::range<T, identity_one_worker>(first, last, step, identity_one_worker(rxsc::make_current_thread())));
 }
-template<class T>
-auto range(T first = 0, rxsc::scheduler sc = rxsc::make_current_thread())
-    ->      observable<T,   detail::range<T>> {
-    return  observable<T,   detail::range<T>>(
-                            detail::range<T>(first, std::numeric_limits<T>::max(), 1, sc));
+template<class T, class Coordination>
+auto range(T first, T last, ptrdiff_t step, Coordination cn)
+    ->      observable<T,   detail::range<T, Coordination>> {
+    return  observable<T,   detail::range<T, Coordination>>(
+                            detail::range<T, Coordination>(first, last, step, std::move(cn)));
+}
+template<class T, class Coordination>
+auto range(T first, T last, Coordination cn)
+    -> typename std::enable_if<is_coordination<Coordination>::value,
+            observable<T,   detail::range<T, Coordination>>>::type {
+    return  observable<T,   detail::range<T, Coordination>>(
+                            detail::range<T, Coordination>(first, last, 1, std::move(cn)));
+}
+template<class T, class Coordination>
+auto range(T first, Coordination cn)
+    -> typename std::enable_if<is_coordination<Coordination>::value,
+            observable<T,   detail::range<T, Coordination>>>::type {
+    return  observable<T,   detail::range<T, Coordination>>(
+                            detail::range<T, Coordination>(first, std::numeric_limits<T>::max(), 1, std::move(cn)));
 }
 
 }

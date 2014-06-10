@@ -25,14 +25,14 @@ SCENARIO("for loop subscribes", "[hide][for][just][subscribe][long][perf]"){
                 for (int i = 0; i < subscriptions; i++) {
                     rx::observable<>::just(1)
                         .map([](int i) {
-                            return (std::stringstream() << i).str();
-                            //return std::string("1");
+                            std::stringstream serializer;
+                            serializer << i;
+                            return serializer.str();
                         })
                         .map([](const std::string& s) {
                             int i;
                             std::stringstream(s) >> i;
                             return i;
-                            //return 1;
                         })
                         .subscribe([&](int i){
                             ++c;
@@ -62,6 +62,7 @@ SCENARIO("synchronized range", "[hide][subscribe][range][synchronize][long][perf
             auto w = sc.create_worker();
 
             auto el = rxsc::make_event_loop();
+            auto es = rx::syncronize_in_one_worker(el);
 
             int runs = 10;
 
@@ -97,10 +98,10 @@ SCENARIO("synchronized range", "[hide][subscribe][range][synchronize][long][perf
                 auto start = clock::now();
                 auto ew = el.create_worker();
                 std::atomic<int> v(0);
-                auto s0 = rxs::range(0, 499, 1, el)
+                auto s0 = rxs::range(0, 499, 1, es)
                     .lift(liftrequirecompletion)
                     .as_dynamic()
-                    .synchronize(ew)
+                    .synchronize(es)
                     .ref_count()
                     .lift(liftrequirecompletion)
                     .subscribe(
@@ -111,10 +112,10 @@ SCENARIO("synchronized range", "[hide][subscribe][range][synchronize][long][perf
                         [&](){
                             ++c;
                         }));
-                auto s1 = rxs::range(500, 999, 1, el)
+                auto s1 = rxs::range(500, 999, 1, es)
                     .lift(liftrequirecompletion)
                     .as_dynamic()
-                    .synchronize(ew)
+                    .synchronize(es)
                     .ref_count()
                     .lift(liftrequirecompletion)
                     .subscribe(
@@ -125,10 +126,10 @@ SCENARIO("synchronized range", "[hide][subscribe][range][synchronize][long][perf
                         [&](){
                             ++c;
                         }));
-                auto s2 = rxs::range(1000, 1499, 1, el)
+                auto s2 = rxs::range(1000, 1499, 1, es)
                     .lift(liftrequirecompletion)
                     .as_dynamic()
-                    .synchronize(ew)
+                    .synchronize(es)
                     .ref_count()
                     .lift(liftrequirecompletion)
                     .subscribe(

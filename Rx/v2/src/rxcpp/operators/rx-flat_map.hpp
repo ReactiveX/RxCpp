@@ -113,7 +113,7 @@ struct flat_map
 
         auto coordinator = initial.coordination.create_coordinator();
         auto selectedDest = on_exception(
-            [&](){return coordinator(scbr);},
+            [&](){return coordinator.out(scbr);},
             scbr);
         if (selectedDest.empty()) {
             return;
@@ -129,7 +129,7 @@ struct flat_map
         state->out.add(outercs);
 
         auto source = on_exception(
-            [&](){return state->coordinator(state->source);},
+            [&](){return state->coordinator.in(state->source);},
             state->out);
         if (source.empty()) {
             return;
@@ -162,7 +162,7 @@ struct flat_map
                 }));
 
                 auto selectedSource = on_exception(
-                    [&](){return state->coordinator(selectedCollection.get());},
+                    [&](){return state->coordinator.in(selectedCollection.get());},
                     state->out);
                 if (selectedSource.empty()) {
                     return;

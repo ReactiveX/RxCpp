@@ -13,25 +13,29 @@ namespace sources {
 
 namespace detail {
 
-template<class T>
+template<class T, class Coordination>
 struct error : public source_base<T>
 {
-    typedef error<T> this_type;
+    typedef error<T, Coordination> this_type;
+
+    typedef typename std::decay<Coordination>::type coordination_type;
+
+    typedef typename coordination_type::coordinator_type coordinator_type;
 
     struct error_initial_type
     {
-        error_initial_type(std::exception_ptr e, rxsc::scheduler sc)
+        error_initial_type(std::exception_ptr e, coordination_type cn)
             : exception(e)
-            , factory(sc)
+            , coordination(std::move(cn))
         {
         }
         std::exception_ptr exception;
-        rxsc::scheduler factory;
+        coordination_type coordination;
     };
     error_initial_type initial;
 
-    error(std::exception_ptr e, rxsc::scheduler sc)
-        : initial(e, sc)
+    error(std::exception_ptr e, coordination_type cn)
+        : initial(e, std::move(cn))
     {
     }
 
@@ -39,17 +43,26 @@ struct error : public source_base<T>
     void on_subscribe(Subscriber o) const {
 
         // creates a worker whose lifetime is the same as this subscription
-        auto controller = initial.factory.create_worker(o.get_subscription());
+        auto coordinator = initial.coordination.create_coordinator(o.get_subscription())
+        auto controller = coordinator.get_output().get_worker();
         auto exception = initial.exception;
+
+        auto selectedDest = on_exception(
+            [&](){return coordinator.out(o);},
+            o);
+        if (selectedDest.empty()) {
+            return;
+        }
 
         controller.schedule(
             [=](const rxsc::schedulable&){
-                if (!o.is_subscribed()) {
+                auto& dest = selectedDest.get();
+                if (!dest.is_subscribed()) {
                     // terminate loop
                     return;
                 }
 
-                o.on_error(exception);
+                dest.on_error(exception);
                 // o is unsubscribed
             });
     }
@@ -58,26 +71,31 @@ struct error : public source_base<T>
 struct throw_ptr_tag{};
 struct throw_instance_tag{};
 
-template <class T>
-auto make_error(throw_ptr_tag&&, std::exception_ptr exception, rxsc::scheduler scheduler)
-    ->      observable<T, error<T>> {
-    return  observable<T, error<T>>(error<T>(std::move(exception), std::move(scheduler)));
+template <class T, class Coordination>
+auto make_error(throw_ptr_tag&&, std::exception_ptr exception, Coordination cn)
+    ->      observable<T, error<T, Coordination>> {
+    return  observable<T, error<T, Coordination>>(error<T, Coordination>(std::move(exception), std::move(cn)));
 }
 
-template <class T, class E>
-auto make_error(throw_instance_tag&&, E e, rxsc::scheduler scheduler)
-    ->      observable<T, error<T>> {
+template <class T, class E, class Coordination>
+auto make_error(throw_instance_tag&&, E e, Coordination cn)
+    ->      observable<T, error<T, Coordination>> {
     std::exception_ptr exception;
     try {throw e;} catch(...) {exception = std::current_exception();}
-    return  observable<T, error<T>>(error<T>(std::move(exception), std::move(scheduler)));
+    return  observable<T, error<T, Coordination>>(error<T, Coordination>(std::move(exception), std::move(cn)));
 }
 
 }
 
 template<class T, class E>
-auto error(E e, rxsc::scheduler sc = rxsc::make_current_thread())
-    -> decltype(detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, typename std::decay<E>::type>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), std::move(sc))) {
-    return      detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, typename std::decay<E>::type>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), std::move(sc));
+auto error(E e)
+    -> decltype(detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, typename std::decay<E>::type>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), identity_one_worker(rxsc::make_immediate()))) {
+    return      detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, typename std::decay<E>::type>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), identity_one_worker(rxsc::make_immediate()));
+}
+template<class T, class E, class Coordination>
+auto error(E e, Coordination cn)
+    -> decltype(detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, typename std::decay<E>::type>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), std::move(cn))) {
+    return      detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, typename std::decay<E>::type>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), std::move(cn));
 }
 
 }

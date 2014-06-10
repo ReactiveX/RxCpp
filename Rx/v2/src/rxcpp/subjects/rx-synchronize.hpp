@@ -13,11 +13,15 @@ namespace subjects {
 
 namespace detail {
 
-template<class T>
+template<class T, class Coordination>
 class synchronize_observer : public detail::multicast_observer<T>
 {
-    typedef synchronize_observer<T> this_type;
+    typedef synchronize_observer<T, Coordination> this_type;
     typedef detail::multicast_observer<T> base_type;
+
+    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef typename coordination_type::coordinator_type coordinator_type;
+    typedef typename coordinator_type::template get<subscriber<T>>::type output_type;
 
     struct synchronize_observer_state : public std::enable_shared_from_this<synchronize_observer_state>
     {
@@ -41,7 +45,8 @@ class synchronize_observer : public detail::multicast_observer<T>
         composite_subscription lifetime;
         rxsc::worker processor;
         mutable typename mode::type current;
-        subscriber<T> destination;
+        coordinator_type coordinator;
+        output_type destination;
 
         void ensure_processing(std::unique_lock<std::mutex>& guard) const {
             if (!guard.owns_lock()) {
@@ -50,6 +55,7 @@ class synchronize_observer : public detail::multicast_observer<T>
             if (current == mode::Empty) {
                 current = mode::Processing;
                 auto keepAlive = this->shared_from_this();
+                auto processor = coordinator.get_output().get_worker();
                 processor.schedule(lifetime, [keepAlive, this](const rxsc::schedulable& self){
                     try {
                         std::unique_lock<std::mutex> guard(lock);
@@ -78,9 +84,9 @@ class synchronize_observer : public detail::multicast_observer<T>
             }
         }
 
-        synchronize_observer_state(rxsc::worker w, composite_subscription cs, subscriber<T> scbr)
+        synchronize_observer_state(coordinator_type coor, composite_subscription cs, output_type scbr)
             : lifetime(std::move(cs))
-            , processor(std::move(w))
+            , coordinator(std::move(coor))
             , current(mode::Empty)
             , destination(std::move(scbr))
         {
@@ -116,11 +122,22 @@ class synchronize_observer : public detail::multicast_observer<T>
     std::shared_ptr<synchronize_observer_state> state;
 
 public:
-    synchronize_observer(rxsc::worker w, composite_subscription dl, composite_subscription il)
+    synchronize_observer(coordination_type cn, composite_subscription dl, composite_subscription il)
         : base_type(dl)
-        , state(std::make_shared<synchronize_observer_state>(
-            std::move(w), std::move(il), make_subscriber<T>(dl, make_observer_dynamic<T>( *static_cast<base_type*>(this) ))))
-    {}
+    {
+        auto o = make_subscriber<T>(dl, make_observer_dynamic<T>( *static_cast<base_type*>(this) ));
+
+        // creates a worker whose lifetime is the same as the destination subscription
+        auto coordinator = cn.create_coordinator(dl);
+        auto selectedDest = on_exception(
+            [&](){return coordinator.out(o);},
+            o);
+        if (selectedDest.empty()) {
+            return;
+        }
+
+        state = std::make_shared<synchronize_observer_state>(std::move(coordinator), std::move(il), std::move(selectedDest.get()));
+    }
 
     template<class V>
     void on_next(V v) const {
@@ -136,16 +153,16 @@ public:
 
 }
 
-template<class T>
+template<class T, class Coordination>
 class synchronize
 {
     composite_subscription lifetime;
-    detail::synchronize_observer<T> s;
+    detail::synchronize_observer<T, Coordination> s;
 
 public:
-    explicit synchronize(rxsc::worker w, composite_subscription cs = composite_subscription())
+    explicit synchronize(Coordination cn, composite_subscription cs = composite_subscription())
         : lifetime(composite_subscription())
-        , s(std::move(w), std::move(cs), lifetime)
+        , s(std::move(cn), std::move(cs), lifetime)
     {
     }
 
@@ -154,7 +171,7 @@ public:
     }
 
     subscriber<T> get_subscriber() const {
-        return make_subscriber<T>(lifetime, make_observer_dynamic<T>(observer<T, detail::synchronize_observer<T>>(s)));
+        return make_subscriber<T>(lifetime, make_observer_dynamic<T>(observer<T, detail::synchronize_observer<T, Coordination>>(s)));
     }
 
     observable<T> get_observable() const {
@@ -174,10 +191,12 @@ class syncronize_in_one_worker : public coordination_base
     {
         rxsc::worker controller;
         rxsc::scheduler factory;
+        identity_one_worker coordination;
     public:
         explicit input_type(rxsc::worker w)
             : controller(w)
             , factory(rxsc::make_same_worker(w))
+            , coordination(factory)
         {
         }
         rxsc::worker get_worker() const {
@@ -188,8 +207,8 @@ class syncronize_in_one_worker : public coordination_base
         }
         template<class Observable>
         auto operator()(Observable o) const
-            -> decltype(o.synchronize(controller).ref_count()) {
-            return      o.synchronize(controller).ref_count();
+            -> decltype(o.synchronize(coordination).ref_count()) {
+            return      o.synchronize(coordination).ref_count();
             static_assert(is_observable<Observable>::value, "can only synchronize observables");
         }
     };
@@ -223,8 +242,8 @@ public:
 
     typedef coordinator<input_type, output_type> coordinator_type;
 
-    coordinator_type create_coordinator() const {
-        auto w = factory.create_worker();
+    coordinator_type create_coordinator(composite_subscription cs = composite_subscription()) const {
+        auto w = factory.create_worker(std::move(cs));
         return coordinator_type(input_type(w), output_type(w));
     }
 };

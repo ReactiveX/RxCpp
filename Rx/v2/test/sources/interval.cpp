@@ -87,10 +87,11 @@ SCENARIO("intervals", "[hide][periodically][interval][scheduler][long][perf]"){
 
             int c = 0;
             auto sc = rxsc::make_current_thread();
+            auto so = rx::syncronize_in_one_worker(sc);
             auto start = sc.now() + seconds(2);
             auto period = seconds(1);
             rx::composite_subscription cs;
-            rx::observable<>::interval(start, period, sc)
+            rx::observable<>::interval(start, period, so)
                 .subscribe(
                     cs,
                     [=, &c](long counter){

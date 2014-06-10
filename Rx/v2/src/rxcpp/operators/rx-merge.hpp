@@ -67,7 +67,7 @@ struct merge : public operator_base<typename std::decay<Observable>::type::value
 
         auto coordinator = initial.coordination.create_coordinator();
         auto selectedDest = on_exception(
-            [&](){return coordinator(scbr);},
+            [&](){return coordinator.out(scbr);},
             scbr);
         if (selectedDest.empty()) {
             return;
@@ -83,7 +83,7 @@ struct merge : public operator_base<typename std::decay<Observable>::type::value
         state->out.add(outercs);
 
         auto source = on_exception(
-            [&](){return state->coordinator(state->source);},
+            [&](){return state->coordinator.in(state->source);},
             state->out);
         if (source.empty()) {
             return;
@@ -110,7 +110,7 @@ struct merge : public operator_base<typename std::decay<Observable>::type::value
                 }));
 
                 auto selectedSource = on_exception(
-                    [&](){return state->coordinator(st);},
+                    [&](){return state->coordinator.in(st);},
                     state->out);
                 if (selectedSource.empty()) {
                     return;

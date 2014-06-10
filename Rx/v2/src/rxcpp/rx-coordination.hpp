@@ -77,15 +77,15 @@ public:
     }
 
     template<class Observable>
-    auto operator()(Observable o) const
-        -> typename std::enable_if<is_observable<Observable>::value, get_observable<Observable>>::type::type {
+    auto in(Observable o) const
+        -> typename get_observable<Observable>::type {
         return input(std::move(o));
         static_assert(is_observable<Observable>::value, "can only synchronize observables");
     }
 
     template<class Subscriber>
-    auto operator()(Subscriber s) const
-        -> typename std::enable_if<is_subscriber<Subscriber>::value, get_subscriber<Subscriber>>::type::type {
+    auto out(Subscriber s) const
+        -> typename get_subscriber<Subscriber>::type {
         return output(std::move(s));
         static_assert(is_subscriber<Subscriber>::value, "can only synchronize subscribers");
     }
@@ -147,8 +147,8 @@ public:
 
     typedef coordinator<input_type, output_type> coordinator_type;
 
-    coordinator_type create_coordinator() const {
-        auto w = factory.create_worker();
+    coordinator_type create_coordinator(composite_subscription cs = composite_subscription()) const {
+        auto w = factory.create_worker(std::move(cs));
         return coordinator_type(input_type(w), output_type(w));
     }
 };

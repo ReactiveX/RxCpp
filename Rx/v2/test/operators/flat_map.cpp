@@ -60,19 +60,20 @@ SCENARIO("flat_map pythagorian ranges", "[hide][range][flat_map][pythagorian][pe
 
             auto sc = rxsc::make_immediate();
             //auto sc = rxsc::make_current_thread();
+            auto so = rx::syncronize_in_one_worker(sc);
 
             int c = 0;
             int ct = 0;
             int n = 1;
             auto start = clock::now();
             auto triples =
-                rxs::range(1, sc)
+                rxs::range(1, so)
                     .flat_map(
-                        [&c, sc](int z){
-                            return rxs::range(1, z, 1, sc)
+                        [&c, so](int z){
+                            return rxs::range(1, z, 1, so)
                                 .flat_map(
-                                    [&c, sc, z](int x){
-                                        return rxs::range(x, z, 1, sc)
+                                    [&c, so, z](int x){
+                                        return rxs::range(x, z, 1, so)
                                             .filter([&c, z, x](int y){++c; return x*x + y*y == z*z;})
                                             .map([z, x](int y){return std::make_tuple(x, y, z);})
                                             // forget type to workaround lambda deduction bug on msvc 2013
@@ -107,20 +108,20 @@ SCENARIO("synchronize flat_map pythagorian ranges", "[hide][range][flat_map][syn
 
             auto sc = rxsc::make_event_loop();
             //auto sc = rxsc::make_new_thread();
-            auto so = rx::syncronize_in_one_worker(sc);
+            auto so = rx::identity_one_worker(sc);
 
             int c = 0;
             std::atomic<int> ct(0);
             int n = 1;
             auto start = clock::now();
             auto triples =
-                rxs::range(1, sc)
+                rxs::range(1, so)
                     .flat_map(
-                        [&c, sc, so](int z){
-                            return rxs::range(1, z, 1, sc)
+                        [&c, so](int z){
+                            return rxs::range(1, z, 1, so)
                                 .flat_map(
-                                    [&c, sc, z](int x){
-                                        return rxs::range(x, z, 1, sc)
+                                    [&c, so, z](int x){
+                                        return rxs::range(x, z, 1, so)
                                             .filter([&c, z, x](int y){
                                                 ++c;
                                                 if (x*x + y*y == z*z) {
