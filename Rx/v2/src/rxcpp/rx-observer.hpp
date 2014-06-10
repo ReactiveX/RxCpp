@@ -25,7 +25,10 @@ struct OnNextEmpty
 };
 struct OnErrorEmpty
 {
-    void operator()(std::exception_ptr) const {}
+    void operator()(std::exception_ptr) const {
+        // error implicitly ignored, abort
+        abort();
+    }
 };
 struct OnCompletedEmpty
 {

@@ -151,22 +151,22 @@ auto from()
 }
 template<class T, class Coordination>
 auto from(Coordination cn)
-    -> typename std::enable_if<is_coordination<Coordination>::value, 
+    -> typename std::enable_if<is_coordination<Coordination>::value,
         decltype(   iterate(std::array<T, 0>(), std::move(cn)))>::type {
     return          iterate(std::array<T, 0>(), std::move(cn));
 }
 template<class Value0, class... ValueN>
 auto from(Value0 v0, ValueN... vn)
-    -> typename std::enable_if<!is_coordination<Value0>::value, 
-        decltype(iterate(std::array<Value0, sizeof...(ValueN) + 1>(), identity_one_worker()))>::type {
-    std::array<Value0, sizeof...(ValueN) + 1> c = {v0, vn...};    
+    -> typename std::enable_if<!is_coordination<Value0>::value,
+        decltype(iterate(std::array<Value0, sizeof...(ValueN) + 1>(), identity_one_worker(rxsc::make_immediate())))>::type {
+    std::array<Value0, sizeof...(ValueN) + 1> c = {v0, vn...};
     return iterate(std::move(c), identity_one_worker(rxsc::make_immediate()));
 }
 template<class Coordination, class Value0, class... ValueN>
 auto from(Coordination cn, Value0 v0, ValueN... vn)
-    -> typename std::enable_if<is_coordination<Coordination>::value, 
+    -> typename std::enable_if<is_coordination<Coordination>::value,
         decltype(iterate(std::array<Value0, sizeof...(ValueN) + 1>(), std::move(cn)))>::type {
-    std::array<Value0, sizeof...(ValueN) + 1> c = {v0, vn...};    
+    std::array<Value0, sizeof...(ValueN) + 1> c = {v0, vn...};
     return iterate(std::move(c), std::move(cn));
 }
 

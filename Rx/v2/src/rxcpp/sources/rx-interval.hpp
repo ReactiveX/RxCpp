@@ -67,10 +67,16 @@ struct interval : public source_base<long>
     }
 };
 
+template<class Duration>
+struct delay_resolution
+{
+    typedef observable<long,    rxs::detail::interval<identity_one_worker>> type;
+};
+
 }
 template<class Duration>
 static auto interval(rxsc::scheduler::clock_type::time_point initial, Duration period)
-    ->      observable<long,    rxs::detail::interval<identity_one_worker>> {
+    -> typename detail::delay_resolution<Duration>::type {
     return  observable<long,    rxs::detail::interval<identity_one_worker>>(
                                 rxs::detail::interval<identity_one_worker>(initial, period, identity_one_worker(rxsc::make_current_thread())));
     static_assert(std::is_same<Duration, rxsc::scheduler::clock_type::duration>::value, "duration must be rxsc::scheduler::clock_type::duration");
