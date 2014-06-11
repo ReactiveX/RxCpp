@@ -129,6 +129,29 @@ auto apply_to(F f)
 
 namespace detail {
 
+struct pack
+{
+    template<class... ParamN>
+    auto operator()(ParamN... pn)
+        -> decltype(std::make_tuple(std::move(pn)...)) {
+        return      std::make_tuple(std::move(pn)...);
+    }
+    template<class... ParamN>
+    auto operator()(ParamN... pn)
+        -> decltype(std::make_tuple(std::move(pn)...)) const {
+        return      std::make_tuple(std::move(pn)...);
+    }
+};
+
+}
+
+inline auto pack()
+    ->      detail::pack {
+    return  detail::pack();
+}
+
+namespace detail {
+
 template <class T>
 class maybe
 {

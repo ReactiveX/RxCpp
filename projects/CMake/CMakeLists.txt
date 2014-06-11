@@ -43,6 +43,7 @@ add_executable(testbench ${TESTBENCH_SOURCES})
 set(V2_TEST_SOURCES
     ${V2_TEST_DIR}/test.cpp
     ${V2_TEST_DIR}/sources/defer.cpp
+    ${V2_TEST_DIR}/operators/combine_latest.cpp
     ${V2_TEST_DIR}/sources/interval.cpp
     ${V2_TEST_DIR}/operators/concat.cpp
     ${V2_TEST_DIR}/operators/merge.cpp

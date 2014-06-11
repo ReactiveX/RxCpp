@@ -511,6 +511,60 @@ public:
                                                                                                                                         rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, Coordination>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<Coordination>(sf)));
     }
 
+    template<class Coordination, class Selector, class... ObservableN>
+    struct delayed_combine_latest
+    {
+        typedef observable<typename rxo::detail::combine_latest<Coordination, Selector, ObservableN...>::value_type, rxo::detail::combine_latest<Coordination, Selector, ObservableN...>> type;
+    };
+
+    /// combine_latest ->
+    /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
+    /// for each item from all of the observables use the Selector to select a value to emit from the new observable that is returned.
+    ///
+    template<class Selector, class... ObservableN>
+    auto combine_latest(Selector&& s, ObservableN... on) const
+        -> typename std::enable_if<!is_coordination<Selector>::value && !is_observable<Selector>::value && rxu::all_true<is_observable<ObservableN>::value...>::value,
+                delayed_combine_latest<identity_one_worker, Selector, this_type, ObservableN...>>::type::type {
+        return  observable<typename rxo::detail::combine_latest<identity_one_worker, Selector, this_type, ObservableN...>::value_type,  rxo::detail::combine_latest<identity_one_worker, Selector, this_type, ObservableN...>>(
+                                                                                                                                        rxo::detail::combine_latest<identity_one_worker, Selector, this_type, ObservableN...>(identity_one_worker(rxsc::make_current_thread()), std::forward<Selector>(s), std::make_tuple(*this, on...)));
+    }
+
+    /// combine_latest ->
+    /// The coordination is used to synchronize sources from different contexts.
+    /// for each item from all of the observables use the Selector to select a value to emit from the new observable that is returned.
+    ///
+    template<class Coordination, class Selector, class... ObservableN>
+    auto combine_latest(Coordination cn, Selector&& s, ObservableN... on) const
+        -> typename std::enable_if<is_coordination<Coordination>::value && !is_observable<Selector>::value && rxu::all_true<is_observable<ObservableN>::value...>::value,
+                delayed_combine_latest<Coordination, Selector, this_type, ObservableN...>>::type::type {
+        return  observable<typename rxo::detail::combine_latest<Coordination, Selector, this_type, ObservableN...>::value_type, rxo::detail::combine_latest<Coordination, Selector, this_type, ObservableN...>>(
+                                                                                                                                rxo::detail::combine_latest<Coordination, Selector, this_type, ObservableN...>(std::move(cn), std::forward<Selector>(s), std::make_tuple(*this, on...)));
+    }
+
+    /// combine_latest ->
+    /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
+    /// for each item from all of the observables use the Selector to select a value to emit from the new observable that is returned.
+    ///
+    template<class... ObservableN>
+    auto combine_latest(ObservableN... on) const
+        -> typename std::enable_if<rxu::all_true<is_observable<ObservableN>::value...>::value,
+                delayed_combine_latest<identity_one_worker, rxu::detail::pack, this_type, ObservableN...>>::type::type {
+        return  observable<typename rxo::detail::combine_latest<identity_one_worker, rxu::detail::pack, this_type, ObservableN...>::value_type, rxo::detail::combine_latest<identity_one_worker, rxu::detail::pack, this_type, ObservableN...>>(
+                                                                                                                                                rxo::detail::combine_latest<identity_one_worker, rxu::detail::pack, this_type, ObservableN...>(identity_one_worker(rxsc::make_current_thread()), rxu::pack(), std::make_tuple(*this, on...)));
+    }
+
+    /// combine_latest ->
+    /// The coordination is used to synchronize sources from different contexts.
+    /// for each item from all of the observables use the Selector to select a value to emit from the new observable that is returned.
+    ///
+    template<class Coordination, class... ObservableN>
+    auto combine_latest(Coordination cn, ObservableN... on) const
+        -> typename std::enable_if<is_coordination<Coordination>::value && rxu::all_true<is_observable<ObservableN>::value...>::value,
+                delayed_combine_latest<Coordination, rxu::detail::pack, this_type, ObservableN...>>::type::type {
+        return  observable<typename rxo::detail::combine_latest<Coordination, rxu::detail::pack, this_type, ObservableN...>::value_type,    rxo::detail::combine_latest<Coordination, rxu::detail::pack, this_type, ObservableN...>>(
+                                                                                                                                            rxo::detail::combine_latest<Coordination, rxu::detail::pack, this_type, ObservableN...>(std::move(cn), rxu::pack(), std::make_tuple(*this, on...)));
+    }
+
     /// multicast ->
     /// allows connections to the source to be independent of subscriptions
     ///
@@ -658,19 +712,19 @@ public:
     }
     template<class T, class Coordination>
     static auto from(Coordination cn)
-        -> typename std::enable_if<is_coordination<Coordination>::value, 
+        -> typename std::enable_if<is_coordination<Coordination>::value,
             decltype(   rxs::from<T>(std::move(cn)))>::type {
         return          rxs::from<T>(std::move(cn));
     }
     template<class Value0, class... ValueN>
     static auto from(Value0 v0, ValueN... vn)
-        -> typename std::enable_if<!is_coordination<Value0>::value, 
+        -> typename std::enable_if<!is_coordination<Value0>::value,
             decltype(   rxs::from(v0, vn...))>::type {
         return          rxs::from(v0, vn...);
     }
     template<class Coordination, class Value0, class... ValueN>
     static auto from(Coordination cn, Value0 v0, ValueN... vn)
-        -> typename std::enable_if<is_coordination<Coordination>::value, 
+        -> typename std::enable_if<is_coordination<Coordination>::value,
             decltype(   rxs::from(std::move(cn), v0, vn...))>::type {
         return          rxs::from(std::move(cn), v0, vn...);
     }
