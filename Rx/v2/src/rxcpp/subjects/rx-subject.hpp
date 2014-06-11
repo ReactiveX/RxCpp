@@ -31,8 +31,6 @@ class multicast_observer
         };
     };
 
-    struct completer_type;
-
     struct state_type
         : public std::enable_shared_from_this<state_type>
     {
@@ -140,9 +138,6 @@ public:
     void on_next(V&& v) const {
         if (b->current_generation != b->state->generation) {
             std::unique_lock<std::mutex> guard(b->state->lock);
-            if (!b->completer) {
-                return;
-            }
             b->current_generation = b->state->generation;
             b->current_completer = b->completer;
         }
@@ -162,6 +157,7 @@ public:
             b->state->current = mode::Errored;
             auto s = b->state->lifetime;
             auto c = std::move(b->completer);
+            b->current_completer.reset();
             ++b->state->generation;
             guard.unlock();
             if (c) {
@@ -180,6 +176,7 @@ public:
             b->state->current = mode::Completed;
             auto s = b->state->lifetime;
             auto c = std::move(b->completer);
+            b->current_completer.reset();
             ++b->state->generation;
             guard.unlock();
             if (c) {
