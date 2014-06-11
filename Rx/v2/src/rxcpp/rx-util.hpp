@@ -137,8 +137,8 @@ struct pack
         return      std::make_tuple(std::move(pn)...);
     }
     template<class... ParamN>
-    auto operator()(ParamN... pn)
-        -> decltype(std::make_tuple(std::move(pn)...)) const {
+    auto operator()(ParamN... pn) const
+        -> decltype(std::make_tuple(std::move(pn)...)) {
         return      std::make_tuple(std::move(pn)...);
     }
 };
@@ -276,6 +276,27 @@ public:
         return *this;
     }
 };
+
+}
+
+namespace detail {
+    struct surely
+    {
+        template<class... T>
+        auto operator()(T... t) 
+            -> decltype(std::make_tuple(t.get()...)) {
+            return      std::make_tuple(t.get()...);
+        }
+    };
+}
+
+template<class... T>
+inline auto surely(std::tuple<T...> tpl)
+    -> decltype(apply(tpl, detail::surely())) {
+    return      apply(tpl, detail::surely());
+}
+
+namespace detail {
 
 template<typename Function>
 class unwinder

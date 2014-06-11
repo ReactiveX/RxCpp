@@ -68,12 +68,8 @@ struct combine_latest : public operator_base<typename combine_latest_traits<Coor
     {
     }
 
-    template<class State, int... IndexN>
-    void subscribe(std::shared_ptr<State> state, rxu::values<int, IndexN...>) const {
-        bool subscribed[] = {(subscribe<IndexN>(state), true)...};
-    }
     template<int Index, class State>
-    void subscribe(std::shared_ptr<State> state) const {
+    void subscribe_one(std::shared_ptr<State> state) const {
 
         typedef typename std::tuple_element<Index, tuple_source_type>::type::value_type source_value_type;
 
@@ -111,9 +107,7 @@ struct combine_latest : public operator_base<typename combine_latest_traits<Coor
                 if (state->valuesSet == sizeof... (ObservableN)) {
                     auto selectedResult = on_exception(
                         [&](){
-                            return rxu::apply(state->latest, [state](const rxu::detail::maybe<typename ObservableN::value_type>&... mon){
-                                return state->selector(mon.get()...);
-                            });
+                            return rxu::apply(rxu::surely(state->latest), state->selector);
                         },
                         state->out);
                     if (selectedResult.empty()) {
@@ -133,6 +127,10 @@ struct combine_latest : public operator_base<typename combine_latest_traits<Coor
                 }
             }
         );
+    }
+    template<class State, int... IndexN>
+    void subscribe_all(std::shared_ptr<State> state, rxu::values<int, IndexN...>) const {
+        bool subscribed[] = {(subscribe_one<IndexN>(state), true)...};
     }
 
     template<class Subscriber>
@@ -174,7 +172,7 @@ struct combine_latest : public operator_base<typename combine_latest_traits<Coor
         // take a copy of the values for each subscription
         auto state = std::shared_ptr<combine_latest_state_type>(new combine_latest_state_type(initial, std::move(coordinator), std::forward<Subscriber>(selectedDest.get())));
 
-        subscribe(state, typename rxu::values_from<int, sizeof...(ObservableN)>::type());
+        subscribe_all(state, typename rxu::values_from<int, sizeof...(ObservableN)>::type());
     }
 };
 

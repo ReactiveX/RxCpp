@@ -48,7 +48,9 @@ SCENARIO("combine_latest interleaved with tail", "[combine_latest][join][operato
             auto res = w.start<int>(
                 [&]() {
                     return o2
-                        .combine_latest([](int v2, int v1){return v2 + v1;}, o1);
+                        .combine_latest([](int v2, int v1){return v2 + v1;}, o1)
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
                 }
             );
 
