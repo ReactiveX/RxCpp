@@ -86,7 +86,6 @@ struct combine_latest : public operator_base<typename combine_latest_traits<Coor
             return;
         }
 
-        ++state->pendingCompletions;
         // this subscribe does not share the observer subscription
         // so that when it is unsubscribed the observer can be called
         // until the inner subscriptions have finished
@@ -145,7 +144,7 @@ struct combine_latest : public operator_base<typename combine_latest_traits<Coor
         {
             combine_latest_state_type(values i, coordinator_type coor, output_type oarg)
                 : values(std::move(i))
-                , pendingCompletions(0)
+                , pendingCompletions(sizeof... (ObservableN))
                 , valuesSet(0)
                 , coordinator(std::move(coor))
                 , out(std::move(oarg))

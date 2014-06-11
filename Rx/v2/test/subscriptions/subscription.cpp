@@ -5,12 +5,12 @@ namespace rxsc=rx::rxsc;
 
 #include "catch.hpp"
 
-static const int static_subscriptions = 500000;
+static const int static_subscriptions = 100000;
 
-SCENARIO("for loop subscribes", "[hide][for][just][subscribe][long][perf]"){
+SCENARIO("for loop subscribes to map", "[hide][for][just][subscribe][long][perf]"){
     const int& subscriptions = static_subscriptions;
     GIVEN("a for loop"){
-        WHEN("subscribe 10 million times"){
+        WHEN("subscribe 100K times"){
             using namespace std::chrono;
             typedef steady_clock clock;
 
@@ -40,7 +40,45 @@ SCENARIO("for loop subscribes", "[hide][for][just][subscribe][long][perf]"){
                 }
                 auto finish = clock::now();
                 auto msElapsed = duration_cast<milliseconds>(finish-start);
-                std::cout << "loop subscribe     : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed, " << c / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
+                std::cout << "loop subscribe map             : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed, " << c / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
+
+                if (--runs > 0) {
+                    self();
+                }
+            };
+
+            w.schedule(loop);
+        }
+    }
+}
+
+SCENARIO("for loop subscribes to combine_latest", "[hide][for][just][subscribe][long][perf]"){
+    const int& subscriptions = static_subscriptions;
+    GIVEN("a for loop"){
+        WHEN("subscribe 100K times"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
+
+            auto sc = rxsc::make_current_thread();
+            auto w = sc.create_worker();
+            int runs = 10;
+
+            auto loop = [&](const rxsc::schedulable& self) {
+                int c = 0;
+                int n = 1;
+                auto start = clock::now();
+                for (int i = 0; i < subscriptions; i++) {
+                    rx::observable<>::just(1)
+                        .combine_latest([](int i, int j) {
+                            return i + j;
+                        }, rx::observable<>::just(2))
+                        .subscribe([&](int i){
+                            ++c;
+                        });
+                }
+                auto finish = clock::now();
+                auto msElapsed = duration_cast<milliseconds>(finish-start);
+                std::cout << "loop subscribe combine_latest  : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed, " << c / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
 
                 if (--runs > 0) {
                     self();
