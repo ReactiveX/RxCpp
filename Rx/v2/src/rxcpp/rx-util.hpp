@@ -283,7 +283,12 @@ namespace detail {
     struct surely
     {
         template<class... T>
-        auto operator()(T... t) 
+        auto operator()(T... t)
+            -> decltype(std::make_tuple(t.get()...)) {
+            return      std::make_tuple(t.get()...);
+        }
+        template<class... T>
+        auto operator()(T... t) const
             -> decltype(std::make_tuple(t.get()...)) {
             return      std::make_tuple(t.get()...);
         }
@@ -291,7 +296,7 @@ namespace detail {
 }
 
 template<class... T>
-inline auto surely(std::tuple<T...> tpl)
+inline auto surely(const std::tuple<T...>& tpl)
     -> decltype(apply(tpl, detail::surely())) {
     return      apply(tpl, detail::surely());
 }
