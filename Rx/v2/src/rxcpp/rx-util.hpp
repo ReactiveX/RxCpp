@@ -37,6 +37,12 @@ std::vector<T> to_vector(const T (&arr) [size]) {
     return std::vector<T>(std::begin(arr), std::end(arr));
 }
 
+template<class T0, class... TN>
+typename std::enable_if<!std::is_array<T0>::value, std::vector<T0>>::type to_vector(T0 t0, TN... tn) {
+    T0 arr[] = {t0, tn...};
+    return to_vector(arr);
+}
+
 template<class T, T... ValueN>
 struct values {};
 

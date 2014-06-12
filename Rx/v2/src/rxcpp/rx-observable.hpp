@@ -325,6 +325,22 @@ public:
         return      lift(rxo::detail::map<T, Selector>(std::move(s)));
     }
 
+    /// buffer ->
+    /// collect count items from this observable and produce a vector of them to emit from the new observable that is returned.
+    ///
+    auto buffer(int count) const
+        -> decltype(lift(rxo::detail::buffer_count<T>(count, count))) {
+        return      lift(rxo::detail::buffer_count<T>(count, count));
+    }
+
+    /// buffer ->
+    /// start a new vector every skip items and collect count items from this observable into each vector to emit from the new observable that is returned.
+    ///
+    auto buffer(int count, int skip) const
+        -> decltype(lift(rxo::detail::buffer_count<T>(count, skip))) {
+        return      lift(rxo::detail::buffer_count<T>(count, skip));
+    }
+
     template<class Coordination, bool IsObservable = is_observable<value_type>::value>
     struct merge_result;
 

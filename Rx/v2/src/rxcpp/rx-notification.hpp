@@ -57,6 +57,9 @@ struct notification_base
 };
 
 template<class T>
+std::ostream& operator<< (std::ostream& out, const std::vector<T>& v);
+
+template<class T>
 auto to_stream(std::ostream& os, const T& t, int, int)
     -> decltype(os << t) {
     return      os << t;
@@ -73,6 +76,23 @@ auto to_stream(std::ostream& os, const T&, ...)
     -> decltype(os << "") {
     return      os << "<the value does not support ostream>";
 }
+
+template<class T>
+inline std::ostream& operator<< (std::ostream& os, const std::vector<T>& v) {
+    os << "[";
+    bool emit = false;
+    for(auto& i : v) {
+        if (emit) {
+            os << ", ";
+        } else {
+            emit = true;
+        }
+        to_stream(os, i, 0, 0);
+    }
+    os << "]";
+    return os;
+}
+
 
 }
 

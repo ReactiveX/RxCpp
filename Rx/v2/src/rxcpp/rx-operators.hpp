@@ -35,6 +35,7 @@ namespace rxo=operators;
 }
 
 #include "operators/rx-lift.hpp"
+#include "operators/rx-buffer_count.hpp"
 #include "operators/rx-subscribe.hpp"
 #include "operators/rx-filter.hpp"
 #include "operators/rx-map.hpp"
