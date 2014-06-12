@@ -95,8 +95,8 @@ private:
         }
         virtual bool equals(const typename base::type& other) const {
             bool result = false;
-            other->accept(make_subscriber<T>(make_observer_dynamic<T>([this, &result](T value) {
-                    result = this->value == value;
+            other->accept(make_subscriber<T>(make_observer_dynamic<T>([this, &result](T v) {
+                    result = this->value == v;
                 })));
             return result;
         }

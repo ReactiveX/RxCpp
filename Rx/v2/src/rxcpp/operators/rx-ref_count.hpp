@@ -46,7 +46,7 @@ struct ref_count : public operator_base<T>
         guard.unlock();
         o.add(
             [keepAlive](){
-                std::unique_lock<std::mutex> guard(keepAlive->lock);
+                std::unique_lock<std::mutex> guard_unsubscribe(keepAlive->lock);
                 if (--keepAlive->subscribers == 0) {
                     keepAlive->connection.unsubscribe();
                     keepAlive->connection = composite_subscription();

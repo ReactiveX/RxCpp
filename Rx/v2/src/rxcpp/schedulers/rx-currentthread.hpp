@@ -205,9 +205,9 @@ private:
 
             // loop until queue is empty
             for (
-                auto when = queue::top().when;
-                (std::this_thread::sleep_until(when), true);
-                when = queue::top().when
+                auto next = queue::top().when;
+                (std::this_thread::sleep_until(next), true);
+                next = queue::top().when
             ) {
                 auto what = queue::top().what;
 
