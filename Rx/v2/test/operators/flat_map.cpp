@@ -60,7 +60,7 @@ SCENARIO("flat_map pythagorian ranges", "[hide][range][flat_map][pythagorian][pe
 
             auto sc = rxsc::make_immediate();
             //auto sc = rxsc::make_current_thread();
-            auto so = rx::syncronize_in_one_worker(sc);
+            auto so = rx::identity_one_worker(sc);
 
             int c = 0;
             int ct = 0;

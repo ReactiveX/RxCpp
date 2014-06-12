@@ -21,8 +21,8 @@ nuget {
         #defines {
             SDK_RX   = ..\..\;
         }
-        include: { "${SDK_RX}Rx\CPP\src\**\*", "${SDK_RX}Ix\CPP\src\**\*" };
-        docs: {  ${SDK_RX}Readme.html, ${SDK_RX}AUTHORS.txt, ${SDK_RX}Rx\CPP\license.txt };
+        include: { "${SDK_RX}Rx\v2\src\**\*", "${SDK_RX}Ix\CPP\src\**\*" };
+        docs: {  ${SDK_RX}Readme.html, ${SDK_RX}AUTHORS.txt, ${SDK_RX}v2\license.txt };
     }
 
     targets {

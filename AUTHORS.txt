@@ -2,9 +2,9 @@ List of contributors to the Rx libraries
 
 Rx and Ix.NET:
 Wes Dyer
-Jeffrey van Gogh	
-Matthew Podwysocki 
-Bart de Smet		
+Jeffrey van Gogh
+Matthew Podwysocki
+Bart de Smet
 Danny van Velzen
 Erik Meijer
 Brian Beckman
@@ -24,7 +24,7 @@ Erik Meijer
 
 Tx:
 Georgi Chkodrov
-Bart de Smet		
+Bart de Smet
 Aaron Lahman
 Erik Meijer
 Brian Grunkemeyer
@@ -38,3 +38,4 @@ Zach Kramer
 
 Rx++ and Ix++:
 Aaron Lahman
+Kirk Shoop
