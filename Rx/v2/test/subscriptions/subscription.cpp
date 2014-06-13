@@ -92,7 +92,7 @@ SCENARIO("for loop subscribes to combine_latest", "[hide][for][just][subscribe][
 
 SCENARIO("synchronized range", "[hide][subscribe][range][synchronize][long][perf]"){
     GIVEN("range"){
-        WHEN("syncronized"){
+        WHEN("synchronized"){
             using namespace std::chrono;
             typedef steady_clock clock;
 
@@ -100,7 +100,7 @@ SCENARIO("synchronized range", "[hide][subscribe][range][synchronize][long][perf
             auto w = sc.create_worker();
 
             auto el = rxsc::make_event_loop();
-            auto es = rx::syncronize_in_one_worker(el);
+            auto es = rx::synchronize_in_one_worker(el);
 
             int runs = 10;
 
@@ -184,7 +184,7 @@ SCENARIO("synchronized range", "[hide][subscribe][range][synchronize][long][perf
                 s2.unsubscribe();
                 auto finish = clock::now();
                 auto msElapsed = duration_cast<milliseconds>(finish-start);
-                std::cout << "range syncronize     : " << n << " subscribed, " << v << " on_next calls, " << msElapsed.count() << "ms elapsed, " << v / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
+                std::cout << "range synchronize     : " << n << " subscribed, " << v << " on_next calls, " << msElapsed.count() << "ms elapsed, " << v / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
 
                 if (--runs > 0) {
                     self();

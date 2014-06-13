@@ -71,7 +71,7 @@ SCENARIO("synchronize concat_map pythagorian ranges", "[hide][range][concat_map]
 
             auto sc = rxsc::make_event_loop();
             //auto sc = rxsc::make_new_thread();
-            auto so = rx::syncronize_in_one_worker(sc);
+            auto so = rx::synchronize_in_one_worker(sc);
 
             int c = 0;
             std::atomic<int> ct(0);

@@ -79,7 +79,7 @@ static auto interval(rxsc::scheduler::clock_type::time_point initial, Duration p
     -> typename detail::delay_resolution<Duration>::type {
     return  observable<long,    rxs::detail::interval<identity_one_worker>>(
                                 rxs::detail::interval<identity_one_worker>(initial, period, identity_one_worker(rxsc::make_current_thread())));
-    static_assert(std::is_same<Duration, rxsc::scheduler::clock_type::duration>::value, "duration must be rxsc::scheduler::clock_type::duration");
+    static_assert(std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>::value, "duration must be convertible to rxsc::scheduler::clock_type::duration");
 }
 template<class Coordination>
 static auto interval(rxsc::scheduler::clock_type::time_point initial, rxsc::scheduler::clock_type::duration period, Coordination cn)

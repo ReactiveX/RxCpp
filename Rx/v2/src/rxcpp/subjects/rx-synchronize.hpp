@@ -183,7 +183,7 @@ public:
 
 }
 
-class syncronize_in_one_worker : public coordination_base
+class synchronize_in_one_worker : public coordination_base
 {
     rxsc::scheduler factory;
 
@@ -238,7 +238,7 @@ class syncronize_in_one_worker : public coordination_base
 
 public:
 
-    explicit syncronize_in_one_worker(rxsc::scheduler sc) : factory(sc) {}
+    explicit synchronize_in_one_worker(rxsc::scheduler sc) : factory(sc) {}
 
     typedef coordinator<input_type, output_type> coordinator_type;
 

@@ -17,10 +17,10 @@ Rxcpp Build status [![Build Status](https://travis-ci.org/Reactive-Extensions/Rx
 
 #Building RxCpp
 
-RxCpp is regularly tested on OSX and Windows.
-RxCpp is regularly built with Clang and VC
-RxCpp depends on the latest compiler releases.
-RxCpp does not compile with gcc at this time. Contributions are welcome.
+* RxCpp is regularly tested on OSX and Windows.
+* RxCpp is regularly built with Clang and VC
+* RxCpp depends on the latest compiler releases.
+* RxCpp does not compile with gcc at this time. Contributions are welcome.
 
 RxCpp uses CMake to create build files for several platforms and IDE's
 
@@ -34,7 +34,7 @@ This will create the default build for the platform.
 
 ###Visual Studio 13
 ```cmake -G"Visual Studio 12" projects\CMake```
-Then open in VC2013 and upgrade to the 2013 toolset
+* Note: open in VC2013 and upgrade to the 2013 toolset
 
 ##makefile builds
 
@@ -54,9 +54,9 @@ The build only produces a test binary.
 
 #Running tests
 
-You can use the CMake test runner ```ctest```
-You can run the test binary directly ```rxcppv2_test```
-Tests can be selected by name or tag
+* You can use the CMake test runner ```ctest```
+* You can run the test binary directly ```rxcppv2_test```
+* Tests can be selected by name or tag
 Example of by-tag
 
 ```rxcppv2_test [perf]```
