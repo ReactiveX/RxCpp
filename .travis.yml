@@ -8,21 +8,17 @@ env:
   - BUILD_TYPE=Release
 
 install:
-  - if [ "$CXX" == "clang++" ]; then svn co --quiet http://llvm.org/svn/llvm-project/libcxx/trunk libcxx; fi
-  - if [ "$CXX" == "clang++" ]; then cd libcxx/lib && bash buildit; fi
-  - if [ "$CXX" == "clang++" ]; then sudo cp ./libc++.so.1.0 /usr/lib/; fi
-  - if [ "$CXX" == "clang++" ]; then sudo mkdir /usr/include/c++/v1; fi
-  - if [ "$CXX" == "clang++" ]; then cd .. && sudo cp -r include/* /usr/include/c++/v1/; fi
-  - if [ "$CXX" == "clang++" ]; then cd /usr/lib && sudo ln -sf libc++.so.1.0 libc++.so; fi
-  - if [ "$CXX" == "clang++" ]; then sudo ln -sf libc++.so.1.0 libc++.so.1 && cd $cwd; fi
-  - cmake -Hprojects/CMake -BBuild -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+  - brew update
+  - brew install cmake
+  - cmake -GXcode -Hprojects/CMake -BBuild -DCMAKE_BUILD_TYPE=$BUILD_TYPE
   - cd Build
-  - make
+  - xcodebuild
   - cd ..
 
 script:
   - cd Build
   - ctest -V
+  - cd ..
 
 branches:
   only:
