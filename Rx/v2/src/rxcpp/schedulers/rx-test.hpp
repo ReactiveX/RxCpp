@@ -338,6 +338,18 @@ rxt::testable_observable<T> test_type::make_hot_observable(std::vector<rxn::reco
         std::make_shared<hot_observable<T>>(state, create_worker(composite_subscription()), std::move(messages)));
 }
 
+template<class F>
+struct is_create_source_function
+{
+    struct not_void {};
+    template<class CF>
+    static auto check(int) -> decltype((*(CF*)nullptr)());
+    template<class CF>
+    static not_void check(...);
+
+    static const bool value = is_observable<decltype(check<typename std::decay<F>::type>(0))>::value;
+};
+
 }
 
 class test : public scheduler
@@ -362,6 +374,9 @@ public:
     {
         typedef typename rxn::notification<T> notification_type;
         typedef rxn::recorded<typename notification_type::type> recorded_type;
+        typedef rxn::subscription subscription_type;
+
+        messages() {}
 
         struct on_next_factory
         {
@@ -394,9 +409,6 @@ public:
             }
         };
         static const subscribe_factory subscribe;
-
-    private:
-        ~messages();
     };
 
     class test_worker : public worker
@@ -440,15 +452,13 @@ public:
         }
 
         template<class T, class F>
-        auto start(F&& createSource, long created, long subscribed, long unsubscribed) const
+        auto start(F createSource, long created, long subscribed, long unsubscribed) const
             -> subscriber<T, rxt::testable_observer<T>>
         {
-            typename std::decay<F>::type createSrc = std::forward<F>(createSource);
-
             struct state_type
             : public std::enable_shared_from_this<state_type>
             {
-                typedef decltype(std::forward<F>(createSrc)()) source_type;
+                typedef decltype(createSource()) source_type;
 
                 std::unique_ptr<source_type> source;
                 subscriber<T, rxt::testable_observer<T>> o;
@@ -461,8 +471,8 @@ public:
             };
             std::shared_ptr<state_type> state(new state_type(this->make_subscriber<T>()));
 
-            schedule_absolute(created, [createSrc, state](const schedulable& scbl) {
-                state->source.reset(new typename state_type::source_type(createSrc()));
+            schedule_absolute(created, [createSource, state](const schedulable& scbl) {
+                state->source.reset(new typename state_type::source_type(createSource()));
             });
             schedule_absolute(subscribed, [state](const schedulable& scbl) {
                 state->source->subscribe(state->o);
@@ -488,6 +498,35 @@ public:
             -> subscriber<T, rxt::testable_observer<T>>
         {
             return start<T>(std::forward<F>(createSource), created_time, subscribed_time, unsubscribed_time);
+        }
+
+        template<class F>
+        struct start_traits
+        {
+            typedef decltype((*(F*)nullptr)()) source_type;
+            typedef typename source_type::value_type value_type;
+            typedef subscriber<value_type, rxt::testable_observer<value_type>> subscriber_type;
+        };
+
+        template<class F>
+        auto start(F createSource, long created, long subscribed, long unsubscribed) const
+            -> typename std::enable_if<detail::is_create_source_function<F>::value, start_traits<F>>::type::subscriber_type
+        {
+            return start<typename start_traits<F>::value_type>(std::move(createSource), created, subscribed, unsubscribed);
+        }
+
+        template<class F>
+        auto start(F createSource, long unsubscribed) const
+            -> typename std::enable_if<detail::is_create_source_function<F>::value, start_traits<F>>::type::subscriber_type
+        {
+            return start<typename start_traits<F>::value_type>(std::move(createSource), created_time, subscribed_time, unsubscribed);
+        }
+
+        template<class F>
+        auto start(F createSource) const
+            -> typename std::enable_if<detail::is_create_source_function<F>::value, start_traits<F>>::type::subscriber_type
+        {
+            return start<typename start_traits<F>::value_type>(std::move(createSource), created_time, subscribed_time, unsubscribed_time);
         }
 
         void start() const {
@@ -523,6 +562,12 @@ public:
     }
 
     template<class T>
+    auto make_hot_observable(std::initializer_list<T> il) const
+        -> decltype(tester->make_hot_observable(std::vector<T>())) {
+        return      tester->make_hot_observable(std::vector<T>(il));
+    }
+
+    template<class T>
     rxt::testable_observable<T> make_cold_observable(std::vector<rxn::recorded<std::shared_ptr<rxn::detail::notification_base<T>>>> messages) const {
         return tester->make_cold_observable(std::move(messages));
     }
@@ -531,6 +576,12 @@ public:
     auto make_cold_observable(const T (&arr) [size]) const
         -> decltype(tester->make_cold_observable(std::vector<T>())) {
         return      tester->make_cold_observable(rxu::to_vector(arr));
+    }
+
+    template<class T>
+    auto make_cold_observable(std::initializer_list<T> il) const
+        -> decltype(tester->make_cold_observable(std::vector<T>())) {
+        return      tester->make_cold_observable(std::vector<T>(il));
     }
 };
 

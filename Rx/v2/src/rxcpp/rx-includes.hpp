@@ -96,6 +96,7 @@
 #include <queue>
 #include <chrono>
 #include <condition_variable>
+#include <initializer_list>
 #include <typeinfo>
 
 #include "rx-util.hpp"

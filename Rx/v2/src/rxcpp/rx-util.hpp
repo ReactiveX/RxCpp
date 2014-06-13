@@ -37,10 +37,14 @@ std::vector<T> to_vector(const T (&arr) [size]) {
     return std::vector<T>(std::begin(arr), std::end(arr));
 }
 
+template<class T>
+std::vector<T> to_vector(std::initializer_list<T> il) {
+    return std::vector<T>(il);
+}
+
 template<class T0, class... TN>
-typename std::enable_if<!std::is_array<T0>::value, std::vector<T0>>::type to_vector(T0 t0, TN... tn) {
-    T0 arr[] = {t0, tn...};
-    return to_vector(arr);
+typename std::enable_if<!std::is_array<T0>::value && std::is_pod<T0>::value, std::vector<T0>>::type to_vector(T0 t0, TN... tn) {
+    return to_vector({t0, tn...});
 }
 
 template<class T, T... ValueN>

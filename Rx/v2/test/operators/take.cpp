@@ -16,27 +16,20 @@ SCENARIO("take 2", "[take][operators]"){
     GIVEN("a source"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
-        typedef rxsc::test::messages<int> m;
-        typedef rxn::subscription life;
-        typedef m::recorded_type record;
-        auto on_next = m::on_next;
-        auto on_error = m::on_error;
-        auto on_completed = m::on_completed;
-        auto subscribe = m::subscribe;
+        const rxsc::test::messages<int> on;
 
-        record xmessages[] = {
-            on_next(150, 1),
-            on_next(210, 2),
-            on_next(220, 3),
-            on_next(230, 4),
-            on_next(240, 5),
-            on_completed(250)
-        };
-        auto xs = sc.make_hot_observable(xmessages);
+        auto xs = sc.make_hot_observable({
+            on.on_next(150, 1),
+            on.on_next(210, 2),
+            on.on_next(220, 3),
+            on.on_next(230, 4),
+            on.on_next(240, 5),
+            on.on_completed(250)
+        });
 
         WHEN("2 values are taken"){
 
-            auto res = w.start<int>(
+            auto res = w.start(
                 [xs]() {
                     return xs
                         .take(2)
@@ -46,21 +39,19 @@ SCENARIO("take 2", "[take][operators]"){
             );
 
             THEN("the output only contains items sent while subscribed"){
-                record items[] = {
-                    on_next(210, 2),
-                    on_next(220, 3),
-                    on_completed(220)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.on_next(210, 2),
+                    on.on_next(220, 3),
+                    on.on_completed(220)
+                });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
             THEN("there was 1 subscription/unsubscription to the source"){
-                life items[] = {
-                    subscribe(200, 220)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 220)
+                });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
             }
