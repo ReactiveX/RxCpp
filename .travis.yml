@@ -4,7 +4,7 @@ compiler:
   - clang
 
 env:
-  - BUILD_TYPE=Debug
+  - BUILD_TYPE=RelWithDebInfo
   - BUILD_TYPE=Release
 
 install:
@@ -16,3 +16,16 @@ install:
 script:
   - cd Build
   - ctest -V
+
+branches:
+  only:
+    - master
+notifications:
+  recipients:
+    - kirk.shoop@microsoft.com
+  email:
+    on_success: change
+    on_failure: always
+
+os:
+  - osx
