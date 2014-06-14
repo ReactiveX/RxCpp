@@ -10,10 +10,12 @@ env:
 install:
   - brew update
   - brew install cmake
-  - cmake -GXcode -Hprojects/CMake -BBuild -DCMAKE_BUILD_TYPE=$BUILD_TYPE
-  - cd Build
-  - xcodebuild
-  - cd ..
+  - xcode-select --install
+  - cd projects
+  - cmake -GUnix\ Makefiles -HCMake -Bbuild -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+  - cd build
+  - make -j4
+  - cd ../..
 
 script:
   - cd Build
