@@ -1,6 +1,6 @@
-# Reactive Extensions:
+[![Build Status](https://travis-ci.org/Reactive-Extensions/RxCpp.png)](https://travis-ci.org/Reactive-Extensions/RxCpp)
 
-Rxcpp Build status [![Build Status](https://travis-ci.org/Reactive-Extensions/RxCpp.png)](https://travis-ci.org/Reactive-Extensions/RxCpp)
+# Reactive Extensions:
 
 * Rx.NET: The Reactive Extensions (Rx) is a library for composing asynchronous and event-based programs using observable sequences and LINQ-style query operators.
 * RxJS: The Reactive Extensions for JavaScript (RxJS) is a library for composing asynchronous and event-based programs using observable sequences and LINQ-style query operators in JavaScript which can target both the browser and Node.js.
@@ -24,29 +24,37 @@ Rxcpp Build status [![Build Status](https://travis-ci.org/Reactive-Extensions/Rx
 
 RxCpp uses CMake to create build files for several platforms and IDE's
 
-```cmake projects\CMake```
+###Ide builds
+####XCode
+```
+mkdir projects/build
+cd projects/build
+cmake -G"Xcode" ../CMake -B.
+```
 
-This will create the default build for the platform.
-
-##Ide builds
-###XCode
-```cmake -G"Xcode" projects\CMake```
-
-###Visual Studio 13
-```cmake -G"Visual Studio 12" projects\CMake```
+####Visual Studio 13
+```
+mkdir projects\build
+cd projects\build
+cmake -G"Visual Studio 12" ..\CMake -B.
+```
 * Note: open in VC2013 and upgrade to the 2013 toolset
 
-##makefile builds
+###makefile builds
 
-##OSX
+####OSX
 ```
-cmake -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo projects\CMake
+mkdir projects/build
+cd projects/build
+cmake -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -B. ../CMake
 make
 ```
 
-##Windows
+####Windows
 ```
-cmake -G"NMake Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo projects\CMake
+mkdir projects\build
+cd projects\build
+cmake -G"NMake Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -B. ..\CMake
 nmake
 ```
 
