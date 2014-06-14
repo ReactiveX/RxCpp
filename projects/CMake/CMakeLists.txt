@@ -4,6 +4,8 @@ project(rxcpp)
 
 MESSAGE( STATUS "CMAKE_CXX_COMPILER_ID: " ${CMAKE_CXX_COMPILER_ID} )
 
+FIND_PACKAGE(Threads)
+
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     list( APPEND CMAKE_CXX_FLAGS " -std=c++11 ${CMAKE_CXX_FLAGS}")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -11,6 +13,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     list( APPEND CMAKE_CXX_FLAGS " /DUNICODE /D_UNICODE /bigobj ${CMAKE_CXX_FLAGS}")
 endif()
+
 
 # define some folders
 get_filename_component(RXCPP_DIR "${CMAKE_CURRENT_SOURCE_DIR}" PATH)
@@ -43,12 +46,14 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/map.cpp
 )
 add_executable(rxcppv2_test ${TEST_SOURCES})
+TARGET_LINK_LIBRARIES(rxcppv2_test ${CMAKE_THREAD_LIBS_INIT})
 
 # define the sources of the pythagorian example
 set(PYTHAGORIAN_SOURCES
     ${EXAMPLES_DIR}/pythagorian/main.cpp
 )
 add_executable(pythagorian ${PYTHAGORIAN_SOURCES})
+TARGET_LINK_LIBRARIES(pythagorian ${CMAKE_THREAD_LIBS_INIT})
 
 # configure unit tests via CTest
 enable_testing()

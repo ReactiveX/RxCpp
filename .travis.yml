@@ -1,4 +1,9 @@
+
 language: cpp
+
+os:
+  - linux
+  - osx
 
 compiler:
   - clang
@@ -8,9 +13,7 @@ env:
   - BUILD_TYPE=Release
 
 before_install:
-  - xcode-select --install
-  - brew update
-  - brew install cmake
+  - sh projects/scripts/travis-install.sh
 
 install:
   - cd projects
@@ -20,19 +23,17 @@ install:
   - cd ../..
 
 script:
-  - cd Build
+  - cd projects/build
   - ctest -V
   - cd ..
 
 branches:
   only:
     - master
+
 notifications:
   recipients:
     - kirk.shoop@microsoft.com
   email:
     on_success: change
     on_failure: always
-
-os:
-  - osx
