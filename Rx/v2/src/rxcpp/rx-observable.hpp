@@ -325,6 +325,14 @@ public:
         return      lift(rxo::detail::map<T, Selector>(std::move(s)));
     }
 
+    /// distinct_until_changed ->
+    /// for each item from this observable, filter out repeated values and emit only changes from the new observable that is returned.
+    ///
+    auto distinct_until_changed() const
+        -> decltype(lift(rxo::detail::distinct_until_changed<T>())) {
+        return      lift(rxo::detail::distinct_until_changed<T>());
+    }
+
     /// buffer ->
     /// collect count items from this observable and produce a vector of them to emit from the new observable that is returned.
     ///

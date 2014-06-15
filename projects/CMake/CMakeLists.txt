@@ -38,6 +38,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/merge.cpp
     ${TEST_DIR}/operators/lift.cpp
     ${TEST_DIR}/operators/filter.cpp
+    ${TEST_DIR}/operators/distinct_until_changed.cpp
     ${TEST_DIR}/operators/scan.cpp
     ${TEST_DIR}/operators/take.cpp
     ${TEST_DIR}/operators/publish.cpp
