@@ -610,10 +610,20 @@ public:
 
     /// publish ->
     /// turns a cold observable hot and allows connections to the source to be independent of subscriptions
+    /// NOTE: multicast of a subject
     ///
     auto publish(composite_subscription cs = composite_subscription()) const
         -> decltype(multicast(rxsub::subject<T>(cs))) {
         return      multicast(rxsub::subject<T>(cs));
+    }
+
+    /// publish ->
+    /// turns a cold observable hot, sends the most recent value to any new subscriber and allows connections to the source to be independent of subscriptions
+    /// NOTE: multicast of a behavior
+    ///
+    auto publish(T first, composite_subscription cs = composite_subscription()) const
+        -> decltype(multicast(rxsub::behavior<T>(first, cs))) {
+        return      multicast(rxsub::behavior<T>(first, cs));
     }
 
     /// scan ->
