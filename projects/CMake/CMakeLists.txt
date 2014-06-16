@@ -19,10 +19,13 @@ endif()
 get_filename_component(RXCPP_DIR "${CMAKE_CURRENT_SOURCE_DIR}" PATH)
 get_filename_component(RXCPP_DIR "${RXCPP_DIR}" PATH)
 
-set(TEST_DIR ${RXCPP_DIR}/Rx/v2/test)
-set(EXAMPLES_DIR ${RXCPP_DIR}/Rx/v2/examples)
+MESSAGE( STATUS "RXCPP_DIR: " ${RXCPP_DIR} )
+
 
 include_directories(${RXCPP_DIR}/ext/catch/include ${RXCPP_DIR}/Ix/CPP/src ${RXCPP_DIR}/Rx/v2/src)
+
+
+set(TEST_DIR ${RXCPP_DIR}/Rx/v2/test)
 
 # define the sources of the self test
 set(TEST_SOURCES
@@ -48,6 +51,8 @@ set(TEST_SOURCES
 )
 add_executable(rxcppv2_test ${TEST_SOURCES})
 TARGET_LINK_LIBRARIES(rxcppv2_test ${CMAKE_THREAD_LIBS_INIT})
+
+set(EXAMPLES_DIR ${RXCPP_DIR}/Rx/v2/examples)
 
 # define the sources of the pythagorian example
 set(PYTHAGORIAN_SOURCES

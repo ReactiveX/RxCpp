@@ -91,7 +91,7 @@ struct concat_map
     void on_subscribe(Subscriber scbr) const {
         static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
 
-        typedef typename coordinator_type::template get<Subscriber>::type output_type;
+        typedef Subscriber output_type;
 
         struct concat_map_state_type
             : public std::enable_shared_from_this<concat_map_state_type>
@@ -136,7 +136,7 @@ struct concat_map
 
                 // this subscribe does not share the source subscription
                 // so that when it is unsubscribed the source will continue
-                selectedSource->subscribe(
+                auto sinkInner = make_subscriber<collection_value_type>(
                     state->out,
                     collectionLifetime,
                 // on_next
@@ -165,6 +165,13 @@ struct concat_map
                         }
                     }
                 );
+                auto selectedSinkInner = on_exception(
+                    [&](){return state->coordinator.out(sinkInner);},
+                    state->out);
+                if (selectedSinkInner.empty()) {
+                    return;
+                }
+                selectedSource->subscribe(std::move(selectedSinkInner.get()));
             }
             composite_subscription sourceLifetime;
             composite_subscription collectionLifetime;
@@ -174,15 +181,9 @@ struct concat_map
         };
 
         auto coordinator = initial.coordination.create_coordinator();
-        auto selectedDest = on_exception(
-            [&](){return coordinator.out(scbr);},
-            scbr);
-        if (selectedDest.empty()) {
-            return;
-        }
 
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<concat_map_state_type>(new concat_map_state_type(initial, std::move(coordinator), std::move(selectedDest.get())));
+        auto state = std::shared_ptr<concat_map_state_type>(new concat_map_state_type(initial, std::move(coordinator), std::move(scbr)));
 
         state->sourceLifetime = composite_subscription();
 
@@ -200,7 +201,7 @@ struct concat_map
         // this subscribe does not share the observer subscription
         // so that when it is unsubscribed the observer can be called
         // until the inner subscriptions have finished
-        source->subscribe(
+        auto sink = make_subscriber<source_value_type>(
             state->out,
             state->sourceLifetime,
         // on_next
@@ -222,6 +223,14 @@ struct concat_map
                 }
             }
         );
+        auto selectedSink = on_exception(
+            [&](){return state->coordinator.out(sink);},
+            state->out);
+        if (selectedSink.empty()) {
+            return;
+        }
+        source->subscribe(std::move(selectedSink.get()));
+
     }
 };
 

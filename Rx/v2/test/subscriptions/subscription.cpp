@@ -52,7 +52,7 @@ SCENARIO("for loop subscribes to map", "[hide][for][just][subscribe][long][perf]
     }
 }
 
-SCENARIO("for loop subscribes to combine_latest", "[hide][for][just][subscribe][long][perf]"){
+SCENARIO("for loop subscribes to combine_latest", "[hide][for][just][combine_latest][subscribe][long][perf]"){
     const int& subscriptions = static_subscriptions;
     GIVEN("a for loop"){
         WHEN("subscribe 100K times"){

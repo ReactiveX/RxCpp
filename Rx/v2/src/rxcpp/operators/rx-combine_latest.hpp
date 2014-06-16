@@ -89,7 +89,7 @@ struct combine_latest : public operator_base<typename combine_latest_traits<Coor
         // this subscribe does not share the observer subscription
         // so that when it is unsubscribed the observer can be called
         // until the inner subscriptions have finished
-        source->subscribe(
+        auto sink = make_subscriber<source_value_type>(
             state->out,
             innercs,
         // on_next
@@ -126,6 +126,13 @@ struct combine_latest : public operator_base<typename combine_latest_traits<Coor
                 }
             }
         );
+        auto selectedSink = on_exception(
+            [&](){return state->coordinator.out(sink);},
+            state->out);
+        if (selectedSink.empty()) {
+            return;
+        }
+        source->subscribe(std::move(selectedSink.get()));
     }
     template<class State, int... IndexN>
     void subscribe_all(std::shared_ptr<State> state, rxu::values<int, IndexN...>) const {
@@ -136,7 +143,7 @@ struct combine_latest : public operator_base<typename combine_latest_traits<Coor
     void on_subscribe(Subscriber scbr) const {
         static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
 
-        typedef typename coordinator_type::template get<Subscriber>::type output_type;
+        typedef Subscriber output_type;
 
         struct combine_latest_state_type
             : public std::enable_shared_from_this<combine_latest_state_type>
@@ -161,15 +168,9 @@ struct combine_latest : public operator_base<typename combine_latest_traits<Coor
         };
 
         auto coordinator = initial.coordination.create_coordinator();
-        auto selectedDest = on_exception(
-            [&](){return coordinator.out(scbr);},
-            scbr);
-        if (selectedDest.empty()) {
-            return;
-        }
 
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<combine_latest_state_type>(new combine_latest_state_type(initial, std::move(coordinator), std::forward<Subscriber>(selectedDest.get())));
+        auto state = std::shared_ptr<combine_latest_state_type>(new combine_latest_state_type(initial, std::move(coordinator), std::move(scbr)));
 
         subscribe_all(state, typename rxu::values_from<int, sizeof...(ObservableN)>::type());
     }

@@ -57,6 +57,48 @@ SCENARIO("synchronize merge ranges", "[hide][range][synchronize][merge][perf]"){
     }
 }
 
+SCENARIO("serialize merge ranges", "[hide][range][serialize][merge][perf]"){
+    const int& onnextcalls = static_onnextcalls;
+    GIVEN("some ranges"){
+        WHEN("generating ints"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
+
+            std::mutex lock;
+            std::condition_variable wake;
+
+            auto sc = rxsc::make_event_loop();
+            //auto sc = rxsc::make_new_thread();
+            auto so = rx::serialize_one_worker(sc);
+
+            std::atomic<int> c(0);
+            int n = 1;
+            auto sectionCount = onnextcalls / 3;
+            auto start = clock::now();
+            rxs::range(0, sectionCount - 1, 1, so)
+                .merge(
+                    so,
+                    rxs::range(sectionCount, (sectionCount * 2) - 1, 1, so),
+                    rxs::range(sectionCount * 2, onnextcalls - 1, 1, so))
+                .subscribe(
+                    [&c](int x){
+                        ++c;},
+                    [](std::exception_ptr){abort();},
+                    [&](){
+                        wake.notify_one();
+                    });
+
+            std::unique_lock<std::mutex> guard(lock);
+            wake.wait(guard, [&](){return c == onnextcalls;});
+
+            auto finish = clock::now();
+            auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
+                   duration_cast<milliseconds>(start.time_since_epoch());
+            std::cout << "merge serial ranges : " << n << " subscribed, " << c << " emitted, " << msElapsed.count() << "ms elapsed " << std::endl;
+        }
+    }
+}
+
 SCENARIO("merge completes", "[merge][join][operators]"){
     GIVEN("1 hot observable with 3 cold observables of ints."){
         auto sc = rxsc::make_test();

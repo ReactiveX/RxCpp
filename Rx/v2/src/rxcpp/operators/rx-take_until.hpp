@@ -75,15 +75,9 @@ struct take_until : public operator_base<T>
         };
 
         auto coordinator = initial.coordination.create_coordinator();
-        auto selectedDest = on_exception(
-            [&](){return coordinator.out(s);},
-            s);
-        if (selectedDest.empty()) {
-            return;
-        }
 
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<take_until_state_type>(new take_until_state_type(initial, std::move(coordinator), std::move(selectedDest.get())));
+        auto state = std::shared_ptr<take_until_state_type>(new take_until_state_type(initial, std::move(coordinator), std::move(s)));
 
         auto trigger = on_exception(
             [&](){return state->coordinator.in(state->trigger);},
@@ -99,7 +93,7 @@ struct take_until : public operator_base<T>
             return;
         }
 
-        trigger.get().subscribe(
+        auto sinkTrigger = make_subscriber<typename trigger_source_type::value_type>(
         // share parts of subscription
             state->out,
         // new lifetime
@@ -122,6 +116,13 @@ struct take_until : public operator_base<T>
                 state->mode_value = mode::clear;
             }
         );
+        auto selectedSinkTrigger = on_exception(
+            [&](){return state->coordinator.out(sinkTrigger);},
+            state->out);
+        if (selectedSinkTrigger.empty()) {
+            return;
+        }
+        trigger->subscribe(std::move(selectedSinkTrigger.get()));
 
         source.get().subscribe(
         // split subscription lifetime

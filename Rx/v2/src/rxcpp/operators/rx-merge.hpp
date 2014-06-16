@@ -45,7 +45,7 @@ struct merge : public operator_base<typename std::decay<Observable>::type::value
     void on_subscribe(Subscriber scbr) const {
         static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
 
-        typedef typename coordinator_type::template get<Subscriber>::type output_type;
+        typedef Subscriber output_type;
 
         struct merge_state_type
             : public std::enable_shared_from_this<merge_state_type>
@@ -66,15 +66,9 @@ struct merge : public operator_base<typename std::decay<Observable>::type::value
         };
 
         auto coordinator = initial.coordination.create_coordinator();
-        auto selectedDest = on_exception(
-            [&](){return coordinator.out(scbr);},
-            scbr);
-        if (selectedDest.empty()) {
-            return;
-        }
 
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<merge_state_type>(new merge_state_type(initial, std::move(coordinator), std::forward<Subscriber>(selectedDest.get())));
+        auto state = std::shared_ptr<merge_state_type>(new merge_state_type(initial, std::move(coordinator), std::move(scbr)));
 
         composite_subscription outercs;
 
@@ -93,7 +87,7 @@ struct merge : public operator_base<typename std::decay<Observable>::type::value
         // this subscribe does not share the observer subscription
         // so that when it is unsubscribed the observer can be called
         // until the inner subscriptions have finished
-        source->subscribe(
+        auto sink = make_subscriber<source_value_type>(
             state->out,
             outercs,
         // on_next
@@ -119,7 +113,7 @@ struct merge : public operator_base<typename std::decay<Observable>::type::value
                 ++state->pendingCompletions;
                 // this subscribe does not share the source subscription
                 // so that when it is unsubscribed the source will continue
-                selectedSource->subscribe(
+                auto sinkInner = make_subscriber<value_type>(
                     state->out,
                     innercs,
                 // on_next
@@ -137,6 +131,13 @@ struct merge : public operator_base<typename std::decay<Observable>::type::value
                         }
                     }
                 );
+                auto selectedSinkInner = on_exception(
+                    [&](){return state->coordinator.out(sinkInner);},
+                    state->out);
+                if (selectedSinkInner.empty()) {
+                    return;
+                }
+                selectedSource->subscribe(std::move(selectedSinkInner.get()));
             },
         // on_error
             [state](std::exception_ptr e) {
@@ -149,6 +150,13 @@ struct merge : public operator_base<typename std::decay<Observable>::type::value
                 }
             }
         );
+        auto selectedSink = on_exception(
+            [&](){return state->coordinator.out(sink);},
+            state->out);
+        if (selectedSink.empty()) {
+            return;
+        }
+        source->subscribe(std::move(selectedSink.get()));
     }
 };
 

@@ -45,7 +45,7 @@ SCENARIO("pythagorian for loops", "[hide][for][pythagorian][perf]"){
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
                    duration_cast<milliseconds>(start.time_since_epoch());
-            std::cout << "pythagorian for   : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << std::endl;
+            std::cout << "pythagorian for   : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << c / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
 
         }
     }
@@ -90,7 +90,7 @@ SCENARIO("flat_map pythagorian ranges", "[hide][range][flat_map][pythagorian][pe
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
                    duration_cast<milliseconds>(start.time_since_epoch());
-            std::cout << "merge pythagorian range : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << std::endl;
+            std::cout << "merge pythagorian range : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << c / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
 
         }
     }
@@ -108,7 +108,7 @@ SCENARIO("synchronize flat_map pythagorian ranges", "[hide][range][flat_map][syn
 
             auto sc = rxsc::make_event_loop();
             //auto sc = rxsc::make_new_thread();
-            auto so = rx::identity_one_worker(sc);
+            auto so = rx::synchronize_in_one_worker(sc);
 
             int c = 0;
             std::atomic<int> ct(0);
@@ -152,7 +152,68 @@ SCENARIO("synchronize flat_map pythagorian ranges", "[hide][range][flat_map][syn
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
                    duration_cast<milliseconds>(start.time_since_epoch());
-            std::cout << "merge sync pythagorian range : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << std::endl;
+            std::cout << "merge sync pythagorian range : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << c / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
+        }
+    }
+}
+
+SCENARIO("serialize flat_map pythagorian ranges", "[hide][range][flat_map][serialize][pythagorian][perf]"){
+    const int& tripletCount = static_tripletCount;
+    GIVEN("some ranges"){
+        WHEN("generating pythagorian triplets"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
+
+            std::mutex lock;
+            std::condition_variable wake;
+
+            auto sc = rxsc::make_event_loop();
+            //auto sc = rxsc::make_new_thread();
+            auto so = rx::serialize_one_worker(sc);
+
+            int c = 0;
+            std::atomic<int> ct(0);
+            int n = 1;
+            auto start = clock::now();
+            auto triples =
+                rxs::range(1, so)
+                    .flat_map(
+                        [&c, so](int z){
+                            return rxs::range(1, z, 1, so)
+                                .flat_map(
+                                    [&c, so, z](int x){
+                                        return rxs::range(x, z, 1, so)
+                                            .filter([&c, z, x](int y){
+                                                ++c;
+                                                if (x*x + y*y == z*z) {
+                                                    return true;}
+                                                else {
+                                                    return false;}})
+                                            .map([z, x](int y){return std::make_tuple(x, y, z);})
+                                            // forget type to workaround lambda deduction bug on msvc 2013
+                                            .as_dynamic();},
+                                    [](int x, std::tuple<int,int,int> triplet){return triplet;},
+                                    so)
+                                // forget type to workaround lambda deduction bug on msvc 2013
+                                .as_dynamic();},
+                        [](int z, std::tuple<int,int,int> triplet){return triplet;},
+                        so);
+            triples
+                .take(tripletCount)
+                .subscribe(
+                    rxu::apply_to([&ct](int x,int y,int z){
+                        ++ct;}),
+                    [](std::exception_ptr){abort();},
+                    [&](){
+                        wake.notify_one();});
+
+            std::unique_lock<std::mutex> guard(lock);
+            wake.wait(guard, [&](){return ct == tripletCount;});
+
+            auto finish = clock::now();
+            auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
+                   duration_cast<milliseconds>(start.time_since_epoch());
+            std::cout << "merge serial pythagorian range : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << c / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
         }
     }
 }

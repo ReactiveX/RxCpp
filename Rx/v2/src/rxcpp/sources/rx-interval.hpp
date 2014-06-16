@@ -48,21 +48,16 @@ struct interval : public source_base<long>
         // creates a worker whose lifetime is the same as this subscription
         auto coordinator = initial.coordination.create_coordinator(o.get_subscription());
 
-        auto selectedDest = on_exception(
-            [&](){return coordinator.out(o);},
-            o);
-        if (selectedDest.empty()) {
-            return;
-        }
+        auto controller = coordinator.get_worker();
 
         auto counter = std::make_shared<long>(0);
 
-        coordinator.get_output().get_worker().schedule_periodically(
+        controller.schedule_periodically(
             initial.initial,
             initial.period,
-            [selectedDest, counter](const rxsc::schedulable&) {
+            [o, counter](const rxsc::schedulable&) {
                 // send next value
-                selectedDest.get().on_next(++(*counter));
+                o.on_next(++(*counter));
             });
     }
 };

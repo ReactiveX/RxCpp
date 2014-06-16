@@ -93,16 +93,10 @@ struct iterate : public source_base<typename iterate_traits<Collection>::value_t
 
         // creates a worker whose lifetime is the same as this subscription
         auto coordinator = initial.coordination.create_coordinator(o.get_subscription());
-        auto selectedDest = on_exception(
-            [&](){return coordinator.out(o);},
-            o);
-        if (selectedDest.empty()) {
-            return;
-        }
 
-        iterate_state_type state(initial, std::move(selectedDest.get()));
+        iterate_state_type state(initial, std::move(o));
 
-        auto controller = coordinator.get_output().get_worker();
+        auto controller = coordinator.get_worker();
 
         controller.schedule(
             [state](const rxsc::schedulable& self){

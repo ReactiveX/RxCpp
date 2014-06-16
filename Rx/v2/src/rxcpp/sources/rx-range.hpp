@@ -42,24 +42,18 @@ struct range : public source_base<T>
     void on_subscribe(Subscriber o) const {
         static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
 
-        typedef typename coordinator_type::template get<Subscriber>::type output_type;
+        typedef Subscriber output_type;
 
         // creates a worker whose lifetime is the same as this subscription
         auto coordinator = initial.coordination.create_coordinator(o.get_subscription());
-        auto selectedDest = on_exception(
-            [&](){return coordinator.out(o);},
-            o);
-        if (selectedDest.empty()) {
-            return;
-        }
 
-        auto controller = coordinator.get_output().get_worker();
+        auto controller = coordinator.get_worker();
 
         auto state = initial;
 
         controller.schedule(
             [=](const rxsc::schedulable& self){
-                auto& dest = selectedDest.get();
+                auto& dest = o;
                 if (!dest.is_subscribed()) {
                     // terminate loop
                     return;

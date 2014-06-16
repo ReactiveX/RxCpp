@@ -55,7 +55,7 @@ class synchronize_observer : public detail::multicast_observer<T>
             if (current == mode::Empty) {
                 current = mode::Processing;
                 auto keepAlive = this->shared_from_this();
-                auto processor = coordinator.get_output().get_worker();
+                auto processor = coordinator.get_worker();
                 processor.schedule(lifetime, [keepAlive, this](const rxsc::schedulable& self){
                     try {
                         std::unique_lock<std::mutex> guard(lock);
@@ -206,33 +206,19 @@ class synchronize_in_one_worker : public coordination_base
             return factory;
         }
         template<class Observable>
-        auto operator()(Observable o) const
+        auto in(Observable o) const
             -> decltype(o.synchronize(coordination).ref_count()) {
             return      o.synchronize(coordination).ref_count();
-            static_assert(is_observable<Observable>::value, "can only synchronize observables");
-        }
-    };
-
-    class output_type
-    {
-        rxsc::worker controller;
-        rxsc::scheduler factory;
-    public:
-        explicit output_type(rxsc::worker w)
-            : controller(w)
-            , factory(rxsc::make_same_worker(w))
-        {
-        }
-        rxsc::worker get_worker() const {
-            return controller;
-        }
-        rxsc::scheduler get_scheduler() const {
-            return factory;
         }
         template<class Subscriber>
-        Subscriber operator()(Subscriber s) const {
+        auto out(Subscriber s) const
+            -> Subscriber {
             return std::move(s);
-            static_assert(is_subscriber<Subscriber>::value, "can only synchronize subscribers");
+        }
+        template<class F>
+        auto act(F f) const
+            -> F {
+            return std::move(f);
         }
     };
 
@@ -240,11 +226,11 @@ public:
 
     explicit synchronize_in_one_worker(rxsc::scheduler sc) : factory(sc) {}
 
-    typedef coordinator<input_type, output_type> coordinator_type;
+    typedef coordinator<input_type> coordinator_type;
 
     coordinator_type create_coordinator(composite_subscription cs = composite_subscription()) const {
         auto w = factory.create_worker(std::move(cs));
-        return coordinator_type(input_type(w), output_type(w));
+        return coordinator_type(input_type(std::move(w)));
     }
 };
 

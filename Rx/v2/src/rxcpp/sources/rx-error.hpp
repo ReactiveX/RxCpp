@@ -47,16 +47,9 @@ struct error : public source_base<T>
         auto controller = coordinator.get_output().get_worker();
         auto exception = initial.exception;
 
-        auto selectedDest = on_exception(
-            [&](){return coordinator.out(o);},
-            o);
-        if (selectedDest.empty()) {
-            return;
-        }
-
         controller.schedule(
             [=](const rxsc::schedulable&){
-                auto& dest = selectedDest.get();
+                auto& dest = o;
                 if (!dest.is_subscribed()) {
                     // terminate loop
                     return;
