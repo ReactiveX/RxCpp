@@ -86,8 +86,8 @@ class synchronize_observer : public detail::multicast_observer<T>
 
         synchronize_observer_state(coordinator_type coor, composite_subscription cs, output_type scbr)
             : lifetime(std::move(cs))
-            , coordinator(std::move(coor))
             , current(mode::Empty)
+            , coordinator(std::move(coor))
             , destination(std::move(scbr))
         {
         }

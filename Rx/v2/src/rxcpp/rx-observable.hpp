@@ -74,20 +74,6 @@ struct select_chain
 
 }
 
-//
-// this type is the default used by operators that subscribe to
-// multiple sources. It assumes that the sources are already synchronized
-//
-struct identity_observable
-{
-    template<class Observable>
-    auto operator()(Observable o)
-        -> Observable {
-        return      std::move(o);
-        static_assert(is_observable<Observable>::value, "only support observables");
-    }
-};
-
 template<class T>
 class dynamic_observable
     : public rxs::source_base<T>
@@ -624,6 +610,28 @@ public:
     auto publish(T first, composite_subscription cs = composite_subscription()) const
         -> decltype(multicast(rxsub::behavior<T>(first, cs))) {
         return      multicast(rxsub::behavior<T>(first, cs));
+    }
+
+    /// reduce ->
+    /// for each item from this observable use Accumulator to combine items, when completed use ResultSelector to produce a value that will be emitted from the new observable that is returned.
+    ///
+    template<class Seed, class Accumulator, class ResultSelector>
+    auto reduce(Seed seed, Accumulator&& a, ResultSelector&& rs) const
+        ->      observable<typename rxo::detail::reduce<T, this_type, Accumulator, ResultSelector, Seed>::value_type,   rxo::detail::reduce<T, this_type, Accumulator, ResultSelector, Seed>> {
+        return  observable<typename rxo::detail::reduce<T, this_type, Accumulator, ResultSelector, Seed>::value_type,   rxo::detail::reduce<T, this_type, Accumulator, ResultSelector, Seed>>(
+                                                                                                                        rxo::detail::reduce<T, this_type, Accumulator, ResultSelector, Seed>(*this, std::forward<Accumulator>(a), std::forward<ResultSelector>(rs), seed));
+    }
+
+    /// reduce_to ->
+    /// for each item from this observable reduce it using the Accumulator and ResultSelector and Seed.
+    /// NOTE: this overload allows constants like rxo::sum and rxo::average to be passed in. Adding a
+    /// sum or average method here causes compile errors because they are not templated and this type
+    /// is a partial type at this point.
+    ///
+    template<template<class X> class Seeder, template<class U> class Accumulator, template<class V> class ResultSelector>
+    auto reduce_to(rxo::specific_reduce<Seeder, Accumulator, ResultSelector> sr) const
+        -> decltype(reduce(sr.template seed<T>(), sr.template accumulator<T>(), sr.template result_selector<T>())) {
+        return      reduce(sr.template seed<T>(), sr.template accumulator<T>(), sr.template result_selector<T>());
     }
 
     /// scan ->

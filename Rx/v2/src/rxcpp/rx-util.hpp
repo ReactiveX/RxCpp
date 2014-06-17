@@ -278,8 +278,8 @@ public:
         return *this;
     }
     maybe& operator=(const maybe& other) {
-        if (const T* pother = other.get()) {
-            reset(*pother);
+        if (!other.empty()) {
+            reset(other.get());
         } else {
             reset();
         }

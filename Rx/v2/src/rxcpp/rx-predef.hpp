@@ -182,6 +182,28 @@ public:
     static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_connectable_observable>::value;
 };
 
+//
+// this type is the default used by operators that subscribe to
+// multiple sources. It assumes that the sources are already synchronized
+//
+struct identity_observable
+{
+    template<class Observable>
+    auto operator()(Observable o)
+        -> Observable {
+        return      std::move(o);
+        static_assert(is_observable<Observable>::value, "only support observables");
+    }
+};
+
+template<class T>
+struct identity_for
+{
+    T operator()(T t) {
+        return      std::move(t);
+    }
+};
+
 }
 
 #endif
