@@ -51,6 +51,7 @@ namespace rxo=operators;
 #include "operators/rx-connect_forever.hpp"
 #include "operators/rx-reduce.hpp"
 #include "operators/rx-scan.hpp"
+#include "operators/rx-switch_on_next.hpp"
 #include "operators/rx-take.hpp"
 #include "operators/rx-take_until.hpp"
 

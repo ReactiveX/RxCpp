@@ -336,6 +336,51 @@ public:
     }
 
     template<class Coordination, bool IsObservable = is_observable<value_type>::value>
+    struct switch_on_next_result;
+
+    template<class Coordination>
+    struct switch_on_next_result<Coordination, true>
+    {
+        typedef
+            observable<
+                typename this_type::value_type::value_type,
+                rxo::detail::switch_on_next<this_type, Coordination>>
+        type;
+        static type make(const this_type* that, Coordination sf) {
+            return type(rxo::detail::switch_on_next<this_type, Coordination>(*that, std::move(sf)));
+        }
+    };
+    template<class Coordination>
+    struct switch_on_next_result<Coordination, false>
+    {
+        typedef this_type type;
+        static type make(const this_type* that, Coordination) {
+            return *that;
+        }
+    };
+
+    /// switch_on_next (AKA Switch) ->
+    /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
+    /// for each item from this observable subscribe to that observable after unsubscribing from any previous subscription.
+    ///
+    auto switch_on_next() const
+        -> typename switch_on_next_result<identity_one_worker>::type {
+        return  switch_on_next_result<identity_one_worker>::make(this, identity_one_worker(rxsc::make_current_thread()));
+    }
+
+    /// switch_on_next (AKA Switch) ->
+    /// The coodination is used to synchronize sources from different contexts.
+    /// for each item from this observable subscribe to that observable after unsubscribing from any previous subscription.
+    ///
+    template<class Coordination>
+    auto switch_on_next(Coordination&& sf) const
+        -> typename std::enable_if<is_observable<value_type>::value,
+                observable<typename rxo::detail::switch_on_next<this_type, Coordination>::value_type,   rxo::detail::switch_on_next<this_type, Coordination>>>::type {
+        return  observable<typename rxo::detail::switch_on_next<this_type, Coordination>::value_type,   rxo::detail::switch_on_next<this_type, Coordination>>(
+                                                                                                        rxo::detail::switch_on_next<this_type, Coordination>(*this, std::forward<Coordination>(sf)));
+    }
+
+    template<class Coordination, bool IsObservable = is_observable<value_type>::value>
     struct merge_result;
 
     template<class Coordination>
@@ -622,16 +667,45 @@ public:
                                                                                                                         rxo::detail::reduce<T, this_type, Accumulator, ResultSelector, Seed>(*this, std::forward<Accumulator>(a), std::forward<ResultSelector>(rs), seed));
     }
 
-    /// reduce_to ->
-    /// for each item from this observable reduce it using the Accumulator and ResultSelector and Seed.
-    /// NOTE: this overload allows constants like rxo::sum and rxo::average to be passed in. Adding a
-    /// sum or average method here causes compile errors because they are not templated and this type
-    /// is a partial type at this point.
+    template<class Seed, class Accumulator, class ResultSelector,
+        bool CanReduce = rxo::detail::is_accumulate_function_for<T, Seed, Accumulator>::value &&
+            rxo::detail::is_result_function_for<Seed, ResultSelector>::value>
+    struct specific_reduce_result;
+
+    template<class Seed, class Accumulator, class ResultSelector>
+    struct specific_reduce_result<Seed, Accumulator, ResultSelector, true>
+    {
+        typedef
+            observable<
+                typename rxo::detail::is_result_function_for<Seed, ResultSelector>::type,
+                rxo::detail::reduce<T, this_type, Accumulator, ResultSelector, Seed>>
+        type;
+        static type make(const this_type* that, Seed seed, Accumulator a, ResultSelector rs) {
+            return type(rxo::detail::reduce<T, this_type, Accumulator, ResultSelector, Seed>(*that, std::move(a), std::move(rs), std::move(seed)));
+        }
+    };
+    template<class Seed, class Accumulator, class ResultSelector>
+    struct specific_reduce_result<Seed, Accumulator, ResultSelector, false>
+    {
+        typedef void type;
+        static void make(const this_type* that, Seed, Accumulator, ResultSelector) {
+        }
+    };
+
+    /// sum ->
+    /// for each item from this observable reduce it by adding to the previous values.
     ///
-    template<template<class X> class Seeder, template<class U> class Accumulator, template<class V> class ResultSelector>
-    auto reduce_to(rxo::specific_reduce<Seeder, Accumulator, ResultSelector> sr) const
-        -> decltype(reduce(sr.template seed<T>(), sr.template accumulator<T>(), sr.template result_selector<T>())) {
-        return      reduce(sr.template seed<T>(), sr.template accumulator<T>(), sr.template result_selector<T>());
+    auto sum() const
+        -> typename specific_reduce_result<typename rxo::detail::initialize_seeder<T>::seed_type, std::plus<T>, identity_for<T>>::type {
+        return      specific_reduce_result<typename rxo::detail::initialize_seeder<T>::seed_type, std::plus<T>, identity_for<T>>::make(this, rxo::detail::initialize_seeder<T>().seed(), std::plus<T>(), identity_for<T>());
+    }
+
+    /// average ->
+    /// for each item from this observable reduce it by adding to the previous values and then dividing by the number of items at the end.
+    ///
+    auto average() const
+        -> typename specific_reduce_result<typename rxo::detail::average<T>::seed_type, rxo::detail::average<T>, rxo::detail::average<T>>::type {
+        return      specific_reduce_result<typename rxo::detail::average<T>::seed_type, rxo::detail::average<T>, rxo::detail::average<T>>::make(this, rxo::detail::average<T>().seed(), rxo::detail::average<T>(), rxo::detail::average<T>());
     }
 
     /// scan ->

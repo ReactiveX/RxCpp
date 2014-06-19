@@ -2,8 +2,8 @@
 
 #pragma once
 
-#if !defined(RXCPP_OPERATORS_RX_MERGE_HPP)
-#define RXCPP_OPERATORS_RX_MERGE_HPP
+#if !defined(RXCPP_OPERATORS_RX_SWITCH_ON_NEXT_HPP)
+#define RXCPP_OPERATORS_RX_SWITCH_ON_NEXT_HPP
 
 #include "../rx-includes.hpp"
 
@@ -14,18 +14,18 @@ namespace operators {
 namespace detail {
 
 template<class Observable, class Coordination>
-struct merge
+struct switch_on_next
     : public operator_base<typename std::decay<Observable>::type::value_type::value_type>
 {
-    static_assert(is_observable<Observable>::value, "merge requires an observable");
-    static_assert(is_observable<typename Observable::value_type>::value, "merge an observable that contains observables");
+    static_assert(is_observable<Observable>::value, "switch_on_next requires an observable");
+    static_assert(is_observable<typename Observable::value_type>::value, "switch_on_next an observable that contains observables");
 
-    typedef merge<Observable, Coordination> this_type;
+    typedef switch_on_next<Observable, Coordination> this_type;
 
     typedef typename std::decay<Observable>::type source_type;
 
-    typedef typename source_type::value_type source_value_type;
-    typedef typename source_value_type::value_type value_type;
+    typedef typename source_type::value_type collection_type;
+    typedef typename collection_type::value_type collection_value_type;
 
     typedef typename std::decay<Coordination>::type coordination_type;
     typedef typename coordination_type::coordinator_type coordinator_type;
@@ -42,7 +42,7 @@ struct merge
     };
     values initial;
 
-    merge(source_type o, coordination_type sf)
+    switch_on_next(source_type o, coordination_type sf)
         : initial(std::move(o), std::move(sf))
     {
     }
@@ -53,11 +53,11 @@ struct merge
 
         typedef Subscriber output_type;
 
-        struct merge_state_type
-            : public std::enable_shared_from_this<merge_state_type>
+        struct switch_state_type
+            : public std::enable_shared_from_this<switch_state_type>
             , public values
         {
-            merge_state_type(values i, coordinator_type coor, output_type oarg)
+            switch_state_type(values i, coordinator_type coor, output_type oarg)
                 : values(std::move(i))
                 , pendingCompletions(0)
                 , coordinator(std::move(coor))
@@ -68,13 +68,14 @@ struct merge
             // subscriptions have received on_completed
             int pendingCompletions;
             coordinator_type coordinator;
+            composite_subscription inner_lifetime;
             output_type out;
         };
 
         auto coordinator = initial.coordination.create_coordinator();
 
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<merge_state_type>(new merge_state_type(initial, std::move(coordinator), std::move(scbr)));
+        auto state = std::shared_ptr<switch_state_type>(new switch_state_type(initial, std::move(coordinator), std::move(scbr)));
 
         composite_subscription outercs;
 
@@ -93,20 +94,23 @@ struct merge
         // this subscribe does not share the observer subscription
         // so that when it is unsubscribed the observer can be called
         // until the inner subscriptions have finished
-        auto sink = make_subscriber<source_value_type>(
+        auto sink = make_subscriber<collection_type>(
             state->out,
             outercs,
         // on_next
-            [state](source_value_type st) {
+            [state](collection_type st) {
 
-                composite_subscription innercs;
+                state->inner_lifetime.unsubscribe();
+
+                state->inner_lifetime = composite_subscription();
 
                 // when the out observer is unsubscribed all the
                 // inner subscriptions are unsubscribed as well
-                auto innercstoken = state->out.add(innercs);
+                auto innerlifetimetoken = state->out.add(state->inner_lifetime);
 
-                innercs.add(make_subscription([state, innercstoken](){
-                    state->out.remove(innercstoken);
+                state->inner_lifetime.add(make_subscription([state, innerlifetimetoken](){
+                    state->out.remove(innerlifetimetoken);
+                    --state->pendingCompletions;
                 }));
 
                 auto selectedSource = on_exception(
@@ -116,14 +120,13 @@ struct merge
                     return;
                 }
 
-                ++state->pendingCompletions;
                 // this subscribe does not share the source subscription
                 // so that when it is unsubscribed the source will continue
-                auto sinkInner = make_subscriber<value_type>(
+                auto sinkInner = make_subscriber<collection_value_type>(
                     state->out,
-                    innercs,
+                    state->inner_lifetime,
                 // on_next
-                    [state, st](value_type ct) {
+                    [state, st](collection_value_type ct) {
                         state->out.on_next(std::move(ct));
                     },
                 // on_error
@@ -132,17 +135,20 @@ struct merge
                     },
                 //on_completed
                     [state](){
-                        if (--state->pendingCompletions == 0) {
+                        if (state->pendingCompletions == 1) {
                             state->out.on_completed();
                         }
                     }
                 );
+
                 auto selectedSinkInner = on_exception(
                     [&](){return state->coordinator.out(sinkInner);},
                     state->out);
                 if (selectedSinkInner.empty()) {
                     return;
                 }
+
+                ++state->pendingCompletions;
                 selectedSource->subscribe(std::move(selectedSinkInner.get()));
             },
         // on_error
@@ -156,42 +162,45 @@ struct merge
                 }
             }
         );
+
         auto selectedSink = on_exception(
             [&](){return state->coordinator.out(sink);},
             state->out);
         if (selectedSink.empty()) {
             return;
         }
+
         source->subscribe(std::move(selectedSink.get()));
+
     }
 };
 
 template<class Coordination>
-class merge_factory
+class switch_on_next_factory
 {
     typedef typename std::decay<Coordination>::type coordination_type;
 
     coordination_type coordination;
 public:
-    merge_factory(coordination_type sf)
+    switch_on_next_factory(coordination_type sf)
         : coordination(std::move(sf))
     {
     }
 
     template<class Observable>
     auto operator()(Observable&& source)
-        ->      observable<typename merge<Observable, Coordination>::value_type, merge<Observable, Coordination>> {
-        return  observable<typename merge<Observable, Coordination>::value_type, merge<Observable, Coordination>>(
-                                    merge<Observable, Coordination>(std::forward<Observable>(source), coordination));
+        ->      observable<typename switch_on_next<Observable, Coordination>::value_type, switch_on_next<Observable, Coordination>> {
+        return  observable<typename switch_on_next<Observable, Coordination>::value_type, switch_on_next<Observable, Coordination>>(
+                                    switch_on_next<Observable, Coordination>(std::forward<Observable>(source), coordination));
     }
 };
 
 }
 
 template<class Coordination>
-auto merge(Coordination&& sf)
-    ->      detail::merge_factory<Coordination> {
-    return  detail::merge_factory<Coordination>(std::forward<Coordination>(sf));
+auto switch_on_next(Coordination&& sf)
+    ->      detail::switch_on_next_factory<Coordination> {
+    return  detail::switch_on_next_factory<Coordination>(std::forward<Coordination>(sf));
 }
 
 }

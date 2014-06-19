@@ -13,6 +13,40 @@ namespace operators {
 
 namespace detail {
 
+template<class T, class Seed, class Accumulator>
+struct is_accumulate_function_for {
+
+    typedef typename std::decay<Accumulator>::type accumulator_type;
+    typedef typename std::decay<Seed>::type seed_type;
+    typedef T source_value_type;
+
+    struct tag_not_valid {};
+    template<class CS, class CV, class CRS>
+    static auto check(int) -> decltype((*(CRS*)nullptr)(*(CS*)nullptr, *(CV*)nullptr));
+    template<class CS, class CV, class CRS>
+    static tag_not_valid check(...);
+
+    typedef decltype(check<seed_type, source_value_type, accumulator_type>(0)) type;
+    static const bool value = std::is_same<type, seed_type>::value;
+};
+
+template<class Seed, class ResultSelector>
+struct is_result_function_for {
+
+    typedef typename std::decay<ResultSelector>::type result_selector_type;
+    typedef typename std::decay<Seed>::type seed_type;
+
+    struct tag_not_valid {};
+
+    template<class CS, class CRS>
+    static auto check(int) -> decltype((*(CRS*)nullptr)(*(CS*)nullptr));
+    template<class CS, class CRS>
+    static tag_not_valid check(...);
+
+    typedef decltype(check<seed_type, result_selector_type>(0)) type;
+    static const bool value = !std::is_same<type, tag_not_valid>::value;
+};
+
 template<class T, class Observable, class Accumulator, class ResultSelector, class Seed>
 struct reduce_traits
 {
@@ -23,23 +57,11 @@ struct reduce_traits
 
     typedef T source_value_type;
 
-    struct tag_not_valid {};
+    static_assert(is_accumulate_function_for<source_value_type, seed_type, accumulator_type>::value, "reduce Accumulator must be a function with the signature Seed(Seed, reduce::source_value_type)");
 
-    template<class CS, class CV, class CRS>
-    static auto accumulate_check(int) -> decltype((*(CRS*)nullptr)(*(CS*)nullptr, *(CV*)nullptr));
-    template<class CS, class CV, class CRS>
-    static tag_not_valid accumulate_check(...);
+    static_assert(is_result_function_for<seed_type, result_selector_type>::value, "reduce ResultSelector must be a function with the signature reduce::value_type(Seed)");
 
-    static_assert(std::is_same<decltype(accumulate_check<seed_type, source_value_type, accumulator_type>(0)), seed_type>::value, "reduce Accumulator must be a function with the signature Seed(Seed, reduce::source_value_type)");
-
-    template<class CS, class CRS>
-    static auto result_check(int) -> decltype((*(CRS*)nullptr)(*(CS*)nullptr));
-    template<class CS, class CRS>
-    static tag_not_valid result_check(...);
-
-    static_assert(!std::is_same<decltype(result_check<seed_type, result_selector_type>(0)), tag_not_valid>::value, "reduce ResultSelector must be a function with the signature reduce::value_type(Seed)");
-
-    typedef decltype(result_check<seed_type, result_selector_type>(0)) value_type;
+    typedef typename is_result_function_for<seed_type, result_selector_type>::type value_type;
 };
 
 template<class T, class Observable, class Accumulator, class ResultSelector, class Seed>
@@ -213,28 +235,6 @@ auto reduce(Seed s, Accumulator a, ResultSelector rs)
     ->      detail::reduce_factory<Accumulator, ResultSelector, Seed> {
     return  detail::reduce_factory<Accumulator, ResultSelector, Seed>(std::move(a), std::move(rs), std::move(s));
 }
-
-template<template<class X> class Seeder, template<class T> class Accumulator, template<class U> class ResultSelector>
-struct specific_reduce
-{
-    template<class V>
-    Accumulator<V> accumulator() const {
-        return Accumulator<V>{};
-    }
-    template<class V>
-    ResultSelector<V> result_selector() const {
-        return ResultSelector<V>{};
-    }
-    template<class V>
-    auto seed() const
-        -> typename Seeder<V>::seed_type {
-        return Seeder<V>().seed();
-    }
-};
-
-static const specific_reduce<detail::initialize_seeder, std::plus, identity_for> sum{};
-
-static const specific_reduce<detail::average, detail::average, detail::average> average{};
 
 
 }

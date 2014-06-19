@@ -31,11 +31,11 @@ SCENARIO("reduce some data with seed", "[reduce][operators]"){
             on.on_completed(260)
         });
 
-        auto sum = xs.reduce_to(rxo::sum);
+        auto sum = xs.sum();
 
         WHEN("mapped to ints that are one larger"){
 
-            auto res = w.start<int>(
+            auto res = w.start(
                 [&]() {
                     return xs
                         .reduce(seed,
@@ -75,6 +75,7 @@ SCENARIO("average some data", "[reduce][average][operators]"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
         const rxsc::test::messages<int> on;
+        const rxsc::test::messages<double> d_on;
 
         auto xs = sc.make_hot_observable({
             on.on_next(150, 1),
@@ -86,16 +87,16 @@ SCENARIO("average some data", "[reduce][average][operators]"){
 
         WHEN("mapped to ints that are one larger"){
 
-            auto res = w.start<int>(
+            auto res = w.start(
                 [&]() {
-                    return xs.reduce_to(rxo::average);
+                    return xs.average();
                 }
             );
 
             THEN("the output stops on completion"){
                 auto required = rxu::to_vector({
-                    on.on_next(250, 3.0),
-                    on.on_completed(250)
+                    d_on.on_next(250, 3.0),
+                    d_on.on_completed(250)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
