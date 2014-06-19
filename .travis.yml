@@ -9,7 +9,6 @@ compiler:
   - clang
 
 env:
-  - BUILD_TYPE=RelWithDebInfo
   - BUILD_TYPE=Release
 
 before_install:
@@ -25,7 +24,7 @@ install:
 script:
   - cd projects/build
   - ctest -V
-  - cd ..
+  - cd ../..
 
 branches:
   only:
@@ -35,5 +34,5 @@ notifications:
   recipients:
     - kirk.shoop@microsoft.com
   email:
-    on_success: change
+    on_success: always
     on_failure: always
