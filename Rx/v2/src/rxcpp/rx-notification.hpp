@@ -65,16 +65,16 @@ auto to_stream(std::ostream& os, const T& t, int, int)
     return      os << t;
 }
 
+#if RXCPP_USE_RTTI
 template<class T>
-auto to_stream(std::ostream& os, const T&, int, ...)
-    -> decltype(os << typeid(T).name() << "") {
-    return      os << "< " << typeid(T).name() << " does not support ostream>";
+std::ostream& to_stream(std::ostream& os, const T&, int, ...) {
+    return os << "< " << typeid(T).name() << " does not support ostream>";
 }
+#endif
 
 template<class T>
-auto to_stream(std::ostream& os, const T&, ...)
-    -> decltype(os << "") {
-    return      os << "<the value does not support ostream>";
+std::ostream& to_stream(std::ostream& os, const T&, ...) {
+    return os << "<the value does not support ostream>";
 }
 
 template<class T>
