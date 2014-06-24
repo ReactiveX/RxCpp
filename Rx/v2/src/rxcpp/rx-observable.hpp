@@ -7,6 +7,12 @@
 
 #include "rx-includes.hpp"
 
+#ifdef __GNUG__
+#define EXPLICIT_THIS this->
+#else
+#define EXPLICIT_THIS
+#endif
+
 namespace rxcpp {
 
 namespace detail {
@@ -298,8 +304,8 @@ public:
     ///
     template<class Predicate>
     auto filter(Predicate p) const
-        -> decltype(lift(rxo::detail::filter<T, Predicate>(std::move(p)))) {
-        return      lift(rxo::detail::filter<T, Predicate>(std::move(p)));
+        -> decltype(EXPLICIT_THIS lift(rxo::detail::filter<T, Predicate>(std::move(p)))) {
+        return                    lift(rxo::detail::filter<T, Predicate>(std::move(p)));
     }
 
     /// map (AKA Select) ->
@@ -307,32 +313,32 @@ public:
     ///
     template<class Selector>
     auto map(Selector&& s) const
-        -> decltype(lift(rxo::detail::map<T, Selector>(std::move(s)))) {
-        return      lift(rxo::detail::map<T, Selector>(std::move(s)));
+        -> decltype(EXPLICIT_THIS lift(rxo::detail::map<T, Selector>(std::move(s)))) {
+        return                    lift(rxo::detail::map<T, Selector>(std::move(s)));
     }
 
     /// distinct_until_changed ->
     /// for each item from this observable, filter out repeated values and emit only changes from the new observable that is returned.
     ///
     auto distinct_until_changed() const
-        -> decltype(lift(rxo::detail::distinct_until_changed<T>())) {
-        return      lift(rxo::detail::distinct_until_changed<T>());
+        -> decltype(EXPLICIT_THIS lift(rxo::detail::distinct_until_changed<T>())) {
+        return                    lift(rxo::detail::distinct_until_changed<T>());
     }
 
     /// buffer ->
     /// collect count items from this observable and produce a vector of them to emit from the new observable that is returned.
     ///
     auto buffer(int count) const
-        -> decltype(lift(rxo::detail::buffer_count<T>(count, count))) {
-        return      lift(rxo::detail::buffer_count<T>(count, count));
+        -> decltype(EXPLICIT_THIS lift(rxo::detail::buffer_count<T>(count, count))) {
+        return                    lift(rxo::detail::buffer_count<T>(count, count));
     }
 
     /// buffer ->
     /// start a new vector every skip items and collect count items from this observable into each vector to emit from the new observable that is returned.
     ///
     auto buffer(int count, int skip) const
-        -> decltype(lift(rxo::detail::buffer_count<T>(count, skip))) {
-        return      lift(rxo::detail::buffer_count<T>(count, skip));
+        -> decltype(EXPLICIT_THIS lift(rxo::detail::buffer_count<T>(count, skip))) {
+        return                    lift(rxo::detail::buffer_count<T>(count, skip));
     }
 
     template<class Coordination, bool IsObservable = is_observable<value_type>::value>
@@ -635,8 +641,8 @@ public:
     ///
     template<class Coordination>
     auto synchronize(Coordination cn, composite_subscription cs = composite_subscription()) const
-        -> decltype(multicast(rxsub::synchronize<T, Coordination>(std::move(cn), cs))) {
-        return      multicast(rxsub::synchronize<T, Coordination>(std::move(cn), cs));
+        -> decltype(EXPLICIT_THIS multicast(rxsub::synchronize<T, Coordination>(std::move(cn), cs))) {
+        return                    multicast(rxsub::synchronize<T, Coordination>(std::move(cn), cs));
     }
 
     /// publish ->
@@ -644,8 +650,8 @@ public:
     /// NOTE: multicast of a subject
     ///
     auto publish(composite_subscription cs = composite_subscription()) const
-        -> decltype(multicast(rxsub::subject<T>(cs))) {
-        return      multicast(rxsub::subject<T>(cs));
+        -> decltype(EXPLICIT_THIS multicast(rxsub::subject<T>(cs))) {
+        return                    multicast(rxsub::subject<T>(cs));
     }
 
     /// publish ->
