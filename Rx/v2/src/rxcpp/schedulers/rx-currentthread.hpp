@@ -32,7 +32,7 @@ public:
 
 private:
     static current_thread_queue_type*& current_thread_queue() {
-        RXCPP_THREAD_LOCAL static current_thread_queue_type* queue;
+        static RXCPP_THREAD_LOCAL current_thread_queue_type* queue;
         return queue;
     }
 
