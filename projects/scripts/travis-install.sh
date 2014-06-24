@@ -10,8 +10,18 @@ if [ "$TRAVIS_OS_NAME" = linux -o -z "$TRAVIS_OS_NAME" ]; then
     sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test # gcc-4.8 backport for clang-3.5
     sudo apt-get clean
     sudo apt-get update
-    sudo apt-get install -q --fix-missing clang-3.5 cmake libssl-dev
-#libstdc++6
+
+    sudo apt-get install -q --fix-missing cmake libssl-dev
+
+    if [ "$CC" = clang ]; then
+        sudo apt-get install -q --fix-missing clang-3.5
+    fi
+
+    if [ "$CC" = gcc ]; then
+        sudo apt-get install -q --fix-missing gcc-4.8 g++-4.8
+        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 20
+        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 20
+    fi
 
 elif [ "$TRAVIS_OS_NAME" = osx ]; then
     xcode-select --install
