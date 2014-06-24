@@ -7,17 +7,23 @@ os:
 
 compiler:
   - clang
+  - gcc
 
 env:
   - BUILD_TYPE=RelWithDebInfo
   - BUILD_TYPE=Release
+  
+matrix:
+  exclude:
+    - compiler: gcc
+      os: osx
 
 before_install:
   - sh projects/scripts/travis-install.sh
 
 install:
   - cd projects
-  - cmake -GUnix\ Makefiles -HCMake -Bbuild -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+  - cmake -GUnix\ Makefiles -HCMake -Bbuild -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX
   - cd build
   - make -j4
   - cd ../..
