@@ -20,7 +20,7 @@
 * RxCpp is regularly tested on OSX and Windows.
 * RxCpp is regularly built with Clang and VC
 * RxCpp depends on the latest compiler releases.
-* RxCpp does not compile with gcc at this time. Contributions are welcome.
+* RxCpp has an experimental build with gcc.
 
 RxCpp uses CMake to create build files for several platforms and IDE's
 
@@ -47,6 +47,22 @@ cmake -G"Visual Studio 12" ..\CMake -B.
 mkdir projects/build
 cd projects/build
 cmake -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -B. ../CMake
+make
+```
+
+####Linux --- Clang
+```
+mkdir projects/build
+cd projects/build
+cmake -G"Unix Makefiles" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=RelWithDebInfo -B. ../CMake
+make
+```
+
+####Linux --- GCC
+```
+mkdir projects/build
+cd projects/build
+cmake -G"Unix Makefiles" -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=RelWithDebInfo -B. ../CMake
 make
 ```
 
