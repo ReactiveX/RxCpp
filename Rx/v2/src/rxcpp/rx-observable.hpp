@@ -659,7 +659,7 @@ public:
     /// NOTE: multicast of a behavior
     ///
     auto publish(T first, composite_subscription cs = composite_subscription()) const
-        -> decltype(multicast(rxsub::behavior<T>(first, cs))) {
+        -> decltype(EXPLICIT_THIS multicast(rxsub::behavior<T>(first, cs))) {
         return      multicast(rxsub::behavior<T>(first, cs));
     }
 
