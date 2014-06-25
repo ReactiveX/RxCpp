@@ -1,29 +1,16 @@
-
 #include "rxcpp/rx.hpp"
 namespace rx=rxcpp;
 namespace rxu=rxcpp::util;
-namespace rxo=rxcpp::operators;
-namespace rxs=rxcpp::sources;
 namespace rxsc=rxcpp::schedulers;
-namespace rxsub=rxcpp::subjects;
-namespace rxn=rxcpp::notifications;
 
 #include "rxcpp/rx-test.hpp"
-namespace rxt=rxcpp::test;
-
 #include "catch.hpp"
 
 SCENARIO("defer stops on completion", "[defer][operators]"){
     GIVEN("a test cold observable of ints"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
-        typedef rxsc::test::messages<long> m;
-        typedef rxn::subscription life;
-        typedef m::recorded_type record;
-        auto on_next = m::on_next;
-        auto on_error = m::on_error;
-        auto on_completed = m::on_completed;
-        auto subscribe = m::subscribe;
+        const rxsc::test::messages<long> on;
 
         long invoked = 0;
 
@@ -37,16 +24,15 @@ SCENARIO("defer stops on completion", "[defer][operators]"){
             auto error = rx::observable<>::error<long>(std::exception_ptr());
             auto runtimeerror = rx::observable<>::error<long>(std::runtime_error("runtime"));
 
-            auto res = w.start<long>(
+            auto res = w.start(
                 [&]() {
                     return rx::observable<>::defer(
                         [&](){
                             invoked++;
-                            record messages[] = {
-                                on_next(100, sc.clock()),
-                                on_completed(200)
-                            };
-                            xs.reset(sc.make_cold_observable(messages));
+                            xs.reset(sc.make_cold_observable({
+                                on.on_next(100, sc.clock()),
+                                on.on_completed(200)
+							}));
                             return xs.get();
                         })
                         // forget type to workaround lambda deduction bug on msvc 2013
@@ -55,20 +41,18 @@ SCENARIO("defer stops on completion", "[defer][operators]"){
             );
 
             THEN("the output stops on completion"){
-                record items[] = {
-                    on_next(300, 200L),
-                    on_completed(400)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.on_next(300, 200L),
+                    on.on_completed(400)
+                });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
             THEN("there was one subscription and one unsubscription"){
-                life items[] = {
-                    subscribe(200, 400)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 400)
+                });
                 auto actual = xs.get().subscriptions();
                 REQUIRE(required == actual);
             }

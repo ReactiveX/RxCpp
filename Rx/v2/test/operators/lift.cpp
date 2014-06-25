@@ -1,18 +1,12 @@
-
 #define RXCPP_USE_OBSERVABLE_MEMBERS 1
 
 #include "rxcpp/rx.hpp"
 namespace rx=rxcpp;
 namespace rxu=rxcpp::util;
 namespace rxo=rxcpp::operators;
-namespace rxs=rxcpp::sources;
 namespace rxsc=rxcpp::schedulers;
-namespace rxsub=rxcpp::subjects;
-namespace rxn=rxcpp::notifications;
 
 #include "rxcpp/rx-test.hpp"
-namespace rxt=rxcpp::test;
-
 #include "catch.hpp"
 
 namespace detail {
@@ -102,34 +96,28 @@ SCENARIO("lift liftfilter stops on disposal", "[where][filter][lift][operators]"
     GIVEN("a test hot observable of ints"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
-        typedef rxsc::test::messages<int> m;
-        typedef rxn::subscription life;
-        typedef m::recorded_type record;
-        auto on_next = m::on_next;
-        auto on_completed = m::on_completed;
-        auto subscribe = m::subscribe;
+        const rxsc::test::messages<int> on;
 
         long invoked = 0;
 
-        record messages[] = {
-            on_next(110, 1),
-            on_next(180, 2),
-            on_next(230, 3),
-            on_next(270, 4),
-            on_next(340, 5),
-            on_next(380, 6),
-            on_next(390, 7),
-            on_next(450, 8),
-            on_next(470, 9),
-            on_next(560, 10),
-            on_next(580, 11),
-            on_completed(600)
-        };
-        auto xs = sc.make_hot_observable(rxu::to_vector(messages));
+        auto xs = sc.make_hot_observable({
+            on.on_next(110, 1),
+            on.on_next(180, 2),
+            on.on_next(230, 3),
+            on.on_next(270, 4),
+            on.on_next(340, 5),
+            on.on_next(380, 6),
+            on.on_next(390, 7),
+            on.on_next(450, 8),
+            on.on_next(470, 9),
+            on.on_next(560, 10),
+            on.on_next(580, 11),
+            on.on_completed(600)
+        });
 
         WHEN("filtered to ints that are primes"){
 
-            auto res = w.start<int>(
+            auto res = w.start(
                 [&xs, &invoked]() {
                     return xs
                         .lift(liftfilter([&invoked](int x) {
@@ -143,21 +131,19 @@ SCENARIO("lift liftfilter stops on disposal", "[where][filter][lift][operators]"
             );
 
             THEN("the output only contains primes that arrived before disposal"){
-                record items[] = {
-                    on_next(230, 3),
-                    on_next(340, 5),
-                    on_next(390, 7)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.on_next(230, 3),
+                    on.on_next(340, 5),
+                    on.on_next(390, 7)
+                });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
             THEN("there was one subscription and one unsubscription"){
-                life items[] = {
-                    subscribe(200, 400)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 400)
+                });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
             }
@@ -173,34 +159,28 @@ SCENARIO("stream lift liftfilter stops on disposal", "[where][filter][lift][stre
     GIVEN("a test hot observable of ints"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
-        typedef rxsc::test::messages<int> m;
-        typedef rxn::subscription life;
-        typedef m::recorded_type record;
-        auto on_next = m::on_next;
-        auto on_completed = m::on_completed;
-        auto subscribe = m::subscribe;
+        const rxsc::test::messages<int> on;
 
         long invoked = 0;
 
-        record messages[] = {
-            on_next(110, 1),
-            on_next(180, 2),
-            on_next(230, 3),
-            on_next(270, 4),
-            on_next(340, 5),
-            on_next(380, 6),
-            on_next(390, 7),
-            on_next(450, 8),
-            on_next(470, 9),
-            on_next(560, 10),
-            on_next(580, 11),
-            on_completed(600)
-        };
-        auto xs = sc.make_hot_observable(rxu::to_vector(messages));
+        auto xs = sc.make_hot_observable({
+            on.on_next(110, 1),
+            on.on_next(180, 2),
+            on.on_next(230, 3),
+            on.on_next(270, 4),
+            on.on_next(340, 5),
+            on.on_next(380, 6),
+            on.on_next(390, 7),
+            on.on_next(450, 8),
+            on.on_next(470, 9),
+            on.on_next(560, 10),
+            on.on_next(580, 11),
+            on.on_completed(600)
+        });
 
         WHEN("filtered to ints that are primes"){
 
-            auto res = w.start<int>(
+            auto res = w.start(
                 [&xs, &invoked]() {
                     return xs
                         >> liftfilter([&invoked](int x) {
@@ -214,21 +194,19 @@ SCENARIO("stream lift liftfilter stops on disposal", "[where][filter][lift][stre
             );
 
             THEN("the output only contains primes that arrived before disposal"){
-                record items[] = {
-                    on_next(230, 3),
-                    on_next(340, 5),
-                    on_next(390, 7)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.on_next(230, 3),
+                    on.on_next(340, 5),
+                    on.on_next(390, 7)
+                });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
             THEN("there was one subscription and one unsubscription"){
-                life items[] = {
-                    subscribe(200, 400)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 400)
+                });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
             }
@@ -244,34 +222,28 @@ SCENARIO("lift lambda filter stops on disposal", "[where][filter][lift][lambda][
     GIVEN("a test hot observable of ints"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
-        typedef rxsc::test::messages<int> m;
-        typedef rxn::subscription life;
-        typedef m::recorded_type record;
-        auto on_next = m::on_next;
-        auto on_completed = m::on_completed;
-        auto subscribe = m::subscribe;
+        const rxsc::test::messages<int> on;
 
         long invoked = 0;
 
-        record messages[] = {
-            on_next(110, 1),
-            on_next(180, 2),
-            on_next(230, 3),
-            on_next(270, 4),
-            on_next(340, 5),
-            on_next(380, 6),
-            on_next(390, 7),
-            on_next(450, 8),
-            on_next(470, 9),
-            on_next(560, 10),
-            on_next(580, 11),
-            on_completed(600)
-        };
-        auto xs = sc.make_hot_observable(rxu::to_vector(messages));
+        auto xs = sc.make_hot_observable({
+            on.on_next(110, 1),
+            on.on_next(180, 2),
+            on.on_next(230, 3),
+            on.on_next(270, 4),
+            on.on_next(340, 5),
+            on.on_next(380, 6),
+            on.on_next(390, 7),
+            on.on_next(450, 8),
+            on.on_next(470, 9),
+            on.on_next(560, 10),
+            on.on_next(580, 11),
+            on.on_completed(600)
+        });
 
         WHEN("filtered to ints that are primes"){
 
-            auto res = w.start<int>(
+            auto res = w.start(
                 [&xs, &invoked]() {
                     auto predicate = [&](int x){
                         invoked++;
@@ -298,21 +270,19 @@ SCENARIO("lift lambda filter stops on disposal", "[where][filter][lift][lambda][
             );
 
             THEN("the output only contains primes that arrived before disposal"){
-                record items[] = {
-                    on_next(230, 3),
-                    on_next(340, 5),
-                    on_next(390, 7)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.on_next(230, 3),
+                    on.on_next(340, 5),
+                    on.on_next(390, 7)
+                });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
             THEN("there was one subscription and one unsubscription"){
-                life items[] = {
-                    subscribe(200, 400)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 400)
+                });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
             }
