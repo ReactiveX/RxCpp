@@ -1,15 +1,9 @@
 #include "rxcpp/rx.hpp"
 namespace rx=rxcpp;
 namespace rxu=rxcpp::util;
-namespace rxo=rxcpp::operators;
-namespace rxs=rxcpp::sources;
 namespace rxsc=rxcpp::schedulers;
-namespace rxsub=rxcpp::subjects;
-namespace rxn=rxcpp::notifications;
 
 #include "rxcpp/rx-test.hpp"
-namespace rxt=rxcpp::test;
-
 #include "catch.hpp"
 
 SCENARIO("switch_on_next - some changes", "[switch_on_next][operators]"){

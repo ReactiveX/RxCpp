@@ -1,15 +1,10 @@
 #include "rxcpp/rx.hpp"
 namespace rx=rxcpp;
 namespace rxu=rxcpp::util;
-namespace rxo=rxcpp::operators;
 namespace rxs=rxcpp::sources;
 namespace rxsc=rxcpp::schedulers;
-namespace rxsub=rxcpp::subjects;
-namespace rxn=rxcpp::notifications;
 
 #include "rxcpp/rx-test.hpp"
-namespace rxt=rxcpp::test;
-
 #include "catch.hpp"
 
 static const int static_tripletCount = 100;
@@ -185,39 +180,26 @@ SCENARIO("concat_map completes", "[concat_map][map][operators]"){
     GIVEN("two cold observables. one of ints. one of strings."){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
-        typedef rxsc::test::messages<int> m;
-        typedef rxsc::test::messages<std::string> ms;
-        typedef rxn::subscription life;
+        const rxsc::test::messages<int> i_on;
+        const rxsc::test::messages<std::string> s_on;
 
-        typedef m::recorded_type irecord;
-        auto ion_next = m::on_next;
-        auto ion_completed = m::on_completed;
-        auto isubscribe = m::subscribe;
+        auto xs = sc.make_cold_observable({
+            i_on.on_next(100, 4),
+            i_on.on_next(200, 2),
+            i_on.on_completed(500)
+		});
 
-        typedef ms::recorded_type srecord;
-        auto son_next = ms::on_next;
-        auto son_completed = ms::on_completed;
-        auto ssubscribe = ms::subscribe;
-
-        irecord int_messages[] = {
-            ion_next(100, 4),
-            ion_next(200, 2),
-            ion_completed(500)
-        };
-        auto xs = sc.make_cold_observable(int_messages);
-
-        srecord string_messages[] = {
-            son_next(50, "foo"),
-            son_next(100, "bar"),
-            son_next(150, "baz"),
-            son_next(200, "qux"),
-            son_completed(250)
-        };
-        auto ys = sc.make_cold_observable(string_messages);
+        auto ys = sc.make_cold_observable({
+            s_on.on_next(50, "foo"),
+            s_on.on_next(100, "bar"),
+            s_on.on_next(150, "baz"),
+            s_on.on_next(200, "qux"),
+            s_on.on_completed(250)
+		});
 
         WHEN("each int is mapped to the strings"){
 
-            auto res = w.start<std::string>(
+            auto res = w.start(
                 [&]() {
                     return xs
                         .concat_map(
@@ -231,37 +213,34 @@ SCENARIO("concat_map completes", "[concat_map][map][operators]"){
             );
 
             THEN("the output contains strings repeated for each int"){
-                srecord items[] = {
-                    son_next(350, "foo"),
-                    son_next(400, "bar"),
-                    son_next(450, "baz"),
-                    son_next(500, "qux"),
-                    son_next(600, "foo"),
-                    son_next(650, "bar"),
-                    son_next(700, "baz"),
-                    son_next(750, "qux"),
-                    son_completed(800)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    s_on.on_next(350, "foo"),
+                    s_on.on_next(400, "bar"),
+                    s_on.on_next(450, "baz"),
+                    s_on.on_next(500, "qux"),
+                    s_on.on_next(600, "foo"),
+                    s_on.on_next(650, "bar"),
+                    s_on.on_next(700, "baz"),
+                    s_on.on_next(750, "qux"),
+                    s_on.on_completed(800)
+				});
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
             THEN("there was one subscription and one unsubscription to the ints"){
-                life items[] = {
-                    isubscribe(200, 700)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    i_on.subscribe(200, 700)
+				});
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
             }
 
             THEN("there were 2 subscription and unsubscription to the strings"){
-                life items[] = {
-                    ssubscribe(300, 550),
-                    ssubscribe(550, 800)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    s_on.subscribe(300, 550),
+                    s_on.subscribe(550, 800)
+				});
                 auto actual = ys.subscriptions();
                 REQUIRE(required == actual);
             }
