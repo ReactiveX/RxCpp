@@ -1,48 +1,32 @@
-
 #include "rxcpp/rx.hpp"
-namespace rx=rxcpp;
 namespace rxu=rxcpp::util;
-namespace rxo=rxcpp::operators;
-namespace rxs=rxcpp::sources;
 namespace rxsc=rxcpp::schedulers;
-namespace rxsub=rxcpp::subjects;
-namespace rxn=rxcpp::notifications;
 
 #include "rxcpp/rx-test.hpp"
-namespace rxt=rxcpp::test;
-
 #include "catch.hpp"
 
 SCENARIO("map stops on completion", "[map][operators]"){
     GIVEN("a test hot observable of ints"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
-        typedef rxsc::test::messages<int> m;
-        typedef rxn::subscription life;
-        typedef m::recorded_type record;
-        auto on_next = m::on_next;
-        auto on_error = m::on_error;
-        auto on_completed = m::on_completed;
-        auto subscribe = m::subscribe;
-
+        const rxsc::test::messages<int> on;
         long invoked = 0;
 
-        record messages[] = {
-            on_next(180, 1),
-            on_next(210, 2),
-            on_next(240, 3),
-            on_next(290, 4),
-            on_next(350, 5),
-            on_completed(400),
-            on_next(410, -1),
-            on_completed(420),
-            on_error(430, std::runtime_error("error on unsubscribed stream"))
-        };
-        auto xs = sc.make_hot_observable(messages);
+        auto xs = sc.make_hot_observable({
+            on.on_next(180, 1),
+            on.on_next(210, 2),
+            on.on_next(240, 3),
+            on.on_next(290, 4),
+            on.on_next(350, 5),
+            on.on_completed(400),
+            on.on_next(410, -1),
+            on.on_completed(420),
+            on.on_error(430, std::runtime_error("error on unsubscribed stream"))
+        });
 
         WHEN("mapped to ints that are one larger"){
 
-            auto res = w.start<int>(
+            auto res = w.start(
                 [xs, &invoked]() {
                     return xs
                         .map([&invoked](int x) {
@@ -55,23 +39,21 @@ SCENARIO("map stops on completion", "[map][operators]"){
             );
 
             THEN("the output stops on completion"){
-                record items[] = {
-                    on_next(210, 3),
-                    on_next(240, 4),
-                    on_next(290, 5),
-                    on_next(350, 6),
-                    on_completed(400)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.on_next(210, 3),
+                    on.on_next(240, 4),
+                    on.on_next(290, 5),
+                    on.on_next(350, 6),
+                    on.on_completed(400)
+                });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
             THEN("there was one subscription and one unsubscription"){
-                life items[] = {
-                    subscribe(200, 400)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 400)
+                });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
             }

@@ -1,18 +1,12 @@
-
 #define RXCPP_USE_OBSERVABLE_MEMBERS 1
 
 #include "rxcpp/rx.hpp"
 namespace rx=rxcpp;
 namespace rxu=rxcpp::util;
 namespace rxo=rxcpp::operators;
-namespace rxs=rxcpp::sources;
 namespace rxsc=rxcpp::schedulers;
-namespace rxsub=rxcpp::subjects;
-namespace rxn=rxcpp::notifications;
 
 #include "rxcpp/rx-test.hpp"
-namespace rxt=rxcpp::test;
-
 #include "catch.hpp"
 
 namespace {
@@ -32,37 +26,30 @@ SCENARIO("filter stops on completion", "[filter][operators]"){
     GIVEN("a test hot observable of ints"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
-        typedef rxsc::test::messages<int> m;
-        typedef rxn::subscription life;
-        typedef m::recorded_type record;
-        auto on_next = m::on_next;
-        auto on_error = m::on_error;
-        auto on_completed = m::on_completed;
-        auto subscribe = m::subscribe;
+        const rxsc::test::messages<int> on;
 
         long invoked = 0;
 
-        record messages[] = {
-            on_next(110, 1),
-            on_next(180, 2),
-            on_next(230, 3),
-            on_next(270, 4),
-            on_next(340, 5),
-            on_next(380, 6),
-            on_next(390, 7),
-            on_next(450, 8),
-            on_next(470, 9),
-            on_next(560, 10),
-            on_next(580, 11),
-            on_completed(600),
-            on_next(610, 12),
-            on_error(620, std::runtime_error("error in unsubscribed stream")),
-            on_completed(630)
-        };
-        auto xs = sc.make_hot_observable(messages);
+        auto xs = sc.make_hot_observable({
+            on.on_next(110, 1),
+            on.on_next(180, 2),
+            on.on_next(230, 3),
+            on.on_next(270, 4),
+            on.on_next(340, 5),
+            on.on_next(380, 6),
+            on.on_next(390, 7),
+            on.on_next(450, 8),
+            on.on_next(470, 9),
+            on.on_next(560, 10),
+            on.on_next(580, 11),
+            on.on_completed(600),
+            on.on_next(610, 12),
+            on.on_error(620, std::runtime_error("error in unsubscribed stream")),
+            on.on_completed(630)
+        });
 
         WHEN("filtered to ints that are primes"){
-            auto res = w.start<int>(
+            auto res = w.start(
                 [&xs, &invoked]() {
 #if 0 && RXCPP_USE_OBSERVABLE_MEMBERS
                     return xs
@@ -88,23 +75,21 @@ SCENARIO("filter stops on completion", "[filter][operators]"){
                 }
             );
             THEN("the output only contains primes"){
-                record items[] = {
-                    on_next(230, 3),
-                    on_next(340, 5),
-                    on_next(390, 7),
-                    on_next(580, 11),
-                    on_completed(600)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.on_next(230, 3),
+                    on.on_next(340, 5),
+                    on.on_next(390, 7),
+                    on.on_next(580, 11),
+                    on.on_completed(600)
+                });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
             THEN("there was one subscription and one unsubscription"){
-                life items[] = {
-                    subscribe(200, 600)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 600)
+                });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
             }
@@ -121,34 +106,28 @@ SCENARIO("filter stops on disposal", "[where][filter][operators]"){
     GIVEN("a test hot observable of ints"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
-        typedef rxsc::test::messages<int> m;
-        typedef rxn::subscription life;
-        typedef m::recorded_type record;
-        auto on_next = m::on_next;
-        auto on_completed = m::on_completed;
-        auto subscribe = m::subscribe;
+        const rxsc::test::messages<int> on;
 
         long invoked = 0;
 
-        record messages[] = {
-            on_next(110, 1),
-            on_next(180, 2),
-            on_next(230, 3),
-            on_next(270, 4),
-            on_next(340, 5),
-            on_next(380, 6),
-            on_next(390, 7),
-            on_next(450, 8),
-            on_next(470, 9),
-            on_next(560, 10),
-            on_next(580, 11),
-            on_completed(600)
-        };
-        auto xs = sc.make_hot_observable(rxu::to_vector(messages));
+        auto xs = sc.make_hot_observable({
+            on.on_next(110, 1),
+            on.on_next(180, 2),
+            on.on_next(230, 3),
+            on.on_next(270, 4),
+            on.on_next(340, 5),
+            on.on_next(380, 6),
+            on.on_next(390, 7),
+            on.on_next(450, 8),
+            on.on_next(470, 9),
+            on.on_next(560, 10),
+            on.on_next(580, 11),
+            on.on_completed(600)
+        });
 
         WHEN("filtered to ints that are primes"){
 
-            auto res = w.start<int>(
+            auto res = w.start(
                 [&xs, &invoked]() {
 #if RXCPP_USE_OBSERVABLE_MEMBERS
                     return xs
@@ -172,21 +151,19 @@ SCENARIO("filter stops on disposal", "[where][filter][operators]"){
             );
 
             THEN("the output only contains primes that arrived before disposal"){
-                record items[] = {
-                    on_next(230, 3),
-                    on_next(340, 5),
-                    on_next(390, 7)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.on_next(230, 3),
+                    on.on_next(340, 5),
+                    on.on_next(390, 7)
+                });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
             THEN("there was one subscription and one unsubscription"){
-                life items[] = {
-                    subscribe(200, 400)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 400)
+                });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
             }
@@ -202,40 +179,33 @@ SCENARIO("filter stops on error", "[where][filter][operators]"){
     GIVEN("a test hot observable of ints"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
-        typedef rxsc::test::messages<int> m;
-        typedef rxn::subscription life;
-        typedef m::recorded_type record;
-        auto on_next = m::on_next;
-        auto on_error = m::on_error;
-        auto on_completed = m::on_completed;
-        auto subscribe = m::subscribe;
+        const rxsc::test::messages<int> on;
 
         long invoked = 0;
 
         std::runtime_error ex("filter on_error from source");
 
-        record messages[] = {
-            on_next(110, 1),
-            on_next(180, 2),
-            on_next(230, 3),
-            on_next(270, 4),
-            on_next(340, 5),
-            on_next(380, 6),
-            on_next(390, 7),
-            on_next(450, 8),
-            on_next(470, 9),
-            on_next(560, 10),
-            on_next(580, 11),
-            on_error(600, ex),
-            on_next(610, 12),
-            on_error(620, std::runtime_error("error in unsubscribed stream")),
-            on_completed(630)
-        };
-        auto xs = sc.make_hot_observable(rxu::to_vector(messages));
+        auto xs = sc.make_hot_observable({
+            on.on_next(110, 1),
+            on.on_next(180, 2),
+            on.on_next(230, 3),
+            on.on_next(270, 4),
+            on.on_next(340, 5),
+            on.on_next(380, 6),
+            on.on_next(390, 7),
+            on.on_next(450, 8),
+            on.on_next(470, 9),
+            on.on_next(560, 10),
+            on.on_next(580, 11),
+            on.on_error(600, ex),
+            on.on_next(610, 12),
+            on.on_error(620, std::runtime_error("error in unsubscribed stream")),
+            on.on_completed(630)
+        });
 
         WHEN("filtered to ints that are primes"){
 
-            auto res = w.start<int>(
+            auto res = w.start(
                 [xs, &invoked]() {
 #if RXCPP_USE_OBSERVABLE_MEMBERS
                     return xs
@@ -258,23 +228,21 @@ SCENARIO("filter stops on error", "[where][filter][operators]"){
             );
 
             THEN("the output only contains primes"){
-                record items[] = {
-                    on_next(230, 3),
-                    on_next(340, 5),
-                    on_next(390, 7),
-                    on_next(580, 11),
-                    on_error(600, ex),
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.on_next(230, 3),
+                    on.on_next(340, 5),
+                    on.on_next(390, 7),
+                    on.on_next(580, 11),
+                    on.on_error(600, ex),
+                });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
             THEN("there was one subscription and one unsubscription"){
-                life items[] = {
-                    subscribe(200, 600)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 600)
+                });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
             }
@@ -290,40 +258,33 @@ SCENARIO("filter stops on throw from predicate", "[where][filter][operators]"){
     GIVEN("a test hot observable of ints"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
-        typedef rxsc::test::messages<int> m;
-        typedef rxn::subscription life;
-        typedef m::recorded_type record;
-        auto on_next = m::on_next;
-        auto on_error = m::on_error;
-        auto on_completed = m::on_completed;
-        auto subscribe = m::subscribe;
+        const rxsc::test::messages<int> on;
 
         long invoked = 0;
 
         std::runtime_error ex("filter predicate error");
 
-        record messages[] = {
-            on_next(110, 1),
-            on_next(180, 2),
-            on_next(230, 3),
-            on_next(270, 4),
-            on_next(340, 5),
-            on_next(380, 6),
-            on_next(390, 7),
-            on_next(450, 8),
-            on_next(470, 9),
-            on_next(560, 10),
-            on_next(580, 11),
-            on_completed(600),
-            on_next(610, 12),
-            on_error(620, std::runtime_error("error in unsubscribed stream")),
-            on_completed(630)
-        };
-        auto xs = sc.make_hot_observable(rxu::to_vector(messages));
+        auto xs = sc.make_hot_observable({
+            on.on_next(110, 1),
+            on.on_next(180, 2),
+            on.on_next(230, 3),
+            on.on_next(270, 4),
+            on.on_next(340, 5),
+            on.on_next(380, 6),
+            on.on_next(390, 7),
+            on.on_next(450, 8),
+            on.on_next(470, 9),
+            on.on_next(560, 10),
+            on.on_next(580, 11),
+            on.on_completed(600),
+            on.on_next(610, 12),
+            on.on_error(620, std::runtime_error("error in unsubscribed stream")),
+            on.on_completed(630)
+        });
 
         WHEN("filtered to ints that are primes"){
 
-            auto res = w.start<int>(
+            auto res = w.start(
                 [ex, xs, &invoked]() {
 #if RXCPP_USE_OBSERVABLE_MEMBERS
                     return xs
@@ -352,21 +313,19 @@ SCENARIO("filter stops on throw from predicate", "[where][filter][operators]"){
             );
 
             THEN("the output only contains primes"){
-                record items[] = {
-                    on_next(230, 3),
-                    on_next(340, 5),
-                    on_error(380, ex)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.on_next(230, 3),
+                    on.on_next(340, 5),
+                    on.on_error(380, ex)
+                });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
             THEN("there was one subscription and one unsubscription"){
-                life items[] = {
-                    subscribe(200, 380)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 380)
+                });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
             }
@@ -382,34 +341,27 @@ SCENARIO("filter stops on dispose from predicate", "[where][filter][operators]")
     GIVEN("a test hot observable of ints"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
-        typedef rxsc::test::messages<int> m;
-        typedef rxn::subscription life;
-        typedef m::recorded_type record;
-        auto on_next = m::on_next;
-        auto on_error = m::on_error;
-        auto on_completed = m::on_completed;
-        auto subscribe = m::subscribe;
+        const rxsc::test::messages<int> on;
 
         long invoked = 0;
 
-        record messages[] = {
-            on_next(110, 1),
-            on_next(180, 2),
-            on_next(230, 3),
-            on_next(270, 4),
-            on_next(340, 5),
-            on_next(380, 6),
-            on_next(390, 7),
-            on_next(450, 8),
-            on_next(470, 9),
-            on_next(560, 10),
-            on_next(580, 11),
-            on_completed(600),
-            on_next(610, 12),
-            on_error(620, std::exception()),
-            on_completed(630)
-        };
-        auto xs = sc.make_hot_observable(rxu::to_vector(messages));
+        auto xs = sc.make_hot_observable({
+            on.on_next(110, 1),
+            on.on_next(180, 2),
+            on.on_next(230, 3),
+            on.on_next(270, 4),
+            on.on_next(340, 5),
+            on.on_next(380, 6),
+            on.on_next(390, 7),
+            on.on_next(450, 8),
+            on.on_next(470, 9),
+            on.on_next(560, 10),
+            on.on_next(580, 11),
+            on.on_completed(600),
+            on.on_next(610, 12),
+            on.on_error(620, std::exception()),
+            on.on_completed(630)
+        });
 
         auto res = w.make_subscriber<int>();
 
@@ -449,21 +401,19 @@ SCENARIO("filter stops on dispose from predicate", "[where][filter][operators]")
             w.start();
 
             THEN("the output only contains primes"){
-                record items[] = {
-                    on_next(230, 3),
-                    on_next(340, 5),
-                    on_next(390, 7)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.on_next(230, 3),
+                    on.on_next(340, 5),
+                    on.on_next(390, 7)
+                });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
             THEN("there was one subscription and one unsubscription"){
-                life items[] = {
-                    subscribe(200, 450)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 450)
+                });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
             }
