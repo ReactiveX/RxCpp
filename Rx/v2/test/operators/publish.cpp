@@ -1,15 +1,10 @@
 #include "rxcpp/rx.hpp"
 namespace rx=rxcpp;
 namespace rxu=rxcpp::util;
-namespace rxo=rxcpp::operators;
 namespace rxs=rxcpp::sources;
 namespace rxsc=rxcpp::schedulers;
-namespace rxsub=rxcpp::subjects;
-namespace rxn=rxcpp::notifications;
 
 #include "rxcpp/rx-test.hpp"
-namespace rxt=rxcpp::test;
-
 #include "catch.hpp"
 
 
@@ -51,30 +46,24 @@ SCENARIO("publish basic", "[publish][multicast][subject][operators]"){
     GIVEN("a test hot observable of longs"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
-        typedef rxsc::test::messages<int> m;
-        typedef rxn::subscription life;
-        typedef m::recorded_type record;
-        auto on_next = m::on_next;
-        auto on_completed = m::on_completed;
-        auto subscribe = m::subscribe;
+        const rxsc::test::messages<int> on;
 
-        record messages[] = {
-            on_next(110, 7),
-            on_next(220, 3),
-            on_next(280, 4),
-            on_next(290, 1),
-            on_next(340, 8),
-            on_next(360, 5),
-            on_next(370, 6),
-            on_next(390, 7),
-            on_next(410, 13),
-            on_next(430, 2),
-            on_next(450, 9),
-            on_next(520, 11),
-            on_next(560, 20),
-            on_completed(600)
-        };
-        auto xs = sc.make_hot_observable(messages);
+        auto xs = sc.make_hot_observable({
+            on.on_next(110, 7),
+            on.on_next(220, 3),
+            on.on_next(280, 4),
+            on.on_next(290, 1),
+            on.on_next(340, 8),
+            on.on_next(360, 5),
+            on.on_next(370, 6),
+            on.on_next(390, 7),
+            on.on_next(410, 13),
+            on.on_next(430, 2),
+            on.on_next(450, 9),
+            on.on_next(520, 11),
+            on.on_next(560, 20),
+            on.on_completed(600)
+        });
 
         auto res = w.make_subscriber<int>();
 
@@ -140,25 +129,23 @@ SCENARIO("publish basic", "[publish][multicast][subject][operators]"){
             w.start();
 
             THEN("the output only contains items sent while subscribed"){
-                record items[] = {
-                    on_next(340, 8),
-                    on_next(360, 5),
-                    on_next(370, 6),
-                    on_next(390, 7),
-                    on_next(520, 11)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.on_next(340, 8),
+                    on.on_next(360, 5),
+                    on.on_next(370, 6),
+                    on.on_next(390, 7),
+                    on.on_next(520, 11)
+                });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
             THEN("there were 3 subscription/unsubscription"){
-                life items[] = {
-                    subscribe(300, 400),
-                    subscribe(500, 550),
-                    subscribe(650, 800)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.subscribe(300, 400),
+                    on.subscribe(500, 550),
+                    on.subscribe(650, 800)
+                });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
             }
@@ -172,33 +159,26 @@ SCENARIO("publish error", "[publish][error][multicast][subject][operators]"){
     GIVEN("a test hot observable of longs"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
-        typedef rxsc::test::messages<int> m;
-        typedef rxn::subscription life;
-        typedef m::recorded_type record;
-        auto on_next = m::on_next;
-        auto on_error = m::on_error;
-        auto on_completed = m::on_completed;
-        auto subscribe = m::subscribe;
+        const rxsc::test::messages<int> on;
 
         std::runtime_error ex("publish on_error");
 
-        record messages[] = {
-            on_next(110, 7),
-            on_next(220, 3),
-            on_next(280, 4),
-            on_next(290, 1),
-            on_next(340, 8),
-            on_next(360, 5),
-            on_next(370, 6),
-            on_next(390, 7),
-            on_next(410, 13),
-            on_next(430, 2),
-            on_next(450, 9),
-            on_next(520, 11),
-            on_next(560, 20),
-            on_error(600, ex)
-        };
-        auto xs = sc.make_hot_observable(messages);
+        auto xs = sc.make_hot_observable({
+            on.on_next(110, 7),
+            on.on_next(220, 3),
+            on.on_next(280, 4),
+            on.on_next(290, 1),
+            on.on_next(340, 8),
+            on.on_next(360, 5),
+            on.on_next(370, 6),
+            on.on_next(390, 7),
+            on.on_next(410, 13),
+            on.on_next(430, 2),
+            on.on_next(450, 9),
+            on.on_next(520, 11),
+            on.on_next(560, 20),
+            on.on_error(600, ex)
+        });
 
         auto res = w.make_subscriber<int>();
 
@@ -250,26 +230,24 @@ SCENARIO("publish error", "[publish][error][multicast][subject][operators]"){
             w.start();
 
             THEN("the output only contains items sent while subscribed"){
-                record items[] = {
-                    on_next(340, 8),
-                    on_next(360, 5),
-                    on_next(370, 6),
-                    on_next(390, 7),
-                    on_next(520, 11),
-                    on_next(560, 20),
-                    on_error(600, ex)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.on_next(340, 8),
+                    on.on_next(360, 5),
+                    on.on_next(370, 6),
+                    on.on_next(390, 7),
+                    on.on_next(520, 11),
+                    on.on_next(560, 20),
+                    on.on_error(600, ex)
+                });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
             THEN("there were 3 subscription/unsubscription"){
-                life items[] = {
-                    subscribe(300, 400),
-                    subscribe(500, 600)
-                };
-                auto required = rxu::to_vector(items);
+                auto required = rxu::to_vector({
+                    on.subscribe(300, 400),
+                    on.subscribe(500, 600)
+                });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
             }
