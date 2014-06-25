@@ -148,22 +148,22 @@ SCENARIO("merge completes", "[merge][join][operators]"){
 
             THEN("the output contains merged ints"){
                 auto required = rxu::to_vector({
-	                on.on_next(310, 101),
-	                on.on_next(320, 102),
-	                on.on_next(410, 103),
-	                on.on_next(410, 201),
-	                on.on_next(420, 104),
-	                on.on_next(420, 202),
-	                on.on_next(430, 203),
-	                on.on_next(440, 204),
-	                on.on_next(510, 105),
-	                on.on_next(510, 301),
-	                on.on_next(520, 106),
-	                on.on_next(520, 302),
-	                on.on_next(530, 303),
-	                on.on_next(540, 304),
-	                on.on_next(620, 305),
-	                on.on_completed(650)
+                    on.on_next(310, 101),
+                    on.on_next(320, 102),
+                    on.on_next(410, 103),
+                    on.on_next(410, 201),
+                    on.on_next(420, 104),
+                    on.on_next(420, 202),
+                    on.on_next(430, 203),
+                    on.on_next(440, 204),
+                    on.on_next(510, 105),
+                    on.on_next(510, 301),
+                    on.on_next(520, 106),
+                    on.on_next(520, 302),
+                    on.on_next(530, 303),
+                    on.on_next(540, 304),
+                    on.on_next(620, 305),
+                    on.on_completed(650)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);

@@ -187,7 +187,7 @@ SCENARIO("concat_map completes", "[concat_map][map][operators]"){
             i_on.on_next(100, 4),
             i_on.on_next(200, 2),
             i_on.on_completed(500)
-		});
+        });
 
         auto ys = sc.make_cold_observable({
             s_on.on_next(50, "foo"),
@@ -195,7 +195,7 @@ SCENARIO("concat_map completes", "[concat_map][map][operators]"){
             s_on.on_next(150, "baz"),
             s_on.on_next(200, "qux"),
             s_on.on_completed(250)
-		});
+        });
 
         WHEN("each int is mapped to the strings"){
 
@@ -223,7 +223,7 @@ SCENARIO("concat_map completes", "[concat_map][map][operators]"){
                     s_on.on_next(700, "baz"),
                     s_on.on_next(750, "qux"),
                     s_on.on_completed(800)
-				});
+                });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
@@ -231,7 +231,7 @@ SCENARIO("concat_map completes", "[concat_map][map][operators]"){
             THEN("there was one subscription and one unsubscription to the ints"){
                 auto required = rxu::to_vector({
                     i_on.subscribe(200, 700)
-				});
+                });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
             }
@@ -240,7 +240,7 @@ SCENARIO("concat_map completes", "[concat_map][map][operators]"){
                 auto required = rxu::to_vector({
                     s_on.subscribe(300, 550),
                     s_on.subscribe(550, 800)
-				});
+                });
                 auto actual = ys.subscriptions();
                 REQUIRE(required == actual);
             }
