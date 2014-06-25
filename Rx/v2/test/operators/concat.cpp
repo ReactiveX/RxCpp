@@ -108,7 +108,7 @@ SCENARIO("concat completes", "[concat][join][operators]"){
             on.on_next(210, 105),
             on.on_next(220, 106),
             on.on_completed(230)
-		});
+        });
 
         auto ys2 = sc.make_cold_observable({
             on.on_next(10, 201),
@@ -116,7 +116,7 @@ SCENARIO("concat completes", "[concat][join][operators]"){
             on.on_next(30, 203),
             on.on_next(40, 204),
             on.on_completed(50)
-		});
+        });
 
         auto ys3 = sc.make_cold_observable({
             on.on_next(10, 301),
@@ -125,14 +125,14 @@ SCENARIO("concat completes", "[concat][join][operators]"){
             on.on_next(40, 304),
             on.on_next(120, 305),
             on.on_completed(150)
-		});
+        });
 
         auto xs = sc.make_hot_observable({
             o_on.on_next(300, ys1),
             o_on.on_next(400, ys2),
             o_on.on_next(500, ys3),
             o_on.on_completed(600)
-		});
+        });
 
         WHEN("each int is merged"){
 
@@ -147,23 +147,23 @@ SCENARIO("concat completes", "[concat][join][operators]"){
 
             THEN("the output contains merged ints"){
                 auto required = rxu::to_vector({
-	                on.on_next(310, 101),
-	                on.on_next(320, 102),
-	                on.on_next(410, 103),
-	                on.on_next(420, 104),
-	                on.on_next(510, 105),
+                    on.on_next(310, 101),
+                    on.on_next(320, 102),
+                    on.on_next(410, 103),
+                    on.on_next(420, 104),
+                    on.on_next(510, 105),
                     on.on_next(520, 106),
                     on.on_next(540, 201),
                     on.on_next(550, 202),
                     on.on_next(560, 203),
                     on.on_next(570, 204),
-	                on.on_next(590, 301),
-	                on.on_next(600, 302),
-	                on.on_next(610, 303),
-	                on.on_next(620, 304),
-	                on.on_next(700, 305),
-	                on.on_completed(730)
-				});
+                    on.on_next(590, 301),
+                    on.on_next(600, 302),
+                    on.on_next(610, 303),
+                    on.on_next(620, 304),
+                    on.on_next(700, 305),
+                    on.on_completed(730)
+                });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
@@ -171,7 +171,7 @@ SCENARIO("concat completes", "[concat][join][operators]"){
             THEN("there was one subscription and one unsubscription to the ints"){
                 auto required = rxu::to_vector({
                     on.subscribe(200, 600)
-				});
+                });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
             }
@@ -179,7 +179,7 @@ SCENARIO("concat completes", "[concat][join][operators]"){
             THEN("there was one subscription and one unsubscription to the ys1"){
                 auto required = rxu::to_vector({
                     on.subscribe(300, 530)
-				});
+                });
                 auto actual = ys1.subscriptions();
                 REQUIRE(required == actual);
             }
@@ -187,7 +187,7 @@ SCENARIO("concat completes", "[concat][join][operators]"){
             THEN("there was one subscription and one unsubscription to the ys2"){
                 auto required = rxu::to_vector({
                     on.subscribe(530, 580)
-				});
+                });
                 auto actual = ys2.subscriptions();
                 REQUIRE(required == actual);
             }
@@ -195,7 +195,7 @@ SCENARIO("concat completes", "[concat][join][operators]"){
             THEN("there was one subscription and one unsubscription to the ys3"){
                 auto required = rxu::to_vector({
                     on.subscribe(580, 730)
-				});
+                });
                 auto actual = ys3.subscriptions();
                 REQUIRE(required == actual);
             }

@@ -32,7 +32,7 @@ SCENARIO("defer stops on completion", "[defer][operators]"){
                             xs.reset(sc.make_cold_observable({
                                 on.on_next(100, sc.clock()),
                                 on.on_completed(200)
-							}));
+                            }));
                             return xs.get();
                         })
                         // forget type to workaround lambda deduction bug on msvc 2013

@@ -16,7 +16,7 @@ SCENARIO("combine_latest interleaved with tail", "[combine_latest][join][operato
             on.on_next(215, 2),
             on.on_next(225, 4),
             on.on_completed(230)
-		});
+        });
 
         auto o2 = sc.make_hot_observable({
             on.on_next(150, 1),
@@ -25,7 +25,7 @@ SCENARIO("combine_latest interleaved with tail", "[combine_latest][join][operato
             on.on_next(235, 6),
             on.on_next(240, 7),
             on.on_completed(250)
-		});
+        });
 
         WHEN("each int is combined with the latest from the other source"){
 
@@ -46,7 +46,7 @@ SCENARIO("combine_latest interleaved with tail", "[combine_latest][join][operato
                     on.on_next(235, 4 + 6),
                     on.on_next(240, 4 + 7),
                     on.on_completed(250)
-				});
+                });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
@@ -54,7 +54,7 @@ SCENARIO("combine_latest interleaved with tail", "[combine_latest][join][operato
             THEN("there was one subscription and one unsubscription to the o1"){
                 auto required = rxu::to_vector({
                     on.subscribe(200, 230)
-				});
+                });
                 auto actual = o1.subscriptions();
                 REQUIRE(required == actual);
             }
@@ -62,7 +62,7 @@ SCENARIO("combine_latest interleaved with tail", "[combine_latest][join][operato
             THEN("there was one subscription and one unsubscription to the o2"){
                 auto required = rxu::to_vector({
                     on.subscribe(200, 250)
-				});
+                });
                 auto actual = o2.subscriptions();
                 REQUIRE(required == actual);
             }

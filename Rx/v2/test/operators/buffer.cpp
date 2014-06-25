@@ -20,7 +20,7 @@ SCENARIO("buffer count skip less", "[buffer][operators]"){
             on.on_next(230, 4),
             on.on_next(240, 5),
             on.on_completed(250)
-		});
+        });
 
         WHEN("group each int with the next 2 ints"){
 
@@ -40,7 +40,7 @@ SCENARIO("buffer count skip less", "[buffer][operators]"){
                     v_on.on_next(250, rxu::to_vector(4, 5)),
                     v_on.on_next(250, rxu::to_vector(5)),
                     v_on.on_completed(250)
-				});
+                });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
@@ -48,7 +48,7 @@ SCENARIO("buffer count skip less", "[buffer][operators]"){
             THEN("there was one subscription and one unsubscription to the xs"){
                 auto required = rxu::to_vector({
                     on.subscribe(200, 250)
-				});
+                });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
             }

@@ -80,7 +80,7 @@ SCENARIO("take, complete after", "[take][operators]"){
             on.on_next(590, 5),
             on.on_next(630, 10),
             on.on_completed(690)
-		});
+        });
 
         WHEN("20 values are taken"){
 
@@ -113,7 +113,7 @@ SCENARIO("take, complete after", "[take][operators]"){
                     on.on_next(590, 5),
                     on.on_next(630, 10),
                     on.on_completed(690)
-				});
+                });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
@@ -121,7 +121,7 @@ SCENARIO("take, complete after", "[take][operators]"){
             THEN("there was 1 subscription/unsubscription to the source"){
                 auto required = rxu::to_vector({
                     on.subscribe(200, 690)
-				});
+                });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
             }
@@ -641,7 +641,7 @@ SCENARIO("take_until trigger on_next", "[take_until][take][operators]"){
             on.on_next(150, 1),
             on.on_next(225, 99),
             on.on_completed(230)
-		});
+        });
 
         WHEN("one is taken until the other emits a marble"){
 
@@ -697,13 +697,13 @@ SCENARIO("take_until, preempt some data next", "[take_until][take][operators]"){
             on.on_next(230, 4),
             on.on_next(240, 5),
             on.on_completed(250)
-		});
+        });
 
         auto r = sc.make_hot_observable({
             on.on_next(150, 1),
             on.on_next(225, 99),
             on.on_completed(230)
-		});
+        });
 
         WHEN("one is taken until the other emits a marble"){
 

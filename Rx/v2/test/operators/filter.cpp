@@ -123,7 +123,7 @@ SCENARIO("filter stops on disposal", "[where][filter][operators]"){
             on.on_next(560, 10),
             on.on_next(580, 11),
             on.on_completed(600)
-		});
+        });
 
         WHEN("filtered to ints that are primes"){
 
@@ -201,7 +201,7 @@ SCENARIO("filter stops on error", "[where][filter][operators]"){
             on.on_next(610, 12),
             on.on_error(620, std::runtime_error("error in unsubscribed stream")),
             on.on_completed(630)
-		});
+        });
 
         WHEN("filtered to ints that are primes"){
 
@@ -280,7 +280,7 @@ SCENARIO("filter stops on throw from predicate", "[where][filter][operators]"){
             on.on_next(610, 12),
             on.on_error(620, std::runtime_error("error in unsubscribed stream")),
             on.on_completed(630)
-		});
+        });
 
         WHEN("filtered to ints that are primes"){
 
@@ -361,7 +361,7 @@ SCENARIO("filter stops on dispose from predicate", "[where][filter][operators]")
             on.on_next(610, 12),
             on.on_error(620, std::exception()),
             on.on_completed(630)
-		});
+        });
 
         auto res = w.make_subscriber<int>();
 
