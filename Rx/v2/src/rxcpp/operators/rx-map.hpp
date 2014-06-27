@@ -27,10 +27,10 @@ struct map
     }
 
     template<class Subscriber>
-    struct map_observer : public observer_base<decltype((*(Selector*)nullptr)(*(source_value_type*)nullptr))>
+    struct map_observer : public observer_base<decltype((*(select_type*)nullptr)(*(source_value_type*)nullptr))>
     {
         typedef map_observer<Subscriber> this_type;
-        typedef observer_base<decltype((*(Selector*)nullptr)(*(source_value_type*)nullptr))> base_type;
+        typedef observer_base<decltype((*(select_type*)nullptr)(*(source_value_type*)nullptr))> base_type;
         typedef typename base_type::value_type value_type;
         typedef typename std::decay<Subscriber>::type dest_type;
         typedef observer<value_type, this_type> observer_type;
