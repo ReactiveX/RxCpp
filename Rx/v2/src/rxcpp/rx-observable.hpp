@@ -760,6 +760,27 @@ public:
         return  observable<T,   rxo::detail::take_until<T, this_type, TriggerSource, Coordination>>(
                                 rxo::detail::take_until<T, this_type, TriggerSource, Coordination>(*this, std::forward<TriggerSource>(t), std::forward<Coordination>(sf)));
     }
+
+    /// repeat ->
+    /// infinitely repeate this observable
+    ///
+    ///
+    auto repeat() const
+        ->      observable<T, rxo::detail::repeat<T, this_type, int>> {
+        return  observable<T, rxo::detail::repeat<T, this_type, int>>(
+            rxo::detail::repeat<T, this_type, int>(*this, 0));
+    }
+
+    /// repeat ->
+    /// repeate this observable for given number of times
+    ///
+    ///
+    template<class Count>
+    auto repeat(Count t) const
+        ->      observable<T, rxo::detail::repeat<T, this_type, Count>> {
+        return  observable<T, rxo::detail::repeat<T, this_type, Count>>(
+            rxo::detail::repeat<T, this_type, Count>(*this, t));
+    }
 };
 
 template<class T, class SourceOperator>
