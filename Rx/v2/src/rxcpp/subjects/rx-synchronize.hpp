@@ -203,11 +203,14 @@ class synchronize_in_one_worker : public coordination_base
             , coordination(factory)
         {
         }
-        rxsc::worker get_worker() const {
+        inline rxsc::worker get_worker() const {
             return controller;
         }
-        rxsc::scheduler get_scheduler() const {
+        inline rxsc::scheduler get_scheduler() const {
             return factory;
+        }
+        inline rxsc::scheduler::clock_type::time_point now() const {
+            return factory.now();
         }
         template<class Observable>
         auto in(Observable o) const
@@ -232,11 +235,25 @@ public:
 
     typedef coordinator<input_type> coordinator_type;
 
-    coordinator_type create_coordinator(composite_subscription cs = composite_subscription()) const {
+    inline rxsc::scheduler::clock_type::time_point now() const {
+        return factory.now();
+    }
+
+    inline coordinator_type create_coordinator(composite_subscription cs = composite_subscription()) const {
         auto w = factory.create_worker(std::move(cs));
         return coordinator_type(input_type(std::move(w)));
     }
 };
+
+inline synchronize_in_one_worker synchronize_event_loop() {
+    static synchronize_in_one_worker r(rxsc::make_event_loop());
+    return r;
+}
+
+inline synchronize_in_one_worker synchronize_new_thread() {
+    static synchronize_in_one_worker r(rxsc::make_new_thread());
+    return r;
+}
 
 }
 

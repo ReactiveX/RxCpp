@@ -51,8 +51,7 @@ struct range : public source_base<T>
 
         auto state = initial;
 
-        controller.schedule(
-            [=](const rxsc::schedulable& self){
+        auto producer = [=](const rxsc::schedulable& self){
                 auto& dest = o;
                 if (!dest.is_subscribed()) {
                     // terminate loop
@@ -78,7 +77,16 @@ struct range : public source_base<T>
 
                 // tail recurse this same action to continue loop
                 self();
-            });
+            };
+
+        auto selectedProducer = on_exception(
+            [&](){return coordinator.act(producer);},
+            o);
+        if (selectedProducer.empty()) {
+            return;
+        }
+
+        controller.schedule(selectedProducer.get());
     }
 };
 
@@ -88,7 +96,7 @@ template<class T>
 auto range(T first = 0, T last = std::numeric_limits<T>::max(), ptrdiff_t step = 1)
     ->      observable<T,   detail::range<T, identity_one_worker>> {
     return  observable<T,   detail::range<T, identity_one_worker>>(
-                            detail::range<T, identity_one_worker>(first, last, step, identity_one_worker(rxsc::make_current_thread())));
+                            detail::range<T, identity_one_worker>(first, last, step, identity_current_thread()));
 }
 template<class T, class Coordination>
 auto range(T first, T last, ptrdiff_t step, Coordination cn)

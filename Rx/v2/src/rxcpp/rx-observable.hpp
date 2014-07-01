@@ -371,7 +371,7 @@ public:
     ///
     auto switch_on_next() const
         -> typename switch_on_next_result<identity_one_worker>::type {
-        return  switch_on_next_result<identity_one_worker>::make(this, identity_one_worker(rxsc::make_current_thread()));
+        return  switch_on_next_result<identity_one_worker>::make(this, identity_current_thread());
     }
 
     /// switch_on_next (AKA Switch) ->
@@ -417,7 +417,7 @@ public:
     ///
     auto merge() const
         -> typename merge_result<identity_one_worker>::type {
-        return  merge_result<identity_one_worker>::make(this, identity_one_worker(rxsc::make_current_thread()));
+        return  merge_result<identity_one_worker>::make(this, identity_current_thread());
     }
 
     /// merge ->
@@ -465,7 +465,7 @@ public:
     auto flat_map(CollectionSelector&& s, ResultSelector&& rs) const
         ->      observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>::value_type,  rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>> {
         return  observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>::value_type,  rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>>(
-                                                                                                                                            rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), identity_one_worker(rxsc::make_current_thread())));
+                                                                                                                                            rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), identity_current_thread()));
     }
 
     /// flat_map (AKA SelectMany) ->
@@ -511,7 +511,7 @@ public:
     ///
     auto concat() const
         -> typename concat_result<identity_one_worker>::type {
-        return  concat_result<identity_one_worker>::make(this, identity_one_worker(rxsc::make_current_thread()));
+        return  concat_result<identity_one_worker>::make(this, identity_current_thread());
     }
 
     /// concat ->
@@ -557,7 +557,7 @@ public:
     auto concat_map(CollectionSelector&& s, ResultSelector&& rs) const
         ->      observable<typename rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>::value_type,    rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>> {
         return  observable<typename rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>::value_type,    rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>>(
-                                                                                                                                                rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), identity_one_worker(rxsc::make_current_thread())));
+                                                                                                                                                rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), identity_current_thread()));
     }
 
     /// concat_map ->
@@ -587,7 +587,7 @@ public:
         -> typename std::enable_if<!is_coordination<Selector>::value && !is_observable<Selector>::value && rxu::all_true<is_observable<ObservableN>::value...>::value,
                 delayed_combine_latest<identity_one_worker, Selector, this_type, ObservableN...>>::type::type {
         return  observable<typename rxo::detail::combine_latest<identity_one_worker, Selector, this_type, ObservableN...>::value_type,  rxo::detail::combine_latest<identity_one_worker, Selector, this_type, ObservableN...>>(
-                                                                                                                                        rxo::detail::combine_latest<identity_one_worker, Selector, this_type, ObservableN...>(identity_one_worker(rxsc::make_current_thread()), std::forward<Selector>(s), std::make_tuple(*this, on...)));
+                                                                                                                                        rxo::detail::combine_latest<identity_one_worker, Selector, this_type, ObservableN...>(identity_current_thread(), std::forward<Selector>(s), std::make_tuple(*this, on...)));
     }
 
     /// combine_latest ->
@@ -611,7 +611,7 @@ public:
         -> typename std::enable_if<rxu::all_true<is_observable<ObservableN>::value...>::value,
                 delayed_combine_latest<identity_one_worker, rxu::detail::pack, this_type, ObservableN...>>::type::type {
         return  observable<typename rxo::detail::combine_latest<identity_one_worker, rxu::detail::pack, this_type, ObservableN...>::value_type, rxo::detail::combine_latest<identity_one_worker, rxu::detail::pack, this_type, ObservableN...>>(
-                                                                                                                                                rxo::detail::combine_latest<identity_one_worker, rxu::detail::pack, this_type, ObservableN...>(identity_one_worker(rxsc::make_current_thread()), rxu::pack(), std::make_tuple(*this, on...)));
+                                                                                                                                                rxo::detail::combine_latest<identity_one_worker, rxu::detail::pack, this_type, ObservableN...>(identity_current_thread(), rxu::pack(), std::make_tuple(*this, on...)));
     }
 
     /// combine_latest ->
@@ -778,11 +778,11 @@ public:
     ///
     ///
     template<class TriggerSource>
-    auto take_until(TriggerSource&& t) const
+    auto take_until(TriggerSource t) const
         -> typename std::enable_if<is_observable<TriggerSource>::value,
                 observable<T,   rxo::detail::take_until<T, this_type, TriggerSource, identity_one_worker>>>::type {
         return  observable<T,   rxo::detail::take_until<T, this_type, TriggerSource, identity_one_worker>>(
-                                rxo::detail::take_until<T, this_type, TriggerSource, identity_one_worker>(*this, std::forward<TriggerSource>(t), identity_one_worker(rxsc::make_current_thread())));
+                                rxo::detail::take_until<T, this_type, TriggerSource, identity_one_worker>(*this, std::move(t), identity_current_thread()));
     }
 
     /// take_until ->
@@ -791,15 +791,40 @@ public:
     ///
     ///
     template<class TriggerSource, class Coordination>
-    auto take_until(TriggerSource&& t, Coordination&& sf) const
+    auto take_until(TriggerSource t, Coordination sf) const
         -> typename std::enable_if<is_observable<TriggerSource>::value && is_coordination<Coordination>::value,
                 observable<T,   rxo::detail::take_until<T, this_type, TriggerSource, Coordination>>>::type {
         return  observable<T,   rxo::detail::take_until<T, this_type, TriggerSource, Coordination>>(
-                                rxo::detail::take_until<T, this_type, TriggerSource, Coordination>(*this, std::forward<TriggerSource>(t), std::forward<Coordination>(sf)));
+                                rxo::detail::take_until<T, this_type, TriggerSource, Coordination>(*this, std::move(t), std::move(sf)));
+    }
+
+    /// take_until ->
+    /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
+    /// for each item from this observable until on_next occurs on the TriggerSource, emit them from the new observable that is returned.
+    ///
+    ///
+    template<class TimePoint>
+    auto take_until(TimePoint when) const
+        -> typename std::enable_if<std::is_convertible<TimePoint, rxsc::scheduler::clock_type::time_point>::value,
+                observable<T,   rxo::detail::take_until<T, this_type, decltype(rxs::interval(when, identity_current_thread())), identity_one_worker>>>::type {
+        auto cn = identity_current_thread();
+        return  take_until(rxs::interval(when, cn), cn);
+    }
+
+    /// take_until ->
+    /// The coordination is used to synchronize sources from different contexts.
+    /// for each item from this observable until on_next occurs on the TriggerSource, emit them from the new observable that is returned.
+    ///
+    ///
+    template<class Coordination>
+    auto take_until(rxsc::scheduler::clock_type::time_point when, Coordination cn) const
+        -> typename std::enable_if<is_coordination<Coordination>::value,
+                observable<T,   rxo::detail::take_until<T, this_type, decltype(rxs::interval(when, cn)), Coordination>>>::type {
+        return  take_until(rxs::interval(when, cn), cn);
     }
 
     /// repeat ->
-    /// infinitely repeat this observable
+    /// infinitely repeats this observable
     ///
     ///
     auto repeat() const
@@ -809,7 +834,7 @@ public:
     }
 
     /// repeat ->
-    /// repeate this observable for given number of times
+    /// repeats this observable for given number of times
     ///
     ///
     template<class Count>
@@ -838,8 +863,8 @@ class observable<void, void>
 public:
     template<class T>
     static auto range(T first = 0, T last = std::numeric_limits<T>::max(), ptrdiff_t step = 1)
-        -> decltype(rxs::range<T>(first, last, step, identity_one_worker(rxsc::make_current_thread()))) {
-        return      rxs::range<T>(first, last, step, identity_one_worker(rxsc::make_current_thread()));
+        -> decltype(rxs::range<T>(first, last, step, identity_current_thread())) {
+        return      rxs::range<T>(first, last, step, identity_current_thread());
     }
     template<class T, class Coordination>
     static auto range(T first, T last, ptrdiff_t step, Coordination cn)
@@ -866,6 +891,15 @@ public:
         -> decltype(rxs::defer(std::move(of))) {
         return      rxs::defer(std::move(of));
     }
+    static auto interval(rxsc::scheduler::clock_type::time_point when)
+        -> decltype(rxs::interval(when)) {
+        return      rxs::interval(when);
+    }
+    template<class Coordination>
+    static auto interval(rxsc::scheduler::clock_type::time_point when, Coordination cn)
+        -> decltype(rxs::interval(when, std::move(cn))) {
+        return      rxs::interval(when, std::move(cn));
+    }
     static auto interval(rxsc::scheduler::clock_type::time_point initial, rxsc::scheduler::clock_type::duration period)
         -> decltype(rxs::interval(initial, period)) {
         return      rxs::interval(initial, period);
@@ -877,8 +911,8 @@ public:
     }
     template<class Collection>
     static auto iterate(Collection c)
-        -> decltype(rxs::iterate(std::move(c), identity_one_worker(rxsc::make_current_thread()))) {
-        return      rxs::iterate(std::move(c), identity_one_worker(rxsc::make_current_thread()));
+        -> decltype(rxs::iterate(std::move(c), identity_current_thread())) {
+        return      rxs::iterate(std::move(c), identity_current_thread());
     }
     template<class Collection, class Coordination>
     static auto iterate(Collection c, Coordination cn)

@@ -47,17 +47,23 @@ struct error : public source_base<T>
         auto controller = coordinator.get_output().get_worker();
         auto exception = initial.exception;
 
-        controller.schedule(
-            [=](const rxsc::schedulable&){
-                auto& dest = o;
-                if (!dest.is_subscribed()) {
-                    // terminate loop
-                    return;
-                }
+        auto producer = [=](const rxsc::schedulable&){
+            auto& dest = o;
+            if (!dest.is_subscribed()) {
+                // terminate loop
+                return;
+            }
 
-                dest.on_error(exception);
-                // o is unsubscribed
-            });
+            dest.on_error(exception);
+            // o is unsubscribed
+        };
+        auto selectedProducer = on_exception(
+            [&](){return coordinator.act(producer);},
+            o);
+        if (selectedProducer.empty()) {
+            return;
+        }
+        controller.schedule(selectedProducer.get());
     }
 };
 
@@ -82,8 +88,8 @@ auto make_error(throw_instance_tag&&, E e, Coordination cn)
 
 template<class T, class E>
 auto error(E e)
-    -> decltype(detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, typename std::decay<E>::type>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), identity_one_worker(rxsc::make_immediate()))) {
-    return      detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, typename std::decay<E>::type>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), identity_one_worker(rxsc::make_immediate()));
+    -> decltype(detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, typename std::decay<E>::type>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), identity_immediate())) {
+    return      detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, typename std::decay<E>::type>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), identity_immediate());
 }
 template<class T, class E, class Coordination>
 auto error(E e, Coordination cn)

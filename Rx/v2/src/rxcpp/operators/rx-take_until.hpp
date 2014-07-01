@@ -124,7 +124,7 @@ struct take_until : public operator_base<T>
         }
         trigger->subscribe(std::move(selectedSinkTrigger.get()));
 
-        source.get().subscribe(
+        auto sinkSource = make_subscriber<T>(
         // split subscription lifetime
             state->source_lifetime,
         // on_next
@@ -149,6 +149,13 @@ struct take_until : public operator_base<T>
                 state->out.on_completed();
             }
         );
+        auto selectedSinkSource = on_exception(
+            [&](){return state->coordinator.out(sinkSource);},
+            state->out);
+        if (selectedSinkSource.empty()) {
+            return;
+        }
+        source->subscribe(std::move(selectedSinkSource.get()));
     }
 };
 
@@ -177,9 +184,9 @@ public:
 }
 
 template<class TriggerObservable, class Coordination>
-auto take_until(TriggerObservable&& t, Coordination&& sf)
+auto take_until(TriggerObservable t, Coordination sf)
     ->      detail::take_until_factory<TriggerObservable, Coordination> {
-    return  detail::take_until_factory<TriggerObservable, Coordination>(std::forward<TriggerObservable>(t), std::forward<Coordination>(sf));
+    return  detail::take_until_factory<TriggerObservable, Coordination>(std::move(t), std::move(sf));
 }
 
 }
