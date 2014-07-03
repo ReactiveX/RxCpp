@@ -724,6 +724,17 @@ public:
                                     rxo::detail::scan<T, this_type, Accumulator, Seed>(*this, std::forward<Accumulator>(a), seed));
     }
 
+    /// skip ->
+    /// make new observable with skipped first count items from this observable
+    ///
+    ///
+    template<class Count>
+    auto skip(Count t) const
+        ->      observable<T,   rxo::detail::skip<T, this_type, Count>> {
+        return  observable<T,   rxo::detail::skip<T, this_type, Count>>(
+                                rxo::detail::skip<T, this_type, Count>(*this, t));
+    }
+
     /// take ->
     /// for the first count items from this observable emit them from the new observable that is returned.
     ///
