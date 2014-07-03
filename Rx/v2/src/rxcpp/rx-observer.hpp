@@ -172,7 +172,7 @@ private:
 
     template<class Observer>
     static auto make_destination(Observer o)
-        -> typename std::enable_if<is_observer<Observer>::value, std::shared_ptr<virtual_observer>>::type {
+        -> std::shared_ptr<virtual_observer> {
         return std::make_shared<specific_observer<Observer>>(std::move(o));
     }
 
