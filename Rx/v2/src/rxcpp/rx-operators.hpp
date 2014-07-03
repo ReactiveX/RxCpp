@@ -51,6 +51,7 @@ namespace rxo=operators;
 #include "operators/rx-ref_count.hpp"
 #include "operators/rx-repeat.hpp"
 #include "operators/rx-scan.hpp"
+#include "operators/rx-skip.hpp"
 #include "operators/rx-subscribe.hpp"
 #include "operators/rx-switch_on_next.hpp"
 #include "operators/rx-take.hpp"
