@@ -160,6 +160,29 @@ inline auto pack()
     return  detail::pack();
 }
 
+template<class OStream>
+struct println_function
+{
+    OStream& os;
+    println_function(OStream& os) : os(os) {}
+
+    template<class... TN>
+    void operator()(const TN&... tn) const {
+        bool inserts[] = {(os << tn, true)...};
+        os << std::endl;
+    }
+
+    template<class... TN>
+    void operator()(const std::tuple<TN...>& tpl) const {
+        apply(tpl, *this);
+    }
+};
+template<class OStream>
+auto println(OStream& os)
+    ->      println_function<OStream> {
+    return  println_function<OStream>(os);
+}
+
 namespace detail {
 
 template <class T>
