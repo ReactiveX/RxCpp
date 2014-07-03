@@ -139,7 +139,7 @@ SCENARIO("synchronized range", "[hide][subscribe][range][synchronize][long][perf
                 auto s0 = rxs::range(0, 499, 1, es)
                     .lift(liftrequirecompletion)
                     .as_dynamic()
-                    .synchronize(es)
+                    .publish_synchronized(es)
                     .ref_count()
                     .lift(liftrequirecompletion)
                     .subscribe(
@@ -153,7 +153,7 @@ SCENARIO("synchronized range", "[hide][subscribe][range][synchronize][long][perf
                 auto s1 = rxs::range(500, 999, 1, es)
                     .lift(liftrequirecompletion)
                     .as_dynamic()
-                    .synchronize(es)
+                    .publish_synchronized(es)
                     .ref_count()
                     .lift(liftrequirecompletion)
                     .subscribe(
@@ -167,7 +167,7 @@ SCENARIO("synchronized range", "[hide][subscribe][range][synchronize][long][perf
                 auto s2 = rxs::range(1000, 1499, 1, es)
                     .lift(liftrequirecompletion)
                     .as_dynamic()
-                    .synchronize(es)
+                    .publish_synchronized(es)
                     .ref_count()
                     .lift(liftrequirecompletion)
                     .subscribe(
