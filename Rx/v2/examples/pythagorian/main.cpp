@@ -4,8 +4,6 @@
 // conflicts can be managed by the user.
 namespace rx=rxcpp;
 namespace rxu=rxcpp::util;
-namespace rxsc=rxcpp::schedulers;
-namespace rxsub=rxcpp::subjects;
 
 // At this time, RxCpp will fail to compile if the contents
 // of the std namespace are merged into the global namespace
