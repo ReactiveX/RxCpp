@@ -38,10 +38,10 @@ struct take : public operator_base<T>
     struct mode
     {
         enum type {
-            taking,
-            triggered,
-            errored,
-            stopped
+            taking,    // capture messages
+            triggered, // ignore messages
+            errored,   // error occured
+            stopped    // observable completed
         };
     };
 

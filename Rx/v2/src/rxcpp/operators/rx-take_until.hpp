@@ -42,11 +42,11 @@ struct take_until : public operator_base<T>
     struct mode
     {
         enum type {
-            taking,
-            clear,
-            triggered,
-            errored,
-            stopped
+            taking,    // no messages from trigger
+            clear,     // trigger completed
+            triggered, // trigger sent on_next
+            errored,   // error either on trigger or on observable
+            stopped    // observable completed
         };
     };
 
@@ -145,7 +145,7 @@ struct take_until : public operator_base<T>
         // on_completed
             [state]() {
                 if (state->mode_value > mode::clear) {return;}
-                state->mode_value = mode::triggered;
+                state->mode_value = mode::stopped;
                 state->out.on_completed();
             }
         );
