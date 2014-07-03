@@ -46,6 +46,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/switch_on_next.cpp
     ${TEST_DIR}/operators/reduce.cpp
     ${TEST_DIR}/operators/repeat.cpp
+    ${TEST_DIR}/operators/skip.cpp
     ${TEST_DIR}/operators/take.cpp
     ${TEST_DIR}/operators/publish.cpp
     ${TEST_DIR}/operators/flat_map.cpp
