@@ -52,6 +52,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/skip.cpp
     ${TEST_DIR}/operators/switch_on_next.cpp
     ${TEST_DIR}/operators/take.cpp
+    ${TEST_DIR}/operators/take_until.cpp
 )
 add_executable(rxcppv2_test ${TEST_SOURCES})
 TARGET_LINK_LIBRARIES(rxcppv2_test ${CMAKE_THREAD_LIBS_INIT})
