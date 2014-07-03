@@ -664,6 +664,15 @@ public:
         return      multicast(rxsub::behavior<T>(first, cs));
     }
 
+    /// observe_on ->
+    /// all values are queued and delivered using the scheduler from the supplied coordination
+    ///
+    template<class Coordination>
+    auto observe_on(Coordination cn) const
+        -> decltype(EXPLICIT_THIS lift(rxo::detail::observe_on<T, Coordination>(std::move(cn)))) {
+        return                    lift(rxo::detail::observe_on<T, Coordination>(std::move(cn)));
+    }
+
     /// reduce ->
     /// for each item from this observable use Accumulator to combine items, when completed use ResultSelector to produce a value that will be emitted from the new observable that is returned.
     ///

@@ -45,6 +45,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/lift.cpp
     ${TEST_DIR}/operators/map.cpp
     ${TEST_DIR}/operators/merge.cpp
+    ${TEST_DIR}/operators/observe_on.cpp
     ${TEST_DIR}/operators/publish.cpp
     ${TEST_DIR}/operators/reduce.cpp
     ${TEST_DIR}/operators/repeat.cpp

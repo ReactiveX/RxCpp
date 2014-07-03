@@ -46,6 +46,7 @@ namespace rxo=operators;
 #include "operators/rx-map.hpp"
 #include "operators/rx-merge.hpp"
 #include "operators/rx-multicast.hpp"
+#include "operators/rx-observe_on.hpp"
 #include "operators/rx-publish.hpp"
 #include "operators/rx-reduce.hpp"
 #include "operators/rx-ref_count.hpp"
