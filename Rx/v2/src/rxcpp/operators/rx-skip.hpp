@@ -55,7 +55,7 @@ struct skip : public operator_base<T>
         {
             state_type(const values& i, const output_type& oarg)
                 : values(i)
-                , mode_value(count > 0 ? mode::skipping : mode::triggered)
+                , mode_value(i.count > 0 ? mode::skipping : mode::triggered)
                 , out(oarg)
             {
             }
