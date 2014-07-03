@@ -636,11 +636,12 @@ public:
                                             rxo::detail::multicast<T, this_type, Subject>(*this, std::move(sub)));
     }
 
-    /// synchronize ->
-    /// turns a cold observable hot and allows connections to the source to be independent of subscriptions
+    /// publish_synchronized ->
+    /// turns a cold observable hot and allows connections to the source to be independent of subscriptions.
+    /// all values are queued and delivered using the scheduler from the supplied coordination
     ///
     template<class Coordination>
-    auto synchronize(Coordination cn, composite_subscription cs = composite_subscription()) const
+    auto publish_synchronized(Coordination cn, composite_subscription cs = composite_subscription()) const
         -> decltype(EXPLICIT_THIS multicast(rxsub::synchronize<T, Coordination>(std::move(cn), cs))) {
         return                    multicast(rxsub::synchronize<T, Coordination>(std::move(cn), cs));
     }
@@ -800,7 +801,7 @@ public:
 
     /// take_until ->
     /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
-    /// for each item from this observable until on_next occurs on the TriggerSource, emit them from the new observable that is returned.
+    /// for each item from this observable until the specified time, emit them from the new observable that is returned.
     ///
     ///
     template<class TimePoint>
@@ -813,7 +814,7 @@ public:
 
     /// take_until ->
     /// The coordination is used to synchronize sources from different contexts.
-    /// for each item from this observable until on_next occurs on the TriggerSource, emit them from the new observable that is returned.
+    /// for each item from this observable until the specified time, emit them from the new observable that is returned.
     ///
     ///
     template<class Coordination>

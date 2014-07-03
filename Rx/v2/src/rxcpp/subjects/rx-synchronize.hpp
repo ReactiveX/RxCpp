@@ -214,8 +214,8 @@ class synchronize_in_one_worker : public coordination_base
         }
         template<class Observable>
         auto in(Observable o) const
-            -> decltype(o.synchronize(coordination).ref_count()) {
-            return      o.synchronize(coordination).ref_count();
+            -> decltype(o.publish_synchronized(coordination).ref_count()) {
+            return      o.publish_synchronized(coordination).ref_count();
         }
         template<class Subscriber>
         auto out(Subscriber s) const
