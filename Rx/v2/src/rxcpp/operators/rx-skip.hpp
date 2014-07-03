@@ -38,10 +38,10 @@ struct skip : public operator_base<T>
     struct mode
     {
         enum type {
-            skipping,
-            triggered,
-            errored,
-            stopped
+            skipping,  // ignore messages
+            triggered, // capture messages
+            errored,   // error occured
+            stopped    // observable completed
         };
     };
 
