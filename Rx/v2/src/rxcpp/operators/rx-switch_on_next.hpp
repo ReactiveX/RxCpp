@@ -72,7 +72,7 @@ struct switch_on_next
             output_type out;
         };
 
-        auto coordinator = initial.coordination.create_coordinator();
+        auto coordinator = initial.coordination.create_coordinator(scbr.get_subscription());
 
         // take a copy of the values for each subscription
         auto state = std::shared_ptr<switch_state_type>(new switch_state_type(initial, std::move(coordinator), std::move(scbr)));
