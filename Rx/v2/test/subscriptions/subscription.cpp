@@ -90,7 +90,7 @@ SCENARIO("for loop subscribes to combine_latest", "[hide][for][just][combine_lat
     }
 }
 
-SCENARIO("synchronized range", "[hide][subscribe][range][synchronize][long][perf]"){
+SCENARIO("synchronized range debug", "[hide][subscribe][range][synchronize_debug][synchronize][long][perf]"){
     GIVEN("range"){
         WHEN("synchronized"){
             using namespace std::chrono;
@@ -99,8 +99,9 @@ SCENARIO("synchronized range", "[hide][subscribe][range][synchronize][long][perf
             auto sc = rxsc::make_current_thread();
             auto w = sc.create_worker();
 
-            auto el = rxsc::make_event_loop();
-            auto es = rx::synchronize_in_one_worker(el);
+            auto es = rx::synchronize_event_loop();
+
+            const int values = 10000;
 
             int runs = 10;
 
@@ -108,35 +109,36 @@ SCENARIO("synchronized range", "[hide][subscribe][range][synchronize][long][perf
                 std::atomic<int> c(0);
                 int n = 1;
                 auto liftrequirecompletion = [&](rx::subscriber<int> dest){
-                    auto completionstate = std::make_shared<std::pair<long, rx::subscriber<int>>>(0, std::move(dest));
-                    completionstate->second.add([=](){
-                        if (completionstate->first != 500) {
+                    auto completionstate = std::make_shared<std::tuple<bool, long, rx::subscriber<int>>>(false, 0, std::move(dest));
+                    std::get<2>(*completionstate).add([=](){
+                        if (std::get<1>(*completionstate) != values || !std::get<0>(*completionstate)) {
                             abort();
                         }
                     });
                     // VS2013 deduction issue requires dynamic (type-forgetting)
                     return rx::make_subscriber<int>(
-                        completionstate->second,
-                        rx::make_observer_dynamic<int>(
-                            [=](int n){
-                                ++completionstate->first;
-                                completionstate->second.on_next(n);
-                            },
-                            [=](std::exception_ptr e){
+                        std::get<2>(*completionstate),
+                        [=](int n){
+                            ++std::get<1>(*completionstate);
+                            std::get<2>(*completionstate).on_next(n);
+                        },
+                        [=](std::exception_ptr e){
+                            abort();
+                            std::get<2>(*completionstate).on_error(e);
+                        },
+                        [=](){
+                            if (std::get<1>(*completionstate) != values) {
                                 abort();
-                                completionstate->second.on_error(e);
-                            },
-                            [=](){
-                                if (completionstate->first != 500) {
-                                    abort();
-                                }
-                                completionstate->second.on_completed();
-                            }));
+                            }
+                            std::get<0>(*completionstate) = true;
+                            std::get<2>(*completionstate).on_completed();
+                        }).as_dynamic();
                 };
                 auto start = clock::now();
-                auto ew = el.create_worker();
+                auto ew = es.create_coordinator().get_worker();
                 std::atomic<int> v(0);
-                auto s0 = rxs::range(0, 499, 1, es)
+                auto s0 = rxs::range(1, es)
+                    .take(values)
                     .lift(liftrequirecompletion)
                     .as_dynamic()
                     .publish_synchronized(es)
@@ -150,7 +152,8 @@ SCENARIO("synchronized range", "[hide][subscribe][range][synchronize][long][perf
                         [&](){
                             ++c;
                         }));
-                auto s1 = rxs::range(500, 999, 1, es)
+                auto s1 = rxs::range(values + 1, es)
+                    .take(values)
                     .lift(liftrequirecompletion)
                     .as_dynamic()
                     .publish_synchronized(es)
@@ -164,7 +167,8 @@ SCENARIO("synchronized range", "[hide][subscribe][range][synchronize][long][perf
                         [&](){
                             ++c;
                         }));
-                auto s2 = rxs::range(1000, 1499, 1, es)
+                auto s2 = rxs::range((values * 2) + 1, es)
+                    .take(values)
                     .lift(liftrequirecompletion)
                     .as_dynamic()
                     .publish_synchronized(es)
@@ -178,13 +182,120 @@ SCENARIO("synchronized range", "[hide][subscribe][range][synchronize][long][perf
                         [&](){
                             ++c;
                         }));
-                while(v != 1500 || c != 3);
+                while(v != values * 3 || c != 3);
                 s0.unsubscribe();
                 s1.unsubscribe();
                 s2.unsubscribe();
                 auto finish = clock::now();
                 auto msElapsed = duration_cast<milliseconds>(finish-start);
-                std::cout << "range synchronize     : " << n << " subscribed, " << v << " on_next calls, " << msElapsed.count() << "ms elapsed, " << v / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
+                std::cout << "range synchronized : " << n << " subscribed, " << v << " on_next calls, " << msElapsed.count() << "ms elapsed, " << v / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
+
+                if (--runs > 0) {
+                    self();
+                }
+            };
+
+            w.schedule(loop);
+        }
+    }
+}
+
+SCENARIO("observe_on range debug", "[hide][subscribe][range][observe_on_debug][observe_on][long][perf]"){
+    GIVEN("range"){
+        WHEN("observed on"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
+
+            auto sc = rxsc::make_current_thread();
+            auto w = sc.create_worker();
+
+            auto es = rx::observe_on_event_loop();
+
+            const int values = 10000;
+
+            int runs = 10;
+
+            auto loop = [&](const rxsc::schedulable& self) {
+                std::atomic<int> c(0);
+                int n = 1;
+                auto liftrequirecompletion = [&](rx::subscriber<int> dest){
+                    auto completionstate = std::make_shared<std::tuple<bool, long, rx::subscriber<int>>>(false, 0, std::move(dest));
+                    std::get<2>(*completionstate).add([=](){
+                        if (std::get<1>(*completionstate) != values || !std::get<0>(*completionstate)) {
+                            abort();
+                        }
+                    });
+                    // VS2013 deduction issue requires dynamic (type-forgetting)
+                    return rx::make_subscriber<int>(
+                        std::get<2>(*completionstate),
+                        [=](int n){
+                            ++std::get<1>(*completionstate);
+                            std::get<2>(*completionstate).on_next(n);
+                        },
+                        [=](std::exception_ptr e){
+                            abort();
+                            std::get<2>(*completionstate).on_error(e);
+                        },
+                        [=](){
+                            if (std::get<1>(*completionstate) != values) {
+                                abort();
+                            }
+                            std::get<0>(*completionstate) = true;
+                            std::get<2>(*completionstate).on_completed();
+                        }).as_dynamic();
+                };
+                auto start = clock::now();
+                auto ew = es.create_coordinator().get_worker();
+                std::atomic<int> v(0);
+                auto s0 = rxs::range(1, es)
+                    .take(values)
+                    .lift(liftrequirecompletion)
+                    .as_dynamic()
+                    .observe_on(es)
+                    .lift(liftrequirecompletion)
+                    .subscribe(
+                        rx::make_observer_dynamic<int>(
+                        [&](int i){
+                            ++v;
+                        },
+                        [&](){
+                            ++c;
+                        }));
+                auto s1 = rxs::range(values + 1, es)
+                    .take(values)
+                    .lift(liftrequirecompletion)
+                    .as_dynamic()
+                    .observe_on(es)
+                    .lift(liftrequirecompletion)
+                    .subscribe(
+                        rx::make_observer_dynamic<int>(
+                        [&](int i){
+                            ++v;
+                        },
+                        [&](){
+                            ++c;
+                        }));
+                auto s2 = rxs::range((values * 2) + 1, es)
+                    .take(values)
+                    .lift(liftrequirecompletion)
+                    .as_dynamic()
+                    .observe_on(es)
+                    .lift(liftrequirecompletion)
+                    .subscribe(
+                        rx::make_observer_dynamic<int>(
+                        [&](int i){
+                            ++v;
+                        },
+                        [&](){
+                            ++c;
+                        }));
+                while(v != values * 3 || c != 3);
+                s0.unsubscribe();
+                s1.unsubscribe();
+                s2.unsubscribe();
+                auto finish = clock::now();
+                auto msElapsed = duration_cast<milliseconds>(finish-start);
+                std::cout << "range observe_on : " << n << " subscribed, " << v << " on_next calls, " << msElapsed.count() << "ms elapsed, " << v / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
 
                 if (--runs > 0) {
                     self();
@@ -198,7 +309,6 @@ SCENARIO("synchronized range", "[hide][subscribe][range][synchronize][long][perf
 
 SCENARIO("subscription traits", "[subscription][traits]"){
     GIVEN("given some subscription types"){
-        auto empty = [](){};
         auto es = rx::make_subscription();
         rx::composite_subscription cs;
         WHEN("tested"){

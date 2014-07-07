@@ -9,9 +9,8 @@ namespace rxsub=rxcpp::subjects;
 #include "catch.hpp"
 
 const int static_onnextcalls = 100000;
-static int aliased = 0;
 
-SCENARIO("range observed on current_thread", "[hide][range][observe_on][long][perf]"){
+SCENARIO("range observed on current_thread", "[hide][range][observe_on_debug][observe_on][long][perf]"){
     const int& onnextcalls = static_onnextcalls;
     GIVEN("a range"){
         WHEN("multicasting a million ints"){
@@ -22,23 +21,29 @@ SCENARIO("range observed on current_thread", "[hide][range][observe_on][long][pe
 
             for (int n = 0; n < 10; n++)
             {
+                std::atomic_bool disposed(false);
                 std::atomic_bool done(false);
                 auto c = std::make_shared<int>(0);
+
+                rx::composite_subscription cs;
+                cs.add([&](){
+                    if (!done) {abort();}
+                    disposed = true;
+                });
 
                 auto start = clock::now();
                 rxs::range<int>(1)
                     .take(onnextcalls)
                     .observe_on(el)
                     .subscribe(
+                        cs,
                         [c](int){
                            ++(*c);
                         },
                         [&](){
                             done = true;
                         });
-                while(!done) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-                }
+                while(!done || !disposed);
                 auto expected = onnextcalls;
                 REQUIRE(*c == expected);
                 auto finish = clock::now();
