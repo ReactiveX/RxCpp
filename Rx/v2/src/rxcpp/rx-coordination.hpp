@@ -260,8 +260,8 @@ class serialize_one_worker : public coordination_base
         }
         template<class Subscriber>
         auto out(Subscriber s) const
-            ->      serialize_observer<Subscriber> {
-            return  serialize_observer<Subscriber>(std::move(s), lock);
+            -> decltype(serialize_observer<Subscriber>::make(std::move(s), lock)) {
+            return      serialize_observer<Subscriber>::make(std::move(s), lock);
         }
         template<class F>
         auto act(F f) const
