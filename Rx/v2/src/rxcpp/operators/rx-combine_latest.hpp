@@ -167,7 +167,7 @@ struct combine_latest : public operator_base<typename combine_latest_traits<Coor
             output_type out;
         };
 
-        auto coordinator = initial.coordination.create_coordinator();
+        auto coordinator = initial.coordination.create_coordinator(scbr.get_subscription());
 
         // take a copy of the values for each subscription
         auto state = std::shared_ptr<combine_latest_state_type>(new combine_latest_state_type(initial, std::move(coordinator), std::move(scbr)));

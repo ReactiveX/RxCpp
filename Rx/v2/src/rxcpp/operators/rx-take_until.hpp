@@ -74,7 +74,7 @@ struct take_until : public operator_base<T>
             output_type out;
         };
 
-        auto coordinator = initial.coordination.create_coordinator();
+        auto coordinator = initial.coordination.create_coordinator(s.get_subscription());
 
         // take a copy of the values for each subscription
         auto state = std::shared_ptr<take_until_state_type>(new take_until_state_type(initial, std::move(coordinator), std::move(s)));
