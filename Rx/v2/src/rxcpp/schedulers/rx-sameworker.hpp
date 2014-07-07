@@ -21,7 +21,7 @@ private:
 
 public:
     explicit same_worker(rxsc::worker w)
-        : controller(w)
+        : controller(std::move(w))
     {
     }
     virtual ~same_worker()
@@ -42,7 +42,7 @@ public:
 };
 
 inline scheduler make_same_worker(rxsc::worker w) {
-    auto i = make_scheduler<same_worker>(w);
+    auto i = make_scheduler<same_worker>(std::move(w));
     return i;
 }
 
