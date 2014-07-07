@@ -80,6 +80,10 @@ public:
         return lifetime;
     }
 
+    subscriber<T> as_dynamic() const {
+        return subscriber<T>(lifetime, destination.as_dynamic());
+    }
+
     // observer
     //
     template<class V>

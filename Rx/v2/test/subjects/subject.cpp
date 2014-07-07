@@ -14,7 +14,7 @@ namespace rxsub=rxcpp::subjects;
 
 
 const int static_onnextcalls = 100000000;
-int aliased = 0;
+static int aliased = 0;
 
 SCENARIO("for loop locks mutex", "[hide][for][mutex][long][perf]"){
     const int& onnextcalls = static_onnextcalls;

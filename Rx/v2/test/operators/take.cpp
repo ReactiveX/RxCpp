@@ -1,4 +1,5 @@
 #include "rxcpp/rx.hpp"
+namespace rx=rxcpp;
 namespace rxu=rxcpp::util;
 namespace rxsc=rxcpp::schedulers;
 
@@ -619,3 +620,4 @@ SCENARIO("take, dispose after", "[take][operators]"){
         }
     }
 }
+

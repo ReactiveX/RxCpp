@@ -94,32 +94,39 @@ struct iterate : public source_base<typename iterate_traits<Collection>::value_t
         // creates a worker whose lifetime is the same as this subscription
         auto coordinator = initial.coordination.create_coordinator(o.get_subscription());
 
-        iterate_state_type state(initial, std::move(o));
+        iterate_state_type state(initial, o);
 
         auto controller = coordinator.get_worker();
 
-        controller.schedule(
-            [state](const rxsc::schedulable& self){
-                if (!state.out.is_subscribed()) {
-                    // terminate loop
-                    return;
-                }
+        auto producer = [state](const rxsc::schedulable& self){
+            if (!state.out.is_subscribed()) {
+                // terminate loop
+                return;
+            }
 
-                if (state.cursor != state.end) {
-                    // send next value
-                    state.out.on_next(*state.cursor);
-                    ++state.cursor;
-                }
+            if (state.cursor != state.end) {
+                // send next value
+                state.out.on_next(*state.cursor);
+                ++state.cursor;
+            }
 
-                if (state.cursor == state.end) {
-                    state.out.on_completed();
-                    // o is unsubscribed
-                    return;
-                }
+            if (state.cursor == state.end) {
+                state.out.on_completed();
+                // o is unsubscribed
+                return;
+            }
 
-                // tail recurse this same action to continue loop
-                self();
-            });
+            // tail recurse this same action to continue loop
+            self();
+        };
+        auto selectedProducer = on_exception(
+            [&](){return coordinator.act(producer);},
+            o);
+        if (selectedProducer.empty()) {
+            return;
+        }
+        controller.schedule(selectedProducer.get());
+
     }
 };
 
@@ -129,7 +136,7 @@ template<class Collection>
 auto iterate(Collection c)
     ->      observable<typename detail::iterate_traits<Collection>::value_type, detail::iterate<Collection, identity_one_worker>> {
     return  observable<typename detail::iterate_traits<Collection>::value_type, detail::iterate<Collection, identity_one_worker>>(
-                                                                                detail::iterate<Collection, identity_one_worker>(std::move(c), identity_one_worker(rxsc::make_current_thread())));
+                                                                                detail::iterate<Collection, identity_one_worker>(std::move(c), identity_immediate()));
 }
 template<class Collection, class Coordination>
 auto iterate(Collection c, Coordination cn)
@@ -140,8 +147,8 @@ auto iterate(Collection c, Coordination cn)
 
 template<class T>
 auto from()
-    -> decltype(iterate(std::array<T, 0>(), identity_one_worker(rxsc::make_immediate()))) {
-    return      iterate(std::array<T, 0>(), identity_one_worker(rxsc::make_immediate()));
+    -> decltype(iterate(std::array<T, 0>(), identity_immediate())) {
+    return      iterate(std::array<T, 0>(), identity_immediate());
 }
 template<class T, class Coordination>
 auto from(Coordination cn)
@@ -152,9 +159,9 @@ auto from(Coordination cn)
 template<class Value0, class... ValueN>
 auto from(Value0 v0, ValueN... vn)
     -> typename std::enable_if<!is_coordination<Value0>::value,
-        decltype(iterate(std::array<Value0, sizeof...(ValueN) + 1>(), identity_one_worker(rxsc::make_immediate())))>::type {
+        decltype(iterate(std::array<Value0, sizeof...(ValueN) + 1>(), identity_immediate()))>::type {
     std::array<Value0, sizeof...(ValueN) + 1> c = {v0, vn...};
-    return iterate(std::move(c), identity_one_worker(rxsc::make_immediate()));
+    return iterate(std::move(c), identity_immediate());
 }
 template<class Coordination, class Value0, class... ValueN>
 auto from(Coordination cn, Value0 v0, ValueN... vn)

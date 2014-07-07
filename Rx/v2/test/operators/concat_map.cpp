@@ -64,9 +64,7 @@ SCENARIO("synchronize concat_map pythagorian ranges", "[hide][range][concat_map]
             std::mutex lock;
             std::condition_variable wake;
 
-            auto sc = rxsc::make_event_loop();
-            //auto sc = rxsc::make_new_thread();
-            auto so = rx::synchronize_in_one_worker(sc);
+            auto so = rx::synchronize_event_loop();
 
             int c = 0;
             std::atomic<int> ct(0);
@@ -115,7 +113,7 @@ SCENARIO("synchronize concat_map pythagorian ranges", "[hide][range][concat_map]
     }
 }
 
-SCENARIO("serialize concat_map pythagorian ranges", "[hide][range][concat_map][serialize][pythagorian][perf]"){
+SCENARIO("observe_on concat_map pythagorian ranges", "[hide][range][concat_map][observe_on][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("some ranges"){
         WHEN("generating pythagorian triplets"){
@@ -125,11 +123,11 @@ SCENARIO("serialize concat_map pythagorian ranges", "[hide][range][concat_map][s
             std::mutex lock;
             std::condition_variable wake;
 
-            auto sc = rxsc::make_event_loop();
-            //auto sc = rxsc::make_new_thread();
-            auto so = rx::serialize_one_worker(sc);
+            auto so = rx::observe_on_event_loop();
 
             int c = 0;
+            std::atomic_bool done(false);
+            std::atomic_bool disposed(false);
             std::atomic<int> ct(0);
             int n = 1;
             auto start = clock::now();
@@ -156,17 +154,92 @@ SCENARIO("serialize concat_map pythagorian ranges", "[hide][range][concat_map][s
                                 .as_dynamic();},
                         [](int z, std::tuple<int,int,int> triplet){return triplet;},
                         so);
+
+            rx::composite_subscription cs;
+            cs.add([&](){
+                disposed = true;
+                wake.notify_one();});
+
             triples
                 .take(tripletCount)
                 .subscribe(
+                    cs,
                     rxu::apply_to([&ct](int x,int y,int z){
                         ++ct;}),
-                    [](std::exception_ptr){abort();},
                     [&](){
+                        done = true;
                         wake.notify_one();});
 
             std::unique_lock<std::mutex> guard(lock);
-            wake.wait(guard, [&](){return ct == tripletCount;});
+            wake.wait(guard, [&](){return ct == tripletCount && done && disposed;});
+
+            auto finish = clock::now();
+            auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
+                   duration_cast<milliseconds>(start.time_since_epoch());
+            std::cout << "concat observe_on pythagorian range : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << c / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
+        }
+    }
+}
+
+SCENARIO("serialize concat_map pythagorian ranges", "[hide][range][concat_map][serialize][pythagorian][perf]"){
+    const int& tripletCount = static_tripletCount;
+    GIVEN("some ranges"){
+        WHEN("generating pythagorian triplets"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
+
+            std::mutex lock;
+            std::condition_variable wake;
+
+            auto so = rx::serialize_event_loop();
+
+            int c = 0;
+            std::atomic_bool done(false);
+            std::atomic_bool disposed(false);
+            std::atomic<int> ct(0);
+            int n = 1;
+            auto start = clock::now();
+            auto triples =
+                rxs::range(1, so)
+                    .concat_map(
+                        [&c, so](int z){
+                            return rxs::range(1, z, 1, so)
+                                .concat_map(
+                                    [&c, so, z](int x){
+                                        return rxs::range(x, z, 1, so)
+                                            .filter([&c, z, x](int y){
+                                                ++c;
+                                                if (x*x + y*y == z*z) {
+                                                    return true;}
+                                                else {
+                                                    return false;}})
+                                            .map([z, x](int y){return std::make_tuple(x, y, z);})
+                                            // forget type to workaround lambda deduction bug on msvc 2013
+                                            .as_dynamic();},
+                                    [](int x, std::tuple<int,int,int> triplet){return triplet;},
+                                    so)
+                                // forget type to workaround lambda deduction bug on msvc 2013
+                                .as_dynamic();},
+                        [](int z, std::tuple<int,int,int> triplet){return triplet;},
+                        so);
+
+            rx::composite_subscription cs;
+            cs.add([&](){
+                disposed = true;
+                wake.notify_one();});
+
+            triples
+                .take(tripletCount)
+                .subscribe(
+                    cs,
+                    rxu::apply_to([&ct](int x,int y,int z){
+                        ++ct;}),
+                    [&](){
+                        done = true;
+                        wake.notify_one();});
+
+            std::unique_lock<std::mutex> guard(lock);
+            wake.wait(guard, [&](){return ct == tripletCount && done && disposed;});
 
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -

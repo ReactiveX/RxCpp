@@ -45,12 +45,12 @@ public:
 
         virtual clock_type::time_point to_time_point(long absolute) const
         {
-            return clock_type::time_point(clock_type::duration(absolute));
+            return clock_type::time_point(std::chrono::milliseconds(absolute));
         }
 
         virtual long to_relative(clock_type::duration d) const
         {
-            return static_cast<long>(d.count());
+            return static_cast<long>(std::chrono::duration_cast<std::chrono::milliseconds>(d).count());
         }
     };
 
@@ -79,7 +79,7 @@ public:
         }
 
         virtual void schedule(clock_type::time_point when, const schedulable& scbl) const {
-            state->schedule_absolute(state->to_relative(when - now()), scbl);
+            state->schedule_relative(state->to_relative(when - now()), scbl);
         }
 
         void schedule_absolute(absolute when, const schedulable& scbl) const {

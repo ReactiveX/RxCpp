@@ -45,6 +45,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/lift.cpp
     ${TEST_DIR}/operators/map.cpp
     ${TEST_DIR}/operators/merge.cpp
+    ${TEST_DIR}/operators/observe_on.cpp
     ${TEST_DIR}/operators/publish.cpp
     ${TEST_DIR}/operators/reduce.cpp
     ${TEST_DIR}/operators/repeat.cpp
@@ -66,6 +67,13 @@ set(PYTHAGORIAN_SOURCES
 )
 add_executable(pythagorian ${PYTHAGORIAN_SOURCES})
 TARGET_LINK_LIBRARIES(pythagorian ${CMAKE_THREAD_LIBS_INIT})
+
+# define the sources of the pythagorian example
+set(PRINTLN_SOURCES
+    ${EXAMPLES_DIR}/println/main.cpp
+)
+add_executable(println ${PRINTLN_SOURCES})
+TARGET_LINK_LIBRARIES(println ${CMAKE_THREAD_LIBS_INIT})
 
 # configure unit tests via CTest
 enable_testing()

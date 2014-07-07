@@ -52,29 +52,50 @@ struct interval : public source_base<long>
 
         auto counter = std::make_shared<long>(0);
 
-        controller.schedule_periodically(
-            initial.initial,
-            initial.period,
-            [o, counter](const rxsc::schedulable&) {
-                // send next value
-                o.on_next(++(*counter));
-            });
+        auto producer = [o, counter](const rxsc::schedulable&) {
+            // send next value
+            o.on_next(++(*counter));
+        };
+
+        auto selectedProducer = on_exception(
+            [&](){return coordinator.act(producer);},
+            o);
+        if (selectedProducer.empty()) {
+            return;
+        }
+
+        controller.schedule_periodically(initial.initial, initial.period, selectedProducer.get());
     }
 };
 
-template<class Duration>
+template<class X>
 struct delay_resolution
 {
     typedef observable<long,    rxs::detail::interval<identity_one_worker>> type;
 };
 
 }
+template<class TimePoint>
+static auto interval(TimePoint when)
+    -> typename detail::delay_resolution<TimePoint>::type {
+    auto cn = identity_current_thread();
+    return  observable<long,    rxs::detail::interval<identity_one_worker>>(
+                                rxs::detail::interval<identity_one_worker>(when, rxsc::scheduler::clock_type::duration::max(), cn));
+    static_assert(std::is_convertible<TimePoint, rxsc::scheduler::clock_type::time_point>::value, "TimePoint must be convertible to rxsc::scheduler::clock_type::time_point");
+}
+template<class Coordination>
+static auto interval(rxsc::scheduler::clock_type::time_point when, Coordination cn)
+    -> typename std::enable_if<is_coordination<Coordination>::value,
+            observable<long,    rxs::detail::interval<Coordination>>>::type {
+    return  observable<long,    rxs::detail::interval<Coordination>>(
+                                rxs::detail::interval<Coordination>(when, rxsc::scheduler::clock_type::duration::max(), std::move(cn)));
+}
 template<class Duration>
 static auto interval(rxsc::scheduler::clock_type::time_point initial, Duration period)
-    -> typename detail::delay_resolution<Duration>::type {
+    -> typename std::enable_if<std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>::value,
+        typename detail::delay_resolution<Duration>>::type::type {
     return  observable<long,    rxs::detail::interval<identity_one_worker>>(
-                                rxs::detail::interval<identity_one_worker>(initial, period, identity_one_worker(rxsc::make_current_thread())));
-    static_assert(std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>::value, "duration must be convertible to rxsc::scheduler::clock_type::duration");
+                                rxs::detail::interval<identity_one_worker>(initial, period, identity_current_thread()));
 }
 template<class Coordination>
 static auto interval(rxsc::scheduler::clock_type::time_point initial, rxsc::scheduler::clock_type::duration period, Coordination cn)

@@ -53,9 +53,7 @@ SCENARIO("flat_map pythagorian ranges", "[hide][range][flat_map][pythagorian][pe
             using namespace std::chrono;
             typedef steady_clock clock;
 
-            auto sc = rxsc::make_immediate();
-            //auto sc = rxsc::make_current_thread();
-            auto so = rx::identity_one_worker(sc);
+            auto so = rx::identity_immediate();
 
             int c = 0;
             int ct = 0;
@@ -80,8 +78,9 @@ SCENARIO("flat_map pythagorian ranges", "[hide][range][flat_map][pythagorian][pe
             triples
                 .take(tripletCount)
                 .subscribe(
-                    rxu::apply_to([&ct](int x,int y,int z){++ct;}),
-                    [](std::exception_ptr){abort();});
+                    rxu::apply_to([&ct](int x,int y,int z){
+                        ++ct;
+                    }));
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
                    duration_cast<milliseconds>(start.time_since_epoch());
@@ -101,9 +100,7 @@ SCENARIO("synchronize flat_map pythagorian ranges", "[hide][range][flat_map][syn
             std::mutex lock;
             std::condition_variable wake;
 
-            auto sc = rxsc::make_event_loop();
-            //auto sc = rxsc::make_new_thread();
-            auto so = rx::synchronize_in_one_worker(sc);
+            auto so = rx::synchronize_event_loop();
 
             int c = 0;
             std::atomic<int> ct(0);
@@ -152,6 +149,65 @@ SCENARIO("synchronize flat_map pythagorian ranges", "[hide][range][flat_map][syn
     }
 }
 
+SCENARIO("observe_on flat_map pythagorian ranges", "[hide][range][flat_map][observe_on][pythagorian][perf]"){
+    const int& tripletCount = static_tripletCount;
+    GIVEN("some ranges"){
+        WHEN("generating pythagorian triplets"){
+            using namespace std::chrono;
+            typedef steady_clock clock;
+
+            std::mutex lock;
+            std::condition_variable wake;
+
+            auto so = rx::observe_on_event_loop();
+
+            int c = 0;
+            std::atomic<int> ct(0);
+            int n = 1;
+            auto start = clock::now();
+            auto triples =
+                rxs::range(1, so)
+                    .flat_map(
+                        [&c, so](int z){
+                            return rxs::range(1, z, 1, so)
+                                .flat_map(
+                                    [&c, so, z](int x){
+                                        return rxs::range(x, z, 1, so)
+                                            .filter([&c, z, x](int y){
+                                                ++c;
+                                                if (x*x + y*y == z*z) {
+                                                    return true;}
+                                                else {
+                                                    return false;}})
+                                            .map([z, x](int y){return std::make_tuple(x, y, z);})
+                                            // forget type to workaround lambda deduction bug on msvc 2013
+                                            .as_dynamic();},
+                                    [](int x, std::tuple<int,int,int> triplet){return triplet;},
+                                    so)
+                                // forget type to workaround lambda deduction bug on msvc 2013
+                                .as_dynamic();},
+                        [](int z, std::tuple<int,int,int> triplet){return triplet;},
+                        so);
+            triples
+                .take(tripletCount)
+                .subscribe(
+                    rxu::apply_to([&ct](int x,int y,int z){
+                        ++ct;}),
+                    [](std::exception_ptr){abort();},
+                    [&](){
+                        wake.notify_one();});
+
+            std::unique_lock<std::mutex> guard(lock);
+            wake.wait(guard, [&](){return ct == tripletCount;});
+
+            auto finish = clock::now();
+            auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
+                   duration_cast<milliseconds>(start.time_since_epoch());
+            std::cout << "merge observe_on pythagorian range : " << n << " subscribed, " << c << " filtered to, " << ct << " triplets, " << msElapsed.count() << "ms elapsed " << c / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
+        }
+    }
+}
+
 SCENARIO("serialize flat_map pythagorian ranges", "[hide][range][flat_map][serialize][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("some ranges"){
@@ -162,9 +218,7 @@ SCENARIO("serialize flat_map pythagorian ranges", "[hide][range][flat_map][seria
             std::mutex lock;
             std::condition_variable wake;
 
-            auto sc = rxsc::make_event_loop();
-            //auto sc = rxsc::make_new_thread();
-            auto so = rx::serialize_one_worker(sc);
+            auto so = rx::serialize_event_loop();
 
             int c = 0;
             std::atomic<int> ct(0);
