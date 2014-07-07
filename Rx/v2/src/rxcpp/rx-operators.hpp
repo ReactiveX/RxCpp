@@ -55,6 +55,7 @@ namespace rxo=operators;
 #include "operators/rx-skip.hpp"
 #include "operators/rx-skip_until.hpp"
 #include "operators/rx-subscribe.hpp"
+#include "operators/rx-subscribe_on.hpp"
 #include "operators/rx-switch_on_next.hpp"
 #include "operators/rx-take.hpp"
 #include "operators/rx-take_until.hpp"

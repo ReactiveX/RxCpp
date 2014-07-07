@@ -664,6 +664,16 @@ public:
         return      multicast(rxsub::behavior<T>(first, cs));
     }
 
+    /// subscribe_on ->
+    /// subscription and unsubscription are queued and delivered using the scheduler from the supplied coordination
+    ///
+    template<class Coordination>
+    auto subscribe_on(Coordination cn) const
+        ->      observable<typename rxo::detail::subscribe_on<T, this_type, Coordination>::value_type,  rxo::detail::subscribe_on<T, this_type, Coordination>> {
+        return  observable<typename rxo::detail::subscribe_on<T, this_type, Coordination>::value_type,  rxo::detail::subscribe_on<T, this_type, Coordination>>(
+                                                                                                        rxo::detail::subscribe_on<T, this_type, Coordination>(*this, std::forward<Coordination>(cn)));
+    }
+
     /// observe_on ->
     /// all values are queued and delivered using the scheduler from the supplied coordination
     ///

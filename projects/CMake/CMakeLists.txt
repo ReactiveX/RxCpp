@@ -53,6 +53,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/scan.cpp
     ${TEST_DIR}/operators/skip.cpp
     ${TEST_DIR}/operators/skip_until.cpp
+    ${TEST_DIR}/operators/subscribe_on.cpp
     ${TEST_DIR}/operators/switch_on_next.cpp
     ${TEST_DIR}/operators/take.cpp
     ${TEST_DIR}/operators/take_until.cpp
