@@ -47,7 +47,8 @@ struct observe_on
                 Invalid = 0,
                 Processing,
                 Empty,
-                Disposed
+                Disposed,
+                Errored
             };
         };
         struct observe_on_state : std::enable_shared_from_this<observe_on_state>
@@ -75,16 +76,17 @@ struct observe_on
                 }
                 if (current == mode::Empty) {
                     current = mode::Processing;
+
                     auto keepAlive = this->shared_from_this();
 
                     auto drain = [keepAlive, this](const rxsc::schedulable& self){
+                        using std::swap;
                         try {
                             if (drain_queue.empty() || !destination.is_subscribed()) {
                                 std::unique_lock<std::mutex> guard(lock);
                                 if (!destination.is_subscribed() ||
-                                    (!lifetime.is_subscribed() && queue.empty())) {
+                                    (!lifetime.is_subscribed() && queue.empty() && drain_queue.empty())) {
                                     current = mode::Disposed;
-                                    using std::swap;
                                     queue_type expired;
                                     swap(expired, queue);
                                     guard.unlock();
@@ -92,12 +94,13 @@ struct observe_on
                                     destination.unsubscribe();
                                     return;
                                 }
-                                if (queue.empty()) {
-                                    current = mode::Empty;
-                                    return;
+                                if (drain_queue.empty()) {
+                                    if (queue.empty()) {
+                                        current = mode::Empty;
+                                        return;
+                                    }
+                                    swap(queue, drain_queue);
                                 }
-                                using std::swap;
-                                swap(queue, drain_queue);
                             }
                             auto notification = std::move(drain_queue.front());
                             drain_queue.pop();
@@ -106,7 +109,9 @@ struct observe_on
                         } catch(...) {
                             destination.on_error(std::current_exception());
                             std::unique_lock<std::mutex> guard(lock);
-                            current = mode::Empty;
+                            current = mode::Errored;
+                            queue_type expired;
+                            swap(expired, queue);
                         }
                     };
 
@@ -114,11 +119,20 @@ struct observe_on
                         [&](){return coordinator.act(drain);},
                         destination);
                     if (selectedDrain.empty()) {
+                        std::unique_lock<std::mutex> guard(lock);
+                        current = mode::Errored;
+                        using std::swap;
+                        queue_type expired;
+                        swap(expired, queue);
                         return;
                     }
 
                     auto processor = coordinator.get_worker();
-                    processor.schedule(lifetime, selectedDrain.get());
+
+                    RXCPP_UNWIND_AUTO([&](){guard.lock();});
+                    guard.unlock();
+
+                    processor.schedule(selectedDrain.get());
                 }
             }
         };
@@ -130,25 +144,19 @@ struct observe_on
         }
 
         void on_next(source_value_type v) const {
-            if (state->lifetime.is_subscribed()) {
-                std::unique_lock<std::mutex> guard(state->lock);
-                state->queue.push(notification_type::on_next(std::move(v)));
-                state->ensure_processing(guard);
-            }
+            std::unique_lock<std::mutex> guard(state->lock);
+            state->queue.push(notification_type::on_next(std::move(v)));
+            state->ensure_processing(guard);
         }
         void on_error(std::exception_ptr e) const {
-            if (state->lifetime.is_subscribed()) {
-                std::unique_lock<std::mutex> guard(state->lock);
-                state->queue.push(notification_type::on_error(e));
-                state->ensure_processing(guard);
-            }
+            std::unique_lock<std::mutex> guard(state->lock);
+            state->queue.push(notification_type::on_error(e));
+            state->ensure_processing(guard);
         }
         void on_completed() const {
-            if (state->lifetime.is_subscribed()) {
-                std::unique_lock<std::mutex> guard(state->lock);
-                state->queue.push(notification_type::on_completed());
-                state->ensure_processing(guard);
-            }
+            std::unique_lock<std::mutex> guard(state->lock);
+            state->queue.push(notification_type::on_completed());
+            state->ensure_processing(guard);
         }
 
         static subscriber<value_type, this_type> make(dest_type d, coordination_type cn, composite_subscription cs = composite_subscription()) {
@@ -159,7 +167,10 @@ struct observe_on
             auto keepAlive = o.state;
             cs.add([keepAlive](){
                 std::unique_lock<std::mutex> guard(keepAlive->lock);
-                keepAlive->ensure_processing(guard);
+                if (keepAlive->queue.empty() && keepAlive->current == mode::Empty && keepAlive->destination.is_subscribed()) {
+                    keepAlive->current = mode::Disposed;
+                    keepAlive->destination.unsubscribe();
+                }
             });
 
             return make_subscriber<value_type>(cs, std::move(o));
