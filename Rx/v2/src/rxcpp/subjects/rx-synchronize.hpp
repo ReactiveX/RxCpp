@@ -55,8 +55,8 @@ class synchronize_observer : public detail::multicast_observer<T>
             if (current == mode::Empty) {
                 current = mode::Processing;
                 auto keepAlive = this->shared_from_this();
-                auto processor = coordinator.get_worker();
-                processor.schedule(lifetime, [keepAlive, this](const rxsc::schedulable& self){
+
+                auto drain_queue = [keepAlive, this](const rxsc::schedulable& self){
                     try {
                         std::unique_lock<std::mutex> guard(lock);
                         if (!destination.is_subscribed()) {
@@ -80,7 +80,17 @@ class synchronize_observer : public detail::multicast_observer<T>
                         std::unique_lock<std::mutex> guard(lock);
                         current = mode::Empty;
                     }
-                });
+                };
+
+                auto selectedDrain = on_exception(
+                    [&](){return coordinator.act(drain_queue);},
+                    destination);
+                if (selectedDrain.empty()) {
+                    return;
+                }
+
+                auto processor = coordinator.get_worker();
+                processor.schedule(lifetime, selectedDrain.get());
             }
         }
 
@@ -129,14 +139,8 @@ public:
 
         // creates a worker whose lifetime is the same as the destination subscription
         auto coordinator = cn.create_coordinator(dl);
-        auto selectedDest = on_exception(
-            [&](){return coordinator.out(o);},
-            o);
-        if (selectedDest.empty()) {
-            return;
-        }
 
-        state = std::make_shared<synchronize_observer_state>(std::move(coordinator), std::move(il), std::move(selectedDest.get()));
+        state = std::make_shared<synchronize_observer_state>(std::move(coordinator), std::move(il), std::move(o));
     }
 
     template<class V>
@@ -199,16 +203,19 @@ class synchronize_in_one_worker : public coordination_base
             , coordination(factory)
         {
         }
-        rxsc::worker get_worker() const {
+        inline rxsc::worker get_worker() const {
             return controller;
         }
-        rxsc::scheduler get_scheduler() const {
+        inline rxsc::scheduler get_scheduler() const {
             return factory;
+        }
+        inline rxsc::scheduler::clock_type::time_point now() const {
+            return factory.now();
         }
         template<class Observable>
         auto in(Observable o) const
-            -> decltype(o.synchronize(coordination).ref_count()) {
-            return      o.synchronize(coordination).ref_count();
+            -> decltype(o.publish_synchronized(coordination).ref_count()) {
+            return      o.publish_synchronized(coordination).ref_count();
         }
         template<class Subscriber>
         auto out(Subscriber s) const
@@ -228,11 +235,25 @@ public:
 
     typedef coordinator<input_type> coordinator_type;
 
-    coordinator_type create_coordinator(composite_subscription cs = composite_subscription()) const {
+    inline rxsc::scheduler::clock_type::time_point now() const {
+        return factory.now();
+    }
+
+    inline coordinator_type create_coordinator(composite_subscription cs = composite_subscription()) const {
         auto w = factory.create_worker(std::move(cs));
         return coordinator_type(input_type(std::move(w)));
     }
 };
+
+inline synchronize_in_one_worker synchronize_event_loop() {
+    static synchronize_in_one_worker r(rxsc::make_event_loop());
+    return r;
+}
+
+inline synchronize_in_one_worker synchronize_new_thread() {
+    static synchronize_in_one_worker r(rxsc::make_new_thread());
+    return r;
+}
 
 }
 

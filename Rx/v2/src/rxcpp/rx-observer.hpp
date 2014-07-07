@@ -131,63 +131,6 @@ public:
     }
 };
 
-template<class T, class I>
-class observer : public observer_base<T>
-{
-    typedef observer<T, I> this_type;
-    typedef typename std::decay<I>::type inner_t;
-
-    inner_t inner;
-
-    observer();
-public:
-    ~observer()
-    {
-    }
-    observer(const this_type& o)
-        : inner(o.inner)
-    {
-    }
-    observer(this_type&& o)
-        : inner(std::move(o.inner))
-    {
-    }
-    explicit observer(inner_t inner)
-        : inner(std::move(inner))
-    {
-    }
-    this_type& operator=(this_type o) {
-        inner = std::move(o.inner);
-        return *this;
-    }
-    template<class V>
-    void on_next(V&& v) const {
-        inner.on_next(std::forward<V>(v));
-    }
-    void on_error(std::exception_ptr e) const {
-        inner.on_error(e);
-    }
-    void on_completed() const {
-        inner.on_completed();
-    }
-};
-template<class T>
-class observer<T, void> : public observer_base<T>
-{
-    typedef observer this_type;
-public:
-    observer()
-    {
-    }
-    template<class V>
-    void on_next(V&&) const {
-    }
-    void on_error(std::exception_ptr) const {
-    }
-    void on_completed() const {
-    }
-};
-
 template<class T>
 class dynamic_observer
 {
@@ -229,7 +172,7 @@ private:
 
     template<class Observer>
     static auto make_destination(Observer o)
-        -> typename std::enable_if<is_observer<Observer>::value, std::shared_ptr<virtual_observer>>::type {
+        -> std::shared_ptr<virtual_observer> {
         return std::make_shared<specific_observer<Observer>>(std::move(o));
     }
 
@@ -273,6 +216,67 @@ public:
         if (destination) {
             destination->on_completed();
         }
+    }
+};
+
+
+template<class T, class I>
+class observer : public observer_base<T>
+{
+    typedef observer<T, I> this_type;
+    typedef typename std::decay<I>::type inner_t;
+
+    inner_t inner;
+
+    observer();
+public:
+    ~observer()
+    {
+    }
+    observer(const this_type& o)
+        : inner(o.inner)
+    {
+    }
+    observer(this_type&& o)
+        : inner(std::move(o.inner))
+    {
+    }
+    explicit observer(inner_t inner)
+        : inner(std::move(inner))
+    {
+    }
+    this_type& operator=(this_type o) {
+        inner = std::move(o.inner);
+        return *this;
+    }
+    template<class V>
+    void on_next(V&& v) const {
+        inner.on_next(std::forward<V>(v));
+    }
+    void on_error(std::exception_ptr e) const {
+        inner.on_error(e);
+    }
+    void on_completed() const {
+        inner.on_completed();
+    }
+    observer<T> as_dynamic() const {
+        return observer<T>(dynamic_observer<T>(inner));
+    }
+};
+template<class T>
+class observer<T, void> : public observer_base<T>
+{
+    typedef observer this_type;
+public:
+    observer()
+    {
+    }
+    template<class V>
+    void on_next(V&&) const {
+    }
+    void on_error(std::exception_ptr) const {
+    }
+    void on_completed() const {
     }
 };
 

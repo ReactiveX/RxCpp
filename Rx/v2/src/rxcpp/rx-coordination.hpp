@@ -119,11 +119,14 @@ class identity_one_worker : public coordination_base
             , factory(rxsc::make_same_worker(w))
         {
         }
-        rxsc::worker get_worker() const {
+        inline rxsc::worker get_worker() const {
             return controller;
         }
-        rxsc::scheduler get_scheduler() const {
+        inline rxsc::scheduler get_scheduler() const {
             return factory;
+        }
+        inline rxsc::scheduler::clock_type::time_point now() const {
+            return factory.now();
         }
         template<class Observable>
         auto in(Observable o) const
@@ -148,11 +151,25 @@ public:
 
     typedef coordinator<input_type> coordinator_type;
 
-    coordinator_type create_coordinator(composite_subscription cs = composite_subscription()) const {
+    inline rxsc::scheduler::clock_type::time_point now() const {
+        return factory.now();
+    }
+
+    inline coordinator_type create_coordinator(composite_subscription cs = composite_subscription()) const {
         auto w = factory.create_worker(std::move(cs));
         return coordinator_type(input_type(std::move(w)));
     }
 };
+
+inline identity_one_worker identity_immediate() {
+    static identity_one_worker r(rxsc::make_immediate());
+    return r;
+}
+
+inline identity_one_worker identity_current_thread() {
+    static identity_one_worker r(rxsc::make_current_thread());
+    return r;
+}
 
 class serialize_one_worker : public coordination_base
 {
@@ -227,11 +244,14 @@ class serialize_one_worker : public coordination_base
             , lock(std::move(m))
         {
         }
-        rxsc::worker get_worker() const {
+        inline rxsc::worker get_worker() const {
             return controller;
         }
-        rxsc::scheduler get_scheduler() const {
+        inline rxsc::scheduler get_scheduler() const {
             return factory;
+        }
+        inline rxsc::scheduler::clock_type::time_point now() const {
+            return factory.now();
         }
         template<class Observable>
         auto in(Observable o) const
@@ -240,8 +260,8 @@ class serialize_one_worker : public coordination_base
         }
         template<class Subscriber>
         auto out(Subscriber s) const
-            ->      serialize_observer<Subscriber> {
-            return  serialize_observer<Subscriber>(std::move(s), lock);
+            -> decltype(serialize_observer<Subscriber>::make(std::move(s), lock)) {
+            return      serialize_observer<Subscriber>::make(std::move(s), lock);
         }
         template<class F>
         auto act(F f) const
@@ -256,12 +276,27 @@ public:
 
     typedef coordinator<input_type> coordinator_type;
 
-    coordinator_type create_coordinator(composite_subscription cs = composite_subscription()) const {
+    inline rxsc::scheduler::clock_type::time_point now() const {
+        return factory.now();
+    }
+
+    inline coordinator_type create_coordinator(composite_subscription cs = composite_subscription()) const {
         auto w = factory.create_worker(std::move(cs));
         std::shared_ptr<std::mutex> lock = std::make_shared<std::mutex>();
         return coordinator_type(input_type(std::move(w), std::move(lock)));
     }
 };
+
+inline serialize_one_worker serialize_event_loop() {
+    static serialize_one_worker r(rxsc::make_event_loop());
+    return r;
+}
+
+inline serialize_one_worker serialize_new_thread() {
+    static serialize_one_worker r(rxsc::make_new_thread());
+    return r;
+}
+
 
 }
 
