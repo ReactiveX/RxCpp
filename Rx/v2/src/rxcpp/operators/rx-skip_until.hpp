@@ -2,8 +2,8 @@
 
 #pragma once
 
-#if !defined(RXCPP_OPERATORS_RX_TAKE_UNTIL_HPP)
-#define RXCPP_OPERATORS_RX_TAKE_UNTIL_HPP
+#if !defined(RXCPP_OPERATORS_RX_SKIP_UNTIL_HPP)
+#define RXCPP_OPERATORS_RX_SKIP_UNTIL_HPP
 
 #include "../rx-includes.hpp"
 
@@ -14,7 +14,7 @@ namespace operators {
 namespace detail {
 
 template<class T, class Observable, class TriggerObservable, class Coordination>
-struct take_until : public operator_base<T>
+struct skip_until : public operator_base<T>
 {
     typedef typename std::decay<Observable>::type source_type;
     typedef typename std::decay<TriggerObservable>::type trigger_source_type;
@@ -34,7 +34,7 @@ struct take_until : public operator_base<T>
     };
     values initial;
 
-    take_until(source_type s, trigger_source_type t, coordination_type sf)
+    skip_until(source_type s, trigger_source_type t, coordination_type sf)
         : initial(std::move(s), std::move(t), std::move(sf))
     {
     }
@@ -42,7 +42,7 @@ struct take_until : public operator_base<T>
     struct mode
     {
         enum type {
-            taking,    // no messages from trigger
+            skipping,  // no messages from trigger
             clear,     // trigger completed
             triggered, // trigger sent on_next
             errored,   // error either on trigger or on observable
@@ -54,13 +54,13 @@ struct take_until : public operator_base<T>
     void on_subscribe(Subscriber s) const {
 
         typedef Subscriber output_type;
-        struct take_until_state_type
-            : public std::enable_shared_from_this<take_until_state_type>
+        struct state_type
+            : public std::enable_shared_from_this<state_type>
             , public values
         {
-            take_until_state_type(const values& i, coordinator_type coor, const output_type& oarg)
+            state_type(const values& i, coordinator_type coor, const output_type& oarg)
                 : values(i)
-                , mode_value(mode::taking)
+                , mode_value(mode::skipping)
                 , coordinator(std::move(coor))
                 , out(oarg)
             {
@@ -77,7 +77,7 @@ struct take_until : public operator_base<T>
         auto coordinator = initial.coordination.create_coordinator();
 
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<take_until_state_type>(new take_until_state_type(initial, std::move(coordinator), std::move(s)));
+        auto state = std::shared_ptr<state_type>(new state_type(initial, std::move(coordinator), std::move(s)));
 
         auto trigger = on_exception(
             [&](){return state->coordinator.in(state->trigger);},
@@ -100,20 +100,27 @@ struct take_until : public operator_base<T>
             state->trigger_lifetime,
         // on_next
             [state](const typename trigger_source_type::value_type&) {
-                if (state->mode_value != mode::taking) {return;}
+                if (state->mode_value != mode::skipping) {
+                    return;
+                }
                 state->mode_value = mode::triggered;
-                state->out.on_completed();
+                state->trigger_lifetime.unsubscribe();
             },
         // on_error
             [state](std::exception_ptr e) {
-                if (state->mode_value != mode::taking) {return;}
+                if (state->mode_value != mode::skipping) {
+                    return;
+                }
                 state->mode_value = mode::errored;
                 state->out.on_error(e);
             },
         // on_completed
             [state]() {
-                if (state->mode_value != mode::taking) {return;}
+                if (state->mode_value != mode::skipping) {
+                    return;
+                }
                 state->mode_value = mode::clear;
+                state->trigger_lifetime.unsubscribe();
             }
         );
         auto selectedSinkTrigger = on_exception(
@@ -129,22 +136,24 @@ struct take_until : public operator_base<T>
             state->source_lifetime,
         // on_next
             [state](T t) {
-                //
-                // everything is crafted to minimize the overhead of this function.
-                //
-                if (state->mode_value < mode::triggered) {
-                    state->out.on_next(t);
+                if (state->mode_value != mode::triggered) {
+                    return;
                 }
+                state->out.on_next(t);
             },
         // on_error
             [state](std::exception_ptr e) {
-                if (state->mode_value > mode::clear) {return;}
+                if (state->mode_value > mode::triggered) {
+                    return;
+                }
                 state->mode_value = mode::errored;
                 state->out.on_error(e);
             },
         // on_completed
             [state]() {
-                if (state->mode_value > mode::clear) {return;}
+                if (state->mode_value != mode::triggered) {
+                    return;
+                }
                 state->mode_value = mode::stopped;
                 state->out.on_completed();
             }
@@ -153,7 +162,7 @@ struct take_until : public operator_base<T>
 };
 
 template<class TriggerObservable, class Coordination>
-class take_until_factory
+class skip_until_factory
 {
     typedef typename std::decay<TriggerObservable>::type trigger_source_type;
     typedef typename std::decay<Coordination>::type coordination_type;
@@ -161,25 +170,25 @@ class take_until_factory
     trigger_source_type trigger_source;
     coordination_type coordination;
 public:
-    take_until_factory(trigger_source_type t, coordination_type sf)
+    skip_until_factory(trigger_source_type t, coordination_type sf)
         : trigger_source(std::move(t))
         , coordination(std::move(sf))
     {
     }
     template<class Observable>
     auto operator()(Observable&& source)
-        ->      observable<typename std::decay<Observable>::type::value_type,   take_until<typename std::decay<Observable>::type::value_type, Observable, trigger_source_type, Coordination>> {
-        return  observable<typename std::decay<Observable>::type::value_type,   take_until<typename std::decay<Observable>::type::value_type, Observable, trigger_source_type, Coordination>>(
-                                                                                take_until<typename std::decay<Observable>::type::value_type, Observable, trigger_source_type, Coordination>(std::forward<Observable>(source), trigger_source, coordination));
+        ->      observable<typename std::decay<Observable>::type::value_type, skip_until<typename std::decay<Observable>::type::value_type, Observable, trigger_source_type, Coordination>> {
+        return  observable<typename std::decay<Observable>::type::value_type, skip_until<typename std::decay<Observable>::type::value_type, Observable, trigger_source_type, Coordination>>(
+                                                                              skip_until<typename std::decay<Observable>::type::value_type, Observable, trigger_source_type, Coordination>(std::forward<Observable>(source), trigger_source, coordination));
     }
 };
 
 }
 
 template<class TriggerObservable, class Coordination>
-auto take_until(TriggerObservable&& t, Coordination&& sf)
-    ->      detail::take_until_factory<TriggerObservable, Coordination> {
-    return  detail::take_until_factory<TriggerObservable, Coordination>(std::forward<TriggerObservable>(t), std::forward<Coordination>(sf));
+auto skip_until(TriggerObservable&& t, Coordination&& sf)
+    ->      detail::skip_until_factory<TriggerObservable, Coordination> {
+    return  detail::skip_until_factory<TriggerObservable, Coordination>(std::forward<TriggerObservable>(t), std::forward<Coordination>(sf));
 }
 
 }

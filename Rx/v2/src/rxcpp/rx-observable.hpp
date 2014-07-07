@@ -724,6 +724,43 @@ public:
                                     rxo::detail::scan<T, this_type, Accumulator, Seed>(*this, std::forward<Accumulator>(a), seed));
     }
 
+    /// skip ->
+    /// make new observable with skipped first count items from this observable
+    ///
+    ///
+    template<class Count>
+    auto skip(Count t) const
+        ->      observable<T,   rxo::detail::skip<T, this_type, Count>> {
+        return  observable<T,   rxo::detail::skip<T, this_type, Count>>(
+                                rxo::detail::skip<T, this_type, Count>(*this, t));
+    }
+
+    /// skip_until ->
+    /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
+    /// make new observable with items skipped until on_next occurs on the TriggerSource
+    ///
+    ///
+    template<class TriggerSource>
+    auto skip_until(TriggerSource&& t) const
+        -> typename std::enable_if<is_observable<TriggerSource>::value,
+                observable<T,   rxo::detail::skip_until<T, this_type, TriggerSource, identity_one_worker>>>::type {
+        return  observable<T,   rxo::detail::skip_until<T, this_type, TriggerSource, identity_one_worker>>(
+                                rxo::detail::skip_until<T, this_type, TriggerSource, identity_one_worker>(*this, std::forward<TriggerSource>(t), identity_one_worker(rxsc::make_current_thread())));
+    }
+
+    /// skip_until ->
+    /// The coordination is used to synchronize sources from different contexts.
+    /// make new observable with items skipped until on_next occurs on the TriggerSource
+    ///
+    ///
+    template<class TriggerSource, class Coordination>
+    auto skip_until(TriggerSource&& t, Coordination&& sf) const
+        -> typename std::enable_if<is_observable<TriggerSource>::value && is_coordination<Coordination>::value,
+                observable<T,   rxo::detail::skip_until<T, this_type, TriggerSource, Coordination>>>::type {
+        return  observable<T,   rxo::detail::skip_until<T, this_type, TriggerSource, Coordination>>(
+                                rxo::detail::skip_until<T, this_type, TriggerSource, Coordination>(*this, std::forward<TriggerSource>(t), std::forward<Coordination>(sf)));
+    }
+
     /// take ->
     /// for the first count items from this observable emit them from the new observable that is returned.
     ///
@@ -762,7 +799,7 @@ public:
     }
 
     /// repeat ->
-    /// infinitely repeate this observable
+    /// infinitely repeat this observable
     ///
     ///
     auto repeat() const
