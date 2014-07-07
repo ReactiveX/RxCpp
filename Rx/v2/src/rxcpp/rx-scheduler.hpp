@@ -357,7 +357,7 @@ public:
     {
     }
     explicit scheduler(detail::const_scheduler_interface_ptr i)
-        : inner(std::const_pointer_cast<scheduler_interface>(i))
+    : inner(std::move(std::const_pointer_cast<scheduler_interface>(i)))
     {
     }
 
