@@ -78,8 +78,9 @@ SCENARIO("flat_map pythagorian ranges", "[hide][range][flat_map][pythagorian][pe
             triples
                 .take(tripletCount)
                 .subscribe(
-                    rxu::apply_to([&ct](int x,int y,int z){++ct;}),
-                    [](std::exception_ptr){abort();});
+                    rxu::apply_to([&ct](int x,int y,int z){
+                        ++ct;
+                    }));
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
                    duration_cast<milliseconds>(start.time_since_epoch());
