@@ -38,19 +38,22 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/buffer.cpp
     ${TEST_DIR}/operators/combine_latest.cpp
     ${TEST_DIR}/operators/concat.cpp
-    ${TEST_DIR}/operators/merge.cpp
-    ${TEST_DIR}/operators/lift.cpp
-    ${TEST_DIR}/operators/filter.cpp
+    ${TEST_DIR}/operators/concat_map.cpp
     ${TEST_DIR}/operators/distinct_until_changed.cpp
-    ${TEST_DIR}/operators/scan.cpp
-    ${TEST_DIR}/operators/switch_on_next.cpp
+    ${TEST_DIR}/operators/filter.cpp
+    ${TEST_DIR}/operators/flat_map.cpp
+    ${TEST_DIR}/operators/lift.cpp
+    ${TEST_DIR}/operators/map.cpp
+    ${TEST_DIR}/operators/merge.cpp
+    ${TEST_DIR}/operators/publish.cpp
     ${TEST_DIR}/operators/reduce.cpp
     ${TEST_DIR}/operators/repeat.cpp
+    ${TEST_DIR}/operators/scan.cpp
+    ${TEST_DIR}/operators/skip.cpp
+    ${TEST_DIR}/operators/skip_until.cpp
+    ${TEST_DIR}/operators/switch_on_next.cpp
     ${TEST_DIR}/operators/take.cpp
-    ${TEST_DIR}/operators/publish.cpp
-    ${TEST_DIR}/operators/flat_map.cpp
-    ${TEST_DIR}/operators/concat_map.cpp
-    ${TEST_DIR}/operators/map.cpp
+    ${TEST_DIR}/operators/take_until.cpp
 )
 add_executable(rxcppv2_test ${TEST_SOURCES})
 TARGET_LINK_LIBRARIES(rxcppv2_test ${CMAKE_THREAD_LIBS_INIT})

@@ -2,8 +2,8 @@
 
 #pragma once
 
-#if !defined(RXCPP_OPERATORS_RX_TAKE_HPP)
-#define RXCPP_OPERATORS_RX_TAKE_HPP
+#if !defined(RXCPP_OPERATORS_RX_SKIP_HPP)
+#define RXCPP_OPERATORS_RX_SKIP_HPP
 
 #include "../rx-includes.hpp"
 
@@ -14,7 +14,7 @@ namespace operators {
 namespace detail {
 
 template<class T, class Observable, class Count>
-struct take : public operator_base<T>
+struct skip : public operator_base<T>
 {
     typedef typename std::decay<Observable>::type source_type;
     typedef typename std::decay<Count>::type count_type;
@@ -30,7 +30,7 @@ struct take : public operator_base<T>
     };
     values initial;
 
-    take(source_type s, count_type t)
+    skip(source_type s, count_type t)
         : initial(std::move(s), std::move(t))
     {
     }
@@ -38,8 +38,8 @@ struct take : public operator_base<T>
     struct mode
     {
         enum type {
-            taking,    // capture messages
-            triggered, // ignore messages
+            skipping,  // ignore messages
+            triggered, // capture messages
             errored,   // error occured
             stopped    // observable completed
         };
@@ -55,7 +55,7 @@ struct take : public operator_base<T>
         {
             state_type(const values& i, const output_type& oarg)
                 : values(i)
-                , mode_value(mode::taking)
+                , mode_value(i.count > 0 ? mode::skipping : mode::triggered)
                 , out(oarg)
             {
             }
@@ -73,17 +73,13 @@ struct take : public operator_base<T>
         // split subscription lifetime
             source_lifetime,
         // on_next
-            [state, source_lifetime](T t) {
-                if (state->mode_value < mode::triggered) {
-                    if (--state->count > 0) {
-                        state->out.on_next(t);
-                    } else {
+            [state](T t) {
+                if (state->mode_value == mode::skipping) {
+                    if (--state->count == 0) {
                         state->mode_value = mode::triggered;
-                        state->out.on_next(t);
-                        // must shutdown source before signaling completion
-                        source_lifetime.unsubscribe();
-                        state->out.on_completed();
                     }
+                } else {
+                    state->out.on_next(t);
                 }
             },
         // on_error
@@ -101,26 +97,26 @@ struct take : public operator_base<T>
 };
 
 template<class T>
-class take_factory
+class skip_factory
 {
     typedef typename std::decay<T>::type count_type;
     count_type count;
 public:
-    take_factory(count_type t) : count(std::move(t)) {}
+    skip_factory(count_type t) : count(std::move(t)) {}
     template<class Observable>
     auto operator()(Observable&& source)
-        ->      observable<typename std::decay<Observable>::type::value_type,   take<typename std::decay<Observable>::type::value_type, Observable, count_type>> {
-        return  observable<typename std::decay<Observable>::type::value_type,   take<typename std::decay<Observable>::type::value_type, Observable, count_type>>(
-                                                                                take<typename std::decay<Observable>::type::value_type, Observable, count_type>(std::forward<Observable>(source), count));
+        ->      observable<typename std::decay<Observable>::type::value_type, skip<typename std::decay<Observable>::type::value_type, Observable, count_type>> {
+        return  observable<typename std::decay<Observable>::type::value_type, skip<typename std::decay<Observable>::type::value_type, Observable, count_type>>(
+                                                                              skip<typename std::decay<Observable>::type::value_type, Observable, count_type>(std::forward<Observable>(source), count));
     }
 };
 
 }
 
 template<class T>
-auto take(T&& t)
-    ->      detail::take_factory<T> {
-    return  detail::take_factory<T>(std::forward<T>(t));
+auto skip(T&& t)
+    ->      detail::skip_factory<T> {
+    return  detail::skip_factory<T>(std::forward<T>(t));
 }
 
 }
