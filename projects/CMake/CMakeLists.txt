@@ -36,7 +36,8 @@ set(TEST_SOURCES
     ${TEST_DIR}/sources/defer.cpp
     ${TEST_DIR}/sources/interval.cpp
     ${TEST_DIR}/operators/buffer.cpp
-    ${TEST_DIR}/operators/combine_latest.cpp
+    ${TEST_DIR}/operators/combine_latest.1.cpp
+    ${TEST_DIR}/operators/combine_latest.2.cpp
     ${TEST_DIR}/operators/concat.cpp
     ${TEST_DIR}/operators/concat_map.cpp
     ${TEST_DIR}/operators/distinct_until_changed.cpp
