@@ -126,8 +126,8 @@ SCENARIO("observe_on concat_map pythagorian ranges", "[hide][range][concat_map][
             auto so = rx::observe_on_event_loop();
 
             int c = 0;
-            std::atomic_bool done(false);
-            std::atomic_bool disposed(false);
+            std::atomic_bool done{ false };
+            std::atomic_bool disposed{ false };
             std::atomic<int> ct(0);
             int n = 1;
             auto start = clock::now();
@@ -194,8 +194,8 @@ SCENARIO("serialize concat_map pythagorian ranges", "[hide][range][concat_map][s
             auto so = rx::serialize_event_loop();
 
             int c = 0;
-            std::atomic_bool done(false);
-            std::atomic_bool disposed(false);
+            std::atomic_bool done{ false };
+            std::atomic_bool disposed{ false };
             std::atomic<int> ct(0);
             int n = 1;
             auto start = clock::now();
