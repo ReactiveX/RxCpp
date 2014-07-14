@@ -160,6 +160,99 @@ inline auto pack()
     return  detail::pack();
 }
 
+template <class D>
+struct resolve_type;
+
+template <template<class... TN> class Deferred, class... AN>
+struct defer_trait
+{
+    template<bool R>
+    struct tag_valid {static const bool valid = true; static const bool value = R;};
+    struct tag_not_valid {static const bool valid = false; static const bool value = false;};
+    typedef Deferred<typename resolve_type<AN>::type...> resolved_type;
+    template<class... CN>
+    static auto check(int) -> tag_valid<resolved_type::value>;
+    template<class... CN>
+    static tag_not_valid check(...);
+
+    typedef decltype(check<AN...>(0)) tag_type;
+    static const bool valid = tag_type::valid;
+    static const bool value = tag_type::value;
+    static const bool not_value = valid && !value;
+};
+
+template <template<class... TN> class Deferred, class... AN>
+struct defer_type
+{
+    template<class R>
+    struct tag_valid {typedef R type; static const bool value = true;};
+    struct tag_not_valid {typedef void type; static const bool value = false;};
+    typedef Deferred<typename resolve_type<AN>::type...> resolved_type;
+    template<class... CN>
+    static auto check(int) -> tag_valid<resolved_type>;
+    template<class... CN>
+    static tag_not_valid check(...);
+
+    typedef decltype(check<AN...>(0)) tag_type;
+    typedef typename tag_type::type type;
+    static const bool value = tag_type::value;
+};
+
+template <template<class... TN> class Deferred, class... AN>
+struct defer_value_type
+{
+    template<class R>
+    struct tag_valid {typedef R type; static const bool value = true;};
+    struct tag_not_valid {typedef void type; static const bool value = false;};
+    typedef Deferred<typename resolve_type<AN>::type...> resolved_type;
+    template<class... CN>
+    static auto check(int) -> tag_valid<typename resolved_type::value_type>;
+    template<class... CN>
+    static tag_not_valid check(...);
+
+    typedef decltype(check<AN...>(0)) tag_type;
+    typedef typename tag_type::type type;
+    static const bool value = tag_type::value;
+};
+
+template <template<class... TN> class Deferred, class... AN>
+struct defer_seed_type
+{
+    template<class R>
+    struct tag_valid {typedef R type; static const bool value = true;};
+    struct tag_not_valid {typedef void type; static const bool value = false;};
+    typedef Deferred<typename resolve_type<AN>::type...> resolved_type;
+    template<class... CN>
+    static auto check(int) -> tag_valid<typename resolved_type::seed_type>;
+    template<class... CN>
+    static tag_not_valid check(...);
+
+    typedef decltype(check<AN...>(0)) tag_type;
+    typedef typename tag_type::type type;
+    static const bool value = tag_type::value;
+};
+
+template <class D>
+struct resolve_type
+{
+    typedef D type;
+};
+template <template<class... TN> class Deferred, class... AN>
+struct resolve_type<defer_type<Deferred, AN...>>
+{
+    typedef typename defer_type<Deferred, AN...>::type type;
+};
+template <template<class... TN> class Deferred, class... AN>
+struct resolve_type<defer_value_type<Deferred, AN...>>
+{
+    typedef typename defer_value_type<Deferred, AN...>::type type;
+};
+template <template<class... TN> class Deferred, class... AN>
+struct resolve_type<defer_seed_type<Deferred, AN...>>
+{
+    typedef typename defer_seed_type<Deferred, AN...>::type type;
+};
+
 template<class OStream>
 struct println_function
 {

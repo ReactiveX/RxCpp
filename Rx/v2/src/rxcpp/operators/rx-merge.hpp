@@ -13,18 +13,19 @@ namespace operators {
 
 namespace detail {
 
-template<class Observable, class Coordination>
+template<class T, class Observable, class Coordination>
 struct merge
-    : public operator_base<typename std::decay<Observable>::type::value_type::value_type>
+    : public operator_base<typename std::decay<T>::type::value_type>
 {
-    static_assert(is_observable<Observable>::value, "merge requires an observable");
-    static_assert(is_observable<typename Observable::value_type>::value, "merge an observable that contains observables");
+    //static_assert(is_observable<Observable>::value, "merge requires an observable");
+    //static_assert(is_observable<T>::value, "merge requires an observable that contains observables");
 
-    typedef merge<Observable, Coordination> this_type;
+    typedef merge<T, Observable, Coordination> this_type;
 
+    typedef typename std::decay<T>::type source_value_type;
     typedef typename std::decay<Observable>::type source_type;
 
-    typedef typename source_type::value_type source_value_type;
+    typedef typename source_type::source_operator_type source_operator_type;
     typedef typename source_value_type::value_type value_type;
 
     typedef typename std::decay<Coordination>::type coordination_type;
@@ -32,18 +33,18 @@ struct merge
 
     struct values
     {
-        values(source_type o, coordination_type sf)
-            : source(std::move(o))
+        values(source_operator_type o, coordination_type sf)
+            : source_operator(std::move(o))
             , coordination(std::move(sf))
         {
         }
-        source_type source;
+        source_operator_type source_operator;
         coordination_type coordination;
     };
     values initial;
 
-    merge(source_type o, coordination_type sf)
-        : initial(std::move(o), std::move(sf))
+    merge(const source_type& o, coordination_type sf)
+        : initial(o.source_operator, std::move(sf))
     {
     }
 
@@ -58,12 +59,14 @@ struct merge
             , public values
         {
             merge_state_type(values i, coordinator_type coor, output_type oarg)
-                : values(std::move(i))
+                : values(i)
+                , source(i.source_operator)
                 , pendingCompletions(0)
                 , coordinator(std::move(coor))
                 , out(std::move(oarg))
             {
             }
+            observable<source_value_type, source_operator_type> source;
             // on_completed on the output must wait until all the
             // subscriptions have received on_completed
             int pendingCompletions;
@@ -179,10 +182,10 @@ public:
     }
 
     template<class Observable>
-    auto operator()(Observable&& source)
-        ->      observable<typename merge<Observable, Coordination>::value_type, merge<Observable, Coordination>> {
-        return  observable<typename merge<Observable, Coordination>::value_type, merge<Observable, Coordination>>(
-                                    merge<Observable, Coordination>(std::forward<Observable>(source), coordination));
+    auto operator()(Observable source)
+        ->      observable<typename merge<typename Observable::value_type, Observable, Coordination>::value_type,   merge<typename Observable::value_type, Observable, Coordination>> {
+        return  observable<typename merge<typename Observable::value_type, Observable, Coordination>::value_type,   merge<typename Observable::value_type, Observable, Coordination>>(
+                                                                                                                    merge<typename Observable::value_type, Observable, Coordination>(std::move(source), coordination));
     }
 };
 

@@ -13,34 +13,36 @@ namespace operators {
 
 namespace detail {
 
-template<class Observable, class Coordination>
+template<class T, class Observable, class Coordination>
 struct concat
-    : public operator_base<typename std::decay<Observable>::type::value_type::value_type>
+    : public operator_base<typename std::decay<T>::type::value_type>
 {
-    typedef concat<Observable, Coordination> this_type;
+    typedef concat<T, Observable, Coordination> this_type;
 
+    typedef typename std::decay<T>::type source_value_type;
     typedef typename std::decay<Observable>::type source_type;
     typedef typename std::decay<Coordination>::type coordination_type;
 
     typedef typename coordination_type::coordinator_type coordinator_type;
 
-    typedef typename source_type::value_type collection_type;
+    typedef typename source_type::source_operator_type source_operator_type;
+    typedef source_value_type collection_type;
     typedef typename collection_type::value_type value_type;
 
     struct values
     {
-        values(source_type o, coordination_type sf)
-            : source(std::move(o))
+        values(source_operator_type o, coordination_type sf)
+            : source_operator(std::move(o))
             , coordination(std::move(sf))
         {
         }
-        source_type source;
+        source_operator_type source_operator;
         coordination_type coordination;
     };
     values initial;
 
-    concat(source_type o, coordination_type sf)
-        : initial(std::move(o), std::move(sf))
+    concat(const source_type& o, coordination_type sf)
+        : initial(o.source_operator, std::move(sf))
     {
     }
 
@@ -55,7 +57,8 @@ struct concat
             , public values
         {
             concat_state_type(values i, coordinator_type coor, output_type oarg)
-                : values(std::move(i))
+                : values(i)
+                , source(i.source_operator)
                 , sourceLifetime(composite_subscription::empty())
                 , collectionLifetime(composite_subscription::empty())
                 , coordinator(std::move(coor))
@@ -117,6 +120,7 @@ struct concat
                 }
                 selectedSource->subscribe(std::move(selectedSinkInner.get()));
             }
+            observable<source_value_type, source_operator_type> source;
             composite_subscription sourceLifetime;
             composite_subscription collectionLifetime;
             std::deque<collection_type> selectedCollections;
@@ -190,10 +194,10 @@ public:
     }
 
     template<class Observable>
-    auto operator()(Observable&& source)
-        ->      observable<typename concat<Observable, Coordination>::value_type, concat<Observable, Coordination>> {
-        return  observable<typename concat<Observable, Coordination>::value_type, concat<Observable, Coordination>>(
-                                    concat<Observable, Coordination>(std::forward<Observable>(source), coordination));
+    auto operator()(Observable source)
+        ->      observable<typename concat<typename Observable::value_type, Observable, Coordination>::value_type,  concat<typename Observable::value_type, Observable, Coordination>> {
+        return  observable<typename concat<typename Observable::value_type, Observable, Coordination>::value_type,  concat<typename Observable::value_type, Observable, Coordination>>(
+                                                                                                                    concat<typename Observable::value_type, Observable, Coordination>(std::move(source), coordination));
     }
 };
 
