@@ -93,7 +93,7 @@ static auto interval(rxsc::scheduler::clock_type::time_point when, Coordination 
 template<class Duration>
 static auto interval(rxsc::scheduler::clock_type::time_point initial, Duration period)
     -> typename std::enable_if<std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>::value,
-        typename detail::delay_resolution<Duration>>::type::type {
+        typename detail::delay_resolution<Duration>::type>::type {
     return  observable<long,    rxs::detail::interval<identity_one_worker>>(
                                 rxs::detail::interval<identity_one_worker>(initial, period, identity_current_thread()));
 }
