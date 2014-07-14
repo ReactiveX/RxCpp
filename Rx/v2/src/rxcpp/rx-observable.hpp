@@ -440,7 +440,7 @@ public:
     ///
     template<class Value0, class... ValueN>
     auto merge(Value0 v0, ValueN... vn) const
-        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value, observable<T>>::type {
+        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN...>::value>::value, observable<T>>::type {
         return      rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).merge();
     }
 
@@ -451,7 +451,7 @@ public:
     ///
     template<class Coordination, class Value0, class... ValueN>
     auto merge(Coordination&& sf, Value0 v0, ValueN... vn) const
-        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value && !is_observable<Coordination>::value, observable<T>>::type {
+        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN...>::value>::value && !is_observable<Coordination>::value, observable<T>>::type {
         return      rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).merge(std::forward<Coordination>(sf));
     }
 
@@ -534,7 +534,7 @@ public:
     ///
     template<class Value0, class... ValueN>
     auto concat(Value0 v0, ValueN... vn) const
-        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value, observable<T>>::type {
+        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN...>::value>::value, observable<T>>::type {
         return      rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).concat();
     }
 
@@ -545,7 +545,7 @@ public:
     ///
     template<class Coordination, class Value0, class... ValueN>
     auto concat(Coordination&& sf, Value0 v0, ValueN... vn) const
-        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value && !is_observable<Coordination>::value, observable<T>>::type {
+        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN...>::value>::value && !is_observable<Coordination>::value, observable<T>>::type {
         return      rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).concat(std::forward<Coordination>(sf));
     }
     /// concat_map ->
