@@ -131,6 +131,9 @@ class observable;
 template<class T, class Source>
 observable<T> make_observable_dynamic(Source&&);
 
+template<class Selector, class Default, template<class... TN> class SO, class... AN>
+struct defer_observable;
+
 struct tag_observable {};
 template<class T>
 struct observable_base {

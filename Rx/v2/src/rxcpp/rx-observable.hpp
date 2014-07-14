@@ -151,6 +151,62 @@ observable<T> make_observable_dynamic(Source&& s) {
     return observable<T>(dynamic_observable<T>(std::forward<Source>(s)));
 }
 
+namespace detail {
+template<bool Selector, class Default, class SO>
+struct resolve_observable;
+
+template<class Default, class SO>
+struct resolve_observable<true, Default, SO>
+{
+    typedef typename SO::type type;
+    typedef typename type::value_type value_type;
+    static const bool value = true;
+    typedef observable<value_type, type> observable_type;
+    template<class... AN>
+    static observable_type make(const Default&, AN&&... an) {
+        return observable_type(type(std::forward<AN>(an)...));
+    }
+};
+template<class Default, class SO>
+struct resolve_observable<false, Default, SO>
+{
+    static const bool value = false;
+    typedef Default observable_type;
+    template<class... AN>
+    static observable_type make(const observable_type& that, const AN&...) {
+        return that;
+    }
+};
+template<class SO>
+struct resolve_observable<true, void, SO>
+{
+    typedef typename SO::type type;
+    typedef typename type::value_type value_type;
+    static const bool value = true;
+    typedef observable<value_type, type> observable_type;
+    template<class... AN>
+    static observable_type make(AN&&... an) {
+        return observable_type(type(std::forward<AN>(an)...));
+    }
+};
+template<class SO>
+struct resolve_observable<false, void, SO>
+{
+    static const bool value = false;
+    typedef void observable_type;
+    template<class... AN>
+    static observable_type make(const AN&...) {
+    }
+};
+
+}
+
+template<class Selector, class Default, template<class... TN> class SO, class... AN>
+struct defer_observable
+    : public detail::resolve_observable<Selector::value, Default, rxu::defer_type<SO, AN...>>
+{
+};
+
 template<>
 class observable<void, void>;
 
@@ -166,59 +222,6 @@ class observable
 public:
     typedef typename std::decay<SourceOperator>::type source_operator_type;
     mutable source_operator_type source_operator;
-
-protected:
-    template<bool Selector, class Default, class SO>
-    struct resolve_observable;
-
-    template<class Default, class SO>
-    struct resolve_observable<true, Default, SO>
-    {
-        typedef typename SO::type type;
-        typedef typename type::value_type value_type;
-        static const bool value = true;
-        typedef observable<value_type, type> observable_type;
-        template<class... AN>
-        static observable_type make(const Default&, AN&&... an) {
-            return observable_type(type(std::forward<AN>(an)...));
-        }
-    };
-    template<class Default, class SO>
-    struct resolve_observable<false, Default, SO>
-    {
-        static const bool value = false;
-        typedef Default observable_type;
-        template<class... AN>
-        static observable_type make(const observable_type& that, const AN&...) {
-            return that;
-        }
-    };
-    template<class SO>
-    struct resolve_observable<true, void, SO>
-    {
-        typedef typename SO::type type;
-        typedef typename type::value_type value_type;
-        static const bool value = true;
-        typedef observable<value_type, type> observable_type;
-        template<class... AN>
-        static observable_type make(AN&&... an) {
-            return observable_type(type(std::forward<AN>(an)...));
-        }
-    };
-    template<class SO>
-    struct resolve_observable<false, void, SO>
-    {
-        static const bool value = false;
-        typedef void observable_type;
-        template<class... AN>
-        static observable_type make(const AN&...) {
-        }
-    };
-    template<class Selector, class Default, template<class... TN> class SO, class... AN>
-    struct defer_observable
-        : public resolve_observable<Selector::value, Default, rxu::defer_type<SO, AN...>>
-    {
-    };
 
 private:
 
@@ -456,6 +459,16 @@ public:
         return          defer_merge<Coordination>::make(*this, *this, std::move(cn));
     }
 
+    template<class Coordination, class Value0>
+    struct defer_merge_from : public defer_observable<
+        rxu::all_true<
+            is_coordination<Coordination>::value,
+            is_observable<Value0>::value>,
+        this_type,
+        rxo::detail::merge, observable<value_type>, observable<observable<value_type>>, Coordination>
+    {
+    };
+
     /// merge ->
     /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
     /// for each item from this observable subscribe.
@@ -463,8 +476,10 @@ public:
     ///
     template<class Value0, class... ValueN>
     auto merge(Value0 v0, ValueN... vn) const
-        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value, observable<T>>::type {
-        return      rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).merge();
+        ->  typename std::enable_if<
+                        defer_merge_from<identity_one_worker, Value0>::value,
+            typename    defer_merge_from<identity_one_worker, Value0>::observable_type>::type {
+        return          defer_merge_from<identity_one_worker, Value0>::make(*this, rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), identity_current_thread());
     }
 
     /// merge ->
@@ -473,11 +488,12 @@ public:
     /// for each item from all of the nested observables deliver from the new observable that is returned.
     ///
     template<class Coordination, class Value0, class... ValueN>
-    auto merge(Coordination&& sf, Value0 v0, ValueN... vn) const
-        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value && !is_observable<Coordination>::value, observable<T>>::type {
-        return      rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).merge(std::forward<Coordination>(sf));
+    auto merge(Coordination cn, Value0 v0, ValueN... vn) const
+        ->  typename std::enable_if<
+                        defer_merge_from<Coordination, Value0>::value,
+            typename    defer_merge_from<Coordination, Value0>::observable_type>::type {
+        return          defer_merge_from<Coordination, Value0>::make(*this, rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), std::move(cn));
     }
-
 
     /// flat_map (AKA SelectMany) ->
     /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
@@ -534,6 +550,16 @@ public:
         return          defer_concat<Coordination>::make(*this, *this, std::move(cn));
     }
 
+    template<class Coordination, class Value0>
+    struct defer_concat_from : public defer_observable<
+        rxu::all_true<
+            is_coordination<Coordination>::value,
+            is_observable<Value0>::value>,
+        this_type,
+        rxo::detail::concat, observable<value_type>, observable<observable<value_type>>, Coordination>
+    {
+    };
+
     /// concat ->
     /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
     /// for each item from this observable subscribe to one at a time. in the order received.
@@ -541,8 +567,10 @@ public:
     ///
     template<class Value0, class... ValueN>
     auto concat(Value0 v0, ValueN... vn) const
-        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value, observable<T>>::type {
-        return      rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).concat();
+        ->  typename std::enable_if<
+                        defer_concat_from<identity_one_worker, Value0>::value,
+            typename    defer_concat_from<identity_one_worker, Value0>::observable_type>::type {
+        return          defer_concat_from<identity_one_worker, Value0>::make(*this, rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), identity_current_thread());
     }
 
     /// concat ->
@@ -551,9 +579,11 @@ public:
     /// for each item from all of the nested observables deliver from the new observable that is returned.
     ///
     template<class Coordination, class Value0, class... ValueN>
-    auto concat(Coordination&& sf, Value0 v0, ValueN... vn) const
-        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value && !is_observable<Coordination>::value, observable<T>>::type {
-        return      rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).concat(std::forward<Coordination>(sf));
+    auto concat(Coordination cn, Value0 v0, ValueN... vn) const
+        ->  typename std::enable_if<
+                        defer_concat_from<Coordination, Value0>::value,
+            typename    defer_concat_from<Coordination, Value0>::observable_type>::type {
+        return          defer_concat_from<Coordination, Value0>::make(*this, rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), std::move(cn));
     }
 
     /// concat_map ->
