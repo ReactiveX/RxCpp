@@ -5,6 +5,8 @@
 namespace rx=rxcpp;
 namespace rxu=rxcpp::util;
 
+#include<string>
+
 // At this time, RxCpp will fail to compile if the contents
 // of the std namespace are merged into the global namespace
 // DO NOT USE: 'using namespace std;'
@@ -51,14 +53,14 @@ int main(int argc, char** argv)
     std::cout << "===== println stream of std::string =====" << std::endl;
     auto hello_str = [&](){return get_names().map([](std::string n){
         return "Hello, " + n + "!";
-    });};
+    }).as_dynamic();};
 
     hello_str().subscribe(rxu::println(std::cout));
 
     std::cout << "===== println stream of std::tuple =====" << std::endl;
     auto hello_tpl = [&](){return get_names().map([](std::string n){
         return std::make_tuple("Hello, ", n, "! (", n.size(), ")");
-    });};
+    }).as_dynamic();};
 
     hello_tpl().subscribe(rxu::println(std::cout));
 

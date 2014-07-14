@@ -47,10 +47,10 @@ struct is_result_function_for {
     static const bool value = !std::is_same<type, tag_not_valid>::value;
 };
 
-template<class T, class Observable, class Accumulator, class ResultSelector, class Seed>
+template<class T, class SourceOperator, class Accumulator, class ResultSelector, class Seed>
 struct reduce_traits
 {
-    typedef typename std::decay<Observable>::type source_type;
+    typedef typename std::decay<SourceOperator>::type source_type;
     typedef typename std::decay<Accumulator>::type accumulator_type;
     typedef typename std::decay<ResultSelector>::type result_selector_type;
     typedef typename std::decay<Seed>::type seed_type;
@@ -64,11 +64,11 @@ struct reduce_traits
     typedef typename is_result_function_for<seed_type, result_selector_type>::type value_type;
 };
 
-template<class T, class Observable, class Accumulator, class ResultSelector, class Seed>
-struct reduce : public operator_base<typename reduce_traits<T, Observable, Accumulator, ResultSelector, Seed>::value_type>
+template<class T, class SourceOperator, class Accumulator, class ResultSelector, class Seed>
+struct reduce : public operator_base<typename reduce_traits<T, SourceOperator, Accumulator, ResultSelector, Seed>::value_type>
 {
-    typedef reduce<T, Observable, Accumulator, ResultSelector, Seed> this_type;
-    typedef reduce_traits<T, Observable, Accumulator, ResultSelector, Seed> traits;
+    typedef reduce<T, SourceOperator, Accumulator, ResultSelector, Seed> this_type;
+    typedef reduce_traits<T, SourceOperator, Accumulator, ResultSelector, Seed> traits;
 
     typedef typename traits::source_type source_type;
     typedef typename traits::accumulator_type accumulator_type;
@@ -106,10 +106,12 @@ struct reduce : public operator_base<typename reduce_traits<T, Observable, Accum
         {
             reduce_state_type(reduce_initial_type i, Subscriber scrbr)
                 : reduce_initial_type(i)
+                , source(i.source)
                 , current(reduce_initial_type::seed)
                 , out(std::move(scrbr))
             {
             }
+            observable<T, SourceOperator> source;
             seed_type current;
             Subscriber out;
         };
@@ -163,10 +165,10 @@ public:
     {
     }
     template<class Observable>
-    auto operator()(Observable&& source)
-        ->      observable<seed_type,   reduce<typename std::decay<Observable>::type::value_type, Observable, Accumulator, ResultSelector, Seed>> {
-        return  observable<seed_type,   reduce<typename std::decay<Observable>::type::value_type, Observable, Accumulator, ResultSelector, Seed>>(
-                                        reduce<typename std::decay<Observable>::type::value_type, Observable, Accumulator, ResultSelector, Seed>(std::forward<Observable>(source), accumulator, result_selector, seed));
+    auto operator()(const Observable& source)
+        ->      observable<seed_type,   reduce<typename Observable::value_type, typename Observable::source_operator_type, Accumulator, ResultSelector, Seed>> {
+        return  observable<seed_type,   reduce<typename Observable::value_type, typename Observable::source_operator_type, Accumulator, ResultSelector, Seed>>(
+                                        reduce<typename Observable::value_type, typename Observable::source_operator_type, Accumulator, ResultSelector, Seed>(source.source_operator, accumulator, result_selector, seed));
     }
 };
 

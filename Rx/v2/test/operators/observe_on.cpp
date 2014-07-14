@@ -21,8 +21,8 @@ SCENARIO("range observed on current_thread", "[hide][range][observe_on_debug][ob
 
             for (int n = 0; n < 10; n++)
             {
-                std::atomic_bool disposed(false);
-                std::atomic_bool done(false);
+                std::atomic_bool disposed;
+                std::atomic_bool done;
                 auto c = std::make_shared<int>(0);
 
                 rx::composite_subscription cs;
