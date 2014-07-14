@@ -68,40 +68,48 @@ struct interval : public source_base<long>
     }
 };
 
-template<class X>
-struct delay_resolution
+template<class TimePoint, class Coordination>
+struct defer_interval : public defer_observable<
+    rxu::all_true<
+        std::is_convertible<TimePoint, rxsc::scheduler::clock_type::time_point>::value,
+        is_coordination<Coordination>::value>,
+    void,
+    interval, Coordination>
 {
-    typedef observable<long,    rxs::detail::interval<identity_one_worker>> type;
 };
 
 }
+
 template<class TimePoint>
-static auto interval(TimePoint when)
-    -> typename detail::delay_resolution<TimePoint>::type {
-    auto cn = identity_current_thread();
-    return  observable<long,    rxs::detail::interval<identity_one_worker>>(
-                                rxs::detail::interval<identity_one_worker>(when, rxsc::scheduler::clock_type::duration::max(), cn));
-    static_assert(std::is_convertible<TimePoint, rxsc::scheduler::clock_type::time_point>::value, "TimePoint must be convertible to rxsc::scheduler::clock_type::time_point");
+auto interval(TimePoint when)
+    ->  typename std::enable_if<
+                    detail::defer_interval<TimePoint, identity_one_worker>::value,
+        typename    detail::defer_interval<TimePoint, identity_one_worker>::observable_type>::type {
+    return          detail::defer_interval<TimePoint, identity_one_worker>::make(when, rxsc::scheduler::clock_type::duration::max(), identity_current_thread());
 }
+
 template<class Coordination>
-static auto interval(rxsc::scheduler::clock_type::time_point when, Coordination cn)
-    -> typename std::enable_if<is_coordination<Coordination>::value,
-            observable<long,    rxs::detail::interval<Coordination>>>::type {
-    return  observable<long,    rxs::detail::interval<Coordination>>(
-                                rxs::detail::interval<Coordination>(when, rxsc::scheduler::clock_type::duration::max(), std::move(cn)));
+auto interval(rxsc::scheduler::clock_type::time_point when, Coordination cn)
+    ->  typename std::enable_if<
+                    detail::defer_interval<rxsc::scheduler::clock_type::time_point, Coordination>::value,
+        typename    detail::defer_interval<rxsc::scheduler::clock_type::time_point, Coordination>::observable_type>::type {
+    return          detail::defer_interval<rxsc::scheduler::clock_type::time_point, Coordination>::make(when, rxsc::scheduler::clock_type::duration::max(), std::move(cn));
 }
-template<class Duration>
-static auto interval(rxsc::scheduler::clock_type::time_point initial, Duration period)
-    -> typename std::enable_if<std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>::value,
-        typename detail::delay_resolution<Duration>>::type::type {
-    return  observable<long,    rxs::detail::interval<identity_one_worker>>(
-                                rxs::detail::interval<identity_one_worker>(initial, period, identity_current_thread()));
+
+template<class TimePoint>
+auto interval(TimePoint when, rxsc::scheduler::clock_type::duration period)
+    ->  typename std::enable_if<
+                    detail::defer_interval<TimePoint, identity_one_worker>::value,
+        typename    detail::defer_interval<TimePoint, identity_one_worker>::observable_type>::type {
+    return          detail::defer_interval<TimePoint, identity_one_worker>::make(when, period, identity_current_thread());
 }
+
 template<class Coordination>
-static auto interval(rxsc::scheduler::clock_type::time_point initial, rxsc::scheduler::clock_type::duration period, Coordination cn)
-    ->      observable<long,    rxs::detail::interval<Coordination>> {
-    return  observable<long,    rxs::detail::interval<Coordination>>(
-                                rxs::detail::interval<Coordination>(initial, period, std::move(cn)));
+auto interval(rxsc::scheduler::clock_type::time_point when, rxsc::scheduler::clock_type::duration period, Coordination cn)
+    ->  typename std::enable_if<
+                    detail::defer_interval<rxsc::scheduler::clock_type::time_point, Coordination>::value,
+        typename    detail::defer_interval<rxsc::scheduler::clock_type::time_point, Coordination>::observable_type>::type {
+    return          detail::defer_interval<rxsc::scheduler::clock_type::time_point, Coordination>::make(when, period, std::move(cn));
 }
 
 }
