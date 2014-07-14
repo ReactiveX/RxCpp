@@ -22,7 +22,7 @@ SCENARIO("for loop subscribes to map with subscribe_on and observe_on", "[hide][
                 int n = 1;
                 auto start = clock::now();
                 for (int i = 0; i < subscriptions; i++) {
-                    std::atomic_bool done(false);
+                    std::atomic_bool done;
                     rx::observable<>::just(1)
                         .map([](int i) {
                             std::stringstream serializer;

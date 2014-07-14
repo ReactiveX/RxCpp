@@ -151,6 +151,62 @@ observable<T> make_observable_dynamic(Source&& s) {
     return observable<T>(dynamic_observable<T>(std::forward<Source>(s)));
 }
 
+namespace detail {
+template<bool Selector, class Default, class SO>
+struct resolve_observable;
+
+template<class Default, class SO>
+struct resolve_observable<true, Default, SO>
+{
+    typedef typename SO::type type;
+    typedef typename type::value_type value_type;
+    static const bool value = true;
+    typedef observable<value_type, type> observable_type;
+    template<class... AN>
+    static observable_type make(const Default&, AN&&... an) {
+        return observable_type(type(std::forward<AN>(an)...));
+    }
+};
+template<class Default, class SO>
+struct resolve_observable<false, Default, SO>
+{
+    static const bool value = false;
+    typedef Default observable_type;
+    template<class... AN>
+    static observable_type make(const observable_type& that, const AN&...) {
+        return that;
+    }
+};
+template<class SO>
+struct resolve_observable<true, void, SO>
+{
+    typedef typename SO::type type;
+    typedef typename type::value_type value_type;
+    static const bool value = true;
+    typedef observable<value_type, type> observable_type;
+    template<class... AN>
+    static observable_type make(AN&&... an) {
+        return observable_type(type(std::forward<AN>(an)...));
+    }
+};
+template<class SO>
+struct resolve_observable<false, void, SO>
+{
+    static const bool value = false;
+    typedef void observable_type;
+    template<class... AN>
+    static observable_type make(const AN&...) {
+    }
+};
+
+}
+
+template<class Selector, class Default, template<class... TN> class SO, class... AN>
+struct defer_observable
+    : public detail::resolve_observable<Selector::value, Default, rxu::defer_type<SO, AN...>>
+{
+};
+
 template<>
 class observable<void, void>;
 
@@ -161,12 +217,14 @@ class observable
 {
     static_assert(std::is_same<T, typename SourceOperator::value_type>::value, "SourceOperator::value_type must be the same as T in observable<T, SourceOperator>");
 
-protected:
     typedef observable<T, SourceOperator> this_type;
+
+public:
     typedef typename std::decay<SourceOperator>::type source_operator_type;
     mutable source_operator_type source_operator;
 
 private:
+
     template<class U, class SO>
     friend class observable;
 
@@ -341,28 +399,12 @@ public:
         return                    lift(rxo::detail::buffer_count<T>(count, skip));
     }
 
-    template<class Coordination, bool IsObservable = is_observable<value_type>::value>
-    struct switch_on_next_result;
-
     template<class Coordination>
-    struct switch_on_next_result<Coordination, true>
+    struct defer_switch_on_next : public defer_observable<
+        is_observable<value_type>,
+        this_type,
+        rxo::detail::switch_on_next, value_type, observable<value_type>, Coordination>
     {
-        typedef
-            observable<
-                typename this_type::value_type::value_type,
-                rxo::detail::switch_on_next<this_type, Coordination>>
-        type;
-        static type make(const this_type* that, Coordination sf) {
-            return type(rxo::detail::switch_on_next<this_type, Coordination>(*that, std::move(sf)));
-        }
-    };
-    template<class Coordination>
-    struct switch_on_next_result<Coordination, false>
-    {
-        typedef this_type type;
-        static type make(const this_type* that, Coordination) {
-            return *that;
-        }
     };
 
     /// switch_on_next (AKA Switch) ->
@@ -370,8 +412,8 @@ public:
     /// for each item from this observable subscribe to that observable after unsubscribing from any previous subscription.
     ///
     auto switch_on_next() const
-        -> typename switch_on_next_result<identity_one_worker>::type {
-        return  switch_on_next_result<identity_one_worker>::make(this, identity_current_thread());
+        -> typename defer_switch_on_next<identity_one_worker>::observable_type {
+        return      defer_switch_on_next<identity_one_worker>::make(*this, *this, identity_current_thread());
     }
 
     /// switch_on_next (AKA Switch) ->
@@ -379,35 +421,19 @@ public:
     /// for each item from this observable subscribe to that observable after unsubscribing from any previous subscription.
     ///
     template<class Coordination>
-    auto switch_on_next(Coordination&& sf) const
-        -> typename std::enable_if<is_observable<value_type>::value,
-                observable<typename rxo::detail::switch_on_next<this_type, Coordination>::value_type,   rxo::detail::switch_on_next<this_type, Coordination>>>::type {
-        return  observable<typename rxo::detail::switch_on_next<this_type, Coordination>::value_type,   rxo::detail::switch_on_next<this_type, Coordination>>(
-                                                                                                        rxo::detail::switch_on_next<this_type, Coordination>(*this, std::forward<Coordination>(sf)));
+    auto switch_on_next(Coordination cn) const
+        ->  typename std::enable_if<
+                        defer_switch_on_next<Coordination>::value,
+            typename    defer_switch_on_next<Coordination>::observable_type>::type {
+        return          defer_switch_on_next<Coordination>::make(*this, *this, std::move(cn));
     }
 
-    template<class Coordination, bool IsObservable = is_observable<value_type>::value>
-    struct merge_result;
-
     template<class Coordination>
-    struct merge_result<Coordination, true>
+    struct defer_merge : public defer_observable<
+        is_observable<value_type>,
+        this_type,
+        rxo::detail::merge, value_type, observable<value_type>, Coordination>
     {
-        typedef
-            observable<
-                typename this_type::value_type::value_type,
-                rxo::detail::merge<observable<typename this_type::value_type>, Coordination>>
-        type;
-        static type make(const this_type* that, Coordination sf) {
-            return type(rxo::detail::merge<observable<typename this_type::value_type>, Coordination>(*that, sf));
-        }
-    };
-    template<class Coordination>
-    struct merge_result<Coordination, false>
-    {
-        typedef this_type type;
-        static type make(const this_type* that, Coordination) {
-            return *that;
-        }
     };
 
     /// merge ->
@@ -416,8 +442,8 @@ public:
     /// for each item from all of the nested observables deliver from the new observable that is returned.
     ///
     auto merge() const
-        -> typename merge_result<identity_one_worker>::type {
-        return  merge_result<identity_one_worker>::make(this, identity_current_thread());
+        -> typename defer_merge<identity_one_worker>::observable_type {
+        return      defer_merge<identity_one_worker>::make(*this, *this, identity_current_thread());
     }
 
     /// merge ->
@@ -426,12 +452,22 @@ public:
     /// for each item from all of the nested observables deliver from the new observable that is returned.
     ///
     template<class Coordination>
-    auto merge(Coordination&& sf) const
-        -> typename std::enable_if<is_observable<value_type>::value && !is_observable<Coordination>::value,
-                observable<typename rxo::detail::merge<this_type, Coordination>::value_type,    rxo::detail::merge<this_type, Coordination>>>::type {
-        return  observable<typename rxo::detail::merge<this_type, Coordination>::value_type,    rxo::detail::merge<this_type, Coordination>>(
-                                                                                                rxo::detail::merge<this_type, Coordination>(*this, std::forward<Coordination>(sf)));
+    auto merge(Coordination cn) const
+        ->  typename std::enable_if<
+                        defer_merge<Coordination>::value,
+            typename    defer_merge<Coordination>::observable_type>::type {
+        return          defer_merge<Coordination>::make(*this, *this, std::move(cn));
     }
+
+    template<class Coordination, class Value0>
+    struct defer_merge_from : public defer_observable<
+        rxu::all_true<
+            is_coordination<Coordination>::value,
+            is_observable<Value0>::value>,
+        this_type,
+        rxo::detail::merge, observable<value_type>, observable<observable<value_type>>, Coordination>
+    {
+    };
 
     /// merge ->
     /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
@@ -440,8 +476,10 @@ public:
     ///
     template<class Value0, class... ValueN>
     auto merge(Value0 v0, ValueN... vn) const
-        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value, observable<T>>::type {
-        return      rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).merge();
+        ->  typename std::enable_if<
+                        defer_merge_from<identity_one_worker, Value0>::value,
+            typename    defer_merge_from<identity_one_worker, Value0>::observable_type>::type {
+        return          defer_merge_from<identity_one_worker, Value0>::make(*this, rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), identity_current_thread());
     }
 
     /// merge ->
@@ -450,11 +488,12 @@ public:
     /// for each item from all of the nested observables deliver from the new observable that is returned.
     ///
     template<class Coordination, class Value0, class... ValueN>
-    auto merge(Coordination&& sf, Value0 v0, ValueN... vn) const
-        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value && !is_observable<Coordination>::value, observable<T>>::type {
-        return      rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).merge(std::forward<Coordination>(sf));
+    auto merge(Coordination cn, Value0 v0, ValueN... vn) const
+        ->  typename std::enable_if<
+                        defer_merge_from<Coordination, Value0>::value,
+            typename    defer_merge_from<Coordination, Value0>::observable_type>::type {
+        return          defer_merge_from<Coordination, Value0>::make(*this, rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), std::move(cn));
     }
-
 
     /// flat_map (AKA SelectMany) ->
     /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
@@ -480,28 +519,12 @@ public:
                                                                                                                                     rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, Coordination>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<Coordination>(sf)));
     }
 
-    template<class Coordination, bool IsObservable = is_observable<value_type>::value>
-    struct concat_result;
-
     template<class Coordination>
-    struct concat_result<Coordination, true>
+    struct defer_concat : public defer_observable<
+        is_observable<value_type>,
+        this_type,
+        rxo::detail::concat, value_type, observable<value_type>, Coordination>
     {
-        typedef
-            observable<
-                typename this_type::value_type::value_type,
-                rxo::detail::concat<observable<typename this_type::value_type>, Coordination>>
-        type;
-        static type make(const this_type* that, Coordination sf) {
-            return type(rxo::detail::concat<observable<typename this_type::value_type>, Coordination>(*that, sf));
-        }
-    };
-    template<class Coordination>
-    struct concat_result<Coordination, false>
-    {
-        typedef this_type type;
-        static type make(const this_type* that, Coordination) {
-            return *that;
-        }
     };
 
     /// concat ->
@@ -510,8 +533,8 @@ public:
     /// for each item from all of the nested observables deliver from the new observable that is returned.
     ///
     auto concat() const
-        -> typename concat_result<identity_one_worker>::type {
-        return  concat_result<identity_one_worker>::make(this, identity_current_thread());
+        -> typename defer_concat<identity_one_worker>::observable_type {
+        return      defer_concat<identity_one_worker>::make(*this, *this, identity_current_thread());
     }
 
     /// concat ->
@@ -520,12 +543,22 @@ public:
     /// for each item from all of the nested observables deliver from the new observable that is returned.
     ///
     template<class Coordination>
-    auto concat(Coordination&& sf) const
-        -> typename std::enable_if<is_observable<value_type>::value && !is_observable<Coordination>::value,
-                observable<typename rxo::detail::concat<this_type, Coordination>::value_type,   rxo::detail::concat<this_type, Coordination>>>::type {
-        return  observable<typename rxo::detail::concat<this_type, Coordination>::value_type,   rxo::detail::concat<this_type, Coordination>>(
-                                                                                                rxo::detail::concat<this_type, Coordination>(*this, std::forward<Coordination>(sf)));
+    auto concat(Coordination cn) const
+        ->  typename std::enable_if<
+                        defer_concat<Coordination>::value,
+            typename    defer_concat<Coordination>::observable_type>::type {
+        return          defer_concat<Coordination>::make(*this, *this, std::move(cn));
     }
+
+    template<class Coordination, class Value0>
+    struct defer_concat_from : public defer_observable<
+        rxu::all_true<
+            is_coordination<Coordination>::value,
+            is_observable<Value0>::value>,
+        this_type,
+        rxo::detail::concat, observable<value_type>, observable<observable<value_type>>, Coordination>
+    {
+    };
 
     /// concat ->
     /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
@@ -534,8 +567,10 @@ public:
     ///
     template<class Value0, class... ValueN>
     auto concat(Value0 v0, ValueN... vn) const
-        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value, observable<T>>::type {
-        return      rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).concat();
+        ->  typename std::enable_if<
+                        defer_concat_from<identity_one_worker, Value0>::value,
+            typename    defer_concat_from<identity_one_worker, Value0>::observable_type>::type {
+        return          defer_concat_from<identity_one_worker, Value0>::make(*this, rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), identity_current_thread());
     }
 
     /// concat ->
@@ -544,10 +579,13 @@ public:
     /// for each item from all of the nested observables deliver from the new observable that is returned.
     ///
     template<class Coordination, class Value0, class... ValueN>
-    auto concat(Coordination&& sf, Value0 v0, ValueN... vn) const
-        -> typename std::enable_if<rxu::all_true<is_observable<Value0>::value, is_observable<ValueN>::value...>::value && !is_observable<Coordination>::value, observable<T>>::type {
-        return      rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...).concat(std::forward<Coordination>(sf));
+    auto concat(Coordination cn, Value0 v0, ValueN... vn) const
+        ->  typename std::enable_if<
+                        defer_concat_from<Coordination, Value0>::value,
+            typename    defer_concat_from<Coordination, Value0>::observable_type>::type {
+        return          defer_concat_from<Coordination, Value0>::make(*this, rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), std::move(cn));
     }
+
     /// concat_map ->
     /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
     /// for each item from this observable use the CollectionSelector to select an observable and subscribe to that observable.
@@ -573,9 +611,11 @@ public:
     }
 
     template<class Coordination, class Selector, class... ObservableN>
-    struct delayed_combine_latest
+    struct defer_combine_latest : public defer_observable<
+        rxu::all_true<is_coordination<Coordination>::value, !is_observable<Selector>::value, is_observable<ObservableN>::value...>,
+        this_type,
+        rxo::detail::combine_latest, Coordination, Selector, ObservableN...>
     {
-        typedef observable<typename rxo::detail::combine_latest<Coordination, Selector, ObservableN...>::value_type, rxo::detail::combine_latest<Coordination, Selector, ObservableN...>> type;
     };
 
     /// combine_latest ->
@@ -584,10 +624,10 @@ public:
     ///
     template<class Selector, class... ObservableN>
     auto combine_latest(Selector&& s, ObservableN... on) const
-        -> typename std::enable_if<!is_coordination<Selector>::value && !is_observable<Selector>::value && rxu::all_true<is_observable<ObservableN>::value...>::value,
-                delayed_combine_latest<identity_one_worker, Selector, this_type, ObservableN...>>::type::type {
-        return  observable<typename rxo::detail::combine_latest<identity_one_worker, Selector, this_type, ObservableN...>::value_type,  rxo::detail::combine_latest<identity_one_worker, Selector, this_type, ObservableN...>>(
-                                                                                                                                        rxo::detail::combine_latest<identity_one_worker, Selector, this_type, ObservableN...>(identity_current_thread(), std::forward<Selector>(s), std::make_tuple(*this, on...)));
+        ->  typename std::enable_if<
+                        defer_combine_latest<identity_one_worker, Selector, this_type, ObservableN...>::value,
+            typename    defer_combine_latest<identity_one_worker, Selector, this_type, ObservableN...>::observable_type>::type {
+        return          defer_combine_latest<identity_one_worker, Selector, this_type, ObservableN...>::make(*this, identity_current_thread(), std::forward<Selector>(s), std::make_tuple(*this, on...));
     }
 
     /// combine_latest ->
@@ -596,10 +636,10 @@ public:
     ///
     template<class Coordination, class Selector, class... ObservableN>
     auto combine_latest(Coordination cn, Selector&& s, ObservableN... on) const
-        -> typename std::enable_if<is_coordination<Coordination>::value && !is_observable<Selector>::value && rxu::all_true<is_observable<ObservableN>::value...>::value,
-                delayed_combine_latest<Coordination, Selector, this_type, ObservableN...>>::type::type {
-        return  observable<typename rxo::detail::combine_latest<Coordination, Selector, this_type, ObservableN...>::value_type, rxo::detail::combine_latest<Coordination, Selector, this_type, ObservableN...>>(
-                                                                                                                                rxo::detail::combine_latest<Coordination, Selector, this_type, ObservableN...>(std::move(cn), std::forward<Selector>(s), std::make_tuple(*this, on...)));
+        ->  typename std::enable_if<
+                        defer_combine_latest<Coordination, Selector, this_type, ObservableN...>::value,
+            typename    defer_combine_latest<Coordination, Selector, this_type, ObservableN...>::observable_type>::type {
+        return          defer_combine_latest<Coordination, Selector, this_type, ObservableN...>::make(*this, std::move(cn), std::forward<Selector>(s), std::make_tuple(*this, on...));
     }
 
     /// combine_latest ->
@@ -608,10 +648,10 @@ public:
     ///
     template<class... ObservableN>
     auto combine_latest(ObservableN... on) const
-        -> typename std::enable_if<rxu::all_true<is_observable<ObservableN>::value...>::value,
-                delayed_combine_latest<identity_one_worker, rxu::detail::pack, this_type, ObservableN...>>::type::type {
-        return  observable<typename rxo::detail::combine_latest<identity_one_worker, rxu::detail::pack, this_type, ObservableN...>::value_type, rxo::detail::combine_latest<identity_one_worker, rxu::detail::pack, this_type, ObservableN...>>(
-                                                                                                                                                rxo::detail::combine_latest<identity_one_worker, rxu::detail::pack, this_type, ObservableN...>(identity_current_thread(), rxu::pack(), std::make_tuple(*this, on...)));
+        ->  typename std::enable_if<
+                        defer_combine_latest<identity_one_worker, rxu::detail::pack, this_type, ObservableN...>::value,
+            typename    defer_combine_latest<identity_one_worker, rxu::detail::pack, this_type, ObservableN...>::observable_type>::type {
+        return          defer_combine_latest<identity_one_worker, rxu::detail::pack, this_type, ObservableN...>::make(*this, identity_current_thread(), rxu::pack(), std::make_tuple(*this, on...));
     }
 
     /// combine_latest ->
@@ -620,10 +660,10 @@ public:
     ///
     template<class Coordination, class... ObservableN>
     auto combine_latest(Coordination cn, ObservableN... on) const
-        -> typename std::enable_if<is_coordination<Coordination>::value && rxu::all_true<is_observable<ObservableN>::value...>::value,
-                delayed_combine_latest<Coordination, rxu::detail::pack, this_type, ObservableN...>>::type::type {
-        return  observable<typename rxo::detail::combine_latest<Coordination, rxu::detail::pack, this_type, ObservableN...>::value_type,    rxo::detail::combine_latest<Coordination, rxu::detail::pack, this_type, ObservableN...>>(
-                                                                                                                                            rxo::detail::combine_latest<Coordination, rxu::detail::pack, this_type, ObservableN...>(std::move(cn), rxu::pack(), std::make_tuple(*this, on...)));
+        ->  typename std::enable_if<
+                        defer_combine_latest<Coordination, rxu::detail::pack, this_type, ObservableN...>::value,
+            typename    defer_combine_latest<Coordination, rxu::detail::pack, this_type, ObservableN...>::observable_type>::type {
+        return          defer_combine_latest<Coordination, rxu::detail::pack, this_type, ObservableN...>::make(*this, std::move(cn), rxu::pack(), std::make_tuple(*this, on...));
     }
 
     /// multicast ->
@@ -688,50 +728,35 @@ public:
     ///
     template<class Seed, class Accumulator, class ResultSelector>
     auto reduce(Seed seed, Accumulator&& a, ResultSelector&& rs) const
-        ->      observable<typename rxo::detail::reduce<T, this_type, Accumulator, ResultSelector, Seed>::value_type,   rxo::detail::reduce<T, this_type, Accumulator, ResultSelector, Seed>> {
-        return  observable<typename rxo::detail::reduce<T, this_type, Accumulator, ResultSelector, Seed>::value_type,   rxo::detail::reduce<T, this_type, Accumulator, ResultSelector, Seed>>(
-                                                                                                                        rxo::detail::reduce<T, this_type, Accumulator, ResultSelector, Seed>(*this, std::forward<Accumulator>(a), std::forward<ResultSelector>(rs), seed));
+        ->      observable<typename rxo::detail::reduce<T, source_operator_type, Accumulator, ResultSelector, Seed>::value_type,    rxo::detail::reduce<T, source_operator_type, Accumulator, ResultSelector, Seed>> {
+        return  observable<typename rxo::detail::reduce<T, source_operator_type, Accumulator, ResultSelector, Seed>::value_type,    rxo::detail::reduce<T, source_operator_type, Accumulator, ResultSelector, Seed>>(
+                                                                                                                                    rxo::detail::reduce<T, source_operator_type, Accumulator, ResultSelector, Seed>(source_operator, std::forward<Accumulator>(a), std::forward<ResultSelector>(rs), seed));
     }
 
-    template<class Seed, class Accumulator, class ResultSelector,
-        bool CanReduce = rxo::detail::is_accumulate_function_for<T, Seed, Accumulator>::value &&
-            rxo::detail::is_result_function_for<Seed, ResultSelector>::value>
-    struct specific_reduce_result;
-
     template<class Seed, class Accumulator, class ResultSelector>
-    struct specific_reduce_result<Seed, Accumulator, ResultSelector, true>
+    struct defer_reduce : public defer_observable<
+        rxu::all_true<
+            rxu::defer_trait<rxo::detail::is_accumulate_function_for, T, Seed, Accumulator>::value,
+            rxu::defer_trait<rxo::detail::is_result_function_for, Seed, ResultSelector>::value>,
+        void,
+        rxo::detail::reduce, T, source_operator_type, Accumulator, ResultSelector, Seed>
     {
-        typedef
-            observable<
-                typename rxo::detail::is_result_function_for<Seed, ResultSelector>::type,
-                rxo::detail::reduce<T, this_type, Accumulator, ResultSelector, Seed>>
-        type;
-        static type make(const this_type* that, Seed seed, Accumulator a, ResultSelector rs) {
-            return type(rxo::detail::reduce<T, this_type, Accumulator, ResultSelector, Seed>(*that, std::move(a), std::move(rs), std::move(seed)));
-        }
-    };
-    template<class Seed, class Accumulator, class ResultSelector>
-    struct specific_reduce_result<Seed, Accumulator, ResultSelector, false>
-    {
-        typedef void type;
-        static void make(const this_type* that, Seed, Accumulator, ResultSelector) {
-        }
     };
 
     /// sum ->
     /// for each item from this observable reduce it by adding to the previous values.
     ///
     auto sum() const
-        -> typename specific_reduce_result<typename rxo::detail::initialize_seeder<T>::seed_type, std::plus<T>, identity_for<T>>::type {
-        return      specific_reduce_result<typename rxo::detail::initialize_seeder<T>::seed_type, std::plus<T>, identity_for<T>>::make(this, rxo::detail::initialize_seeder<T>().seed(), std::plus<T>(), identity_for<T>());
+        -> typename defer_reduce<rxu::defer_seed_type<rxo::detail::initialize_seeder, T>, rxu::defer_type<std::plus, T>, rxu::defer_type<identity_for, T>>::observable_type {
+        return      defer_reduce<rxu::defer_seed_type<rxo::detail::initialize_seeder, T>, rxu::defer_type<std::plus, T>, rxu::defer_type<identity_for, T>>::make(source_operator, std::plus<T>(), identity_for<T>(), rxo::detail::initialize_seeder<T>().seed());
     }
 
     /// average ->
     /// for each item from this observable reduce it by adding to the previous values and then dividing by the number of items at the end.
     ///
     auto average() const
-        -> typename specific_reduce_result<typename rxo::detail::average<T>::seed_type, rxo::detail::average<T>, rxo::detail::average<T>>::type {
-        return      specific_reduce_result<typename rxo::detail::average<T>::seed_type, rxo::detail::average<T>, rxo::detail::average<T>>::make(this, rxo::detail::average<T>().seed(), rxo::detail::average<T>(), rxo::detail::average<T>());
+        -> typename defer_reduce<rxu::defer_seed_type<rxo::detail::average, T>, rxu::defer_type<rxo::detail::average, T>, rxu::defer_type<rxo::detail::average, T>>::observable_type {
+        return      defer_reduce<rxu::defer_seed_type<rxo::detail::average, T>, rxu::defer_type<rxo::detail::average, T>, rxu::defer_type<rxo::detail::average, T>>::make(source_operator, rxo::detail::average<T>(), rxo::detail::average<T>(), rxo::detail::average<T>().seed());
     }
 
     /// scan ->
