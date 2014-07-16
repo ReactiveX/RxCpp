@@ -351,10 +351,10 @@ public:
     /// the on_next, on_error, on_completed methods can be supplied instead of an observer
     /// if a subscription or subscriber is not provided then a new subscription will be created.
     ///
-    template<class Arg0, class... ArgN>
-    auto subscribe(Arg0&& a0, ArgN&&... an) const
+    template<class... ArgN>
+    auto subscribe(ArgN&&... an) const
         -> composite_subscription {
-        return detail_subscribe(make_subscriber<T>(std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
+        return detail_subscribe(make_subscriber<T>(std::forward<ArgN>(an)...));
     }
 
     /// filter (AKA Where) ->
@@ -364,6 +364,14 @@ public:
     auto filter(Predicate p) const
         -> decltype(EXPLICIT_THIS lift(rxo::detail::filter<T, Predicate>(std::move(p)))) {
         return                    lift(rxo::detail::filter<T, Predicate>(std::move(p)));
+    }
+
+    /// finally () ->
+    ///
+    template<class LastCall>
+    auto finally(LastCall lc) const
+        -> decltype(EXPLICIT_THIS lift(rxo::detail::finally<T, LastCall>(std::move(lc)))) {
+        return                    lift(rxo::detail::finally<T, LastCall>(std::move(lc)));
     }
 
     /// map (AKA Select) ->
