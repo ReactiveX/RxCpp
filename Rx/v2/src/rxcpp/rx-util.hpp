@@ -253,6 +253,14 @@ struct resolve_type<defer_seed_type<Deferred, AN...>>
     typedef typename defer_seed_type<Deferred, AN...>::type type;
 };
 
+struct plus
+{
+    template <class LHS, class RHS>
+    auto operator()(LHS&& lhs, RHS&& rhs) const
+        -> decltype(std::forward<LHS>(lhs) + std::forward<RHS>(rhs))
+        { return std::forward<LHS>(lhs) + std::forward<RHS>(rhs); }
+};
+
 template<class OStream>
 struct println_function
 {

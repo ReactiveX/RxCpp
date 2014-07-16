@@ -19,11 +19,10 @@ struct distinct_until_changed
     typedef typename std::decay<T>::type source_value_type;
 
     template<class Subscriber>
-    struct distinct_until_changed_observer : public observer_base<source_value_type>
+    struct distinct_until_changed_observer
     {
         typedef distinct_until_changed_observer<Subscriber> this_type;
-        typedef observer_base<source_value_type> base_type;
-        typedef typename base_type::value_type value_type;
+        typedef source_value_type value_type;
         typedef typename std::decay<Subscriber>::type dest_type;
         typedef observer<value_type, this_type> observer_type;
         dest_type dest;
@@ -46,7 +45,7 @@ struct distinct_until_changed
             dest.on_completed();
         }
 
-        static subscriber<value_type, this_type> make(dest_type d) {
+        static subscriber<value_type, observer<value_type, this_type>> make(dest_type d) {
             return make_subscriber<value_type>(d, this_type(d));
         }
     };
