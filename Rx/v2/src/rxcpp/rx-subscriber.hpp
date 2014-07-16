@@ -145,6 +145,16 @@ auto make_subscriber(
 // observer
 //
 
+template<class T>
+auto make_subscriber()
+    -> typename std::enable_if<
+        detail::is_on_next_of<T, detail::OnNextEmpty<T>>::value,
+            subscriber<T,   observer<T, static_observer<T, detail::OnNextEmpty<T>>>>>::type {
+    return  subscriber<T,   observer<T, static_observer<T, detail::OnNextEmpty<T>>>>(composite_subscription(),
+                            observer<T, static_observer<T, detail::OnNextEmpty<T>>>(
+                                        static_observer<T, detail::OnNextEmpty<T>>(detail::OnNextEmpty<T>())));
+}
+
 template<class T, class I>
 auto make_subscriber(
     const                   observer<T, I>& o)
@@ -157,6 +167,16 @@ auto make_subscriber(const Observer& o)
         is_observer<Observer>::value,
             subscriber<T,   Observer>>::type {
     return  subscriber<T,   Observer>(composite_subscription(), o);
+}
+template<class T, class Observer>
+auto make_subscriber(const Observer& o)
+    -> typename std::enable_if<
+        !detail::is_on_next_of<T, Observer>::value &&
+        !is_subscriber<Observer>::value &&
+        !is_subscription<Observer>::value &&
+        !is_observer<Observer>::value,
+            subscriber<T,   observer<T, Observer>>>::type {
+    return  subscriber<T,   observer<T, Observer>>(composite_subscription(), o);
 }
 template<class T, class OnNext>
 auto make_subscriber(const OnNext& on)
@@ -201,6 +221,15 @@ auto make_subscriber(const OnNext& on, const OnError& oe, const OnCompleted& oc)
 
 // explicit lifetime
 //
+
+template<class T>
+auto make_subscriber(const composite_subscription& cs)
+    ->      subscriber<T,   observer<T, static_observer<T, detail::OnNextEmpty<T>>>> {
+    return  subscriber<T,   observer<T, static_observer<T, detail::OnNextEmpty<T>>>>(cs,
+                            observer<T, static_observer<T, detail::OnNextEmpty<T>>>(
+                                        static_observer<T, detail::OnNextEmpty<T>>(detail::OnNextEmpty<T>())));
+}
+
 template<class T, class I>
 auto make_subscriber(const composite_subscription& cs,
     const                   observer<T, I>& o)
@@ -213,6 +242,16 @@ auto make_subscriber(const composite_subscription& cs, const Observer& o)
         is_observer<Observer>::value,
             subscriber<T,   Observer>>::type {
     return  subscriber<T,   Observer>(cs, o);
+}
+template<class T, class Observer>
+auto make_subscriber(const composite_subscription& cs, const Observer& o)
+    -> typename std::enable_if<
+        !detail::is_on_next_of<T, Observer>::value &&
+        !is_subscriber<Observer>::value &&
+        !is_subscription<Observer>::value &&
+        !is_observer<Observer>::value,
+            subscriber<T,   observer<T, Observer>>>::type {
+    return  subscriber<T,   observer<T, Observer>>(cs, o);
 }
 template<class T, class OnNext>
 auto make_subscriber(const composite_subscription& cs, const OnNext& on)
@@ -257,6 +296,7 @@ auto make_subscriber(const composite_subscription& cs, const OnNext& on, const O
 
 // chain defaults from subscriber
 //
+
 template<class T, class OtherT, class OtherObserver, class I>
 auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr,
     const                   observer<T, I>& o)
@@ -269,6 +309,16 @@ auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const Observ
         is_observer<Observer>::value,
             subscriber<T,   Observer>>::type {
     return  subscriber<T,   Observer>(scbr.get_subscription(), o);
+}
+template<class T, class OtherT, class OtherObserver, class Observer>
+auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const Observer& o)
+    -> typename std::enable_if<
+        !detail::is_on_next_of<T, Observer>::value &&
+        !is_subscriber<Observer>::value &&
+        !is_subscription<Observer>::value &&
+        !is_observer<Observer>::value,
+            subscriber<T,   observer<T, Observer>>>::type {
+    return  subscriber<T,   observer<T, Observer>>(scbr.get_subscription(), o);
 }
 template<class T, class OtherT, class OtherObserver, class OnNext>
 auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const OnNext& on)
@@ -323,6 +373,16 @@ auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const compos
         is_observer<Observer>::value,
             subscriber<T,   Observer>>::type {
     return  subscriber<T,   Observer>(cs, o);
+}
+template<class T, class OtherT, class OtherObserver, class Observer>
+auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const composite_subscription& cs, const Observer& o)
+    -> typename std::enable_if<
+        !detail::is_on_next_of<T, Observer>::value &&
+        !is_subscriber<Observer>::value &&
+        !is_subscription<Observer>::value &&
+        !is_observer<Observer>::value,
+            subscriber<T,   observer<T, Observer>>>::type {
+    return  subscriber<T,   observer<T, Observer>>(cs, o);
 }
 template<class T, class OtherT, class OtherObserver, class OnNext>
 auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const composite_subscription& cs, const OnNext& on)
