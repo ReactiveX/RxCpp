@@ -291,6 +291,14 @@ auto make_observer(observer<U, I> o)
     ->      observer<T, I> {
     return  observer<T, I>(std::move(o));
 }
+template<class T, class Observer>
+auto make_observer(Observer ob)
+    -> typename std::enable_if<
+        !detail::is_on_next_of<T, Observer>::value &&
+        !is_observer<Observer>::value,
+            observer<T, Observer>>::type {
+    return  observer<T, Observer>(std::move(ob));
+}
 template<class T, class OnNext>
 auto make_observer(OnNext on)
     -> typename std::enable_if<
