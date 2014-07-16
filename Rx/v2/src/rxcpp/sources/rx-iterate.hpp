@@ -159,14 +159,14 @@ auto from(Coordination cn)
 template<class Value0, class... ValueN>
 auto from(Value0 v0, ValueN... vn)
     -> typename std::enable_if<!is_coordination<Value0>::value,
-        decltype(iterate(std::array<Value0, sizeof...(ValueN) + 1>{v0, vn...}, identity_immediate()))>::type {
+        decltype(iterate(*(std::array<Value0, sizeof...(ValueN) + 1>*)nullptr, identity_immediate()))>::type {
     std::array<Value0, sizeof...(ValueN) + 1> c = {v0, vn...};
     return iterate(std::move(c), identity_immediate());
 }
 template<class Coordination, class Value0, class... ValueN>
 auto from(Coordination cn, Value0 v0, ValueN... vn)
     -> typename std::enable_if<is_coordination<Coordination>::value,
-        decltype(iterate(std::array<Value0, sizeof...(ValueN) + 1>{v0, vn...}, std::move(cn)))>::type {
+        decltype(iterate(*(std::array<Value0, sizeof...(ValueN) + 1>*)nullptr, std::move(cn)))>::type {
     std::array<Value0, sizeof...(ValueN) + 1> c = {v0, vn...};
     return iterate(std::move(c), std::move(cn));
 }
