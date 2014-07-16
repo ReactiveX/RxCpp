@@ -612,7 +612,7 @@ public:
 
     template<class Coordination, class Selector, class... ObservableN>
     struct defer_combine_latest : public defer_observable<
-        rxu::all_true<is_coordination<Coordination>::value, !is_observable<Selector>::value, is_observable<ObservableN>::value...>,
+        rxu::all_true<is_coordination<Coordination>::value, !is_coordination<Selector>::value, !is_observable<Selector>::value, is_observable<ObservableN>::value...>,
         this_type,
         rxo::detail::combine_latest, Coordination, Selector, ObservableN...>
     {
@@ -747,8 +747,8 @@ public:
     /// for each item from this observable reduce it by adding to the previous values.
     ///
     auto sum() const
-        -> typename defer_reduce<rxu::defer_seed_type<rxo::detail::initialize_seeder, T>, rxu::defer_type<std::plus, T>, rxu::defer_type<identity_for, T>>::observable_type {
-        return      defer_reduce<rxu::defer_seed_type<rxo::detail::initialize_seeder, T>, rxu::defer_type<std::plus, T>, rxu::defer_type<identity_for, T>>::make(source_operator, std::plus<T>(), identity_for<T>(), rxo::detail::initialize_seeder<T>().seed());
+        -> typename defer_reduce<rxu::defer_seed_type<rxo::detail::initialize_seeder, T>, rxu::plus, rxu::defer_type<identity_for, T>>::observable_type {
+        return      defer_reduce<rxu::defer_seed_type<rxo::detail::initialize_seeder, T>, rxu::plus, rxu::defer_type<identity_for, T>>::make(source_operator, rxu::plus(), identity_for<T>(), rxo::detail::initialize_seeder<T>().seed());
     }
 
     /// average ->
@@ -888,6 +888,32 @@ public:
         return  observable<T, rxo::detail::repeat<T, this_type, Count>>(
             rxo::detail::repeat<T, this_type, Count>(*this, t));
     }
+#if 0
+
+// causes infinite compile time recursion
+
+    template<class Coordination, class Value0>
+    struct defer_start_with_from : public defer_observable<
+        rxu::all_true<
+            is_coordination<Coordination>::value,
+            std::is_convertible<Value0, value_type>::value>,
+        this_type,
+        rxo::detail::concat, observable<value_type>, observable<observable<value_type>>, Coordination>
+    {
+    };
+
+    /// start_with ->
+    /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
+    ///
+    ///
+    template<class Value0, class... ValueN>
+    auto start_with(Value0 v0, ValueN... vn) const
+        ->  typename std::enable_if<
+                        defer_start_with_from<identity_one_worker, Value0>::value,
+            typename    defer_start_with_from<identity_one_worker, Value0>::observable_type>::type {
+        return          defer_start_with_from<identity_one_worker, Value0>::make(*this, rxs::from(rxs::from(value_type(v0), value_type(vn)...).as_dynamic(), this->as_dynamic()), identity_immediate());
+    }
+#endif
 };
 
 template<class T, class SourceOperator>
@@ -1016,6 +1042,11 @@ public:
     static auto error(Exception&& e, Coordination cn)
         -> decltype(rxs::error<T>(std::forward<Exception>(e), std::move(cn))) {
         return      rxs::error<T>(std::forward<Exception>(e), std::move(cn));
+    }
+    template<class Observable, class Value0, class... ValueN>
+    static auto start_with(Observable o, Value0 v0, ValueN... vn)
+        -> decltype(rxs::from(typename Observable::value_type(v0), typename Observable::value_type(vn)...).concat(o)) {
+        return      rxs::from(typename Observable::value_type(v0), typename Observable::value_type(vn)...).concat(o);
     }
 };
 
