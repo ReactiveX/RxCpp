@@ -37,16 +37,15 @@ struct buffer_count
     }
 
     template<class Subscriber>
-    struct buffer_count_observer : public buffer_count_values, public observer_base<std::vector<T>>
+    struct buffer_count_observer : public buffer_count_values
     {
         typedef buffer_count_observer<Subscriber> this_type;
-        typedef observer_base<std::vector<T>> base_type;
-        typedef typename base_type::value_type value_type;
+        typedef std::vector<T> value_type;
         typedef typename std::decay<Subscriber>::type dest_type;
         typedef observer<value_type, this_type> observer_type;
         dest_type dest;
         mutable int cursor;
-        mutable std::deque<std::vector<T>> chunks;
+        mutable std::deque<value_type> chunks;
 
         buffer_count_observer(dest_type d, buffer_count_values v)
             : buffer_count_values(v)
@@ -85,7 +84,7 @@ struct buffer_count
             dest.on_completed();
         }
 
-        static subscriber<value_type, this_type> make(dest_type d, buffer_count_values v) {
+        static subscriber<value_type, observer<value_type, this_type>> make(dest_type d, buffer_count_values v) {
             auto cs = d.get_subscription();
             return make_subscriber<value_type>(std::move(cs), this_type(std::move(d), std::move(v)));
         }

@@ -26,19 +26,18 @@ struct filter
     }
 
     template<class Subscriber>
-    struct filter_observer : public observer_base<source_value_type>
+    struct filter_observer
     {
         typedef filter_observer<Subscriber> this_type;
-        typedef observer_base<source_value_type> base_type;
-        typedef typename base_type::value_type value_type;
+        typedef source_value_type value_type;
         typedef typename std::decay<Subscriber>::type dest_type;
         typedef observer<value_type, this_type> observer_type;
         dest_type dest;
         test_type test;
 
         filter_observer(dest_type d, test_type t)
-            : dest(d)
-            , test(t)
+            : dest(std::move(d))
+            , test(std::move(t))
         {
         }
         void on_next(source_value_type v) const {
@@ -59,7 +58,7 @@ struct filter
             dest.on_completed();
         }
 
-        static subscriber<value_type, this_type> make(dest_type d, test_type t) {
+        static subscriber<value_type, observer<value_type, this_type>> make(dest_type d, test_type t) {
             return make_subscriber<value_type>(d, this_type(d, std::move(t)));
         }
     };

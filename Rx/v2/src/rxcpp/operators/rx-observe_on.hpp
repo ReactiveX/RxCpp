@@ -29,11 +29,11 @@ struct observe_on
     }
 
     template<class Subscriber>
-    struct observe_on_observer : public observer_base<source_value_type>
+    struct observe_on_observer
     {
         typedef observe_on_observer<Subscriber> this_type;
         typedef observer_base<source_value_type> base_type;
-        typedef typename base_type::value_type value_type;
+        typedef source_value_type value_type;
         typedef typename std::decay<Subscriber>::type dest_type;
         typedef observer<value_type, this_type> observer_type;
 
@@ -159,7 +159,7 @@ struct observe_on
             state->ensure_processing(guard);
         }
 
-        static subscriber<value_type, this_type> make(dest_type d, coordination_type cn, composite_subscription cs = composite_subscription()) {
+        static subscriber<value_type, observer<value_type, this_type>> make(dest_type d, coordination_type cn, composite_subscription cs = composite_subscription()) {
             auto coor = cn.create_coordinator(d.get_subscription());
             d.add(cs);
 
