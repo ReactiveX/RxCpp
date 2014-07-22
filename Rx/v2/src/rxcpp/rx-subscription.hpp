@@ -76,7 +76,6 @@ class subscription : public subscription_base
         {
         }
         virtual void unsubscribe() {
-            issubscribed = false;
         }
         std::atomic<bool> issubscribed;
     };
@@ -95,16 +94,21 @@ private:
         }
         virtual void unsubscribe() {
             if (issubscribed.exchange(false)) {
+                trace_activity().unsubscribe_enter(*this);
                 inner.unsubscribe();
+                trace_activity().unsubscribe_return(*this);
             }
         }
         inner_t inner;
     };
+
+protected:
     std::shared_ptr<base_subscription_state> state;
 
     friend bool operator<(const subscription&, const subscription&);
     friend bool operator==(const subscription&, const subscription&);
 
+private:
     subscription(weak_state_type w)
         : state(w.lock())
     {
@@ -247,8 +251,9 @@ private:
 
         inline void remove(weak_subscription w) {
             if (issubscribed && !w.expired()) {
+                auto s = subscription::lock(w);
                 std::unique_lock<decltype(lock)> guard(lock);
-                subscriptions.erase(subscription::lock(w));
+                subscriptions.erase(std::move(s));
             }
         }
 
@@ -394,7 +399,6 @@ public:
     using subscription::is_subscribed;
     using subscription::unsubscribe;
 
-    using inner_type::remove;
     using inner_type::clear;
 
     inline weak_subscription add(subscription s) const {
@@ -403,13 +407,24 @@ public:
             abort();
             //return s.get_weak();
         }
-        return inner_type::add(std::move(s));
+        auto that = this->subscription::state.get();
+        trace_activity().subscription_add_enter(*that, s);
+        auto w = inner_type::add(std::move(s));
+        trace_activity().subscription_add_return(*that);
+        return w;
     }
 
     template<class F>
     auto add(F f) const
     -> typename std::enable_if<detail::is_unsubscribe_function<F>::value, weak_subscription>::type {
         return add(make_subscription(std::move(f)));
+    }
+
+    inline void remove(weak_subscription w) const {
+        auto that = this->subscription::state.get();
+        trace_activity().subscription_remove_enter(*that, w);
+        inner_type::remove(w);
+        trace_activity().subscription_remove_return(*that);
     }
 };
 

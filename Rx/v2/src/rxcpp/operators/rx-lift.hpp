@@ -63,7 +63,10 @@ struct lift : public operator_base<typename lift_traits<SourceOperator, Operator
     }
     template<class Subscriber>
     void on_subscribe(Subscriber o) const {
-        source.on_subscribe(chain(std::move(o)));
+        auto lifted = chain(std::move(o));
+        trace_activity().lift_enter(source, chain, o, lifted);
+        source.on_subscribe(std::move(lifted));
+        trace_activity().lift_return(source, chain);
     }
 };
 

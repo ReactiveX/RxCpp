@@ -7,7 +7,18 @@
 
 #include "rx-includes.hpp"
 
+auto rxcpp_trace_activity(...) -> rxcpp::trace_noop;
+
 namespace rxcpp {
+
+//
+// create a typedef for rxcpp_trace_type to override the default
+//
+auto trace_activity() -> decltype(rxcpp_trace_activity(trace_tag()))& {
+    static decltype(rxcpp_trace_activity(trace_tag())) trace;
+    return trace;
+}
+
 
 struct tag_action {};
 template<class T>

@@ -1,3 +1,99 @@
+
+#include "rxcpp/rx-trace.hpp"
+
+struct trace_calls : rxcpp::trace_noop
+{
+    trace_calls()
+        : onnexts(0)
+        , onerrors(0)
+        , oncompleteds(0)
+        , subscribes(0)
+        , lifts(0)
+        , unsubscribes(0)
+        , adds(0)
+        , removes(0)
+        , actions(0)
+        , recurses(0)
+        , schedules(0)
+        , schedulewhens(0)
+    {}
+
+    template<class Worker>
+    inline void schedule_return(const Worker&) {
+        schedules++;
+    }
+
+    template<class Worker>
+    inline void schedule_when_return(const Worker&) {
+        schedulewhens++;
+    }
+
+    template<class Schedulable>
+    inline void action_return(const Schedulable&) {
+        actions++;
+    }
+
+    template<class Schedulable>
+    inline void action_recurse(const Schedulable&) {
+        recurses++;
+    }
+
+    template<class Observable>
+    inline void subscribe_return(const Observable& o) {
+        subscribes++;
+    }
+
+    template<class OperatorSource, class OperatorChain>
+    inline void lift_return(const OperatorSource&, const OperatorChain&) {
+        lifts++;
+    }
+
+    template<class SubscriptionState>
+    inline void unsubscribe_return(const SubscriptionState&) {
+        unsubscribes++;
+    }
+
+    template<class SubscriptionState>
+    inline void subscription_add_return(const SubscriptionState&) {
+        adds++;
+    }
+
+    template<class SubscriptionState>
+    inline void subscription_remove_return(const SubscriptionState&) {
+        removes++;
+    }
+
+    template<class Observer>
+    inline void on_next_return(const Observer&) {
+        onnexts++;
+    }
+
+    template<class Observer>
+    inline void on_error_return(const Observer&) {
+        onerrors++;
+    }
+
+    template<class Observer>
+    inline void on_completed_return(const Observer&) {
+        oncompleteds++;
+    }
+
+    int onnexts;
+    int onerrors;
+    int oncompleteds;
+    int subscribes;
+    int lifts;
+    int unsubscribes;
+    int adds;
+    int removes;
+    int actions;
+    int recurses;
+    int schedules;
+    int schedulewhens;
+};
+
+auto rxcpp_trace_activity(rxcpp::trace_tag) -> trace_calls;
+
 #include "rxcpp/rx.hpp"
 // create alias' to simplify code
 // these are owned by the user so that
@@ -42,7 +138,12 @@ int main(int argc, char** argv)
             ++ct;
         }));
 
-    std::cout << "concat_map pythagorian range : " << c << " filtered to, " << ct << " triplets" << std::endl;
+    std::cout << "concat_map pythagorian range : " << c << " filtered to, " << ct << " triplets." << std::endl;
+    std::cout << "onnexts: " << rxcpp::trace_activity().onnexts << ", onerrors: " << rxcpp::trace_activity().onerrors << ", oncompleteds: " << rxcpp::trace_activity().oncompleteds << std::endl;
+    std::cout << "subscribes: " << rxcpp::trace_activity().subscribes << ", lifts: " << rxcpp::trace_activity().lifts << std::endl;
+    std::cout << "unsubscribes: " << rxcpp::trace_activity().unsubscribes << ", adds: " << rxcpp::trace_activity().adds << ", removes: " << rxcpp::trace_activity().removes << std::endl;
+    std::cout << "schedules: " << rxcpp::trace_activity().schedules << ", schedulewhens: " << rxcpp::trace_activity().schedulewhens << std::endl;
+    std::cout << "actions: " << rxcpp::trace_activity().actions << ", recurses: " << rxcpp::trace_activity().recurses << std::endl;
 
     return 0;
 }

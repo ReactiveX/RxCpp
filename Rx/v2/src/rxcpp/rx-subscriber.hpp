@@ -24,17 +24,60 @@ class subscriber : public subscriber_base<T>
     composite_subscription lifetime;
     observer_type destination;
 
-    struct detacher
+    struct nextdetacher
     {
-        ~detacher()
+        ~nextdetacher()
         {
+            trace_activity().on_next_return(*that);
             if (that) {
                 that->unsubscribe();
             }
         }
-        detacher(const this_type* that)
+        nextdetacher(const this_type* that)
             : that(that)
         {
+        }
+        template<class U>
+        void operator()(U u) {
+            trace_activity().on_next_enter(*that, u);
+            that->destination.on_next(std::move(u));
+            that = nullptr;
+        }
+        const this_type* that;
+    };
+
+    struct errordetacher
+    {
+        ~errordetacher()
+        {
+            trace_activity().on_error_return(*that);
+            that->unsubscribe();
+        }
+        errordetacher(const this_type* that)
+            : that(that)
+        {
+        }
+        inline void operator()(std::exception_ptr ex) {
+            trace_activity().on_error_enter(*that, ex);
+            that->destination.on_error(std::move(ex));
+        }
+        const this_type* that;
+    };
+
+    struct completeddetacher
+    {
+        ~completeddetacher()
+        {
+            trace_activity().on_completed_return(*that);
+            that->unsubscribe();
+        }
+        completeddetacher(const this_type* that)
+            : that(that)
+        {
+        }
+        inline void operator()() {
+            trace_activity().on_completed_enter(*that);
+            that->destination.on_completed();
         }
         const this_type* that;
     };
@@ -91,23 +134,22 @@ public:
         if (!is_subscribed()) {
             return;
         }
-        detacher protect(this);
-        destination.on_next(std::forward<V>(v));
-        protect.that = nullptr;
+        nextdetacher protect(this);
+        protect(std::forward<V>(v));
     }
     void on_error(std::exception_ptr e) const {
         if (!is_subscribed()) {
             return;
         }
-        detacher protect(this);
-        destination.on_error(e);
+        errordetacher protect(this);
+        protect(std::move(e));
     }
     void on_completed() const {
         if (!is_subscribed()) {
             return;
         }
-        detacher protect(this);
-        destination.on_completed();
+        completeddetacher protect(this);
+        protect();
     }
 
     // composite_subscription
