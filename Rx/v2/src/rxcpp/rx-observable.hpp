@@ -241,7 +241,10 @@ private:
         static_assert(std::is_same<typename source_operator_type::value_type, T>::value && std::is_convertible<T*, typename subscriber_type::value_type*>::value, "the value types in the sequence must match or be convertible");
         static_assert(detail::has_on_subscribe_for<subscriber_type, source_operator_type>::value, "inner must have on_subscribe method that accepts this subscriber ");
 
+        trace_activity().subscribe_enter(*this, o);
+
         if (!o.is_subscribed()) {
+            trace_activity().subscribe_return(*this);
             return o.get_subscription();
         }
 
@@ -270,6 +273,7 @@ private:
             safe_subscribe();
         }
 
+        trace_activity().subscribe_return(*this);
         return o.get_subscription();
     }
 
