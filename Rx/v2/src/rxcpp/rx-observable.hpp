@@ -307,9 +307,9 @@ public:
     ///
     template<class ResultType, class Operator>
     auto lift(Operator&& op) const
-        ->      observable<typename rxo::detail::lift<ResultType, source_operator_type, Operator>::value_type,  rxo::detail::lift<ResultType, source_operator_type, Operator>> {
-        return  observable<typename rxo::detail::lift<ResultType, source_operator_type, Operator>::value_type,  rxo::detail::lift<ResultType, source_operator_type, Operator>>(
-                                                                                                                rxo::detail::lift<ResultType, source_operator_type, Operator>(source_operator, std::forward<Operator>(op)));
+        ->      observable<typename rxo::detail::lift_operator<ResultType, source_operator_type, Operator>::value_type, rxo::detail::lift_operator<ResultType, source_operator_type, Operator>> {
+        return  observable<typename rxo::detail::lift_operator<ResultType, source_operator_type, Operator>::value_type, rxo::detail::lift_operator<ResultType, source_operator_type, Operator>>(
+                                                                                                                        rxo::detail::lift_operator<ResultType, source_operator_type, Operator>(source_operator, std::forward<Operator>(op)));
         static_assert(detail::is_lift_function_for<T, subscriber<ResultType>, Operator>::value, "Function passed for lift() must have the signature subscriber<...>(subscriber<T, ...>)");
     }
 
