@@ -33,6 +33,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/subscriptions/observer.cpp
     ${TEST_DIR}/subscriptions/subscription.cpp
     ${TEST_DIR}/subjects/subject.cpp
+    ${TEST_DIR}/sources/create.cpp
     ${TEST_DIR}/sources/defer.cpp
     ${TEST_DIR}/sources/interval.cpp
     ${TEST_DIR}/operators/buffer.cpp

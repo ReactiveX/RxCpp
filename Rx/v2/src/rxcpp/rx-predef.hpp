@@ -9,6 +9,15 @@
 
 namespace rxcpp {
 
+//
+// create a typedef for rxcpp_trace_type to override the default
+//
+inline auto trace_activity() -> decltype(rxcpp_trace_activity(trace_tag()))& {
+    static decltype(rxcpp_trace_activity(trace_tag())) trace;
+    return trace;
+}
+
+
 struct tag_action {};
 template<class T>
 class is_action

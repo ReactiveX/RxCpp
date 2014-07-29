@@ -49,6 +49,10 @@ public:
     {
     }
 
+    subscriber<T> get_subscriber() const {
+        return make_subscriber<T>(this->get_id(), this->get_subscription(), observer<T, detail::behavior_observer<T>>(*this)).as_dynamic();
+    }
+
     T get_value() const {
         return state->get();
     }
@@ -65,13 +69,11 @@ public:
 template<class T>
 class behavior
 {
-    composite_subscription lifetime;
     detail::behavior_observer<T> s;
 
 public:
     explicit behavior(T f, composite_subscription cs = composite_subscription())
-        : lifetime(std::move(cs))
-        , s(std::move(f), lifetime)
+        : s(std::move(f), cs)
     {
     }
 
@@ -84,15 +86,16 @@ public:
     }
 
     subscriber<T> get_subscriber() const {
-        return make_subscriber<T>(lifetime, make_observer_dynamic<T>(observer<T, detail::behavior_observer<T>>(s)));
+        return s.get_subscriber();
     }
 
     observable<T> get_observable() const {
-        return make_observable_dynamic<T>([this](subscriber<T> o){
-            if (lifetime.is_subscribed()) {
+        auto keepAlive = s;
+        return make_observable_dynamic<T>([=](subscriber<T> o){
+            if (keepAlive.get_subscription().is_subscribed()) {
                 o.on_next(get_value());
             }
-            this->s.add(std::move(o));
+            keepAlive.add(s.get_subscriber(), std::move(o));
         });
     }
 };

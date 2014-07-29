@@ -653,6 +653,7 @@ inline action make_action(F&& f) {
         // tail-recurse inside of the virtual function call
         // until a new action, lifetime or scheduler is returned
         [fn](const schedulable& s, const recurse& r) {
+            trace_activity().action_enter(s);
             auto scope = s.set_recursed(r);
             while (s.is_subscribed()) {
                 r.reset();
@@ -663,7 +664,9 @@ inline action make_action(F&& f) {
                     }
                     break;
                 }
+                trace_activity().action_recurse(s);
             }
+            trace_activity().action_return(s);
         }));
 }
 
@@ -732,11 +735,17 @@ auto worker::schedule(Arg0&& a0, ArgN&&... an) const
         (detail::is_action_function<Arg0>::value ||
         is_subscription<Arg0>::value) &&
         !is_schedulable<Arg0>::value>::type {
-    inner->schedule(make_schedulable(*this, std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
+    auto scbl = make_schedulable(*this, std::forward<Arg0>(a0), std::forward<ArgN>(an)...);
+    trace_activity().schedule_enter(*inner.get(), scbl);
+    inner->schedule(std::move(scbl));
+    trace_activity().schedule_return(*inner.get());
 }
 template<class... ArgN>
 void worker::schedule_rebind(const schedulable& scbl, ArgN&&... an) const {
-    inner->schedule(make_schedulable(scbl, *this, std::forward<ArgN>(an)...));
+    auto rescbl = make_schedulable(scbl, *this, std::forward<ArgN>(an)...);
+    trace_activity().schedule_enter(*inner.get(), rescbl);
+    inner->schedule(std::move(rescbl));
+    trace_activity().schedule_return(*inner.get());
 }
 
 template<class Arg0, class... ArgN>
@@ -745,11 +754,17 @@ auto worker::schedule(clock_type::time_point when, Arg0&& a0, ArgN&&... an) cons
         (detail::is_action_function<Arg0>::value ||
         is_subscription<Arg0>::value) &&
         !is_schedulable<Arg0>::value>::type {
-    inner->schedule(when, make_schedulable(*this, std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
+    auto scbl = make_schedulable(*this, std::forward<Arg0>(a0), std::forward<ArgN>(an)...);
+    trace_activity().schedule_when_enter(*inner.get(), when, scbl);
+    inner->schedule(when, std::move(scbl));
+    trace_activity().schedule_when_return(*inner.get());
 }
 template<class... ArgN>
 void worker::schedule_rebind(clock_type::time_point when, const schedulable& scbl, ArgN&&... an) const {
-    inner->schedule(when, make_schedulable(scbl, *this, std::forward<ArgN>(an)...));
+    auto rescbl = make_schedulable(scbl, *this, std::forward<ArgN>(an)...);
+    trace_activity().schedule_when_enter(*inner.get(), when, rescbl);
+    inner->schedule(when, std::move(rescbl));
+    trace_activity().schedule_when_return(*inner.get());
 }
 
 template<class Arg0, class... ArgN>
@@ -776,7 +791,9 @@ void worker::schedule_periodically_rebind(clock_type::time_point initial, clock_
             *target += period;
             self.schedule(*target);
         });
+    trace_activity().schedule_when_enter(*inner.get(), *target, periodic);
     inner->schedule(*target, periodic);
+    trace_activity().schedule_when_return(*inner.get());
 }
 
 namespace detail {

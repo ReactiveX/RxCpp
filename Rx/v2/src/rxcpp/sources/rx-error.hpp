@@ -44,7 +44,7 @@ struct error : public source_base<T>
 
         // creates a worker whose lifetime is the same as this subscription
         auto coordinator = initial.coordination.create_coordinator(o.get_subscription());
-        auto controller = coordinator.get_output().get_worker();
+        auto controller = coordinator.get_worker();
         auto exception = initial.exception;
 
         auto producer = [=](const rxsc::schedulable&){

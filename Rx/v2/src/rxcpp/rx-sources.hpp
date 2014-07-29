@@ -35,6 +35,7 @@ namespace rxs=sources;
 
 }
 
+#include "sources/rx-create.hpp"
 #include "sources/rx-range.hpp"
 #include "sources/rx-iterate.hpp"
 #include "sources/rx-interval.hpp"
