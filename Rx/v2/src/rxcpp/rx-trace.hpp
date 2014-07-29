@@ -5,9 +5,39 @@
 #if !defined(RXCPP_RX_TRACE_HPP)
 #define RXCPP_RX_TRACE_HPP
 
+#include <iostream>
 #include <exception>
+#include <atomic>
 
 namespace rxcpp {
+
+struct trace_id
+{
+    static inline trace_id make_next_id_subscriber() {
+        static std::atomic<unsigned long> id(0xB0000000);
+        return trace_id{++id};
+    }
+    unsigned long id;
+};
+
+inline bool operator==(const trace_id& lhs, const trace_id& rhs) {
+    return lhs.id == rhs.id;
+}
+inline bool operator!=(const trace_id& lhs, const trace_id& rhs) {
+    return !(lhs==rhs);
+}
+
+inline bool operator<(const trace_id& lhs, const trace_id& rhs) {
+    if ((lhs.id & 0xF0000000) != (rhs.id & 0xF0000000)) std::terminate();
+    return lhs.id < rhs.id;
+}
+inline bool operator>(const trace_id& lhs, const trace_id& rhs) {
+    return rhs<lhs;
+}
+
+inline std::ostream& operator<< (std::ostream& os, const trace_id& id) {
+    return os << std::hex << id.id << std::dec;
+}
 
 struct trace_noop
 {
@@ -32,6 +62,9 @@ struct trace_noop
     template<class Observable>
     inline void subscribe_return(const Observable& o) {}
 
+    template<class SubscriberFrom, class SubscriberTo>
+    inline void connect(const SubscriberFrom&, const SubscriberTo&) {}
+
     template<class OperatorSource, class OperatorChain, class Subscriber, class SubscriberLifted>
     inline void lift_enter(const OperatorSource&, const OperatorChain&, const Subscriber&, const SubscriberLifted&) {}
     template<class OperatorSource, class OperatorChain>
@@ -51,6 +84,9 @@ struct trace_noop
     inline void subscription_remove_enter(const SubscriptionState&, const WeakSubscription&) {}
     template<class SubscriptionState>
     inline void subscription_remove_return(const SubscriptionState&) {}
+
+    template<class Subscriber>
+    inline void create_subscriber(const Subscriber&) {}
 
     template<class Subscriber, class T>
     inline void on_next_enter(const Subscriber&, const T&) {}
@@ -72,7 +108,7 @@ struct trace_tag {};
 
 }
 
-auto rxcpp_trace_activity(...) -> rxcpp::trace_noop;
+inline auto rxcpp_trace_activity(...) -> rxcpp::trace_noop;
 
 
 #endif

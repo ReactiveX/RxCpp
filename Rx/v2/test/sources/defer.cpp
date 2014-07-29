@@ -6,7 +6,7 @@ namespace rxsc=rxcpp::schedulers;
 #include "rxcpp/rx-test.hpp"
 #include "catch.hpp"
 
-SCENARIO("defer stops on completion", "[defer][operators]"){
+SCENARIO("defer stops on completion", "[defer][sources]"){
     GIVEN("a test cold observable of ints"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
