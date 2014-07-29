@@ -45,7 +45,7 @@ struct lift_traits
 };
 
 template<class ResultType, class SourceOperator, class Operator>
-struct lift : public operator_base<typename lift_traits<ResultType, SourceOperator, Operator>::result_value_type>
+struct lift_operator : public operator_base<typename lift_traits<ResultType, SourceOperator, Operator>::result_value_type>
 {
     typedef lift_traits<ResultType, SourceOperator, Operator> traits;
     typedef typename traits::source_operator_type source_operator_type;
@@ -53,7 +53,7 @@ struct lift : public operator_base<typename lift_traits<ResultType, SourceOperat
     source_operator_type source;
     operator_type chain;
 
-    lift(source_operator_type s, operator_type op)
+    lift_operator(source_operator_type s, operator_type op)
         : source(std::move(s))
         , chain(std::move(op))
     {

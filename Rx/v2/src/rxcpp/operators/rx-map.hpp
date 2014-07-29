@@ -81,8 +81,8 @@ public:
     map_factory(select_type s) : selector(std::move(s)) {}
     template<class Observable>
     auto operator()(Observable&& source)
-        -> decltype(source.lift<typename map<typename std::decay<Observable>::type::value_type, select_type>::value_type>(map<typename std::decay<Observable>::type::value_type, select_type>(selector))) {
-        return      source.lift<typename map<typename std::decay<Observable>::type::value_type, select_type>::value_type>(map<typename std::decay<Observable>::type::value_type, select_type>(selector));
+        -> decltype(source.template lift<typename map<typename std::decay<Observable>::type::value_type, select_type>::value_type>(map<typename std::decay<Observable>::type::value_type, select_type>(selector))) {
+        return      source.template lift<typename map<typename std::decay<Observable>::type::value_type, select_type>::value_type>(map<typename std::decay<Observable>::type::value_type, select_type>(selector));
     }
 };
 
