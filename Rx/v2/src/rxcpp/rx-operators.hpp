@@ -60,5 +60,6 @@ namespace rxo=operators;
 #include "operators/rx-switch_on_next.hpp"
 #include "operators/rx-take.hpp"
 #include "operators/rx-take_until.hpp"
+#include "operators/rx-window.hpp"
 
 #endif

@@ -391,6 +391,22 @@ public:
         return                    lift(rxo::detail::distinct_until_changed<T>());
     }
 
+    /// window ->
+    /// produce observables containing count items emitted by this observable
+    ///
+    auto window(int count) const
+        -> decltype(EXPLICIT_THIS lift(rxo::detail::window<T>(count, count))) {
+        return                    lift(rxo::detail::window<T>(count, count));
+    }
+
+    /// window ->
+    /// produce observables containing count items emitted by this observable
+    ///
+    auto window(int count, int skip) const
+        -> decltype(EXPLICIT_THIS lift(rxo::detail::window<T>(count, skip))) {
+        return                    lift(rxo::detail::window<T>(count, skip));
+    }
+
     /// buffer ->
     /// collect count items from this observable and produce a vector of them to emit from the new observable that is returned.
     ///
