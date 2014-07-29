@@ -40,7 +40,7 @@ SCENARIO("window count, basic", "[window][operators]"){
                 }
             );
 
-            THEN("the output contains groups of ints"){
+            THEN("the output contains merged groups of ints"){
                 auto required = rxu::to_vector({
                     on.on_next(210, 2),
                     on.on_next(240, 3),
@@ -59,7 +59,7 @@ SCENARIO("window count, basic", "[window][operators]"){
                 REQUIRE(required == actual);
             }
 
-            THEN("there was one subscription and one unsubscription to the xs"){
+            THEN("there was one subscription and one unsubscription to the observable"){
                 auto required = rxu::to_vector({
                     o_on.subscribe(200, 600)
                 });
@@ -167,7 +167,7 @@ SCENARIO("window count, inner timings", "[window][operators]"){
                 REQUIRE(required == actual);
             }
 
-            THEN("the 5th output window contains only complete message"){
+            THEN("the 5th output window only contains complete message"){
                 auto required = rxu::to_vector({
                     on.on_completed(600)
                 });
@@ -186,7 +186,7 @@ SCENARIO("window count, inner timings", "[window][operators]"){
     }
 }
 
-SCENARIO("window count, error", "[window][operators]"){
+SCENARIO("window count, dispose", "[window][operators]"){
     GIVEN("1 hot observable of ints."){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -218,7 +218,7 @@ SCENARIO("window count, error", "[window][operators]"){
                 370
             );
 
-            THEN("the output contains groups of ints"){
+            THEN("the output contains merged groups of ints"){
                 auto required = rxu::to_vector({
                     on.on_next(210, 2),
                     on.on_next(240, 3),
@@ -232,7 +232,7 @@ SCENARIO("window count, error", "[window][operators]"){
                 REQUIRE(required == actual);
             }
 
-            THEN("there was one subscription and one unsubscription to the xs"){
+            THEN("there was one subscription and one unsubscription to the observable"){
                 auto required = rxu::to_vector({
                     o_on.subscribe(200, 370)
                 });
@@ -243,7 +243,7 @@ SCENARIO("window count, error", "[window][operators]"){
     }
 }
 
-SCENARIO("window count, basic", "[window][operators]"){
+SCENARIO("window count, error", "[window][operators]"){
     GIVEN("1 hot observable of ints."){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -276,7 +276,7 @@ SCENARIO("window count, basic", "[window][operators]"){
                 }
             );
 
-            THEN("the output contains groups of ints"){
+            THEN("the output contains merged groups of ints"){
                 auto required = rxu::to_vector({
                     on.on_next(210, 2),
                     on.on_next(240, 3),
@@ -295,7 +295,7 @@ SCENARIO("window count, basic", "[window][operators]"){
                 REQUIRE(required == actual);
             }
 
-            THEN("there was one subscription and one unsubscription to the xs"){
+            THEN("there was one subscription and one unsubscription to the observable"){
                 auto required = rxu::to_vector({
                     o_on.subscribe(200, 600)
                 });
