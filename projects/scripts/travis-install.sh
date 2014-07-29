@@ -26,5 +26,6 @@ if [ "$TRAVIS_OS_NAME" = linux -o -z "$TRAVIS_OS_NAME" ]; then
 elif [ "$TRAVIS_OS_NAME" = osx ]; then
     xcode-select --install
     brew update
-    brew install cmake
+    brew doctor
+    brew list cmake || brew install cmake
 fi

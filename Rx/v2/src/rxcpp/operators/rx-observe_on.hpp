@@ -193,8 +193,8 @@ public:
     observe_on_factory(coordination_type cn) : coordination(std::move(cn)) {}
     template<class Observable>
     auto operator()(Observable&& source)
-        -> decltype(source.lift(observe_on<typename std::decay<Observable>::type::value_type, coordination_type>(coordination))) {
-        return      source.lift(observe_on<typename std::decay<Observable>::type::value_type, coordination_type>(coordination));
+        -> decltype(source.template lift<typename std::decay<Observable>::type::value_type>(observe_on<typename std::decay<Observable>::type::value_type, coordination_type>(coordination))) {
+        return      source.template lift<typename std::decay<Observable>::type::value_type>(observe_on<typename std::decay<Observable>::type::value_type, coordination_type>(coordination));
     }
 };
 

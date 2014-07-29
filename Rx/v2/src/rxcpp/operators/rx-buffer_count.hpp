@@ -84,9 +84,9 @@ struct buffer_count
             dest.on_completed();
         }
 
-        static subscriber<value_type, observer<value_type, this_type>> make(dest_type d, buffer_count_values v) {
+        static subscriber<T, observer<T, this_type>> make(dest_type d, buffer_count_values v) {
             auto cs = d.get_subscription();
-            return make_subscriber<value_type>(std::move(cs), this_type(std::move(d), std::move(v)));
+            return make_subscriber<T>(std::move(cs), this_type(std::move(d), std::move(v)));
         }
     };
 
@@ -105,8 +105,8 @@ public:
     buffer_count_factory(int c, int s) : count(c), skip(s) {}
     template<class Observable>
     auto operator()(Observable&& source)
-        -> decltype(source.lift(buffer_count<typename std::decay<Observable>::type::value_type>(count, skip))) {
-        return      source.lift(buffer_count<typename std::decay<Observable>::type::value_type>(count, skip));
+        -> decltype(source.template lift<std::vector<typename std::decay<Observable>::type::value_type>>(buffer_count<typename std::decay<Observable>::type::value_type>(count, skip))) {
+        return      source.template lift<std::vector<typename std::decay<Observable>::type::value_type>>(buffer_count<typename std::decay<Observable>::type::value_type>(count, skip));
     }
 };
 

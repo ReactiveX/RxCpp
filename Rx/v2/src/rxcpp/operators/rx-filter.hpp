@@ -79,8 +79,8 @@ public:
     filter_factory(test_type p) : predicate(std::move(p)) {}
     template<class Observable>
     auto operator()(Observable&& source)
-        -> decltype(source.lift(filter<typename std::decay<Observable>::type::value_type, test_type>(predicate))) {
-        return      source.lift(filter<typename std::decay<Observable>::type::value_type, test_type>(predicate));
+        -> decltype(source.template lift<typename std::decay<Observable>::type::value_type>(filter<typename std::decay<Observable>::type::value_type, test_type>(predicate))) {
+        return      source.template lift<typename std::decay<Observable>::type::value_type>(filter<typename std::decay<Observable>::type::value_type, test_type>(predicate));
     }
 };
 

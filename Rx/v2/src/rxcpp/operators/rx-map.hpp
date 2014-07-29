@@ -19,6 +19,7 @@ struct map
 {
     typedef typename std::decay<T>::type source_value_type;
     typedef typename std::decay<Selector>::type select_type;
+    typedef decltype((*(select_type*)nullptr)(*(source_value_type*)nullptr)) value_type;
     select_type selector;
 
     map(select_type s)
@@ -32,7 +33,7 @@ struct map
         typedef map_observer<Subscriber> this_type;
         typedef decltype((*(select_type*)nullptr)(*(source_value_type*)nullptr)) value_type;
         typedef typename std::decay<Subscriber>::type dest_type;
-        typedef observer<value_type, this_type> observer_type;
+        typedef observer<T, this_type> observer_type;
         dest_type dest;
         select_type selector;
 
@@ -58,9 +59,9 @@ struct map
             dest.on_completed();
         }
 
-        static subscriber<value_type, observer<value_type, this_type>> make(dest_type d, select_type s) {
+        static subscriber<T, observer_type> make(dest_type d, select_type s) {
             auto cs = d.get_subscription();
-            return make_subscriber<value_type>(std::move(cs), this_type(std::move(d), std::move(s)));
+            return make_subscriber<T>(std::move(cs), observer_type(this_type(std::move(d), std::move(s))));
         }
     };
 
@@ -80,8 +81,8 @@ public:
     map_factory(select_type s) : selector(std::move(s)) {}
     template<class Observable>
     auto operator()(Observable&& source)
-        -> decltype(source.lift(map<typename std::decay<Observable>::type::value_type, select_type>(selector))) {
-        return      source.lift(map<typename std::decay<Observable>::type::value_type, select_type>(selector));
+        -> decltype(source.template lift<typename map<typename std::decay<Observable>::type::value_type, select_type>::value_type>(map<typename std::decay<Observable>::type::value_type, select_type>(selector))) {
+        return      source.template lift<typename map<typename std::decay<Observable>::type::value_type, select_type>::value_type>(map<typename std::decay<Observable>::type::value_type, select_type>(selector));
     }
 };
 

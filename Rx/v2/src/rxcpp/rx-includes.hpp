@@ -5,6 +5,8 @@
 #if !defined(RXCPP_RX_INCLUDES_HPP)
 #define RXCPP_RX_INCLUDES_HPP
 
+#include "rx-trace.hpp"
+
 // some configuration macros
 #if defined(_MSC_VER)
 

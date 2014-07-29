@@ -64,5 +64,6 @@ int main(int argc, char** argv)
 
     hello_tpl().subscribe(rxu::println(std::cout));
 
+    hello_tpl().subscribe(rxu::print_followed_by(std::cout, " and "), rxu::endline(std::cout));
     return 0;
 }

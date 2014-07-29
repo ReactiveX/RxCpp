@@ -195,13 +195,12 @@ class serialize_one_worker : public coordination_base
         }
     };
 
-    template<class Subscriber>
-    struct serialize_observer : public observer_base<typename Subscriber::value_type>
+    template<class Observer>
+    struct serialize_observer
     {
-        typedef serialize_observer<Subscriber> this_type;
-        typedef observer_base<typename Subscriber::value_type> base_type;
-        typedef typename base_type::value_type value_type;
-        typedef typename std::decay<Subscriber>::type dest_type;
+        typedef serialize_observer<Observer> this_type;
+        typedef typename std::decay<Observer>::type dest_type;
+        typedef typename dest_type::value_type value_type;
         typedef observer<value_type, this_type> observer_type;
         dest_type dest;
         std::shared_ptr<std::mutex> lock;
@@ -227,8 +226,9 @@ class serialize_one_worker : public coordination_base
             dest.on_completed();
         }
 
-        static subscriber<value_type, this_type> make(dest_type d, std::shared_ptr<std::mutex> m) {
-            return make_subscriber<value_type>(d, this_type(d, std::move(m)));
+        template<class Subscriber>
+        static subscriber<value_type, observer_type> make(const Subscriber& s, std::shared_ptr<std::mutex> m) {
+            return make_subscriber<value_type>(s, observer_type(this_type(s.get_observer(), std::move(m))));
         }
     };
 
@@ -259,9 +259,9 @@ class serialize_one_worker : public coordination_base
             return std::move(o);
         }
         template<class Subscriber>
-        auto out(Subscriber s) const
-            -> decltype(serialize_observer<Subscriber>::make(std::move(s), lock)) {
-            return      serialize_observer<Subscriber>::make(std::move(s), lock);
+        auto out(const Subscriber& s) const
+            -> decltype(serialize_observer<decltype(s.get_observer())>::make(s, lock)) {
+            return      serialize_observer<decltype(s.get_observer())>::make(s, lock);
         }
         template<class F>
         auto act(F f) const

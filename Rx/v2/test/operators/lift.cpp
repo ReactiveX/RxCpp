@@ -57,8 +57,8 @@ struct liftfilter
             dest.on_completed();
         }
 
-        static rx::subscriber<value_type, this_type> make(const dest_type& d, const test_type& t) {
-            return rx::make_subscriber<value_type>(d, this_type(d, t));
+        static rx::subscriber<value_type, observer_type> make(const dest_type& d, const test_type& t) {
+            return rx::make_subscriber<value_type>(d, observer_type(this_type(d, t)));
         }
     };
 
@@ -120,7 +120,7 @@ SCENARIO("lift liftfilter stops on disposal", "[where][filter][lift][operators]"
             auto res = w.start(
                 [&xs, &invoked]() {
                     return xs
-                        .lift(liftfilter([&invoked](int x) {
+                        .lift<int>(liftfilter([&invoked](int x) {
                             invoked++;
                             return IsPrime(x);
                         }))
@@ -183,10 +183,10 @@ SCENARIO("stream lift liftfilter stops on disposal", "[where][filter][lift][stre
             auto res = w.start(
                 [&xs, &invoked]() {
                     return xs
-                        >> liftfilter([&invoked](int x) {
+                        >> rxo::lift<int>(liftfilter([&invoked](int x) {
                             invoked++;
                             return IsPrime(x);
-                        })
+                        }))
                         // forget type to workaround lambda deduction bug on msvc 2013
                         >> rxo::as_dynamic();
                 },
@@ -250,7 +250,7 @@ SCENARIO("lift lambda filter stops on disposal", "[where][filter][lift][lambda][
                         return IsPrime(x);
                     };
                     return xs
-                        .lift([=](rx::subscriber<int> dest){
+                        .lift<int>([=](rx::subscriber<int> dest){
                             // VS2013 deduction issue requires dynamic (type-forgetting)
                             return rx::make_subscriber<int>(
                                 dest,
