@@ -7,7 +7,7 @@ namespace rxsc=rxcpp::schedulers;
 #include "catch.hpp"
 
 
-SCENARIO("schedule_periodically", "[hide][periodically][scheduler][long][perf]"){
+SCENARIO("schedule_periodically", "[hide][periodically][scheduler][long][perf][sources]"){
     GIVEN("schedule_periodically"){
         WHEN("the period is 1sec and the initial is 2sec"){
             using namespace std::chrono;
@@ -29,7 +29,7 @@ SCENARIO("schedule_periodically", "[hide][periodically][scheduler][long][perf]")
     }
 }
 
-SCENARIO("schedule_periodically by duration", "[hide][periodically][scheduler][long][perf]"){
+SCENARIO("schedule_periodically by duration", "[hide][periodically][scheduler][long][perf][sources]"){
     GIVEN("schedule_periodically_duration"){
         WHEN("the period is 1sec and the initial is 2sec"){
             using namespace std::chrono;
@@ -72,7 +72,7 @@ SCENARIO("schedule_periodically by duration", "[hide][periodically][scheduler][l
     }
 }
 
-SCENARIO("intervals", "[hide][periodically][interval][scheduler][long][perf]"){
+SCENARIO("intervals", "[hide][periodically][interval][scheduler][long][perf][sources]"){
     GIVEN("10 intervals of 1 seconds"){
         WHEN("the period is 1sec and the initial is 2sec"){
             using namespace std::chrono;

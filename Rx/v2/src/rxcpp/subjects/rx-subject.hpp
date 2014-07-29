@@ -77,11 +77,14 @@ class multicast_observer
     {
         explicit binder_type(composite_subscription cs)
             : state(std::make_shared<state_type>(cs))
+            , id(trace_id::make_next_id_subscriber())
             , current_generation(0)
         {
         }
 
         std::shared_ptr<state_type> state;
+
+        trace_id id;
 
         // used to avoid taking lock in on_next
         mutable int current_generation;
@@ -93,18 +96,29 @@ class multicast_observer
 
     std::shared_ptr<binder_type> b;
 
-
-
 public:
+    typedef subscriber<T, observer<T, detail::multicast_observer<T>>> input_subscriber_type;
+
     explicit multicast_observer(composite_subscription cs)
         : b(std::make_shared<binder_type>(cs))
     {
+    }
+    trace_id get_id() const {
+        return b->id;
+    }
+    composite_subscription get_subscription() const {
+        return b->state->lifetime;
+    }
+    input_subscriber_type get_subscriber() const {
+        return make_subscriber<T>(get_id(), get_subscription(), observer<T, detail::multicast_observer<T>>(*this));
     }
     bool has_observers() const {
         std::unique_lock<std::mutex> guard(b->state->lock);
         return b->current_completer && !b->current_completer->observers.empty();
     }
-    void add(observer_type o) const {
+    template<class SubscriberFrom>
+    void add(const SubscriberFrom& sf, observer_type o) const {
+        trace_activity().connect(sf, o);
         std::unique_lock<std::mutex> guard(b->state->lock);
         switch (b->state->current) {
         case mode::Casting:
@@ -197,17 +211,15 @@ public:
 template<class T>
 class subject
 {
-    composite_subscription lifetime;
     detail::multicast_observer<T> s;
 
 public:
     subject()
-        : s(lifetime)
+        : s(composite_subscription())
     {
     }
     explicit subject(composite_subscription cs)
-        : lifetime(cs)
-        , s(cs)
+        : s(cs)
     {
     }
 
@@ -216,13 +228,13 @@ public:
     }
 
     subscriber<T, observer<T, detail::multicast_observer<T>>> get_subscriber() const {
-        return make_subscriber<T>(lifetime, observer<T, detail::multicast_observer<T>>(s));
+        return s.get_subscriber();
     }
 
     observable<T> get_observable() const {
         auto keepAlive = s;
         return make_observable_dynamic<T>([=](subscriber<T> o){
-            keepAlive.add(std::move(o));
+            keepAlive.add(s.get_subscriber(), std::move(o));
         });
     }
 };

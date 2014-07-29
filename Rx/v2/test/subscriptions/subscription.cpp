@@ -139,11 +139,11 @@ SCENARIO("synchronized range debug", "[hide][subscribe][range][synchronize_debug
                 std::atomic<int> v(0);
                 auto s0 = rxs::range(1, es)
                     .take(values)
-                    .lift(liftrequirecompletion)
+                    .lift<int>(liftrequirecompletion)
                     .as_dynamic()
                     .publish_synchronized(es)
                     .ref_count()
-                    .lift(liftrequirecompletion)
+                    .lift<int>(liftrequirecompletion)
                     .subscribe(
                         rx::make_observer_dynamic<int>(
                         [&](int i){
@@ -154,11 +154,11 @@ SCENARIO("synchronized range debug", "[hide][subscribe][range][synchronize_debug
                         }));
                 auto s1 = rxs::range(values + 1, es)
                     .take(values)
-                    .lift(liftrequirecompletion)
+                    .lift<int>(liftrequirecompletion)
                     .as_dynamic()
                     .publish_synchronized(es)
                     .ref_count()
-                    .lift(liftrequirecompletion)
+                    .lift<int>(liftrequirecompletion)
                     .subscribe(
                         rx::make_observer_dynamic<int>(
                         [&](int i){
@@ -169,11 +169,11 @@ SCENARIO("synchronized range debug", "[hide][subscribe][range][synchronize_debug
                         }));
                 auto s2 = rxs::range((values * 2) + 1, es)
                     .take(values)
-                    .lift(liftrequirecompletion)
+                    .lift<int>(liftrequirecompletion)
                     .as_dynamic()
                     .publish_synchronized(es)
                     .ref_count()
-                    .lift(liftrequirecompletion)
+                    .lift<int>(liftrequirecompletion)
                     .subscribe(
                         rx::make_observer_dynamic<int>(
                         [&](int i){
@@ -249,10 +249,10 @@ SCENARIO("observe_on range debug", "[hide][subscribe][range][observe_on_debug][o
                 std::atomic<int> v(0);
                 auto s0 = rxs::range(1, es)
                     .take(values)
-                    .lift(liftrequirecompletion)
+                    .lift<int>(liftrequirecompletion)
                     .as_dynamic()
                     .observe_on(es)
-                    .lift(liftrequirecompletion)
+                    .lift<int>(liftrequirecompletion)
                     .subscribe(
                         rx::make_observer_dynamic<int>(
                         [&](int i){
@@ -263,10 +263,10 @@ SCENARIO("observe_on range debug", "[hide][subscribe][range][observe_on_debug][o
                         }));
                 auto s1 = rxs::range(values + 1, es)
                     .take(values)
-                    .lift(liftrequirecompletion)
+                    .lift<int>(liftrequirecompletion)
                     .as_dynamic()
                     .observe_on(es)
-                    .lift(liftrequirecompletion)
+                    .lift<int>(liftrequirecompletion)
                     .subscribe(
                         rx::make_observer_dynamic<int>(
                         [&](int i){
@@ -277,10 +277,10 @@ SCENARIO("observe_on range debug", "[hide][subscribe][range][observe_on_debug][o
                         }));
                 auto s2 = rxs::range((values * 2) + 1, es)
                     .take(values)
-                    .lift(liftrequirecompletion)
+                    .lift<int>(liftrequirecompletion)
                     .as_dynamic()
                     .observe_on(es)
-                    .lift(liftrequirecompletion)
+                    .lift<int>(liftrequirecompletion)
                     .subscribe(
                         rx::make_observer_dynamic<int>(
                         [&](int i){

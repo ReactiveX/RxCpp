@@ -35,22 +35,6 @@ struct window
     {
     }
 
-    struct window_observable : public sources::source_base<T>
-    {
-        mutable rxcpp::subjects::subject<T> subj;
-
-        window_observable(rxcpp::subjects::subject<T> s)
-            : subj(std::move(s))
-        {
-        }
-
-        template<class Subscriber>
-        void on_subscribe(Subscriber o) const {
-            static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
-            subj.get_observable().subscribe(o);
-        }
-    };
-
     template<class Subscriber>
     struct window_observer : public window_values, public observer_base<observable<T>>
     {
@@ -58,6 +42,7 @@ struct window
         typedef observer_base<observable<T>> base_type;
         typedef typename base_type::value_type value_type;
         typedef typename std::decay<Subscriber>::type dest_type;
+        typedef observer<T, this_type> observer_type;
         dest_type dest;
         mutable int cursor;
         mutable std::deque<rxcpp::subjects::subject<T>> subj;
@@ -68,7 +53,7 @@ struct window
             , cursor(0)
         {
             subj.push_back(rxcpp::subjects::subject<T>());
-            dest.on_next(observable<T, window_observable>(window_observable(subj[0])));
+            dest.on_next(subj[0].get_observable().as_dynamic());
         }
         void on_next(T v) const {
             for (auto s : subj) {
@@ -83,7 +68,7 @@ struct window
 
             if (++cursor % this->skip == 0) {
                 subj.push_back(rxcpp::subjects::subject<T>());
-                dest.on_next(observable<T, window_observable>(window_observable(subj[subj.size() - 1])));
+                dest.on_next(subj[subj.size() - 1].get_observable().as_dynamic());
             }
         }
 
@@ -101,9 +86,9 @@ struct window
             dest.on_completed();
         }
 
-        static subscriber<value_type, this_type> make(dest_type d, window_values v) {
+        static subscriber<T, observer_type> make(dest_type d, window_values v) {
             auto cs = d.get_subscription();
-            return make_subscriber<value_type>(std::move(cs), this_type(std::move(d), std::move(v)));
+            return make_subscriber<T>(std::move(cs), observer_type(this_type(std::move(d), std::move(v))));
         }
     };
 
@@ -122,8 +107,8 @@ public:
     window_factory(int c, int s) : count(c), skip(s) {}
     template<class Observable>
     auto operator()(Observable&& source)
-        -> decltype(source.lift(window<typename std::decay<Observable>::type::value_type>(count, skip))) {
-        return      source.lift(window<typename std::decay<Observable>::type::value_type>(count, skip));
+        -> decltype(source.template lift<observable<typename std::decay<Observable>::type::value_type>>(window<typename std::decay<Observable>::type::value_type>(count, skip))) {
+        return      source.template lift<observable<typename std::decay<Observable>::type::value_type>>(window<typename std::decay<Observable>::type::value_type>(count, skip));
     }
 };
 

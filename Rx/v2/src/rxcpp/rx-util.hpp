@@ -261,27 +261,85 @@ struct plus
         { return std::forward<LHS>(lhs) + std::forward<RHS>(rhs); }
 };
 
-template<class OStream>
-struct println_function
+namespace detail {
+template<class OStream, class Delimit>
+struct print_function
 {
     OStream& os;
-    println_function(OStream& os) : os(os) {}
+    Delimit delimit;
+    print_function(OStream& os, Delimit d) : os(os), delimit(std::move(d)) {}
 
     template<class... TN>
     void operator()(const TN&... tn) const {
         bool inserts[] = {(os << tn, true)...};
-        os << std::endl;
+        delimit();
     }
 
     template<class... TN>
     void operator()(const std::tuple<TN...>& tpl) const {
-        apply(tpl, *this);
+        rxcpp::util::apply(tpl, *this);
     }
 };
+
+template<class OStream>
+struct endline
+{
+    OStream& os;
+    endline(OStream& os) : os(os) {}
+    void operator()() const {
+        os << std::endl;
+    }
+};
+
+template<class OStream, class ValueType>
+struct insert_value
+{
+    OStream& os;
+    ValueType value;
+    insert_value(OStream& os, ValueType v) : os(os), value(std::move(v)) {}
+    void operator()() const {
+        os << value;
+    }
+};
+
+template<class OStream, class Function>
+struct insert_function
+{
+    OStream& os;
+    Function call;
+    insert_function(OStream& os, Function f) : os(os), call(std::move(f)) {}
+    void operator()() const {
+        call(os);
+    }
+};
+
+}
+
+template<class OStream>
+auto endline(OStream& os)
+    -> detail::endline<OStream> {
+    return detail::endline<OStream>(os);
+}
+
+template<class OStream, class Delimit>
+auto print(OStream& os, Delimit d)
+    -> decltype(d(),    detail::print_function<OStream, Delimit>(os, std::move(d))) {
+    return              detail::print_function<OStream, Delimit>(os, std::move(d));
+}
+template<class OStream, class Delimit>
+auto print(OStream& os, Delimit d)
+    -> decltype(d(os),  detail::print_function<OStream, detail::insert_function<OStream, Delimit>>(os, detail::insert_function<OStream, Delimit>(os, std::move(d)))) {
+    return              detail::print_function<OStream, detail::insert_function<OStream, Delimit>>(os, detail::insert_function<OStream, Delimit>(os, std::move(d)));
+}
 template<class OStream>
 auto println(OStream& os)
-    ->      println_function<OStream> {
-    return  println_function<OStream>(os);
+    -> decltype(print(os, endline(os))) {
+    return      print(os, endline(os));
+}
+template<class OStream, class DelimitValue>
+auto print_delimited_by(OStream& os, DelimitValue dv)
+    ->      detail::print_function<OStream, detail::insert_value<OStream, DelimitValue>> {
+    return  detail::print_function<OStream, detail::insert_value<OStream, DelimitValue>>(os, detail::insert_value<OStream, DelimitValue>(os, std::move(dv)));
 }
 
 namespace detail {

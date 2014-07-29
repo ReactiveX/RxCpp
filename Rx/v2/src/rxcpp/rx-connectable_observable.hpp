@@ -206,8 +206,8 @@ public:
 //
 template<class T, class SourceOperator, class OperatorFactory>
 auto operator >> (const rxcpp::connectable_observable<T, SourceOperator>& source, OperatorFactory&& of)
-    -> decltype(rxcpp::detail::select_chain<T, rxcpp::connectable_observable<T, SourceOperator>, OperatorFactory>::type::chain(source, std::forward<OperatorFactory>(of))) {
-    return      rxcpp::detail::select_chain<T, rxcpp::connectable_observable<T, SourceOperator>, OperatorFactory>::type::chain(source, std::forward<OperatorFactory>(of));
+    -> decltype(source.op(std::forward<OperatorFactory>(of))) {
+    return      source.op(std::forward<OperatorFactory>(of));
 }
 
 //
@@ -216,8 +216,8 @@ auto operator >> (const rxcpp::connectable_observable<T, SourceOperator>& source
 //
 template<class T, class SourceOperator, class OperatorFactory>
 auto operator | (const rxcpp::connectable_observable<T, SourceOperator>& source, OperatorFactory&& of)
-    -> decltype(rxcpp::detail::select_chain<T, rxcpp::connectable_observable<T, SourceOperator>, OperatorFactory>::type::chain(source, std::forward<OperatorFactory>(of))) {
-    return      rxcpp::detail::select_chain<T, rxcpp::connectable_observable<T, SourceOperator>, OperatorFactory>::type::chain(source, std::forward<OperatorFactory>(of));
+    -> decltype(source.op(std::forward<OperatorFactory>(of))) {
+    return      source.op(std::forward<OperatorFactory>(of));
 }
 
 #endif
