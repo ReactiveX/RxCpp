@@ -313,6 +313,12 @@ struct insert_function
     }
 };
 
+template<class OStream, class Delimit>
+auto print_followed_with(OStream& os, Delimit d)
+    ->      detail::print_function<OStream, Delimit> {
+    return  detail::print_function<OStream, Delimit>(os, std::move(d));
+}
+
 }
 
 template<class OStream>
@@ -321,25 +327,20 @@ auto endline(OStream& os)
     return detail::endline<OStream>(os);
 }
 
-template<class OStream, class Delimit>
-auto print(OStream& os, Delimit d)
-    -> decltype(d(),    detail::print_function<OStream, Delimit>(os, std::move(d))) {
-    return              detail::print_function<OStream, Delimit>(os, std::move(d));
-}
-template<class OStream, class Delimit>
-auto print(OStream& os, Delimit d)
-    -> decltype(d(os),  detail::print_function<OStream, detail::insert_function<OStream, Delimit>>(os, detail::insert_function<OStream, Delimit>(os, std::move(d)))) {
-    return              detail::print_function<OStream, detail::insert_function<OStream, Delimit>>(os, detail::insert_function<OStream, Delimit>(os, std::move(d)));
-}
 template<class OStream>
 auto println(OStream& os)
-    -> decltype(print(os, endline(os))) {
-    return      print(os, endline(os));
+    -> decltype(detail::print_followed_with(os, endline(os))) {
+    return      detail::print_followed_with(os, endline(os));
+}
+template<class OStream, class Delimit>
+auto print_followed_with(OStream& os, Delimit d)
+    -> decltype(detail::print_followed_with(os, detail::insert_function<OStream, Delimit>(os, std::move(d)))) {
+    return      detail::print_followed_with(os, detail::insert_function<OStream, Delimit>(os, std::move(d)));
 }
 template<class OStream, class DelimitValue>
-auto print_delimited_by(OStream& os, DelimitValue dv)
-    ->      detail::print_function<OStream, detail::insert_value<OStream, DelimitValue>> {
-    return  detail::print_function<OStream, detail::insert_value<OStream, DelimitValue>>(os, detail::insert_value<OStream, DelimitValue>(os, std::move(dv)));
+auto print_followed_by(OStream& os, DelimitValue dv)
+    -> decltype(detail::print_followed_with(os, detail::insert_value<OStream, DelimitValue>(os, std::move(dv)))) {
+    return      detail::print_followed_with(os, detail::insert_value<OStream, DelimitValue>(os, std::move(dv)));
 }
 
 namespace detail {
