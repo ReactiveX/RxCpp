@@ -884,32 +884,17 @@ public:
         return  observable<T, rxo::detail::repeat<T, this_type, Count>>(
             rxo::detail::repeat<T, this_type, Count>(*this, t));
     }
-#if 0
-
-// causes infinite compile time recursion
-
-    template<class Coordination, class Value0>
-    struct defer_start_with_from : public defer_observable<
-        rxu::all_true<
-            is_coordination<Coordination>::value,
-            std::is_convertible<Value0, value_type>::value>,
-        this_type,
-        rxo::detail::concat, observable<value_type>, observable<observable<value_type>>, Coordination>
-    {
-    };
 
     /// start_with ->
-    /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
+    /// start with the supplied values, then concatenate this observable
     ///
     ///
     template<class Value0, class... ValueN>
     auto start_with(Value0 v0, ValueN... vn) const
-        ->  typename std::enable_if<
-                        defer_start_with_from<identity_one_worker, Value0>::value,
-            typename    defer_start_with_from<identity_one_worker, Value0>::observable_type>::type {
-        return          defer_start_with_from<identity_one_worker, Value0>::make(*this, rxs::from(rxs::from(value_type(v0), value_type(vn)...).as_dynamic(), this->as_dynamic()), identity_immediate());
+        -> decltype(rxo::start_with(*(this_type*)nullptr, std::move(v0), std::move(vn)...)) {
+        return      rxo::start_with(*this, std::move(v0), std::move(vn)...);
     }
-#endif
+
 };
 
 template<class T, class SourceOperator>
