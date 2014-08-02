@@ -662,6 +662,15 @@ public:
         return          defer_combine_latest<Coordination, rxu::detail::pack, this_type, ObservableN...>::make(*this, std::move(cn), rxu::pack(), std::make_tuple(*this, on...));
     }
 
+    /// group_by ->
+    ///
+    template<class KeySelector, class MarbleSelector, class BinaryPredicate>
+    inline auto group_by(KeySelector ks, MarbleSelector ms, BinaryPredicate p) const
+        -> decltype(EXPLICIT_THIS lift<typename rxo::detail::group_by_traits<T, this_type, KeySelector, MarbleSelector, BinaryPredicate>::grouped_observable_type>(rxo::detail::group_by<T, this_type, KeySelector, MarbleSelector, BinaryPredicate>(std::move(ks), std::move(ms), std::move(p)))) {
+        return                    lift<typename rxo::detail::group_by_traits<T, this_type, KeySelector, MarbleSelector, BinaryPredicate>::grouped_observable_type>(rxo::detail::group_by<T, this_type, KeySelector, MarbleSelector, BinaryPredicate>(std::move(ks), std::move(ms), std::move(p)));
+    }
+
+
     /// multicast ->
     /// allows connections to the source to be independent of subscriptions
     ///
