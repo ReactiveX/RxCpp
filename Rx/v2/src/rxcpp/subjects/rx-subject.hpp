@@ -214,6 +214,8 @@ class subject
     detail::multicast_observer<T> s;
 
 public:
+    typedef subscriber<T, observer<T, detail::multicast_observer<T>>> subscriber_type;
+    typedef observable<T> observable_type;
     subject()
         : s(composite_subscription())
     {
@@ -227,7 +229,7 @@ public:
         return s.has_observers();
     }
 
-    subscriber<T, observer<T, detail::multicast_observer<T>>> get_subscriber() const {
+    subscriber_type get_subscriber() const {
         return s.get_subscriber();
     }
 

@@ -32,9 +32,7 @@ struct flat_map_traits {
 
     typedef decltype((*(collection_selector_type*)nullptr)((*(source_value_type*)nullptr))) collection_type;
 
-//#if _MSC_VER >= 1900
     static_assert(is_observable<collection_type>::value, "flat_map CollectionSelector must return an observable");
-//#endif
 
     typedef typename collection_type::value_type collection_value_type;
 

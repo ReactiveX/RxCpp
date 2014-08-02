@@ -132,6 +132,7 @@
 #include "rx-operators.hpp"
 #include "rx-observable.hpp"
 #include "rx-connectable_observable.hpp"
+#include "rx-grouped_observable.hpp"
 
 #pragma pop_macro("min")
 #pragma pop_macro("max")
