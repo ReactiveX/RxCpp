@@ -125,7 +125,7 @@ struct group_by
             auto selectedKey = on_exception(
                 [&](){
                     return this->keySelector(v);},
-                *this);
+                [this](std::exception_ptr e){on_error(e);});
             if (selectedKey.empty()) {
                 return;
             }
@@ -138,16 +138,13 @@ struct group_by
             auto selectedMarble = on_exception(
                 [&](){
                     return this->marbleSelector(v);},
-                *this);
+                [this](std::exception_ptr e){on_error(e);});
             if (selectedMarble.empty()) {
                 return;
             }
             g->second.on_next(std::move(selectedMarble.get()));
         }
         void on_error(std::exception_ptr e) const {
-            (*this)(e);
-        }
-        void operator()(std::exception_ptr e) const {
             for(auto& g : groups) {
                 g.second.on_error(e);
             }
