@@ -7,7 +7,7 @@ namespace rxsc=rxcpp::schedulers;
 #include "catch.hpp"
 
 char whitespace(char c) {
-    return std::isspace(c) || std::iscntrl(c);
+    return std::isspace<char>(c, std::locale::classic());
 }
 
 std::string trim(std::string s) {
@@ -21,7 +21,7 @@ std::string trim(std::string s) {
 }
 
 bool tolowerLess(char lhs, char rhs) {
-    return std::tolower(lhs) < std::tolower(rhs);
+    return std::tolower(lhs, std::locale::classic()) < std::tolower(rhs, std::locale::classic());
 }
 
 bool tolowerStringLess(const std::string& lhs, const std::string& rhs) {
