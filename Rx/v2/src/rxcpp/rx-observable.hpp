@@ -662,6 +662,15 @@ public:
         return          defer_combine_latest<Coordination, rxu::detail::pack, this_type, ObservableN...>::make(*this, std::move(cn), rxu::pack(), std::make_tuple(*this, on...));
     }
 
+    /// group_by ->
+    ///
+    template<class KeySelector, class MarbleSelector, class BinaryPredicate>
+    inline auto group_by(KeySelector ks, MarbleSelector ms, BinaryPredicate p) const
+        -> decltype(EXPLICIT_THIS lift<typename rxo::detail::group_by_traits<T, this_type, KeySelector, MarbleSelector, BinaryPredicate>::grouped_observable_type>(rxo::detail::group_by<T, this_type, KeySelector, MarbleSelector, BinaryPredicate>(std::move(ks), std::move(ms), std::move(p)))) {
+        return                    lift<typename rxo::detail::group_by_traits<T, this_type, KeySelector, MarbleSelector, BinaryPredicate>::grouped_observable_type>(rxo::detail::group_by<T, this_type, KeySelector, MarbleSelector, BinaryPredicate>(std::move(ks), std::move(ms), std::move(p)));
+    }
+
+
     /// multicast ->
     /// allows connections to the source to be independent of subscriptions
     ///
@@ -884,32 +893,17 @@ public:
         return  observable<T, rxo::detail::repeat<T, this_type, Count>>(
             rxo::detail::repeat<T, this_type, Count>(*this, t));
     }
-#if 0
-
-// causes infinite compile time recursion
-
-    template<class Coordination, class Value0>
-    struct defer_start_with_from : public defer_observable<
-        rxu::all_true<
-            is_coordination<Coordination>::value,
-            std::is_convertible<Value0, value_type>::value>,
-        this_type,
-        rxo::detail::concat, observable<value_type>, observable<observable<value_type>>, Coordination>
-    {
-    };
 
     /// start_with ->
-    /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
+    /// start with the supplied values, then concatenate this observable
     ///
     ///
     template<class Value0, class... ValueN>
     auto start_with(Value0 v0, ValueN... vn) const
-        ->  typename std::enable_if<
-                        defer_start_with_from<identity_one_worker, Value0>::value,
-            typename    defer_start_with_from<identity_one_worker, Value0>::observable_type>::type {
-        return          defer_start_with_from<identity_one_worker, Value0>::make(*this, rxs::from(rxs::from(value_type(v0), value_type(vn)...).as_dynamic(), this->as_dynamic()), identity_immediate());
+        -> decltype(rxo::start_with(*(this_type*)nullptr, std::move(v0), std::move(vn)...)) {
+        return      rxo::start_with(*this, std::move(v0), std::move(vn)...);
     }
-#endif
+
 };
 
 template<class T, class SourceOperator>

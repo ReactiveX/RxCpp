@@ -194,6 +194,43 @@ public:
     static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_connectable_observable>::value;
 };
 
+struct tag_dynamic_grouped_observable : public tag_dynamic_observable {};
+
+template<class T>
+class is_dynamic_grouped_observable
+{
+    struct not_void {};
+    template<class C>
+    static typename C::dynamic_observable_tag* check(int);
+    template<class C>
+    static not_void check(...);
+public:
+    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_dynamic_grouped_observable*>::value;
+};
+
+template<class K, class T>
+class dynamic_grouped_observable;
+
+template<class K, class T,
+    class SourceObservable = typename std::conditional<std::is_same<T, void>::value,
+        void, dynamic_grouped_observable<K, T>>::type>
+class grouped_observable;
+
+template<class K, class T, class Source>
+grouped_observable<K, T> make_dynamic_grouped_observable(Source&& s);
+
+struct tag_grouped_observable : public tag_observable {};
+template<class T>
+class is_grouped_observable
+{
+    template<class C>
+    static typename C::observable_tag check(int);
+    template<class C>
+    static void check(...);
+public:
+    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_grouped_observable>::value;
+};
+
 //
 // this type is the default used by operators that subscribe to
 // multiple sources. It assumes that the sources are already synchronized

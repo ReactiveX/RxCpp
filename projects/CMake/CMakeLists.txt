@@ -44,6 +44,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/distinct_until_changed.cpp
     ${TEST_DIR}/operators/filter.cpp
     ${TEST_DIR}/operators/flat_map.cpp
+    ${TEST_DIR}/operators/group_by.cpp
     ${TEST_DIR}/operators/lift.cpp
     ${TEST_DIR}/operators/map.cpp
     ${TEST_DIR}/operators/merge.cpp
@@ -62,6 +63,13 @@ set(TEST_SOURCES
 )
 add_executable(rxcppv2_test ${TEST_SOURCES})
 TARGET_LINK_LIBRARIES(rxcppv2_test ${CMAKE_THREAD_LIBS_INIT})
+
+set(OP_SOURCES
+    ${TEST_DIR}/test.cpp
+    ${TEST_DIR}/operators/group_by.cpp
+)
+#add_executable(op_test ${OP_SOURCES})
+#TARGET_LINK_LIBRARIES(op_test ${CMAKE_THREAD_LIBS_INIT})
 
 set(EXAMPLES_DIR ${RXCPP_DIR}/Rx/v2/examples)
 
