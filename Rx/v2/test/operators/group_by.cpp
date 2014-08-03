@@ -6,6 +6,8 @@ namespace rxsc=rxcpp::schedulers;
 #include "rxcpp/rx-test.hpp"
 #include "catch.hpp"
 
+#include <locale>
+
 char whitespace(char c) {
     return std::isspace<char>(c, std::locale::classic());
 }
