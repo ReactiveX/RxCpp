@@ -32,7 +32,7 @@ class dynamic_grouped_observable
 {
 public:
     typedef typename std::decay<K>::type key_type;
-    typedef tag_dynamic_observable dynamic_observable_tag;
+    typedef tag_dynamic_grouped_observable dynamic_observable_tag;
 
 private:
     struct state_type
@@ -46,18 +46,18 @@ private:
     };
     std::shared_ptr<state_type> state;
 
-    template<class U>
-    void construct(const dynamic_observable<U>& o, tag_dynamic_observable&&) {
+    template<class U, class V>
+    void construct(const dynamic_grouped_observable<U, V>& o, const tag_dynamic_grouped_observable&) {
         state = o.state;
     }
 
-    template<class U>
-    void construct(dynamic_observable<U>&& o, tag_dynamic_observable&&) {
+    template<class U, class V>
+    void construct(dynamic_grouped_observable<U, V>&& o, const tag_dynamic_grouped_observable&) {
         state = std::move(o.state);
     }
 
     template<class SO>
-    void construct(SO&& source, rxs::tag_source&&) {
+    void construct(SO&& source, const rxs::tag_source&) {
         auto so = std::make_shared<typename std::decay<SO>::type>(std::forward<SO>(source));
         state->on_subscribe = [so](subscriber<T> o) mutable {
             so->on_subscribe(std::move(o));
@@ -78,7 +78,7 @@ public:
         : state(std::make_shared<state_type>())
     {
         construct(std::forward<SOF>(sof),
-                  typename std::conditional<is_dynamic_observable<SOF>::value, tag_dynamic_observable, rxs::tag_source>::type());
+                  typename std::conditional<is_dynamic_grouped_observable<SOF>::value, tag_dynamic_grouped_observable, rxs::tag_source>::type());
     }
 
     template<class SF, class CF>
