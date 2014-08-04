@@ -261,6 +261,14 @@ struct plus
         { return std::forward<LHS>(lhs) + std::forward<RHS>(rhs); }
 };
 
+struct less
+{
+    template <class LHS, class RHS>
+    auto operator()(LHS&& lhs, RHS&& rhs) const
+        -> decltype(std::forward<LHS>(lhs) < std::forward<RHS>(rhs))
+        { return std::forward<LHS>(lhs) < std::forward<RHS>(rhs); }
+};
+
 namespace detail {
 template<class OStream, class Delimit>
 struct print_function
@@ -471,6 +479,7 @@ public:
 };
 
 }
+using detail::maybe;
 
 namespace detail {
     struct surely
