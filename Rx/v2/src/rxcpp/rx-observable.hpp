@@ -175,6 +175,72 @@ struct defer_observable
 {
 };
 
+template<class T, class Observable>
+class blocking_observable
+{
+    template<class Obsvbl, class... ArgN>
+    static auto blocking_subscribe(const Obsvbl& source, ArgN&&... an)
+        -> composite_subscription {
+        std::mutex lock;
+        std::condition_variable wake;
+        std::atomic_bool disposed;
+        auto scbr = make_subscriber<T>(std::forward<ArgN>(an)...);
+        auto cs = scbr.get_subscription();
+        cs.add([&](){
+            disposed = true;
+            wake.notify_one();
+        });
+        std::unique_lock<std::mutex> guard(lock);
+        source.subscribe(scbr);
+        wake.wait(guard, [&](){return !!disposed;});
+        return cs;
+    }
+
+public:
+    typedef typename std::decay<Observable>::type observable_type;
+    observable_type source;
+    blocking_observable(observable_type s) : source(std::move(s)) {}
+
+    ///
+    /// subscribe will cause this observable to emit values to the provided subscriber.
+    /// callers must provide enough arguments to make a subscriber.
+    /// overrides are supported. thus
+    ///   subscribe(thesubscriber, composite_subscription())
+    /// will take thesubscriber.get_observer() and the provided
+    /// subscription and subscribe to the new subscriber.
+    /// the on_next, on_error, on_completed methods can be supplied instead of an observer
+    /// if a subscription or subscriber is not provided then a new subscription will be created.
+    ///
+    template<class... ArgN>
+    auto subscribe(ArgN&&... an) const
+        -> composite_subscription {
+        return blocking_subscribe(source, std::forward<ArgN>(an)...);
+    }
+
+    T first() {
+        rxu::maybe<T> result;
+        composite_subscription cs;
+        subscribe(cs, [&](T v){result.reset(v); cs.unsubscribe();});
+        return result.get();
+    }
+
+    T last() const {
+        rxu::maybe<T> result;
+        subscribe([&](T v){result.reset(v);});
+        return result.get();
+    }
+
+    int count() const {
+        return source.count().as_blocking().last();
+    }
+    T sum() const {
+        return source.sum().as_blocking().last();
+    }
+    double average() const {
+        return source.average().as_blocking().last();
+    }
+};
+
 template<>
 class observable<void, void>;
 
@@ -282,10 +348,17 @@ public:
 #endif
 
     ///
-    /// performs type-forgetting conversion to a new observable
+    /// returns a new observable that performs type-forgetting conversion of this observable
     ///
     observable<T> as_dynamic() const {
         return *this;
+    }
+
+    ///
+    /// returns new observable that contains the blocking methods for this observable
+    ///
+    blocking_observable<T, this_type> as_blocking() const {
+        return blocking_observable<T, this_type>(*this);
     }
 
     ///
@@ -670,6 +743,13 @@ public:
         return                    lift<typename rxo::detail::group_by_traits<T, this_type, KeySelector, MarbleSelector, BinaryPredicate>::grouped_observable_type>(rxo::detail::group_by<T, this_type, KeySelector, MarbleSelector, BinaryPredicate>(std::move(ks), std::move(ms), std::move(p)));
     }
 
+    /// group_by ->
+    ///
+    template<class KeySelector, class MarbleSelector>
+    inline auto group_by(KeySelector ks, MarbleSelector ms) const
+        -> decltype(EXPLICIT_THIS lift<typename rxo::detail::group_by_traits<T, this_type, KeySelector, MarbleSelector, rxu::less>::grouped_observable_type>(rxo::detail::group_by<T, this_type, KeySelector, MarbleSelector, rxu::less>(std::move(ks), std::move(ms), rxu::less()))) {
+        return                    lift<typename rxo::detail::group_by_traits<T, this_type, KeySelector, MarbleSelector, rxu::less>::grouped_observable_type>(rxo::detail::group_by<T, this_type, KeySelector, MarbleSelector, rxu::less>(std::move(ks), std::move(ms), rxu::less()));
+    }
 
     /// multicast ->
     /// allows connections to the source to be independent of subscriptions
@@ -748,8 +828,32 @@ public:
     {
     };
 
+    /// first ->
+    /// for each item from this observable reduce it by sending only the first item.
+    ///
+//    auto first() const
+//        -> decltype(rxo::first(*(this_type*)nullptr)) {
+//        return rxo::first(*this);
+//    }
+
+    /// last ->
+    /// for each item from this observable reduce it by sending only the last item.
+    ///
+    auto last() const
+        -> typename defer_reduce<rxu::defer_seed_type<rxo::detail::last, T>, rxu::defer_type<rxo::detail::last, T>, rxu::defer_type<rxo::detail::last, T>>::observable_type {
+        return      defer_reduce<rxu::defer_seed_type<rxo::detail::last, T>, rxu::defer_type<rxo::detail::last, T>, rxu::defer_type<rxo::detail::last, T>>::make(source_operator, rxo::detail::last<T>(), rxo::detail::last<T>(), rxo::detail::last<T>().seed());
+    }
+
+    /// count ->
+    /// for each item from this observable reduce it by incrementing a count.
+    ///
+    auto count() const
+        -> typename defer_reduce<rxu::defer_seed_type<rxo::detail::count, T>, rxu::defer_type<rxo::detail::count, T>, rxu::defer_type<rxo::detail::count, T>>::observable_type {
+        return      defer_reduce<rxu::defer_seed_type<rxo::detail::count, T>, rxu::defer_type<rxo::detail::count, T>, rxu::defer_type<rxo::detail::count, T>>::make(source_operator, rxo::detail::count<T>(), rxo::detail::count<T>(), rxo::detail::count<T>().seed());
+    }
+
     /// sum ->
-    /// for each item from this observable reduce it by adding to the previous values.
+    /// for each item from this observable reduce it by adding to the previous items.
     ///
     auto sum() const
         -> typename defer_reduce<rxu::defer_seed_type<rxo::detail::initialize_seeder, T>, rxu::plus, rxu::defer_type<identity_for, T>>::observable_type {
