@@ -108,3 +108,9 @@ Desktop.ini
 projects/*
 !projects/CMake/CMakeLists.txt
 !projects/nuget/rxcpp.autopackage
+
+############
+## Sublime
+############
+
+*.sublime-*
