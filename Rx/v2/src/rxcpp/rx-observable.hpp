@@ -1043,6 +1043,11 @@ public:
         -> decltype(rxs::from(typename Observable::value_type(v0), typename Observable::value_type(vn)...).concat(o)) {
         return      rxs::from(typename Observable::value_type(v0), typename Observable::value_type(vn)...).concat(o);
     }
+    template<class ResourceFactory, class ObservableFactory>
+    static auto _using(ResourceFactory rf, ObservableFactory of)
+        -> decltype(rxs::_using(std::move(rf), std::move(of))) {
+        return      rxs::_using(std::move(rf), std::move(of));
+    }
 };
 
 
