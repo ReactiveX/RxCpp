@@ -26,10 +26,10 @@ SCENARIO("using, cold observable", "[using][sources]"){
                             [&](std::vector<int> values){
                                 auto msg = std::vector<rxsc::test::messages<int>::recorded_type>();
                                 int time = 10;
-                                for each (auto v in values) {
+                                std::for_each(values.begin(), values.end(), [&](int &v){
                                     msg.push_back(on.on_next(time, v));
                                     time += 10;
-                                }
+                                });
                                 msg.push_back(on.on_completed(time));
                                 xs.reset(sc.make_cold_observable(msg));
                                 return xs.get();
@@ -84,10 +84,10 @@ SCENARIO("using, hot observable", "[using][sources]"){
                             [&](std::vector<int> values){
                                 auto msg = std::vector<rxsc::test::messages<int>::recorded_type>();
                                 int time = 210;
-                                for each (auto v in values) {
+                                std::for_each(values.begin(), values.end(), [&](int &v){
                                     msg.push_back(on.on_next(time, v));
                                     time += 10;
-                                }
+                                });
                                 msg.push_back(on.on_completed(time));
                                 xs.reset(sc.make_hot_observable(msg));
                                 return xs.get();

@@ -18,7 +18,8 @@ struct using_traits
 {
     typedef typename std::decay<ResourceFactory>::type resource_factory_type;
     typedef typename std::decay<ObservableFactory>::type observable_factory_type;
-    typedef decltype((*(observable_factory_type*)nullptr)()) collection_type;
+    typedef decltype((*(resource_factory_type*)nullptr)()) resource_type;
+    typedef decltype((*(observable_factory_type*)nullptr)(resource_type())) collection_type;
     typedef typename collection_type::value_type value_type;
 };
 
