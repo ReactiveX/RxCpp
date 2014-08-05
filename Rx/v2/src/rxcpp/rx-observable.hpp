@@ -831,10 +831,8 @@ public:
     /// first ->
     /// for each item from this observable reduce it by sending only the first item.
     ///
-//    auto first() const
-//        -> decltype(rxo::first(*(this_type*)nullptr)) {
-//        return rxo::first(*this);
-//    }
+    auto first() const
+        -> observable<T>;
 
     /// last ->
     /// for each item from this observable reduce it by sending only the last item.
@@ -1009,6 +1007,13 @@ public:
     }
 
 };
+
+template<class T, class SourceOperator>
+auto observable<T, SourceOperator>::first() const
+    -> observable<T> {
+    return this->take(1).last();
+}
+
 
 template<class T, class SourceOperator>
 inline bool operator==(const observable<T, SourceOperator>& lhs, const observable<T, SourceOperator>& rhs) {

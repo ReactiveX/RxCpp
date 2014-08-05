@@ -261,12 +261,6 @@ struct average {
 
 }
 
-template<class Observable>
-auto first(Observable o)
-    -> decltype(o.take(1).last()) {
-    return      o.take(1).last();
-}
-
 template<class Seed, class Accumulator, class ResultSelector>
 auto reduce(Seed s, Accumulator a, ResultSelector rs)
     ->      detail::reduce_factory<Accumulator, ResultSelector, Seed> {
