@@ -36,6 +36,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/sources/create.cpp
     ${TEST_DIR}/sources/defer.cpp
     ${TEST_DIR}/sources/interval.cpp
+    ${TEST_DIR}/sources/using.cpp
     ${TEST_DIR}/operators/buffer.cpp
     ${TEST_DIR}/operators/combine_latest.1.cpp
     ${TEST_DIR}/operators/combine_latest.2.cpp
