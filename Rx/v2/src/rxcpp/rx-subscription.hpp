@@ -441,6 +441,58 @@ inline bool operator!=(const composite_subscription& lhs, const composite_subscr
 //static
 RXCPP_SELECT_ANY composite_subscription composite_subscription::shared_empty = composite_subscription(detail::tag_composite_subscription_empty());
 
+
+template<class T>
+class resource : public subscription_base
+{
+public:
+    typedef typename composite_subscription::weak_subscription weak_subscription;
+
+    resource(T t, composite_subscription cs = composite_subscription())
+        : lifetime(std::move(cs))
+        , value(new std::shared_ptr<T>(new T(std::move(t))))
+    {
+        auto localValue = value;
+        lifetime.add(
+            [localValue](){
+                localValue->reset();
+            }
+        );
+    }
+
+    T& get() const {
+        return *value.get()->get();
+    }
+    composite_subscription& get_subscription() const {
+        return lifetime;
+    }
+
+    bool is_subscribed() const {
+        return lifetime.is_subscribed();
+    }
+    weak_subscription add(subscription s) const {
+        return lifetime.add(std::move(s));
+    }
+    template<class F>
+    auto add(F f) const
+    -> typename std::enable_if<detail::is_unsubscribe_function<F>::value, weak_subscription>::type {
+        return lifetime.add(make_subscription(std::move(f)));
+    }
+    void remove(weak_subscription w) const {
+        return lifetime.remove(std::move(w));
+    }
+    void clear() const {
+        return lifetime.clear();
+    }
+    void unsubscribe() const {
+        return lifetime.unsubscribe();
+    }
+
+protected:
+    composite_subscription lifetime;
+    std::shared_ptr<std::shared_ptr<T>> value;
+};
+
 }
 
 #endif
