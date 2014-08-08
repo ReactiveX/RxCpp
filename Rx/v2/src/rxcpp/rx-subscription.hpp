@@ -448,9 +448,9 @@ class resource : public subscription_base
 public:
     typedef typename composite_subscription::weak_subscription weak_subscription;
 
-    resource(T t, composite_subscription cs = composite_subscription())
+    resource(T t = T(), composite_subscription cs = composite_subscription())
         : lifetime(std::move(cs))
-        , value(std::make_shared<std::unique_ptr<T>>(std::make_unique<T>(std::move(t))))
+        , value(std::make_shared<std::unique_ptr<T>>(std::unique_ptr<T>(new T(std::move(t)))))
     {
         auto localValue = value;
         lifetime.add(

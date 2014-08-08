@@ -68,7 +68,7 @@ struct scope : public source_base<typename scope_traits<ResourceFactory, Observa
             rxu::detail::maybe<resource_type> resource;
         };
 
-        auto state = std::shared_ptr<state_type>(new state_type(initial, std::move(o)));
+        auto state = std::make_shared<state_type>(state_type(initial, std::move(o)));
 
         state->resource = on_exception(
             [&](){return state->resource_factory(); },
