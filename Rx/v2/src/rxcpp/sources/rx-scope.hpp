@@ -63,11 +63,9 @@ struct scope : public source_base<typename scope_traits<ResourceFactory, Observa
                 : values(i)
                 , out(std::move(o))
             {
-                out.add(lifetime);
             }
             Subscriber out;
             rxu::detail::maybe<resource_type> resource;
-            composite_subscription lifetime;
         };
 
         auto state = std::shared_ptr<state_type>(new state_type(initial, std::move(o)));
@@ -78,7 +76,8 @@ struct scope : public source_base<typename scope_traits<ResourceFactory, Observa
         if (state->resource.empty()) {
             return;
         }
-
+        state->out.add(state->resource->get_subscription());
+        
         auto selectedCollection = on_exception(
             [state](){return state->observable_factory(state->resource.get()); },
             state->out);
@@ -86,23 +85,7 @@ struct scope : public source_base<typename scope_traits<ResourceFactory, Observa
             return;
         }
 
-        selectedCollection->subscribe(make_subscriber<value_type>(
-            state->lifetime,
-            // on_next
-            [state](value_type st) {
-                state->out.on_next(st);
-            },
-            // on_error
-            [state](std::exception_ptr e) {
-                state->out.on_error(e);
-                state->resource->unsubscribe();
-            },
-            // on_completed
-            [state]() {
-                state->out.on_completed();
-                state->resource->unsubscribe();
-            }
-        ));
+        selectedCollection->subscribe(state->out);
     }
 };
 
