@@ -25,7 +25,7 @@ SCENARIO("scope, cold observable", "[scope][sources]"){
                             [&](){
                                 return resource(rxu::to_vector({1, 2, 3, 4, 5}));
                             },
-                            [&](resource& r){
+                            [&](resource r){
                                 auto msg = std::vector<rxsc::test::messages<int>::recorded_type>();
                                 int time = 10;
                                 auto values = r.get();
@@ -86,7 +86,7 @@ SCENARIO("scope, hot observable", "[scope][sources]"){
                             [&](){
                                 return resource(rxu::to_vector({1, 2, 3, 4, 5}));
                             },
-                            [&](resource& r){
+                            [&](resource r){
                                 auto msg = std::vector<rxsc::test::messages<int>::recorded_type>();
                                 int time = 210;
                                 auto values = r.get();
@@ -151,7 +151,7 @@ SCENARIO("scope, complete", "[scope][sources]"){
                                 ++resource_factory_invoked;
                                 return resource(sc.clock());
                             },
-                            [&](resource& r){
+                            [&](resource r){
                                 ++observable_factory_invoked;
                                 xs.reset(sc.make_cold_observable(rxu::to_vector({
                                     on.on_next(100, r.get()),
@@ -218,7 +218,7 @@ SCENARIO("scope, error", "[scope][sources]"){
                                 ++resource_factory_invoked;
                                 return resource(sc.clock());
                             },
-                            [&](resource& r){
+                            [&](resource r){
                                 ++observable_factory_invoked;
                                 xs.reset(sc.make_cold_observable(rxu::to_vector({
                                     on.on_next(100, r.get()),
@@ -283,7 +283,7 @@ SCENARIO("scope, dispose", "[scope][sources]"){
                                 ++resource_factory_invoked;
                                 return resource(sc.clock());
                             },
-                            [&](resource& r){
+                            [&](resource r){
                                 ++observable_factory_invoked;
                                 xs.reset(sc.make_cold_observable(rxu::to_vector({
                                     on.on_next(100, r.get()),
@@ -335,6 +335,8 @@ SCENARIO("scope, throw resource selector", "[scope][sources]"){
         int resource_factory_invoked = 0;
         int observable_factory_invoked = 0;
 
+        typedef rx::resource<int> resource;
+
         WHEN("created by scope"){
 
             auto res = w.start(
@@ -344,9 +346,9 @@ SCENARIO("scope, throw resource selector", "[scope][sources]"){
                             [&](){
                                 ++resource_factory_invoked;
                                 throw ex;
-                                return rx::make_subscription();
+                                return resource(sc.clock());
                             },
-                            [&](rx::subscription& s){
+                            [&](resource r){
                                 ++observable_factory_invoked;
                                 return rx::observable<>::never<int>();
                             }
@@ -386,6 +388,8 @@ SCENARIO("scope, throw resource usage", "[scope][sources]"){
         int resource_factory_invoked = 0;
         int observable_factory_invoked = 0;
 
+        typedef rx::resource<int> resource;
+
         WHEN("created by scope"){
 
             auto res = w.start(
@@ -394,9 +398,9 @@ SCENARIO("scope, throw resource usage", "[scope][sources]"){
                         scope(
                             [&](){
                                 ++resource_factory_invoked;
-                                return rx::make_subscription();
+                                return resource(sc.clock());
                             },
-                            [&](rx::subscription& s){
+                            [&](resource r){
                                 ++observable_factory_invoked;
                                 throw ex;
                                 return rx::observable<>::never<int>();

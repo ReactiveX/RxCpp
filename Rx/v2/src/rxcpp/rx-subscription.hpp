@@ -450,7 +450,7 @@ public:
 
     resource(T t, composite_subscription cs = composite_subscription())
         : lifetime(std::move(cs))
-        , value(new std::shared_ptr<T>(new T(std::move(t))))
+        , value(std::make_shared<std::unique_ptr<T>>(std::make_unique<T>(std::move(t))))
     {
         auto localValue = value;
         lifetime.add(
@@ -460,10 +460,10 @@ public:
         );
     }
 
-    T& get() const {
+    T& get() {
         return *value.get()->get();
     }
-    composite_subscription& get_subscription() const {
+    composite_subscription& get_subscription() {
         return lifetime;
     }
 
@@ -490,7 +490,7 @@ public:
 
 protected:
     composite_subscription lifetime;
-    std::shared_ptr<std::shared_ptr<T>> value;
+    std::shared_ptr<std::unique_ptr<T>> value;
 };
 
 }
