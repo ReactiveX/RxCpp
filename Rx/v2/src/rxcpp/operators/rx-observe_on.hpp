@@ -167,13 +167,10 @@ struct observe_on
             auto keepAlive = o.state;
             cs.add([keepAlive](){
                 std::unique_lock<std::mutex> guard(keepAlive->lock);
-                if (keepAlive->queue.empty() && keepAlive->current == mode::Empty && keepAlive->destination.is_subscribed()) {
-                    keepAlive->current = mode::Disposed;
-                    keepAlive->destination.unsubscribe();
-                }
+                keepAlive->ensure_processing(guard);
             });
 
-            return make_subscriber<value_type>(cs, std::move(o));
+            return make_subscriber<value_type>(d, cs, make_observer<value_type>(std::move(o)));
         }
     };
 

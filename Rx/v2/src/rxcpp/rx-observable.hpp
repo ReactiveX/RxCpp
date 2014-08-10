@@ -175,6 +175,114 @@ struct defer_observable
 {
 };
 
+template<class T, class Observable>
+class blocking_observable
+{
+    template<class Obsvbl, class... ArgN>
+    static auto blocking_subscribe(const Obsvbl& source, ArgN&&... an)
+        -> composite_subscription {
+        std::mutex lock;
+        std::condition_variable wake;
+        composite_subscription cs;
+        struct tracking
+        {
+            ~tracking()
+            {
+                if (!disposed || !wakened) abort();
+            }
+            tracking()
+            {
+                disposed = false;
+                wakened = false;
+                false_wakes = 0;
+                true_wakes = 0;
+            }
+            std::atomic_bool disposed;
+            std::atomic_bool wakened;
+            std::atomic_int false_wakes;
+            std::atomic_int true_wakes;
+        };
+        auto track = std::make_shared<tracking>();
+
+        auto scbr = make_subscriber<T>(std::forward<ArgN>(an)...);
+        cs = scbr.get_subscription();
+        cs.add(
+            [&, track](){
+                // OSX geting invalid x86 op if notify_one is after the disposed = true
+                // presumably because the condition_variable may already have been awakened
+                // and is now sitting in a while loop on disposed
+                wake.notify_one();
+                track->disposed = true;
+            });
+        std::unique_lock<std::mutex> guard(lock);
+        source.subscribe(std::move(scbr));
+        wake.wait(guard,
+            [&, track](){
+                // this is really not good.
+                // false wakeups were never followed by true wakeups so..
+
+                // anyways this gets triggered before disposed is set now so wait.
+                while (!track->disposed) {
+                    ++track->false_wakes;
+                }
+                ++track->true_wakes;
+                return true;
+            });
+        track->wakened = true;
+        if (!track->disposed || !track->wakened) abort();
+        return composite_subscription::empty();
+    }
+
+public:
+    typedef typename std::decay<Observable>::type observable_type;
+    observable_type source;
+    ~blocking_observable()
+    {
+    }
+    blocking_observable(observable_type s) : source(std::move(s)) {}
+
+    ///
+    /// subscribe will cause this observable to emit values to the provided subscriber.
+    /// callers must provide enough arguments to make a subscriber.
+    /// overrides are supported. thus
+    ///   subscribe(thesubscriber, composite_subscription())
+    /// will take thesubscriber.get_observer() and the provided
+    /// subscription and subscribe to the new subscriber.
+    /// the on_next, on_error, on_completed methods can be supplied instead of an observer
+    /// if a subscription or subscriber is not provided then a new subscription will be created.
+    ///
+    template<class... ArgN>
+    auto subscribe(ArgN&&... an) const
+        -> composite_subscription {
+        return blocking_subscribe(source, std::forward<ArgN>(an)...);
+    }
+
+    T first() {
+        rxu::maybe<T> result;
+        composite_subscription cs;
+        subscribe(cs, [&](T v){result.reset(v); cs.unsubscribe();});
+        if (result.empty()) abort();
+        return result.get();
+    }
+
+    T last() const {
+        rxu::maybe<T> result;
+        subscribe([&](T v){result.reset(v);});
+        if (result.empty()) abort();
+        return result.get();
+    }
+
+    int count() const {
+        return source.count().as_blocking().last();
+    }
+    T sum() const {
+        return source.sum().as_blocking().last();
+    }
+    double average() const {
+        return source.average().as_blocking().last();
+    }
+};
+
 template<>
 class observable<void, void>;
 
@@ -250,6 +358,10 @@ public:
 
     static_assert(rxo::is_operator<source_operator_type>::value || rxs::is_source<source_operator_type>::value, "observable must wrap an operator or source");
 
+    ~observable()
+    {
+    }
+
     observable()
     {
     }
@@ -282,10 +394,17 @@ public:
 #endif
 
     ///
-    /// performs type-forgetting conversion to a new observable
+    /// returns a new observable that performs type-forgetting conversion of this observable
     ///
     observable<T> as_dynamic() const {
         return *this;
+    }
+
+    ///
+    /// returns new observable that contains the blocking methods for this observable
+    ///
+    blocking_observable<T, this_type> as_blocking() const {
+        return blocking_observable<T, this_type>(*this);
     }
 
     ///
@@ -350,7 +469,7 @@ public:
     /// for each item from this observable use Selector to produce an item to emit from the new observable that is returned.
     ///
     template<class Selector>
-    auto map(Selector&& s) const
+    auto map(Selector s) const
         -> decltype(EXPLICIT_THIS lift<typename rxo::detail::map<T, Selector>::value_type>(rxo::detail::map<T, Selector>(std::move(s)))) {
         return                    lift<typename rxo::detail::map<T, Selector>::value_type>(rxo::detail::map<T, Selector>(std::move(s)));
     }
@@ -670,6 +789,13 @@ public:
         return                    lift<typename rxo::detail::group_by_traits<T, this_type, KeySelector, MarbleSelector, BinaryPredicate>::grouped_observable_type>(rxo::detail::group_by<T, this_type, KeySelector, MarbleSelector, BinaryPredicate>(std::move(ks), std::move(ms), std::move(p)));
     }
 
+    /// group_by ->
+    ///
+    template<class KeySelector, class MarbleSelector>
+    inline auto group_by(KeySelector ks, MarbleSelector ms) const
+        -> decltype(EXPLICIT_THIS lift<typename rxo::detail::group_by_traits<T, this_type, KeySelector, MarbleSelector, rxu::less>::grouped_observable_type>(rxo::detail::group_by<T, this_type, KeySelector, MarbleSelector, rxu::less>(std::move(ks), std::move(ms), rxu::less()))) {
+        return                    lift<typename rxo::detail::group_by_traits<T, this_type, KeySelector, MarbleSelector, rxu::less>::grouped_observable_type>(rxo::detail::group_by<T, this_type, KeySelector, MarbleSelector, rxu::less>(std::move(ks), std::move(ms), rxu::less()));
+    }
 
     /// multicast ->
     /// allows connections to the source to be independent of subscriptions
@@ -716,7 +842,7 @@ public:
     auto subscribe_on(Coordination cn) const
         ->      observable<typename rxo::detail::subscribe_on<T, this_type, Coordination>::value_type,  rxo::detail::subscribe_on<T, this_type, Coordination>> {
         return  observable<typename rxo::detail::subscribe_on<T, this_type, Coordination>::value_type,  rxo::detail::subscribe_on<T, this_type, Coordination>>(
-                                                                                                        rxo::detail::subscribe_on<T, this_type, Coordination>(*this, std::forward<Coordination>(cn)));
+                                                                                                        rxo::detail::subscribe_on<T, this_type, Coordination>(*this, std::move(cn)));
     }
 
     /// observe_on ->
@@ -748,8 +874,26 @@ public:
     {
     };
 
+    /// first ->
+    /// for each item from this observable reduce it by sending only the first item.
+    ///
+    auto first() const
+        -> observable<T>;
+
+    /// last ->
+    /// for each item from this observable reduce it by sending only the last item.
+    ///
+    auto last() const
+        -> observable<T>;
+
+    /// count ->
+    /// for each item from this observable reduce it by incrementing a count.
+    ///
+    auto count() const
+        -> observable<int>;
+
     /// sum ->
-    /// for each item from this observable reduce it by adding to the previous values.
+    /// for each item from this observable reduce it by adding to the previous items.
     ///
     auto sum() const
         -> typename defer_reduce<rxu::defer_seed_type<rxo::detail::initialize_seeder, T>, rxu::plus, rxu::defer_type<identity_for, T>>::observable_type {
@@ -905,6 +1049,25 @@ public:
     }
 
 };
+
+template<class T, class SourceOperator>
+auto observable<T, SourceOperator>::last() const
+    -> observable<T> {
+    rxu::maybe<T> seed;
+    return this->reduce(seed, [](rxu::maybe<T>, T t){return rxu::maybe<T>(std::move(t));}, [](rxu::maybe<T> result){return result.get();});
+}
+
+template<class T, class SourceOperator>
+auto observable<T, SourceOperator>::first() const
+    -> observable<T> {
+    return this->take(1).last();
+}
+
+template<class T, class SourceOperator>
+auto observable<T, SourceOperator>::count() const
+    -> observable<int> {
+    return this->reduce(0, [](int current, const T&){return ++current;}, [](int result){return result;});
+}
 
 template<class T, class SourceOperator>
 inline bool operator==(const observable<T, SourceOperator>& lhs, const observable<T, SourceOperator>& rhs) {

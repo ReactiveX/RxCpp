@@ -17,30 +17,18 @@ SCENARIO("synchronize merge ranges", "[hide][range][synchronize][merge][perf]"){
             using namespace std::chrono;
             typedef steady_clock clock;
 
-            std::mutex lock;
-            std::condition_variable wake;
-
             auto so = rx::synchronize_event_loop();
 
-            std::atomic<int> c(0);
             int n = 1;
             auto sectionCount = onnextcalls / 3;
             auto start = clock::now();
-            rxs::range(0, sectionCount - 1, 1, so)
+            int c = rxs::range(0, sectionCount - 1, 1, so)
                 .merge(
                     so,
                     rxs::range(sectionCount, (sectionCount * 2) - 1, 1, so),
                     rxs::range(sectionCount * 2, onnextcalls - 1, 1, so))
-                .subscribe(
-                    [&c](int x){
-                        ++c;},
-                    [](std::exception_ptr){abort();},
-                    [&](){
-                        wake.notify_one();
-                    });
-
-            std::unique_lock<std::mutex> guard(lock);
-            wake.wait(guard, [&](){return c == onnextcalls;});
+                .as_blocking()
+                .count();
 
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
@@ -57,30 +45,18 @@ SCENARIO("observe_on merge ranges", "[hide][range][observe_on][merge][perf]"){
             using namespace std::chrono;
             typedef steady_clock clock;
 
-            std::mutex lock;
-            std::condition_variable wake;
-
             auto so = rx::observe_on_event_loop();
 
-            std::atomic<int> c(0);
             int n = 1;
             auto sectionCount = onnextcalls / 3;
             auto start = clock::now();
-            rxs::range(0, sectionCount - 1, 1, so)
+            int c = rxs::range(0, sectionCount - 1, 1, so)
                 .merge(
                     so,
                     rxs::range(sectionCount, (sectionCount * 2) - 1, 1, so),
                     rxs::range(sectionCount * 2, onnextcalls - 1, 1, so))
-                .subscribe(
-                    [&c](int x){
-                        ++c;},
-                    [](std::exception_ptr){abort();},
-                    [&](){
-                        wake.notify_one();
-                    });
-
-            std::unique_lock<std::mutex> guard(lock);
-            wake.wait(guard, [&](){return c == onnextcalls;});
+                .as_blocking()
+                .count();
 
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
@@ -97,30 +73,18 @@ SCENARIO("serialize merge ranges", "[hide][range][serialize][merge][perf]"){
             using namespace std::chrono;
             typedef steady_clock clock;
 
-            std::mutex lock;
-            std::condition_variable wake;
-
             auto so = rx::serialize_event_loop();
 
-            std::atomic<int> c(0);
             int n = 1;
             auto sectionCount = onnextcalls / 3;
             auto start = clock::now();
-            rxs::range(0, sectionCount - 1, 1, so)
+            int c = rxs::range(0, sectionCount - 1, 1, so)
                 .merge(
                     so,
                     rxs::range(sectionCount, (sectionCount * 2) - 1, 1, so),
                     rxs::range(sectionCount * 2, onnextcalls - 1, 1, so))
-                .subscribe(
-                    [&c](int x){
-                        ++c;},
-                    [](std::exception_ptr){abort();},
-                    [&](){
-                        wake.notify_one();
-                    });
-
-            std::unique_lock<std::mutex> guard(lock);
-            wake.wait(guard, [&](){return c == onnextcalls;});
+                .as_blocking()
+                .count();
 
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -

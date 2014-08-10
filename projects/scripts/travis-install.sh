@@ -15,6 +15,8 @@ if [ "$TRAVIS_OS_NAME" = linux -o -z "$TRAVIS_OS_NAME" ]; then
 
     if [ "$CC" = clang ]; then
         sudo apt-get install -q --fix-missing clang-3.6
+        sudo update-alternatives --install /usr/bin/clang clang /usr/bin/clang-3.6 20
+        sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-3.6 20
     fi
 
     if [ "$CC" = gcc ]; then

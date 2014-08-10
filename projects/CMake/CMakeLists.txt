@@ -7,7 +7,7 @@ MESSAGE( STATUS "CMAKE_CXX_COMPILER_ID: " ${CMAKE_CXX_COMPILER_ID} )
 FIND_PACKAGE(Threads)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    list( APPEND CMAKE_CXX_FLAGS " -std=c++11 ${CMAKE_CXX_FLAGS}")
+    list( APPEND CMAKE_CXX_FLAGS " -std=c++11 -ftemplate-depth=1024 ${CMAKE_CXX_FLAGS}")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     list( APPEND CMAKE_CXX_FLAGS " -std=c++11 ${CMAKE_CXX_FLAGS}")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
@@ -64,12 +64,13 @@ set(TEST_SOURCES
 add_executable(rxcppv2_test ${TEST_SOURCES})
 TARGET_LINK_LIBRARIES(rxcppv2_test ${CMAKE_THREAD_LIBS_INIT})
 
-set(OP_SOURCES
+# define the sources of the self test
+set(ONE_SOURCES
     ${TEST_DIR}/test.cpp
-    ${TEST_DIR}/operators/group_by.cpp
+    ${TEST_DIR}/operators/subscribe_on.cpp
 )
-#add_executable(op_test ${OP_SOURCES})
-#TARGET_LINK_LIBRARIES(op_test ${CMAKE_THREAD_LIBS_INIT})
+add_executable(one_test ${ONE_SOURCES})
+TARGET_LINK_LIBRARIES(one_test ${CMAKE_THREAD_LIBS_INIT})
 
 set(EXAMPLES_DIR ${RXCPP_DIR}/Rx/v2/examples)
 
