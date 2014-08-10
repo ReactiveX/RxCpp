@@ -80,6 +80,9 @@ struct reduce : public operator_base<typename reduce_traits<T, SourceOperator, A
 
     struct reduce_initial_type
     {
+        ~reduce_initial_type()
+        {
+        }
         reduce_initial_type(source_type o, accumulator_type a, result_selector_type rs, seed_type s)
             : source(std::move(o))
             , accumulator(std::move(a))
@@ -94,12 +97,15 @@ struct reduce : public operator_base<typename reduce_traits<T, SourceOperator, A
     };
     reduce_initial_type initial;
 
+    ~reduce()
+    {
+    }
     reduce(source_type o, accumulator_type a, result_selector_type rs, seed_type s)
         : initial(std::move(o), std::move(a), std::move(rs), std::move(s))
     {
     }
     template<class Subscriber>
-    void on_subscribe(Subscriber o) {
+    void on_subscribe(Subscriber o) const {
         struct reduce_state_type
             : public reduce_initial_type
             , public std::enable_shared_from_this<reduce_state_type>
