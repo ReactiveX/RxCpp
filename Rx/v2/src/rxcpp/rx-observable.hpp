@@ -1053,8 +1053,8 @@ public:
 template<class T, class SourceOperator>
 auto observable<T, SourceOperator>::last() const
     -> observable<T> {
-    rxu::util::maybe<T> seed;
-    return this->reduce(seed, [](rxu::util::maybe<T>, T t){return rxu::util::maybe<T>(std::move(t));}, [](rxu::util::maybe<T> result){return result.get();});
+    rxu::maybe<T> seed;
+    return this->reduce(seed, [](rxu::maybe<T>, T t){return rxu::maybe<T>(std::move(t));}, [](rxu::maybe<T> result){return result.get();});
 }
 
 template<class T, class SourceOperator>
