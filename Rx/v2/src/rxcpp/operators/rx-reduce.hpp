@@ -187,35 +187,6 @@ struct initialize_seeder {
 };
 
 template<class T>
-struct last {
-    typedef rxu::maybe<typename std::decay<T>::type> seed_type;
-    seed_type seed() {
-        return seed_type{};
-    }
-    seed_type operator()(const seed_type& a, T v) {
-        return seed_type(v);
-    }
-    typename std::decay<T>::type operator()(seed_type a) {
-        // should abort if a is empty
-        return a.get();
-    }
-};
-
-template<class T>
-struct count {
-    typedef int seed_type;
-    seed_type seed() {
-        return seed_type{};
-    }
-    seed_type operator()(seed_type a, T v) {
-        return ++a;
-    }
-    seed_type operator()(seed_type a) {
-        return a;
-    }
-};
-
-template<class T>
 struct average {
     struct seed_type
     {
