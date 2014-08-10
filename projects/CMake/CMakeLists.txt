@@ -64,12 +64,13 @@ set(TEST_SOURCES
 add_executable(rxcppv2_test ${TEST_SOURCES})
 TARGET_LINK_LIBRARIES(rxcppv2_test ${CMAKE_THREAD_LIBS_INIT})
 
-set(OP_SOURCES
+# define the sources of the self test
+set(ONE_SOURCES
     ${TEST_DIR}/test.cpp
-    ${TEST_DIR}/operators/group_by.cpp
+    ${TEST_DIR}/operators/subscribe_on.cpp
 )
-#add_executable(op_test ${OP_SOURCES})
-#TARGET_LINK_LIBRARIES(op_test ${CMAKE_THREAD_LIBS_INIT})
+add_executable(one_test ${ONE_SOURCES})
+TARGET_LINK_LIBRARIES(one_test ${CMAKE_THREAD_LIBS_INIT})
 
 set(EXAMPLES_DIR ${RXCPP_DIR}/Rx/v2/examples)
 

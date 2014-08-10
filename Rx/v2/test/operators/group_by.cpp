@@ -12,7 +12,8 @@ SCENARIO("range partitioned by group_by across hardware threads to derive pi", "
     GIVEN("a for loop"){
         WHEN("partitioning pi series across all hardware threads"){
 
-            std::atomic_int c(0);
+            std::atomic_int c;
+            c = 0;
             auto pi = [&](int k) {
                 ++c;
                 return ( k % 2 == 0 ? -4.0L : 4.0L ) / ( ( 2.0L * k ) - 1.0L );
@@ -80,7 +81,8 @@ SCENARIO("range partitioned by dividing work across hardware threads to derive p
     GIVEN("a for loop"){
         WHEN("partitioning pi series across all hardware threads"){
 
-            std::atomic_int c(0);
+            std::atomic_int c;
+            c = 0;
             auto pi = [&](int k) {
                 ++c;
                 return ( k % 2 == 0 ? -4.0L : 4.0L ) / ( ( 2.0L * k ) - 1.0L );

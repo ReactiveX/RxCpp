@@ -186,15 +186,16 @@ class blocking_observable
         composite_subscription cs;
         struct tracking
         {
-            ~tracking(){
+            ~tracking()
+            {
                 if (!disposed || !wakened) abort();
             }
-            tracking() :
-                disposed(false),
-                wakened(false),
-                false_wakes(0),
-                true_wakes(0)
+            tracking()
             {
+                disposed = false;
+                wakened = false;
+                false_wakes = 0;
+                true_wakes = 0;
             }
             std::atomic_bool disposed;
             std::atomic_bool wakened;
@@ -218,7 +219,7 @@ class blocking_observable
         wake.wait(guard,
             [&, track](){
                 // this is really not good.
-                // false wakeups were never followed by true wakeups on OSX so..
+                // false wakeups were never followed by true wakeups so..
 
                 // anyways this gets triggered before disposed is set now so wait.
                 while (!track->disposed) {
@@ -883,17 +884,13 @@ public:
     /// for each item from this observable reduce it by sending only the last item.
     ///
     auto last() const
-        -> typename defer_reduce<rxu::defer_seed_type<rxo::detail::last, T>, rxu::defer_type<rxo::detail::last, T>, rxu::defer_type<rxo::detail::last, T>>::observable_type {
-        return      defer_reduce<rxu::defer_seed_type<rxo::detail::last, T>, rxu::defer_type<rxo::detail::last, T>, rxu::defer_type<rxo::detail::last, T>>::make(source_operator, rxo::detail::last<T>(), rxo::detail::last<T>(), rxo::detail::last<T>().seed());
-    }
+        -> observable<T>;
 
     /// count ->
     /// for each item from this observable reduce it by incrementing a count.
     ///
     auto count() const
-        -> typename defer_reduce<rxu::defer_seed_type<rxo::detail::count, T>, rxu::defer_type<rxo::detail::count, T>, rxu::defer_type<rxo::detail::count, T>>::observable_type {
-        return      defer_reduce<rxu::defer_seed_type<rxo::detail::count, T>, rxu::defer_type<rxo::detail::count, T>, rxu::defer_type<rxo::detail::count, T>>::make(source_operator, rxo::detail::count<T>(), rxo::detail::count<T>(), rxo::detail::count<T>().seed());
-    }
+        -> observable<int>;
 
     /// sum ->
     /// for each item from this observable reduce it by adding to the previous items.
@@ -1054,11 +1051,23 @@ public:
 };
 
 template<class T, class SourceOperator>
+auto observable<T, SourceOperator>::last() const
+    -> observable<T> {
+    rxu::util::maybe<T> seed;
+    return this->reduce(seed, [](rxu::util::maybe<T>, T t){return rxu::util::maybe<T>(std::move(t));}, [](rxu::util::maybe<T> result){return result.get();});
+}
+
+template<class T, class SourceOperator>
 auto observable<T, SourceOperator>::first() const
     -> observable<T> {
     return this->take(1).last();
 }
 
+template<class T, class SourceOperator>
+auto observable<T, SourceOperator>::count() const
+    -> observable<int> {
+    return this->reduce(0, [](int current, const T&){return ++current;}, [](int result){return result;});
+}
 
 template<class T, class SourceOperator>
 inline bool operator==(const observable<T, SourceOperator>& lhs, const observable<T, SourceOperator>& rhs) {
