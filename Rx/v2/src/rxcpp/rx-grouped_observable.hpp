@@ -47,6 +47,9 @@ private:
     std::shared_ptr<state_type> state;
 
     template<class U, class V>
+    friend bool operator==(const dynamic_grouped_observable<U, V>&, const dynamic_grouped_observable<U, V>&);
+
+    template<class U, class V>
     void construct(const dynamic_grouped_observable<U, V>& o, const tag_dynamic_grouped_observable&) {
         state = o.state;
     }
@@ -119,6 +122,15 @@ public:
         return state->on_get_key();
     }
 };
+
+template<class K, class T>
+inline bool operator==(const dynamic_grouped_observable<K, T>& lhs, const dynamic_grouped_observable<K, T>& rhs) {
+    return lhs.state == rhs.state;
+}
+template<class K, class T>
+inline bool operator!=(const dynamic_grouped_observable<K, T>& lhs, const dynamic_grouped_observable<K, T>& rhs) {
+    return !(lhs == rhs);
+}
 
 template<class K, class T, class Source>
 grouped_observable<K, T> make_dynamic_grouped_observable(Source&& s) {
