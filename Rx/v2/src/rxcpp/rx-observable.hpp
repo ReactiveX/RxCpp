@@ -183,22 +183,61 @@ class blocking_observable
         -> composite_subscription {
         std::mutex lock;
         std::condition_variable wake;
-        std::atomic_bool disposed;
+        composite_subscription cs;
+        struct tracking
+        {
+            ~tracking(){
+                if (!disposed || !wakened) abort();
+            }
+            tracking() :
+                disposed(false),
+                wakened(false),
+                false_wakes(0),
+                true_wakes(0)
+            {
+            }
+            std::atomic_bool disposed;
+            std::atomic_bool wakened;
+            std::atomic_int false_wakes;
+            std::atomic_int true_wakes;
+        };
+        auto track = std::make_shared<tracking>();
+
         auto scbr = make_subscriber<T>(std::forward<ArgN>(an)...);
-        auto cs = scbr.get_subscription();
-        cs.add([&](){
-            disposed = true;
-            wake.notify_one();
-        });
+        cs = scbr.get_subscription();
+        cs.add(
+            [&, track](){
+                // OSX geting invalid x86 op if notify_one is after the disposed = true
+                // presumably because the condition_variable may already have been awakened
+                // and is now sitting in a while loop on disposed
+                wake.notify_one();
+                track->disposed = true;
+            });
         std::unique_lock<std::mutex> guard(lock);
-        source.subscribe(scbr);
-        wake.wait(guard, [&](){return !!disposed;});
-        return cs;
+        source.subscribe(std::move(scbr));
+        wake.wait(guard,
+            [&, track](){
+                // this is really not good.
+                // false wakeups were never followed by true wakeups on OSX so..
+
+                // anyways this gets triggered before disposed is set now so wait.
+                while (!track->disposed) {
+                    ++track->false_wakes;
+                }
+                ++track->true_wakes;
+                return true;
+            });
+        track->wakened = true;
+        if (!track->disposed || !track->wakened) abort();
+        return composite_subscription::empty();
     }
 
 public:
     typedef typename std::decay<Observable>::type observable_type;
     observable_type source;
+    ~blocking_observable()
+    {
+    }
     blocking_observable(observable_type s) : source(std::move(s)) {}
 
     ///
@@ -221,12 +260,14 @@ public:
         rxu::maybe<T> result;
         composite_subscription cs;
         subscribe(cs, [&](T v){result.reset(v); cs.unsubscribe();});
+        if (result.empty()) abort();
         return result.get();
     }
 
     T last() const {
         rxu::maybe<T> result;
         subscribe([&](T v){result.reset(v);});
+        if (result.empty()) abort();
         return result.get();
     }
 
@@ -315,6 +356,10 @@ public:
     typedef T value_type;
 
     static_assert(rxo::is_operator<source_operator_type>::value || rxs::is_source<source_operator_type>::value, "observable must wrap an operator or source");
+
+    ~observable()
+    {
+    }
 
     observable()
     {
@@ -423,7 +468,7 @@ public:
     /// for each item from this observable use Selector to produce an item to emit from the new observable that is returned.
     ///
     template<class Selector>
-    auto map(Selector&& s) const
+    auto map(Selector s) const
         -> decltype(EXPLICIT_THIS lift<typename rxo::detail::map<T, Selector>::value_type>(rxo::detail::map<T, Selector>(std::move(s)))) {
         return                    lift<typename rxo::detail::map<T, Selector>::value_type>(rxo::detail::map<T, Selector>(std::move(s)));
     }
@@ -796,7 +841,7 @@ public:
     auto subscribe_on(Coordination cn) const
         ->      observable<typename rxo::detail::subscribe_on<T, this_type, Coordination>::value_type,  rxo::detail::subscribe_on<T, this_type, Coordination>> {
         return  observable<typename rxo::detail::subscribe_on<T, this_type, Coordination>::value_type,  rxo::detail::subscribe_on<T, this_type, Coordination>>(
-                                                                                                        rxo::detail::subscribe_on<T, this_type, Coordination>(*this, std::forward<Coordination>(cn)));
+                                                                                                        rxo::detail::subscribe_on<T, this_type, Coordination>(*this, std::move(cn)));
     }
 
     /// observe_on ->
