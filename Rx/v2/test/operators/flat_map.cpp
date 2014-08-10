@@ -97,13 +97,9 @@ SCENARIO("synchronize flat_map pythagorian ranges", "[hide][range][flat_map][syn
             using namespace std::chrono;
             typedef steady_clock clock;
 
-            std::mutex lock;
-            std::condition_variable wake;
-
             auto so = rx::synchronize_event_loop();
 
             int c = 0;
-            std::atomic<int> ct(0);
             int n = 1;
             auto start = clock::now();
             auto triples =
@@ -129,17 +125,10 @@ SCENARIO("synchronize flat_map pythagorian ranges", "[hide][range][flat_map][syn
                                 .as_dynamic();},
                         [](int z, std::tuple<int,int,int> triplet){return triplet;},
                         so);
-            triples
+            int ct = triples
                 .take(tripletCount)
-                .subscribe(
-                    rxu::apply_to([&ct](int x,int y,int z){
-                        ++ct;}),
-                    [](std::exception_ptr){abort();},
-                    [&](){
-                        wake.notify_one();});
-
-            std::unique_lock<std::mutex> guard(lock);
-            wake.wait(guard, [&](){return ct == tripletCount;});
+                .as_blocking()
+                .count();
 
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
@@ -156,13 +145,9 @@ SCENARIO("observe_on flat_map pythagorian ranges", "[hide][range][flat_map][obse
             using namespace std::chrono;
             typedef steady_clock clock;
 
-            std::mutex lock;
-            std::condition_variable wake;
-
             auto so = rx::observe_on_event_loop();
 
             int c = 0;
-            std::atomic<int> ct(0);
             int n = 1;
             auto start = clock::now();
             auto triples =
@@ -188,17 +173,10 @@ SCENARIO("observe_on flat_map pythagorian ranges", "[hide][range][flat_map][obse
                                 .as_dynamic();},
                         [](int z, std::tuple<int,int,int> triplet){return triplet;},
                         so);
-            triples
+            int ct = triples
                 .take(tripletCount)
-                .subscribe(
-                    rxu::apply_to([&ct](int x,int y,int z){
-                        ++ct;}),
-                    [](std::exception_ptr){abort();},
-                    [&](){
-                        wake.notify_one();});
-
-            std::unique_lock<std::mutex> guard(lock);
-            wake.wait(guard, [&](){return ct == tripletCount;});
+                .as_blocking()
+                .count();
 
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
@@ -215,13 +193,9 @@ SCENARIO("serialize flat_map pythagorian ranges", "[hide][range][flat_map][seria
             using namespace std::chrono;
             typedef steady_clock clock;
 
-            std::mutex lock;
-            std::condition_variable wake;
-
             auto so = rx::serialize_event_loop();
 
             int c = 0;
-            std::atomic<int> ct(0);
             int n = 1;
             auto start = clock::now();
             auto triples =
@@ -247,17 +221,10 @@ SCENARIO("serialize flat_map pythagorian ranges", "[hide][range][flat_map][seria
                                 .as_dynamic();},
                         [](int z, std::tuple<int,int,int> triplet){return triplet;},
                         so);
-            triples
+            int ct = triples
                 .take(tripletCount)
-                .subscribe(
-                    rxu::apply_to([&ct](int x,int y,int z){
-                        ++ct;}),
-                    [](std::exception_ptr){abort();},
-                    [&](){
-                        wake.notify_one();});
-
-            std::unique_lock<std::mutex> guard(lock);
-            wake.wait(guard, [&](){return ct == tripletCount;});
+                .as_blocking()
+                .count();
 
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -

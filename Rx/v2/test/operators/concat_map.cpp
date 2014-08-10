@@ -61,13 +61,9 @@ SCENARIO("synchronize concat_map pythagorian ranges", "[hide][range][concat_map]
             using namespace std::chrono;
             typedef steady_clock clock;
 
-            std::mutex lock;
-            std::condition_variable wake;
-
             auto so = rx::synchronize_event_loop();
 
             int c = 0;
-            std::atomic<int> ct(0);
             int n = 1;
             auto start = clock::now();
             auto triples =
@@ -93,17 +89,10 @@ SCENARIO("synchronize concat_map pythagorian ranges", "[hide][range][concat_map]
                                 .as_dynamic();},
                         [](int z, std::tuple<int,int,int> triplet){return triplet;},
                         so);
-            triples
+            int ct = triples
                 .take(tripletCount)
-                .subscribe(
-                    rxu::apply_to([&ct](int x,int y,int z){
-                        ++ct;}),
-                    [](std::exception_ptr){abort();},
-                    [&](){
-                        wake.notify_one();});
-
-            std::unique_lock<std::mutex> guard(lock);
-            wake.wait(guard, [&](){return ct == tripletCount;});
+                .as_blocking()
+                .count();
 
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
@@ -120,15 +109,9 @@ SCENARIO("observe_on concat_map pythagorian ranges", "[hide][range][concat_map][
             using namespace std::chrono;
             typedef steady_clock clock;
 
-            std::mutex lock;
-            std::condition_variable wake;
-
             auto so = rx::observe_on_event_loop();
 
             int c = 0;
-            std::atomic_bool done;
-            std::atomic_bool disposed;
-            std::atomic<int> ct(0);
             int n = 1;
             auto start = clock::now();
             auto triples =
@@ -155,23 +138,10 @@ SCENARIO("observe_on concat_map pythagorian ranges", "[hide][range][concat_map][
                         [](int z, std::tuple<int,int,int> triplet){return triplet;},
                         so);
 
-            rx::composite_subscription cs;
-            cs.add([&](){
-                disposed = true;
-                wake.notify_one();});
-
-            triples
+            int ct = triples
                 .take(tripletCount)
-                .subscribe(
-                    cs,
-                    rxu::apply_to([&ct](int x,int y,int z){
-                        ++ct;}),
-                    [&](){
-                        done = true;
-                        wake.notify_one();});
-
-            std::unique_lock<std::mutex> guard(lock);
-            wake.wait(guard, [&](){return ct == tripletCount && done && disposed;});
+                .as_blocking()
+                .count();
 
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
@@ -188,15 +158,9 @@ SCENARIO("serialize concat_map pythagorian ranges", "[hide][range][concat_map][s
             using namespace std::chrono;
             typedef steady_clock clock;
 
-            std::mutex lock;
-            std::condition_variable wake;
-
             auto so = rx::serialize_event_loop();
 
             int c = 0;
-            std::atomic_bool done;
-            std::atomic_bool disposed;
-            std::atomic<int> ct(0);
             int n = 1;
             auto start = clock::now();
             auto triples =
@@ -223,23 +187,10 @@ SCENARIO("serialize concat_map pythagorian ranges", "[hide][range][concat_map][s
                         [](int z, std::tuple<int,int,int> triplet){return triplet;},
                         so);
 
-            rx::composite_subscription cs;
-            cs.add([&](){
-                disposed = true;
-                wake.notify_one();});
-
-            triples
+            int ct = triples
                 .take(tripletCount)
-                .subscribe(
-                    cs,
-                    rxu::apply_to([&ct](int x,int y,int z){
-                        ++ct;}),
-                    [&](){
-                        done = true;
-                        wake.notify_one();});
-
-            std::unique_lock<std::mutex> guard(lock);
-            wake.wait(guard, [&](){return ct == tripletCount && done && disposed;});
+                .as_blocking()
+                .count();
 
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
