@@ -8,6 +8,131 @@ namespace rxsc=rxcpp::schedulers;
 
 #include <locale>
 
+SCENARIO("range partitioned by group_by across hardware threads to derive pi", "[hide][pi][group_by][observe_on][long][perf]"){
+    GIVEN("a for loop"){
+        WHEN("partitioning pi series across all hardware threads"){
+
+            std::atomic_int c(0);
+            auto pi = [&](int k) {
+                ++c;
+                return ( k % 2 == 0 ? -4.0L : 4.0L ) / ( ( 2.0L * k ) - 1.0L );
+            };
+
+            using namespace std::chrono;
+            auto start = steady_clock::now();
+
+            // share an output thread across all the producer threads
+            auto outputthread = rxcpp::observe_on_one_worker(rxcpp::observe_on_new_thread().create_coordinator().get_scheduler());
+
+            // use all available hardware threads
+            auto total = rxcpp::observable<>::range(0, 19).
+                group_by(
+                    [](int i) -> int {return i % std::thread::hardware_concurrency();},
+                    [](int i){return i;}).
+                map(
+                    [=, &c](rxcpp::grouped_observable<int, int> onproc) {
+                        auto key = onproc.get_key();
+                        // share a producer thread across all the ranges in this group
+                        auto producerthread = rxcpp::observe_on_one_worker(rxcpp::observe_on_new_thread().create_coordinator().get_scheduler());
+                        return onproc.
+                            map(
+                                [=, &c](int index){
+                                    static const int chunk = 1000000;
+                                    auto first = (chunk * index) + 1;
+                                    auto last =   chunk * (index + 1);
+                                    std::cout << std::setw(3) << index << ": range - " << first << "-" << last << std::endl;
+
+                                    return rxcpp::observable<>::range(first, last, producerthread).
+                                        map(pi).
+                                        sum(). // each thread maps and reduces its contribution to the answer
+                                        map(
+                                            [=](long double v){
+                                                std::stringstream message;
+                                                message << key << " on " << std::this_thread::get_id() << " - value: " << std::setprecision(16) << v;
+                                                return std::make_tuple(message.str(), v);
+                                            }).
+                                        as_dynamic();
+                                }).
+                            concat(). // only subscribe to one range at a time in this group.
+                            observe_on(outputthread).
+                            map(rxcpp::util::apply_to(
+                                [](std::string message, long double v){
+                                    std::cout << message << std::endl;
+                                    return v;
+                                })).
+                            as_dynamic();
+                    }).
+                merge().
+                sum(). // reduces the contributions from all the threads to the answer
+                as_blocking().
+                last();
+
+            std::cout << std::setprecision(16) << "Pi: " << total << std::endl;
+            auto finish = steady_clock::now();
+            auto msElapsed = duration_cast<milliseconds>(finish-start);
+            std::cout << "pi using group_by and concat to partition the work : " << c << " calls to pi(), " << msElapsed.count() << "ms elapsed, " << c / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
+
+        }
+    }
+}
+
+SCENARIO("range partitioned by dividing work across hardware threads to derive pi", "[hide][pi][observe_on][long][perf]"){
+    GIVEN("a for loop"){
+        WHEN("partitioning pi series across all hardware threads"){
+
+            std::atomic_int c(0);
+            auto pi = [&](int k) {
+                ++c;
+                return ( k % 2 == 0 ? -4.0L : 4.0L ) / ( ( 2.0L * k ) - 1.0L );
+            };
+
+            using namespace std::chrono;
+            auto start = steady_clock::now();
+
+            // share an output thread across all the producer threads
+            auto outputthread = rxcpp::observe_on_one_worker(rxcpp::observe_on_new_thread().create_coordinator().get_scheduler());
+
+            // use all available hardware threads
+            auto total = rxcpp::observable<>::range(0, std::thread::hardware_concurrency() - 1).
+                map(
+                    [=, &c](int index){
+                        // partition equally across threads
+                        static const int chunk = 20000000 / std::thread::hardware_concurrency();
+                        auto first = (chunk * index) + 1;
+                        auto last =   chunk * (index + 1);
+                        std::cout << std::setw(3) << index << ": range - " << first << "-" << last << std::endl;
+
+                        return rxcpp::observable<>::range(first, last, rxcpp::observe_on_new_thread()).
+                            map(pi).
+                            sum(). // each thread maps and reduces its contribution to the answer
+                            map(
+                                [=](long double v){
+                                    std::stringstream message;
+                                    message << std::this_thread::get_id() << " - value: " << std::setprecision(16) << v;
+                                    return std::make_tuple(message.str(), v);
+                                }).
+                            as_dynamic();
+                    }).
+                observe_on(outputthread).
+                merge().
+                map(rxcpp::util::apply_to(
+                    [](std::string message, long double v){
+                        std::cout << message << std::endl;
+                        return v;
+                    })).
+                sum(). // reduces the contributions from all the threads to the answer
+                as_blocking().
+                last();
+
+            std::cout << std::setprecision(16) << "Pi: " << total << std::endl;
+            auto finish = steady_clock::now();
+            auto msElapsed = duration_cast<milliseconds>(finish-start);
+            std::cout << "pi using division of the whole range to partition the work : " << c << " calls to pi(), " << msElapsed.count() << "ms elapsed, " << c / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
+
+        }
+    }
+}
+
 char whitespace(char c) {
     return std::isspace<char>(c, std::locale::classic());
 }
