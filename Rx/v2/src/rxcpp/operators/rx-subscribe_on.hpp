@@ -19,9 +19,12 @@ struct subscribe_on : public operator_base<T>
     typedef typename std::decay<Observable>::type source_type;
     typedef typename std::decay<Coordination>::type coordination_type;
     typedef typename coordination_type::coordinator_type coordinator_type;
-    struct values
+    struct subscribe_on_values
     {
-        values(source_type s, coordination_type sf)
+        ~subscribe_on_values()
+        {
+        }
+        subscribe_on_values(source_type s, coordination_type sf)
             : source(std::move(s))
             , coordination(std::move(sf))
         {
@@ -29,8 +32,11 @@ struct subscribe_on : public operator_base<T>
         source_type source;
         coordination_type coordination;
     };
-    values initial;
+    const subscribe_on_values initial;
 
+    ~subscribe_on()
+    {
+    }
     subscribe_on(source_type s, coordination_type sf)
         : initial(std::move(s), std::move(sf))
     {
@@ -42,10 +48,10 @@ struct subscribe_on : public operator_base<T>
         typedef Subscriber output_type;
         struct subscribe_on_state_type
             : public std::enable_shared_from_this<subscribe_on_state_type>
-            , public values
+            , public subscribe_on_values
         {
-            subscribe_on_state_type(const values& i, coordinator_type coor, const output_type& oarg)
-                : values(i)
+            subscribe_on_state_type(const subscribe_on_values& i, coordinator_type coor, const output_type& oarg)
+                : subscribe_on_values(i)
                 , coordinator(std::move(coor))
                 , out(oarg)
             {
@@ -62,16 +68,21 @@ struct subscribe_on : public operator_base<T>
         // take a copy of the values for each subscription
         auto state = std::shared_ptr<subscribe_on_state_type>(new subscribe_on_state_type(initial, std::move(coordinator), std::move(s)));
 
+        auto disposer = [=](const rxsc::schedulable&){
+            state->source_lifetime.unsubscribe();
+            state->out.unsubscribe();
+        };
+        auto selectedDisposer = on_exception(
+            [&](){return state->coordinator.act(disposer);},
+            state->out);
+        if (selectedDisposer.empty()) {
+            return;
+        }
+
         state->out.add([=](){
-            auto disposer = [=](const rxsc::schedulable&){
-                state->source_lifetime.unsubscribe();
-            };
-            auto selectedDisposer = on_exception(
-                [&](){return state->coordinator.act(disposer);},
-                state->out);
-            if (selectedDisposer.empty()) {
-                return;
-            }
+            controller.schedule(selectedDisposer.get());
+        });
+        state->source_lifetime.add([=](){
             controller.schedule(selectedDisposer.get());
         });
 
