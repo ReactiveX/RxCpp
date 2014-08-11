@@ -448,9 +448,15 @@ class resource : public subscription_base
 public:
     typedef typename composite_subscription::weak_subscription weak_subscription;
 
-    resource(T t = T(), composite_subscription cs = composite_subscription())
+    resource()
+        : lifetime(composite_subscription())
+        , value(std::make_shared<rxu::detail::maybe<T>>())
+    {
+    }
+
+    explicit resource(T t, composite_subscription cs = composite_subscription())
         : lifetime(std::move(cs))
-        , value(std::make_shared<std::unique_ptr<T>>(std::unique_ptr<T>(new T(std::move(t)))))
+        , value(std::make_shared<rxu::detail::maybe<T>>(rxu::detail::maybe<T>(std::move(t))))
     {
         auto localValue = value;
         lifetime.add(
@@ -461,7 +467,7 @@ public:
     }
 
     T& get() {
-        return *value.get()->get();
+        return value.get()->get();
     }
     composite_subscription& get_subscription() {
         return lifetime;
@@ -490,7 +496,7 @@ public:
 
 protected:
     composite_subscription lifetime;
-    std::shared_ptr<std::unique_ptr<T>> value;
+    std::shared_ptr<rxu::detail::maybe<T>> value;
 };
 
 }
