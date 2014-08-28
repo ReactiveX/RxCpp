@@ -13,23 +13,23 @@ SCENARIO("retry, basic test", "[retry][operators]") {
         std::runtime_error ex("retry on_error from source");
 
         auto xs = sc.make_hot_observable({
-            on.on_next(300, 1),
-            on.on_next(325, 2),
-            on.on_next(350, 3),
-            on.on_error(400, ex),
-            on.on_next(425, 1),
-            on.on_next(450, 2),
-            on.on_next(475, 3),
-            on.on_next(500, 4),
-            on.on_error(525, ex),
-            on.on_next(550, 1),
-            on.on_next(575, 2),
-            on.on_next(600, 3),
-            on.on_next(625, 4),
-            on.on_next(650, 5),
-            on.on_next(675, 6),
-            on.on_next(700, 7),
-            on.on_completed(725)
+            on.next(300, 1),
+            on.next(325, 2),
+            on.next(350, 3),
+            on.error(400, ex),
+            on.next(425, 1),
+            on.next(450, 2),
+            on.next(475, 3),
+            on.next(500, 4),
+            on.error(525, ex),
+            on.next(550, 1),
+            on.next(575, 2),
+            on.next(600, 3),
+            on.next(625, 4),
+            on.next(650, 5),
+            on.next(675, 6),
+            on.next(700, 7),
+            on.completed(725)
         });
 
         WHEN("infinite retry is launched") {
@@ -45,21 +45,21 @@ SCENARIO("retry, basic test", "[retry][operators]") {
 
             THEN("the output contains all the data until complete") {
                 auto required = rxu::to_vector({
-                    on.on_next(300, 1),
-                    on.on_next(325, 2),
-                    on.on_next(350, 3),
-                    on.on_next(425, 1),
-                    on.on_next(450, 2),
-                    on.on_next(475, 3),
-                    on.on_next(500, 4),
-                    on.on_next(550, 1),
-                    on.on_next(575, 2),
-                    on.on_next(600, 3),
-                    on.on_next(625, 4),
-                    on.on_next(650, 5),
-                    on.on_next(675, 6),
-                    on.on_next(700, 7),
-                    on.on_completed(725)
+                    on.next(300, 1),
+                    on.next(325, 2),
+                    on.next(350, 3),
+                    on.next(425, 1),
+                    on.next(450, 2),
+                    on.next(475, 3),
+                    on.next(500, 4),
+                    on.next(550, 1),
+                    on.next(575, 2),
+                    on.next(600, 3),
+                    on.next(625, 4),
+                    on.next(650, 5),
+                    on.next(675, 6),
+                    on.next(700, 7),
+                    on.completed(725)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -87,23 +87,23 @@ SCENARIO("retry with failure", "[retry][operators]") {
         std::runtime_error ex("retry on_error from source");
 
         auto xs = sc.make_hot_observable({
-            on.on_next(300, 1),
-            on.on_next(325, 2),
-            on.on_next(350, 3),
-            on.on_error(400, ex),
-            on.on_next(425, 1),
-            on.on_next(450, 2),
-            on.on_next(475, 3),
-            on.on_next(500, 4),
-            on.on_error(525, ex),
-            on.on_next(550, 1),
-            on.on_next(575, 2),
-            on.on_next(600, 3),
-            on.on_next(625, 4),
-            on.on_next(650, 5),
-            on.on_next(675, 6),
-            on.on_next(700, 7),
-            on.on_completed(725)
+            on.next(300, 1),
+            on.next(325, 2),
+            on.next(350, 3),
+            on.error(400, ex),
+            on.next(425, 1),
+            on.next(450, 2),
+            on.next(475, 3),
+            on.next(500, 4),
+            on.error(525, ex),
+            on.next(550, 1),
+            on.next(575, 2),
+            on.next(600, 3),
+            on.next(625, 4),
+            on.next(650, 5),
+            on.next(675, 6),
+            on.next(700, 7),
+            on.completed(725)
         });
 
         WHEN("retry of 1 is launched with expected error before complete") {
@@ -118,14 +118,14 @@ SCENARIO("retry with failure", "[retry][operators]") {
 
             THEN("The output contains all the data until retry fails") {
                 auto required = rxu::to_vector({
-                    on.on_next(300, 1),
-                    on.on_next(325, 2),
-                    on.on_next(350, 3),
-                    on.on_next(425, 1),
-                    on.on_next(450, 2),
-                    on.on_next(475, 3),
-                    on.on_next(500, 4),
-                    on.on_error(525, ex),
+                    on.next(300, 1),
+                    on.next(325, 2),
+                    on.next(350, 3),
+                    on.next(425, 1),
+                    on.next(450, 2),
+                    on.next(475, 3),
+                    on.next(500, 4),
+                    on.error(525, ex),
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(actual == required);
