@@ -1,0 +1,146 @@
+#include "rxcpp/rx.hpp"
+namespace rxu = rxcpp::util;
+namespace rxsc = rxcpp::schedulers;
+
+#include "rxcpp/rx-test.hpp"
+#include "catch.hpp"
+
+SCENARIO("retry, basic test", "[retry][operators]") {
+    GIVEN("hot observable of 3x4x7 ints with errors inbetween the groups. Infinite retry.") {
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+        std::runtime_error ex("retry on_error from source");
+
+        auto xs = sc.make_hot_observable({
+            on.on_next(300, 1),
+            on.on_next(325, 2),
+            on.on_next(350, 3),
+            on.on_error(400, ex),
+            on.on_next(425, 1),
+            on.on_next(450, 2),
+            on.on_next(475, 3),
+            on.on_next(500, 4),
+            on.on_error(525, ex),
+            on.on_next(550, 1),
+            on.on_next(575, 2),
+            on.on_next(600, 3),
+            on.on_next(625, 4),
+            on.on_next(650, 5),
+            on.on_next(675, 6),
+            on.on_next(700, 7),
+            on.on_completed(725)
+        });
+
+        WHEN("infinite retry is launched") {
+
+            auto res = w.start(
+                [&]() {
+                return xs
+                    .retry()
+                    // forget type to workaround lambda deduction bug on msvc 2013
+                    .as_dynamic();
+            }
+            );
+
+            THEN("the output contains all the data until complete") {
+                auto required = rxu::to_vector({
+                    on.on_next(300, 1),
+                    on.on_next(325, 2),
+                    on.on_next(350, 3),
+                    on.on_next(425, 1),
+                    on.on_next(450, 2),
+                    on.on_next(475, 3),
+                    on.on_next(500, 4),
+                    on.on_next(550, 1),
+                    on.on_next(575, 2),
+                    on.on_next(600, 3),
+                    on.on_next(625, 4),
+                    on.on_next(650, 5),
+                    on.on_next(675, 6),
+                    on.on_next(700, 7),
+                    on.on_completed(725)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there were 3 subscriptions and 3 unsubscriptions to the ints") {
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 400),
+                    on.subscribe(400, 525),
+                    on.subscribe(525, 725)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+
+SCENARIO("retry with failure", "[retry][operators]") {
+    GIVEN("hot observable of 3x4x7 ints with errors inbetween the groups. Retry 1. Must fail.") {
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+        std::runtime_error ex("retry on_error from source");
+
+        auto xs = sc.make_hot_observable({
+            on.on_next(300, 1),
+            on.on_next(325, 2),
+            on.on_next(350, 3),
+            on.on_error(400, ex),
+            on.on_next(425, 1),
+            on.on_next(450, 2),
+            on.on_next(475, 3),
+            on.on_next(500, 4),
+            on.on_error(525, ex),
+            on.on_next(550, 1),
+            on.on_next(575, 2),
+            on.on_next(600, 3),
+            on.on_next(625, 4),
+            on.on_next(650, 5),
+            on.on_next(675, 6),
+            on.on_next(700, 7),
+            on.on_completed(725)
+        });
+
+        WHEN("retry of 1 is launched with expected error before complete") {
+
+            auto res = w.start(
+                [&]() {
+                return xs
+                    .retry(1)
+                    // forget type to workaround lambda deduction bug on msvc 2013
+                    .as_dynamic();
+            });
+
+            THEN("The output contains all the data until retry fails") {
+                auto required = rxu::to_vector({
+                    on.on_next(300, 1),
+                    on.on_next(325, 2),
+                    on.on_next(350, 3),
+                    on.on_next(425, 1),
+                    on.on_next(450, 2),
+                    on.on_next(475, 3),
+                    on.on_next(500, 4),
+                    on.on_error(525, ex),
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(actual == required);
+            }
+
+            THEN("There were 2 subscriptions and 2 unsubscriptions to the ints") {
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 400),
+                    on.subscribe(400, 525)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+
