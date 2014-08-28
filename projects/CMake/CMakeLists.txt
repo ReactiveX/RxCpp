@@ -53,6 +53,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/publish.cpp
     ${TEST_DIR}/operators/reduce.cpp
     ${TEST_DIR}/operators/repeat.cpp
+    ${TEST_DIR}/operators/retry.cpp
     ${TEST_DIR}/operators/scan.cpp
     ${TEST_DIR}/operators/skip.cpp
     ${TEST_DIR}/operators/skip_until.cpp
@@ -68,7 +69,7 @@ TARGET_LINK_LIBRARIES(rxcppv2_test ${CMAKE_THREAD_LIBS_INIT})
 # define the sources of the self test
 set(ONE_SOURCES
     ${TEST_DIR}/test.cpp
-    ${TEST_DIR}/operators/subscribe_on.cpp
+#    ${TEST_DIR}/operators/subscribe_on.cpp
 )
 add_executable(one_test ${ONE_SOURCES})
 TARGET_LINK_LIBRARIES(one_test ${CMAKE_THREAD_LIBS_INIT})
@@ -82,12 +83,20 @@ set(PYTHAGORIAN_SOURCES
 add_executable(pythagorian ${PYTHAGORIAN_SOURCES})
 TARGET_LINK_LIBRARIES(pythagorian ${CMAKE_THREAD_LIBS_INIT})
 
-# define the sources of the pythagorian example
+# define the sources of the println example
 set(PRINTLN_SOURCES
     ${EXAMPLES_DIR}/println/main.cpp
 )
 add_executable(println ${PRINTLN_SOURCES})
 TARGET_LINK_LIBRARIES(println ${CMAKE_THREAD_LIBS_INIT})
+
+# define the sources of the tests example
+set(TESTS_EXAMPLE_SOURCES
+    ${EXAMPLES_DIR}/tests/main.cpp
+    ${EXAMPLES_DIR}/tests/take.cpp
+)
+add_executable(tests_example ${TESTS_EXAMPLE_SOURCES})
+TARGET_LINK_LIBRARIES(tests_example ${CMAKE_THREAD_LIBS_INIT})
 
 # configure unit tests via CTest
 enable_testing()

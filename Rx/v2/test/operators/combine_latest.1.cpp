@@ -12,19 +12,19 @@ SCENARIO("combine_latest interleaved with tail", "[combine_latest][join][operato
         const rxsc::test::messages<int> on;
 
         auto o1 = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(215, 2),
-            on.on_next(225, 4),
-            on.on_completed(230)
+            on.next(150, 1),
+            on.next(215, 2),
+            on.next(225, 4),
+            on.completed(230)
         });
 
         auto o2 = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(220, 3),
-            on.on_next(230, 5),
-            on.on_next(235, 6),
-            on.on_next(240, 7),
-            on.on_completed(250)
+            on.next(150, 1),
+            on.next(220, 3),
+            on.next(230, 5),
+            on.next(235, 6),
+            on.next(240, 7),
+            on.completed(250)
         });
 
         WHEN("each int is combined with the latest from the other source"){
@@ -45,12 +45,12 @@ SCENARIO("combine_latest interleaved with tail", "[combine_latest][join][operato
 
             THEN("the output contains combined ints"){
                 auto required = rxu::to_vector({
-                    on.on_next(220, 2 + 3),
-                    on.on_next(225, 4 + 3),
-                    on.on_next(230, 4 + 5),
-                    on.on_next(235, 4 + 6),
-                    on.on_next(240, 4 + 7),
-                    on.on_completed(250)
+                    on.next(220, 2 + 3),
+                    on.next(225, 4 + 3),
+                    on.next(230, 4 + 5),
+                    on.next(235, 4 + 6),
+                    on.next(240, 4 + 7),
+                    on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -82,17 +82,17 @@ SCENARIO("combine_latest consecutive", "[combine_latest][join][operators]"){
         const rxsc::test::messages<int> on;
 
         auto o1 = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(215, 2),
-            on.on_next(225, 4),
-            on.on_completed(230)
+            on.next(150, 1),
+            on.next(215, 2),
+            on.next(225, 4),
+            on.completed(230)
         });
 
         auto o2 = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(235, 6),
-            on.on_next(240, 7),
-            on.on_completed(250)
+            on.next(150, 1),
+            on.next(235, 6),
+            on.next(240, 7),
+            on.completed(250)
         });
 
         WHEN("each int is combined with the latest from the other source"){
@@ -113,9 +113,9 @@ SCENARIO("combine_latest consecutive", "[combine_latest][join][operators]"){
 
             THEN("the output contains combined ints"){
                 auto required = rxu::to_vector({
-                    on.on_next(235, 4 + 6),
-                    on.on_next(240, 4 + 7),
-                    on.on_completed(250)
+                    on.next(235, 4 + 6),
+                    on.next(240, 4 + 7),
+                    on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -149,17 +149,17 @@ SCENARIO("combine_latest consecutive ends with error left", "[combine_latest][jo
         std::runtime_error ex("combine_latest on_error from source");
 
         auto o1 = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(215, 2),
-            on.on_next(225, 4),
-            on.on_error(230, ex)
+            on.next(150, 1),
+            on.next(215, 2),
+            on.next(225, 4),
+            on.error(230, ex)
         });
 
         auto o2 = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(235, 6),
-            on.on_next(240, 7),
-            on.on_completed(250)
+            on.next(150, 1),
+            on.next(235, 6),
+            on.next(240, 7),
+            on.completed(250)
         });
 
         WHEN("each int is combined with the latest from the other source"){
@@ -180,7 +180,7 @@ SCENARIO("combine_latest consecutive ends with error left", "[combine_latest][jo
 
             THEN("the output contains only an error"){
                 auto required = rxu::to_vector({
-                    on.on_error(230, ex)
+                    on.error(230, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -214,17 +214,17 @@ SCENARIO("combine_latest consecutive ends with error right", "[combine_latest][j
         std::runtime_error ex("combine_latest on_error from source");
 
         auto o1 = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(215, 2),
-            on.on_next(225, 4),
-            on.on_completed(250)
+            on.next(150, 1),
+            on.next(215, 2),
+            on.next(225, 4),
+            on.completed(250)
         });
 
         auto o2 = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(235, 6),
-            on.on_next(240, 7),
-            on.on_error(245, ex)
+            on.next(150, 1),
+            on.next(235, 6),
+            on.next(240, 7),
+            on.error(245, ex)
         });
 
         WHEN("each int is combined with the latest from the other source"){
@@ -245,9 +245,9 @@ SCENARIO("combine_latest consecutive ends with error right", "[combine_latest][j
 
             THEN("the output contains combined ints followed by an error"){
                 auto required = rxu::to_vector({
-                    on.on_next(235, 4 + 6),
-                    on.on_next(240, 4 + 7),
-                    on.on_error(245, ex)
+                    on.next(235, 4 + 6),
+                    on.next(240, 4 + 7),
+                    on.error(245, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -284,7 +284,7 @@ SCENARIO("combine_latest never N", "[combine_latest][join][operators]"){
         for (int i = 0; i < N; ++i) {
             n.push_back(
                 sc.make_hot_observable({
-                    on.on_next(150, 1)
+                    on.next(150, 1)
                 })
             );
         }
@@ -336,9 +336,9 @@ SCENARIO("combine_latest empty N", "[combine_latest][join][operators]"){
         std::vector<rxcpp::test::testable_observable<int>> e;
         for (int i = 0; i < N; ++i) {
             e.push_back(
-                sc.make_hot_observable({ 
-                    on.on_next(150, 1),
-                    on.on_completed(210 + 10 * i) 
+                sc.make_hot_observable({
+                    on.next(150, 1),
+                    on.completed(210 + 10 * i)
                 })
             );
         }
@@ -350,7 +350,7 @@ SCENARIO("combine_latest empty N", "[combine_latest][join][operators]"){
                     return e[0]
                         .combine_latest(
                             [](int v0, int v1, int v2, int v3, int v4, int v5, int v6, int v7, int v8, int v9, int v10, int v11, int v12, int v13, int v14, int v15){
-                                return v0 + v1 + v2 + v3 + v4 + v5 + v6 + v7 + v8 + v9 + v10 + v11 + v12 + v13 + v14 + v15; 
+                                return v0 + v1 + v2 + v3 + v4 + v5 + v6 + v7 + v8 + v9 + v10 + v11 + v12 + v13 + v14 + v15;
                             },
                             e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8], e[9], e[10], e[11], e[12], e[13], e[14], e[15]
                         )
@@ -361,14 +361,14 @@ SCENARIO("combine_latest empty N", "[combine_latest][join][operators]"){
 
             THEN("the output contains only complete message"){
                 auto required = rxu::to_vector({
-                    on.on_completed(200 + 10 * N)
+                    on.completed(200 + 10 * N)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
             THEN("there was one subscription and one unsubscription to each observable"){
-                
+
                 int i = 0;
                 std::for_each(e.begin(), e.end(), [&](rxcpp::test::testable_observable<int> &s){
                     auto required = rxu::to_vector({
@@ -389,12 +389,12 @@ SCENARIO("combine_latest never/empty", "[combine_latest][join][operators]"){
         const rxsc::test::messages<int> on;
 
         auto n = sc.make_hot_observable({
-            on.on_next(150, 1)
+            on.next(150, 1)
         });
 
         auto e = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_completed(210)
+            on.next(150, 1),
+            on.completed(210)
         });
 
         WHEN("each int is combined with the latest from the other source"){
@@ -445,12 +445,12 @@ SCENARIO("combine_latest empty/never", "[combine_latest][join][operators]"){
         const rxsc::test::messages<int> on;
 
         auto e = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_completed(210)
+            on.next(150, 1),
+            on.completed(210)
         });
 
         auto n = sc.make_hot_observable({
-            on.on_next(150, 1)
+            on.next(150, 1)
         });
 
         WHEN("each int is combined with the latest from the other source"){
@@ -501,14 +501,14 @@ SCENARIO("combine_latest empty/return", "[combine_latest][join][operators]"){
         const rxsc::test::messages<int> on;
 
         auto e = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_completed(210)
+            on.next(150, 1),
+            on.completed(210)
         });
 
         auto o = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(215, 2),
-            on.on_completed(220)
+            on.next(150, 1),
+            on.next(215, 2),
+            on.completed(220)
         });
 
         WHEN("each int is combined with the latest from the other source"){
@@ -529,7 +529,7 @@ SCENARIO("combine_latest empty/return", "[combine_latest][join][operators]"){
 
             THEN("the output contains only complete message"){
                 auto required = rxu::to_vector({
-                    on.on_completed(220)
+                    on.completed(220)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -561,14 +561,14 @@ SCENARIO("combine_latest return/empty", "[combine_latest][join][operators]"){
         const rxsc::test::messages<int> on;
 
         auto o = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(215, 2),
-            on.on_completed(220)
+            on.next(150, 1),
+            on.next(215, 2),
+            on.completed(220)
         });
 
         auto e = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_completed(210)
+            on.next(150, 1),
+            on.completed(210)
         });
 
         WHEN("each int is combined with the latest from the other source"){
@@ -589,7 +589,7 @@ SCENARIO("combine_latest return/empty", "[combine_latest][join][operators]"){
 
             THEN("the output contains only complete message"){
                 auto required = rxu::to_vector({
-                    on.on_completed(220)
+                    on.completed(220)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -621,13 +621,13 @@ SCENARIO("combine_latest never/return", "[combine_latest][join][operators]"){
         const rxsc::test::messages<int> on;
 
         auto n = sc.make_hot_observable({
-            on.on_next(150, 1)
+            on.next(150, 1)
         });
 
         auto o = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(215, 2),
-            on.on_completed(220)
+            on.next(150, 1),
+            on.next(215, 2),
+            on.completed(220)
         });
 
         WHEN("each int is combined with the latest from the other source"){
@@ -678,13 +678,13 @@ SCENARIO("combine_latest return/never", "[combine_latest][join][operators]"){
         const rxsc::test::messages<int> on;
 
         auto o = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(215, 2),
-            on.on_completed(220)
+            on.next(150, 1),
+            on.next(215, 2),
+            on.completed(220)
         });
 
         auto n = sc.make_hot_observable({
-            on.on_next(150, 1)
+            on.next(150, 1)
         });
 
         WHEN("each int is combined with the latest from the other source"){

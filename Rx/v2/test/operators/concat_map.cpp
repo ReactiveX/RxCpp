@@ -208,17 +208,17 @@ SCENARIO("concat_map completes", "[concat_map][map][operators]"){
         const rxsc::test::messages<std::string> s_on;
 
         auto xs = sc.make_cold_observable({
-            i_on.on_next(100, 4),
-            i_on.on_next(200, 2),
-            i_on.on_completed(500)
+            i_on.next(100, 4),
+            i_on.next(200, 2),
+            i_on.completed(500)
         });
 
         auto ys = sc.make_cold_observable({
-            s_on.on_next(50, "foo"),
-            s_on.on_next(100, "bar"),
-            s_on.on_next(150, "baz"),
-            s_on.on_next(200, "qux"),
-            s_on.on_completed(250)
+            s_on.next(50, "foo"),
+            s_on.next(100, "bar"),
+            s_on.next(150, "baz"),
+            s_on.next(200, "qux"),
+            s_on.completed(250)
         });
 
         WHEN("each int is mapped to the strings"){
@@ -238,15 +238,15 @@ SCENARIO("concat_map completes", "[concat_map][map][operators]"){
 
             THEN("the output contains strings repeated for each int"){
                 auto required = rxu::to_vector({
-                    s_on.on_next(350, "foo"),
-                    s_on.on_next(400, "bar"),
-                    s_on.on_next(450, "baz"),
-                    s_on.on_next(500, "qux"),
-                    s_on.on_next(600, "foo"),
-                    s_on.on_next(650, "bar"),
-                    s_on.on_next(700, "baz"),
-                    s_on.on_next(750, "qux"),
-                    s_on.on_completed(800)
+                    s_on.next(350, "foo"),
+                    s_on.next(400, "bar"),
+                    s_on.next(450, "baz"),
+                    s_on.next(500, "qux"),
+                    s_on.next(600, "foo"),
+                    s_on.next(650, "bar"),
+                    s_on.next(700, "baz"),
+                    s_on.next(750, "qux"),
+                    s_on.completed(800)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);

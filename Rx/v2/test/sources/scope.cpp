@@ -30,10 +30,10 @@ SCENARIO("scope, cold observable", "[scope][sources]"){
                                 int time = 10;
                                 auto values = r.get();
                                 std::for_each(values.begin(), values.end(), [&](int &v){
-                                    msg.push_back(on.on_next(time, v));
+                                    msg.push_back(on.next(time, v));
                                     time += 10;
                                 });
-                                msg.push_back(on.on_completed(time));
+                                msg.push_back(on.completed(time));
                                 xs.reset(sc.make_cold_observable(msg));
                                 return xs.get();
                             }
@@ -45,12 +45,12 @@ SCENARIO("scope, cold observable", "[scope][sources]"){
 
             THEN("the output stops on completion"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, 1),
-                    on.on_next(220, 2),
-                    on.on_next(230, 3),
-                    on.on_next(240, 4),
-                    on.on_next(250, 5),
-                    on.on_completed(260)
+                    on.next(210, 1),
+                    on.next(220, 2),
+                    on.next(230, 3),
+                    on.next(240, 4),
+                    on.next(250, 5),
+                    on.completed(260)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -91,10 +91,10 @@ SCENARIO("scope, hot observable", "[scope][sources]"){
                                 int time = 210;
                                 auto values = r.get();
                                 std::for_each(values.begin(), values.end(), [&](int &v){
-                                    msg.push_back(on.on_next(time, v));
+                                    msg.push_back(on.next(time, v));
                                     time += 10;
                                 });
-                                msg.push_back(on.on_completed(time));
+                                msg.push_back(on.completed(time));
                                 xs.reset(sc.make_hot_observable(msg));
                                 return xs.get();
                             }
@@ -106,12 +106,12 @@ SCENARIO("scope, hot observable", "[scope][sources]"){
 
             THEN("the output stops on completion"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, 1),
-                    on.on_next(220, 2),
-                    on.on_next(230, 3),
-                    on.on_next(240, 4),
-                    on.on_next(250, 5),
-                    on.on_completed(260)
+                    on.next(210, 1),
+                    on.next(220, 2),
+                    on.next(230, 3),
+                    on.next(240, 4),
+                    on.next(250, 5),
+                    on.completed(260)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -154,8 +154,8 @@ SCENARIO("scope, complete", "[scope][sources]"){
                             [&](resource r){
                                 ++observable_factory_invoked;
                                 xs.reset(sc.make_cold_observable(rxu::to_vector({
-                                    on.on_next(100, r.get()),
-                                    on.on_completed(200)
+                                    on.next(100, r.get()),
+                                    on.completed(200)
                                 })));
                                 return xs.get();
                             }
@@ -175,8 +175,8 @@ SCENARIO("scope, complete", "[scope][sources]"){
 
             THEN("the output stops on completion"){
                 auto required = rxu::to_vector({
-                    on.on_next(300, 200),
-                    on.on_completed(400)
+                    on.next(300, 200),
+                    on.completed(400)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -221,8 +221,8 @@ SCENARIO("scope, error", "[scope][sources]"){
                             [&](resource r){
                                 ++observable_factory_invoked;
                                 xs.reset(sc.make_cold_observable(rxu::to_vector({
-                                    on.on_next(100, r.get()),
-                                    on.on_error(200, ex)
+                                    on.next(100, r.get()),
+                                    on.error(200, ex)
                                 })));
                                 return xs.get();
                             }
@@ -242,8 +242,8 @@ SCENARIO("scope, error", "[scope][sources]"){
 
             THEN("the output stops on error"){
                 auto required = rxu::to_vector({
-                    on.on_next(300, 200),
-                    on.on_error(400, ex)
+                    on.next(300, 200),
+                    on.error(400, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -286,8 +286,8 @@ SCENARIO("scope, dispose", "[scope][sources]"){
                             [&](resource r){
                                 ++observable_factory_invoked;
                                 xs.reset(sc.make_cold_observable(rxu::to_vector({
-                                    on.on_next(100, r.get()),
-                                    on.on_next(1000, r.get() + 1)
+                                    on.next(100, r.get()),
+                                    on.next(1000, r.get() + 1)
                                 })));
                                 return xs.get();
                             }
@@ -307,7 +307,7 @@ SCENARIO("scope, dispose", "[scope][sources]"){
 
             THEN("the output contains resulting ints"){
                 auto required = rxu::to_vector({
-                    on.on_next(300, 200)
+                    on.next(300, 200)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -368,7 +368,7 @@ SCENARIO("scope, throw resource selector", "[scope][sources]"){
 
             THEN("the output stops on error"){
                 auto required = rxu::to_vector({
-                    on.on_error(200, ex)
+                    on.error(200, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -421,7 +421,7 @@ SCENARIO("scope, throw resource usage", "[scope][sources]"){
 
             THEN("the output stops on error"){
                 auto required = rxu::to_vector({
-                    on.on_error(200, ex)
+                    on.error(200, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);

@@ -101,18 +101,18 @@ SCENARIO("lift liftfilter stops on disposal", "[where][filter][lift][operators]"
         long invoked = 0;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(110, 1),
-            on.on_next(180, 2),
-            on.on_next(230, 3),
-            on.on_next(270, 4),
-            on.on_next(340, 5),
-            on.on_next(380, 6),
-            on.on_next(390, 7),
-            on.on_next(450, 8),
-            on.on_next(470, 9),
-            on.on_next(560, 10),
-            on.on_next(580, 11),
-            on.on_completed(600)
+            on.next(110, 1),
+            on.next(180, 2),
+            on.next(230, 3),
+            on.next(270, 4),
+            on.next(340, 5),
+            on.next(380, 6),
+            on.next(390, 7),
+            on.next(450, 8),
+            on.next(470, 9),
+            on.next(560, 10),
+            on.next(580, 11),
+            on.completed(600)
         });
 
         WHEN("filtered to ints that are primes"){
@@ -132,9 +132,9 @@ SCENARIO("lift liftfilter stops on disposal", "[where][filter][lift][operators]"
 
             THEN("the output only contains primes that arrived before disposal"){
                 auto required = rxu::to_vector({
-                    on.on_next(230, 3),
-                    on.on_next(340, 5),
-                    on.on_next(390, 7)
+                    on.next(230, 3),
+                    on.next(340, 5),
+                    on.next(390, 7)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -164,18 +164,18 @@ SCENARIO("stream lift liftfilter stops on disposal", "[where][filter][lift][stre
         long invoked = 0;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(110, 1),
-            on.on_next(180, 2),
-            on.on_next(230, 3),
-            on.on_next(270, 4),
-            on.on_next(340, 5),
-            on.on_next(380, 6),
-            on.on_next(390, 7),
-            on.on_next(450, 8),
-            on.on_next(470, 9),
-            on.on_next(560, 10),
-            on.on_next(580, 11),
-            on.on_completed(600)
+            on.next(110, 1),
+            on.next(180, 2),
+            on.next(230, 3),
+            on.next(270, 4),
+            on.next(340, 5),
+            on.next(380, 6),
+            on.next(390, 7),
+            on.next(450, 8),
+            on.next(470, 9),
+            on.next(560, 10),
+            on.next(580, 11),
+            on.completed(600)
         });
 
         WHEN("filtered to ints that are primes"){
@@ -195,9 +195,9 @@ SCENARIO("stream lift liftfilter stops on disposal", "[where][filter][lift][stre
 
             THEN("the output only contains primes that arrived before disposal"){
                 auto required = rxu::to_vector({
-                    on.on_next(230, 3),
-                    on.on_next(340, 5),
-                    on.on_next(390, 7)
+                    on.next(230, 3),
+                    on.next(340, 5),
+                    on.next(390, 7)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -227,18 +227,18 @@ SCENARIO("lift lambda filter stops on disposal", "[where][filter][lift][lambda][
         long invoked = 0;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(110, 1),
-            on.on_next(180, 2),
-            on.on_next(230, 3),
-            on.on_next(270, 4),
-            on.on_next(340, 5),
-            on.on_next(380, 6),
-            on.on_next(390, 7),
-            on.on_next(450, 8),
-            on.on_next(470, 9),
-            on.on_next(560, 10),
-            on.on_next(580, 11),
-            on.on_completed(600)
+            on.next(110, 1),
+            on.next(180, 2),
+            on.next(230, 3),
+            on.next(270, 4),
+            on.next(340, 5),
+            on.next(380, 6),
+            on.next(390, 7),
+            on.next(450, 8),
+            on.next(470, 9),
+            on.next(560, 10),
+            on.next(580, 11),
+            on.completed(600)
         });
 
         WHEN("filtered to ints that are primes"){
@@ -271,9 +271,9 @@ SCENARIO("lift lambda filter stops on disposal", "[where][filter][lift][lambda][
 
             THEN("the output only contains primes that arrived before disposal"){
                 auto required = rxu::to_vector({
-                    on.on_next(230, 3),
-                    on.on_next(340, 5),
-                    on.on_next(390, 7)
+                    on.next(230, 3),
+                    on.next(340, 5),
+                    on.next(390, 7)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);

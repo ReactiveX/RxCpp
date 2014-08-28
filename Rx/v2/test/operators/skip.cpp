@@ -12,26 +12,26 @@ SCENARIO("skip, complete after", "[skip][operators]"){
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(70, 6),
-            on.on_next(150, 4),
-            on.on_next(210, 9),
-            on.on_next(230, 13),
-            on.on_next(270, 7),
-            on.on_next(280, 1),
-            on.on_next(300, -1),
-            on.on_next(310, 3),
-            on.on_next(340, 8),
-            on.on_next(370, 11),
-            on.on_next(410, 15),
-            on.on_next(415, 16),
-            on.on_next(460, 72),
-            on.on_next(510, 76),
-            on.on_next(560, 32),
-            on.on_next(570, -100),
-            on.on_next(580, -3),
-            on.on_next(590, 5),
-            on.on_next(630, 10),
-            on.on_completed(690)
+            on.next(70, 6),
+            on.next(150, 4),
+            on.next(210, 9),
+            on.next(230, 13),
+            on.next(270, 7),
+            on.next(280, 1),
+            on.next(300, -1),
+            on.next(310, 3),
+            on.next(340, 8),
+            on.next(370, 11),
+            on.next(410, 15),
+            on.next(415, 16),
+            on.next(460, 72),
+            on.next(510, 76),
+            on.next(560, 32),
+            on.next(570, -100),
+            on.next(580, -3),
+            on.next(590, 5),
+            on.next(630, 10),
+            on.completed(690)
         });
 
         WHEN("more values than generated are skipped"){
@@ -47,7 +47,7 @@ SCENARIO("skip, complete after", "[skip][operators]"){
 
             THEN("the output only contains only complete message"){
                 auto required = rxu::to_vector({
-                    on.on_completed(690)
+                    on.completed(690)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -71,26 +71,26 @@ SCENARIO("skip, complete same", "[skip][operators]"){
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(70, 6),
-            on.on_next(150, 4),
-            on.on_next(210, 9),
-            on.on_next(230, 13),
-            on.on_next(270, 7),
-            on.on_next(280, 1),
-            on.on_next(300, -1),
-            on.on_next(310, 3),
-            on.on_next(340, 8),
-            on.on_next(370, 11),
-            on.on_next(410, 15),
-            on.on_next(415, 16),
-            on.on_next(460, 72),
-            on.on_next(510, 76),
-            on.on_next(560, 32),
-            on.on_next(570, -100),
-            on.on_next(580, -3),
-            on.on_next(590, 5),
-            on.on_next(630, 10),
-            on.on_completed(690)
+            on.next(70, 6),
+            on.next(150, 4),
+            on.next(210, 9),
+            on.next(230, 13),
+            on.next(270, 7),
+            on.next(280, 1),
+            on.next(300, -1),
+            on.next(310, 3),
+            on.next(340, 8),
+            on.next(370, 11),
+            on.next(410, 15),
+            on.next(415, 16),
+            on.next(460, 72),
+            on.next(510, 76),
+            on.next(560, 32),
+            on.next(570, -100),
+            on.next(580, -3),
+            on.next(590, 5),
+            on.next(630, 10),
+            on.completed(690)
         });
 
         WHEN("exact number of values is skipped"){
@@ -106,7 +106,7 @@ SCENARIO("skip, complete same", "[skip][operators]"){
 
             THEN("the output only contains only complete message"){
                 auto required = rxu::to_vector({
-                    on.on_completed(690)
+                    on.completed(690)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -130,26 +130,26 @@ SCENARIO("skip, complete before", "[skip][operators]"){
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(70, 6),
-            on.on_next(150, 4),
-            on.on_next(210, 9),
-            on.on_next(230, 13),
-            on.on_next(270, 7),
-            on.on_next(280, 1),
-            on.on_next(300, -1),
-            on.on_next(310, 3),
-            on.on_next(340, 8),
-            on.on_next(370, 11),
-            on.on_next(410, 15),
-            on.on_next(415, 16),
-            on.on_next(460, 72),
-            on.on_next(510, 76),
-            on.on_next(560, 32),
-            on.on_next(570, -100),
-            on.on_next(580, -3),
-            on.on_next(590, 5),
-            on.on_next(630, 10),
-            on.on_completed(690)
+            on.next(70, 6),
+            on.next(150, 4),
+            on.next(210, 9),
+            on.next(230, 13),
+            on.next(270, 7),
+            on.next(280, 1),
+            on.next(300, -1),
+            on.next(310, 3),
+            on.next(340, 8),
+            on.next(370, 11),
+            on.next(410, 15),
+            on.next(415, 16),
+            on.next(460, 72),
+            on.next(510, 76),
+            on.next(560, 32),
+            on.next(570, -100),
+            on.next(580, -3),
+            on.next(590, 5),
+            on.next(630, 10),
+            on.completed(690)
         });
 
         WHEN("part of values is skipped"){
@@ -165,14 +165,14 @@ SCENARIO("skip, complete before", "[skip][operators]"){
 
             THEN("the output only contains items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(460, 72),
-                    on.on_next(510, 76),
-                    on.on_next(560, 32),
-                    on.on_next(570, -100),
-                    on.on_next(580, -3),
-                    on.on_next(590, 5),
-                    on.on_next(630, 10),
-                    on.on_completed(690)
+                    on.next(460, 72),
+                    on.next(510, 76),
+                    on.next(560, 32),
+                    on.next(570, -100),
+                    on.next(580, -3),
+                    on.next(590, 5),
+                    on.next(630, 10),
+                    on.completed(690)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -196,26 +196,26 @@ SCENARIO("skip, complete zero", "[skip][operators]"){
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(70, 6),
-            on.on_next(150, 4),
-            on.on_next(210, 9),
-            on.on_next(230, 13),
-            on.on_next(270, 7),
-            on.on_next(280, 1),
-            on.on_next(300, -1),
-            on.on_next(310, 3),
-            on.on_next(340, 8),
-            on.on_next(370, 11),
-            on.on_next(410, 15),
-            on.on_next(415, 16),
-            on.on_next(460, 72),
-            on.on_next(510, 76),
-            on.on_next(560, 32),
-            on.on_next(570, -100),
-            on.on_next(580, -3),
-            on.on_next(590, 5),
-            on.on_next(630, 10),
-            on.on_completed(690)
+            on.next(70, 6),
+            on.next(150, 4),
+            on.next(210, 9),
+            on.next(230, 13),
+            on.next(270, 7),
+            on.next(280, 1),
+            on.next(300, -1),
+            on.next(310, 3),
+            on.next(340, 8),
+            on.next(370, 11),
+            on.next(410, 15),
+            on.next(415, 16),
+            on.next(460, 72),
+            on.next(510, 76),
+            on.next(560, 32),
+            on.next(570, -100),
+            on.next(580, -3),
+            on.next(590, 5),
+            on.next(630, 10),
+            on.completed(690)
         });
 
         WHEN("no values are skipped"){
@@ -231,24 +231,24 @@ SCENARIO("skip, complete zero", "[skip][operators]"){
 
             THEN("the output only contains items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, 9),
-                    on.on_next(230, 13),
-                    on.on_next(270, 7),
-                    on.on_next(280, 1),
-                    on.on_next(300, -1),
-                    on.on_next(310, 3),
-                    on.on_next(340, 8),
-                    on.on_next(370, 11),
-                    on.on_next(410, 15),
-                    on.on_next(415, 16),
-                    on.on_next(460, 72),
-                    on.on_next(510, 76),
-                    on.on_next(560, 32),
-                    on.on_next(570, -100),
-                    on.on_next(580, -3),
-                    on.on_next(590, 5),
-                    on.on_next(630, 10),
-                    on.on_completed(690)
+                    on.next(210, 9),
+                    on.next(230, 13),
+                    on.next(270, 7),
+                    on.next(280, 1),
+                    on.next(300, -1),
+                    on.next(310, 3),
+                    on.next(340, 8),
+                    on.next(370, 11),
+                    on.next(410, 15),
+                    on.next(415, 16),
+                    on.next(460, 72),
+                    on.next(510, 76),
+                    on.next(560, 32),
+                    on.next(570, -100),
+                    on.next(580, -3),
+                    on.next(590, 5),
+                    on.next(630, 10),
+                    on.completed(690)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -274,26 +274,26 @@ SCENARIO("skip, error after", "[skip][operators]"){
         std::runtime_error ex("skip on_error from source");
 
         auto xs = sc.make_hot_observable({
-            on.on_next(70, 6),
-            on.on_next(150, 4),
-            on.on_next(210, 9),
-            on.on_next(230, 13),
-            on.on_next(270, 7),
-            on.on_next(280, 1),
-            on.on_next(300, -1),
-            on.on_next(310, 3),
-            on.on_next(340, 8),
-            on.on_next(370, 11),
-            on.on_next(410, 15),
-            on.on_next(415, 16),
-            on.on_next(460, 72),
-            on.on_next(510, 76),
-            on.on_next(560, 32),
-            on.on_next(570, -100),
-            on.on_next(580, -3),
-            on.on_next(590, 5),
-            on.on_next(630, 10),
-            on.on_error(690, ex)
+            on.next(70, 6),
+            on.next(150, 4),
+            on.next(210, 9),
+            on.next(230, 13),
+            on.next(270, 7),
+            on.next(280, 1),
+            on.next(300, -1),
+            on.next(310, 3),
+            on.next(340, 8),
+            on.next(370, 11),
+            on.next(410, 15),
+            on.next(415, 16),
+            on.next(460, 72),
+            on.next(510, 76),
+            on.next(560, 32),
+            on.next(570, -100),
+            on.next(580, -3),
+            on.next(590, 5),
+            on.next(630, 10),
+            on.error(690, ex)
         });
 
         WHEN("more values than generated are skipped"){
@@ -309,7 +309,7 @@ SCENARIO("skip, error after", "[skip][operators]"){
 
             THEN("the output only contains only error message"){
                 auto required = rxu::to_vector({
-                    on.on_error(690, ex)
+                    on.error(690, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -335,26 +335,26 @@ SCENARIO("skip, error same", "[skip][operators]"){
         std::runtime_error ex("skip on_error from source");
 
         auto xs = sc.make_hot_observable({
-            on.on_next(70, 6),
-            on.on_next(150, 4),
-            on.on_next(210, 9),
-            on.on_next(230, 13),
-            on.on_next(270, 7),
-            on.on_next(280, 1),
-            on.on_next(300, -1),
-            on.on_next(310, 3),
-            on.on_next(340, 8),
-            on.on_next(370, 11),
-            on.on_next(410, 15),
-            on.on_next(415, 16),
-            on.on_next(460, 72),
-            on.on_next(510, 76),
-            on.on_next(560, 32),
-            on.on_next(570, -100),
-            on.on_next(580, -3),
-            on.on_next(590, 5),
-            on.on_next(630, 10),
-            on.on_error(690, ex)
+            on.next(70, 6),
+            on.next(150, 4),
+            on.next(210, 9),
+            on.next(230, 13),
+            on.next(270, 7),
+            on.next(280, 1),
+            on.next(300, -1),
+            on.next(310, 3),
+            on.next(340, 8),
+            on.next(370, 11),
+            on.next(410, 15),
+            on.next(415, 16),
+            on.next(460, 72),
+            on.next(510, 76),
+            on.next(560, 32),
+            on.next(570, -100),
+            on.next(580, -3),
+            on.next(590, 5),
+            on.next(630, 10),
+            on.error(690, ex)
         });
 
         WHEN("exact number of values is skipped"){
@@ -370,7 +370,7 @@ SCENARIO("skip, error same", "[skip][operators]"){
 
             THEN("the output only contains only error message"){
                 auto required = rxu::to_vector({
-                    on.on_error(690, ex)
+                    on.error(690, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -396,26 +396,26 @@ SCENARIO("skip, error before", "[skip][operators]"){
         std::runtime_error ex("skip on_error from source");
 
         auto xs = sc.make_hot_observable({
-            on.on_next(70, 6),
-            on.on_next(150, 4),
-            on.on_next(210, 9),
-            on.on_next(230, 13),
-            on.on_next(270, 7),
-            on.on_next(280, 1),
-            on.on_next(300, -1),
-            on.on_next(310, 3),
-            on.on_next(340, 8),
-            on.on_next(370, 11),
-            on.on_next(410, 15),
-            on.on_next(415, 16),
-            on.on_next(460, 72),
-            on.on_next(510, 76),
-            on.on_next(560, 32),
-            on.on_next(570, -100),
-            on.on_next(580, -3),
-            on.on_next(590, 5),
-            on.on_next(630, 10),
-            on.on_error(690, ex)
+            on.next(70, 6),
+            on.next(150, 4),
+            on.next(210, 9),
+            on.next(230, 13),
+            on.next(270, 7),
+            on.next(280, 1),
+            on.next(300, -1),
+            on.next(310, 3),
+            on.next(340, 8),
+            on.next(370, 11),
+            on.next(410, 15),
+            on.next(415, 16),
+            on.next(460, 72),
+            on.next(510, 76),
+            on.next(560, 32),
+            on.next(570, -100),
+            on.next(580, -3),
+            on.next(590, 5),
+            on.next(630, 10),
+            on.error(690, ex)
         });
 
         WHEN("part of values is skipped"){
@@ -431,21 +431,21 @@ SCENARIO("skip, error before", "[skip][operators]"){
 
             THEN("the output only contains items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(280, 1),
-                    on.on_next(300, -1),
-                    on.on_next(310, 3),
-                    on.on_next(340, 8),
-                    on.on_next(370, 11),
-                    on.on_next(410, 15),
-                    on.on_next(415, 16),
-                    on.on_next(460, 72),
-                    on.on_next(510, 76),
-                    on.on_next(560, 32),
-                    on.on_next(570, -100),
-                    on.on_next(580, -3),
-                    on.on_next(590, 5),
-                    on.on_next(630, 10),
-                    on.on_error(690, ex)
+                    on.next(280, 1),
+                    on.next(300, -1),
+                    on.next(310, 3),
+                    on.next(340, 8),
+                    on.next(370, 11),
+                    on.next(410, 15),
+                    on.next(415, 16),
+                    on.next(460, 72),
+                    on.next(510, 76),
+                    on.next(560, 32),
+                    on.next(570, -100),
+                    on.next(580, -3),
+                    on.next(590, 5),
+                    on.next(630, 10),
+                    on.error(690, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -469,25 +469,25 @@ SCENARIO("skip, dispose before", "[skip][operators]"){
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(70, 6),
-            on.on_next(150, 4),
-            on.on_next(210, 9),
-            on.on_next(230, 13),
-            on.on_next(270, 7),
-            on.on_next(280, 1),
-            on.on_next(300, -1),
-            on.on_next(310, 3),
-            on.on_next(340, 8),
-            on.on_next(370, 11),
-            on.on_next(410, 15),
-            on.on_next(415, 16),
-            on.on_next(460, 72),
-            on.on_next(510, 76),
-            on.on_next(560, 32),
-            on.on_next(570, -100),
-            on.on_next(580, -3),
-            on.on_next(590, 5),
-            on.on_next(630, 10)
+            on.next(70, 6),
+            on.next(150, 4),
+            on.next(210, 9),
+            on.next(230, 13),
+            on.next(270, 7),
+            on.next(280, 1),
+            on.next(300, -1),
+            on.next(310, 3),
+            on.next(340, 8),
+            on.next(370, 11),
+            on.next(410, 15),
+            on.next(415, 16),
+            on.next(460, 72),
+            on.next(510, 76),
+            on.next(560, 32),
+            on.next(570, -100),
+            on.next(580, -3),
+            on.next(590, 5),
+            on.next(630, 10)
         });
 
         WHEN("all generated values are skipped"){
@@ -526,25 +526,25 @@ SCENARIO("skip, dispose after", "[skip][operators]"){
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(70, 6),
-            on.on_next(150, 4),
-            on.on_next(210, 9),
-            on.on_next(230, 13),
-            on.on_next(270, 7),
-            on.on_next(280, 1),
-            on.on_next(300, -1),
-            on.on_next(310, 3),
-            on.on_next(340, 8),
-            on.on_next(370, 11),
-            on.on_next(410, 15),
-            on.on_next(415, 16),
-            on.on_next(460, 72),
-            on.on_next(510, 76),
-            on.on_next(560, 32),
-            on.on_next(570, -100),
-            on.on_next(580, -3),
-            on.on_next(590, 5),
-            on.on_next(630, 10)
+            on.next(70, 6),
+            on.next(150, 4),
+            on.next(210, 9),
+            on.next(230, 13),
+            on.next(270, 7),
+            on.next(280, 1),
+            on.next(300, -1),
+            on.next(310, 3),
+            on.next(340, 8),
+            on.next(370, 11),
+            on.next(410, 15),
+            on.next(415, 16),
+            on.next(460, 72),
+            on.next(510, 76),
+            on.next(560, 32),
+            on.next(570, -100),
+            on.next(580, -3),
+            on.next(590, 5),
+            on.next(630, 10)
         });
 
         WHEN("some generated values are skipped"){
@@ -561,11 +561,11 @@ SCENARIO("skip, dispose after", "[skip][operators]"){
 
             THEN("the output contains items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(280, 1),
-                    on.on_next(300, -1),
-                    on.on_next(310, 3),
-                    on.on_next(340, 8),
-                    on.on_next(370, 11)
+                    on.next(280, 1),
+                    on.next(300, -1),
+                    on.next(310, 3),
+                    on.next(340, 8),
+                    on.next(370, 11)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -589,17 +589,17 @@ SCENARIO("skip, consecutive", "[skip][operators]"){
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(70, 6),
-            on.on_next(150, 4),
-            on.on_next(210, 9),
-            on.on_next(230, 13),
-            on.on_next(270, 7),
-            on.on_next(280, 1),
-            on.on_next(300, -1),
-            on.on_next(310, 3),
-            on.on_next(340, 8),
-            on.on_next(370, 11),
-            on.on_completed(400)
+            on.next(70, 6),
+            on.next(150, 4),
+            on.next(210, 9),
+            on.next(230, 13),
+            on.next(270, 7),
+            on.next(280, 1),
+            on.next(300, -1),
+            on.next(310, 3),
+            on.next(340, 8),
+            on.next(370, 11),
+            on.completed(400)
         });
 
         WHEN("3+2 values are skipped"){
@@ -616,10 +616,10 @@ SCENARIO("skip, consecutive", "[skip][operators]"){
 
             THEN("the output only contains items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(310, 3),
-                    on.on_next(340, 8),
-                    on.on_next(370, 11),
-                    on.on_completed(400)
+                    on.next(310, 3),
+                    on.next(340, 8),
+                    on.next(370, 11),
+                    on.completed(400)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);

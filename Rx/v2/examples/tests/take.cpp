@@ -1,106 +1,105 @@
 #include "rxcpp/rx.hpp"
+namespace rx=rxcpp;
 namespace rxu=rxcpp::util;
 namespace rxsc=rxcpp::schedulers;
 
 #include "rxcpp/rx-test.hpp"
 #include "catch.hpp"
 
-SCENARIO("reduce some data with seed", "[reduce][operators]"){
-    GIVEN("a test hot observable of ints"){
+SCENARIO("take 2 - passes", "[take][passes][operators]"){
+    GIVEN("a source"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
         const rxsc::test::messages<int> on;
 
-        int seed = 42;
-
         auto xs = sc.make_hot_observable({
             on.next(150, 1),
-            on.next(210, 0),
-            on.next(220, 1),
-            on.next(230, 2),
-            on.next(240, 3),
-            on.next(250, 4),
-            on.completed(260)
+            on.next(210, 2),
+            on.next(220, 3),
+            on.next(230, 4),
+            on.next(240, 5),
+            on.completed(250)
         });
 
-        auto sum = xs.sum();
-
-        WHEN("mapped to ints that are one larger"){
+        WHEN("2 values are taken"){
 
             auto res = w.start(
-                [&]() {
+                [xs]() {
                     return xs
-                        .reduce(seed,
-                            [](int sum, int x) {
-                                return sum + x;
-                            },
-                            [](int sum) {
-                                return sum * 5;
-                            })
+                        .take(2)
                         // forget type to workaround lambda deduction bug on msvc 2013
                         .as_dynamic();
                 }
             );
 
-            THEN("the output stops on completion"){
+            THEN("the output only contains items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.next(260, (seed + 0 + 1 + 2 + 3 + 4) * 5),
-                    on.completed(260)
+                    on.next(210, 2),
+                    on.next(220, 3),
+                    on.completed(220)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
-            THEN("there was one subscription and one unsubscription"){
+            THEN("there was 1 subscription/unsubscription to the source"){
                 auto required = rxu::to_vector({
-                    on.subscribe(200, 260)
+                    on.subscribe(200, 220)
                 });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
             }
+
         }
     }
 }
 
-SCENARIO("average some data", "[reduce][average][operators]"){
-    GIVEN("a test hot observable of ints"){
+SCENARIO("take 2 - fails", "[take][fails][operators]"){
+    GIVEN("a source"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
         const rxsc::test::messages<int> on;
-        const rxsc::test::messages<double> d_on;
 
         auto xs = sc.make_hot_observable({
             on.next(150, 1),
-            on.next(210, 3),
-            on.next(220, 4),
-            on.next(230, 2),
+            on.next(210, 2),
+            on.next(220, 3),
+            on.next(230, 4),
+            on.next(240, 5),
             on.completed(250)
         });
 
-        WHEN("mapped to ints that are one larger"){
+        WHEN("2 values are taken"){
 
             auto res = w.start(
-                [&]() {
-                    return xs.average();
+                [xs]() {
+                    return xs
+// TYPO START
+                        .skip(2)
+// TYPO END
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
                 }
             );
 
-            THEN("the output stops on completion"){
+            THEN("the output only contains items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    d_on.next(250, 3.0),
-                    d_on.completed(250)
+                    on.next(210, 2),
+                    on.next(220, 3),
+                    on.completed(220)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
-            THEN("there was one subscription and one unsubscription"){
+            THEN("there was 1 subscription/unsubscription to the source"){
                 auto required = rxu::to_vector({
-                    on.subscribe(200, 250)
+                    on.subscribe(200, 220)
                 });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
             }
+
         }
     }
 }

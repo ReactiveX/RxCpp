@@ -39,7 +39,7 @@ struct scan : public operator_base<typename std::decay<Seed>::type>
     template<class CT, class CS, class CP>
     static void check(...);
 
-    scan(source_type o, accumulator_type a, T s)
+    scan(source_type o, accumulator_type a, seed_type s)
         : initial(std::move(o), a, s)
     {
         static_assert(std::is_convertible<decltype(check<T, seed_type, accumulator_type>(0)), seed_type>::value, "scan Accumulator must be a function with the signature Seed(Seed, T)");

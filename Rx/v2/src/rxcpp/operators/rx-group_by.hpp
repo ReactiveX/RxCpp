@@ -109,6 +109,7 @@ struct group_by
     {
         typedef group_by_observer<Subscriber> this_type;
         typedef typename traits_type::grouped_observable_type value_type;
+        typedef typename traits_type::marble_type marble_type;
         typedef typename std::decay<Subscriber>::type dest_type;
         typedef observer<T, this_type> observer_type;
         dest_type dest;
@@ -133,7 +134,7 @@ struct group_by
             if (g == groups.end()) {
                 auto sub = subject_type();
                 g = groups.insert(std::make_pair(selectedKey.get(), sub.get_subscriber())).first;
-                dest.on_next(make_dynamic_grouped_observable<key_type, T>(group_by_observable(sub, selectedKey.get())));
+                dest.on_next(make_dynamic_grouped_observable<key_type, marble_type>(group_by_observable(sub, selectedKey.get())));
             }
             auto selectedMarble = on_exception(
                 [&](){
