@@ -30,8 +30,8 @@ SCENARIO("defer stops on completion", "[defer][sources]"){
                         [&](){
                             invoked++;
                             xs.reset(sc.make_cold_observable({
-                                on.on_next(100, sc.clock()),
-                                on.on_completed(200)
+                                on.next(100, sc.clock()),
+                                on.completed(200)
                             }));
                             return xs.get();
                         })
@@ -42,8 +42,8 @@ SCENARIO("defer stops on completion", "[defer][sources]"){
 
             THEN("the output stops on completion"){
                 auto required = rxu::to_vector({
-                    on.on_next(300, 200L),
-                    on.on_completed(400)
+                    on.next(300, 200L),
+                    on.completed(400)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);

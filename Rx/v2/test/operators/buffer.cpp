@@ -14,12 +14,12 @@ SCENARIO("buffer count partial window", "[buffer][operators]"){
         const rxsc::test::messages<std::vector<int>> v_on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(210, 2),
-            on.on_next(220, 3),
-            on.on_next(230, 4),
-            on.on_next(240, 5),
-            on.on_completed(250)
+            on.next(150, 1),
+            on.next(210, 2),
+            on.next(220, 3),
+            on.next(230, 4),
+            on.next(240, 5),
+            on.completed(250)
         });
 
         WHEN("group each int with the next 4 ints"){
@@ -35,8 +35,8 @@ SCENARIO("buffer count partial window", "[buffer][operators]"){
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.on_next(250, rxu::to_vector({ 2, 3, 4, 5 })),
-                    v_on.on_completed(250)
+                    v_on.next(250, rxu::to_vector({ 2, 3, 4, 5 })),
+                    v_on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -61,12 +61,12 @@ SCENARIO("buffer count full windows", "[buffer][operators]"){
         const rxsc::test::messages<std::vector<int>> v_on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(210, 2),
-            on.on_next(220, 3),
-            on.on_next(230, 4),
-            on.on_next(240, 5),
-            on.on_completed(250)
+            on.next(150, 1),
+            on.next(210, 2),
+            on.next(220, 3),
+            on.next(230, 4),
+            on.next(240, 5),
+            on.completed(250)
         });
 
         WHEN("group each int with the next int"){
@@ -82,9 +82,9 @@ SCENARIO("buffer count full windows", "[buffer][operators]"){
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.on_next(220, rxu::to_vector({ 2, 3 })),
-                    v_on.on_next(240, rxu::to_vector({ 4, 5 })),
-                    v_on.on_completed(250)
+                    v_on.next(220, rxu::to_vector({ 2, 3 })),
+                    v_on.next(240, rxu::to_vector({ 4, 5 })),
+                    v_on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -109,12 +109,12 @@ SCENARIO("buffer count full and partial windows", "[buffer][operators]"){
         const rxsc::test::messages<std::vector<int>> v_on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(210, 2),
-            on.on_next(220, 3),
-            on.on_next(230, 4),
-            on.on_next(240, 5),
-            on.on_completed(250)
+            on.next(150, 1),
+            on.next(210, 2),
+            on.next(220, 3),
+            on.next(230, 4),
+            on.next(240, 5),
+            on.completed(250)
         });
 
         WHEN("group each int with the next 2 ints"){
@@ -130,9 +130,9 @@ SCENARIO("buffer count full and partial windows", "[buffer][operators]"){
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.on_next(230, rxu::to_vector({ 2, 3, 4 })),
-                    v_on.on_next(250, rxu::to_vector({ 5 })),
-                    v_on.on_completed(250)
+                    v_on.next(230, rxu::to_vector({ 2, 3, 4 })),
+                    v_on.next(250, rxu::to_vector({ 5 })),
+                    v_on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -159,12 +159,12 @@ SCENARIO("buffer count error", "[buffer][operators]"){
         std::runtime_error ex("buffer on_error from source");
 
         auto xs = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(210, 2),
-            on.on_next(220, 3),
-            on.on_next(230, 4),
-            on.on_next(240, 5),
-            on.on_error(250, ex)
+            on.next(150, 1),
+            on.next(210, 2),
+            on.next(220, 3),
+            on.next(230, 4),
+            on.next(240, 5),
+            on.error(250, ex)
         });
 
         WHEN("group each int with the next 4 ints"){
@@ -180,7 +180,7 @@ SCENARIO("buffer count error", "[buffer][operators]"){
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.on_error(250, ex)
+                    v_on.error(250, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -205,12 +205,12 @@ SCENARIO("buffer count skip less", "[buffer][operators]"){
         const rxsc::test::messages<std::vector<int>> v_on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(210, 2),
-            on.on_next(220, 3),
-            on.on_next(230, 4),
-            on.on_next(240, 5),
-            on.on_completed(250)
+            on.next(150, 1),
+            on.next(210, 2),
+            on.next(220, 3),
+            on.next(230, 4),
+            on.next(240, 5),
+            on.completed(250)
         });
 
         WHEN("group each int with the next 2 ints"){
@@ -226,11 +226,11 @@ SCENARIO("buffer count skip less", "[buffer][operators]"){
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.on_next(230, rxu::to_vector({ 2, 3, 4 })),
-                    v_on.on_next(240, rxu::to_vector({ 3, 4, 5 })),
-                    v_on.on_next(250, rxu::to_vector({ 4, 5 })),
-                    v_on.on_next(250, rxu::to_vector({ 5 })),
-                    v_on.on_completed(250)
+                    v_on.next(230, rxu::to_vector({ 2, 3, 4 })),
+                    v_on.next(240, rxu::to_vector({ 3, 4, 5 })),
+                    v_on.next(250, rxu::to_vector({ 4, 5 })),
+                    v_on.next(250, rxu::to_vector({ 5 })),
+                    v_on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -255,12 +255,12 @@ SCENARIO("buffer count skip more", "[buffer][operators]"){
         const rxsc::test::messages<std::vector<int>> v_on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(210, 2),
-            on.on_next(220, 3),
-            on.on_next(230, 4),
-            on.on_next(240, 5),
-            on.on_completed(250)
+            on.next(150, 1),
+            on.next(210, 2),
+            on.next(220, 3),
+            on.next(230, 4),
+            on.next(240, 5),
+            on.completed(250)
         });
 
         WHEN("group each int with the next int skipping the third one"){
@@ -276,9 +276,9 @@ SCENARIO("buffer count skip more", "[buffer][operators]"){
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.on_next(220, rxu::to_vector({ 2, 3 })),
-                    v_on.on_next(250, rxu::to_vector({ 5 })),
-                    v_on.on_completed(250)
+                    v_on.next(220, rxu::to_vector({ 2, 3 })),
+                    v_on.next(250, rxu::to_vector({ 5 })),
+                    v_on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -303,16 +303,16 @@ SCENARIO("buffer count basic", "[buffer][operators]"){
         const rxsc::test::messages<std::vector<int>> v_on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(100, 1),
-            on.on_next(210, 2),
-            on.on_next(240, 3),
-            on.on_next(280, 4),
-            on.on_next(320, 5),
-            on.on_next(350, 6),
-            on.on_next(380, 7),
-            on.on_next(420, 8),
-            on.on_next(470, 9),
-            on.on_completed(600)
+            on.next(100, 1),
+            on.next(210, 2),
+            on.next(240, 3),
+            on.next(280, 4),
+            on.next(320, 5),
+            on.next(350, 6),
+            on.next(380, 7),
+            on.next(420, 8),
+            on.next(470, 9),
+            on.completed(600)
         });
 
         WHEN("group each int with the next 2 ints"){
@@ -328,11 +328,11 @@ SCENARIO("buffer count basic", "[buffer][operators]"){
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.on_next(280, rxu::to_vector({ 2, 3, 4 })),
-                    v_on.on_next(350, rxu::to_vector({ 4, 5, 6 })),
-                    v_on.on_next(420, rxu::to_vector({ 6, 7, 8 })),
-                    v_on.on_next(600, rxu::to_vector({ 8, 9 })),
-                    v_on.on_completed(600)
+                    v_on.next(280, rxu::to_vector({ 2, 3, 4 })),
+                    v_on.next(350, rxu::to_vector({ 4, 5, 6 })),
+                    v_on.next(420, rxu::to_vector({ 6, 7, 8 })),
+                    v_on.next(600, rxu::to_vector({ 8, 9 })),
+                    v_on.completed(600)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -357,16 +357,16 @@ SCENARIO("buffer count disposed", "[buffer][operators]"){
         const rxsc::test::messages<std::vector<int>> v_on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(100, 1),
-            on.on_next(210, 2),
-            on.on_next(240, 3),
-            on.on_next(280, 4),
-            on.on_next(320, 5),
-            on.on_next(350, 6),
-            on.on_next(380, 7),
-            on.on_next(420, 8),
-            on.on_next(470, 9),
-            on.on_completed(600)
+            on.next(100, 1),
+            on.next(210, 2),
+            on.next(240, 3),
+            on.next(280, 4),
+            on.next(320, 5),
+            on.next(350, 6),
+            on.next(380, 7),
+            on.next(420, 8),
+            on.next(470, 9),
+            on.completed(600)
         });
 
         WHEN("group each int with the next 2 ints"){
@@ -383,8 +383,8 @@ SCENARIO("buffer count disposed", "[buffer][operators]"){
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.on_next(280, rxu::to_vector({ 2, 3, 4 })),
-                    v_on.on_next(350, rxu::to_vector({ 4, 5, 6 })),
+                    v_on.next(280, rxu::to_vector({ 2, 3, 4 })),
+                    v_on.next(350, rxu::to_vector({ 4, 5, 6 })),
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -411,16 +411,16 @@ SCENARIO("buffer count error 2", "[buffer][operators]"){
         std::runtime_error ex("buffer on_error from source");
 
         auto xs = sc.make_hot_observable({
-            on.on_next(100, 1),
-            on.on_next(210, 2),
-            on.on_next(240, 3),
-            on.on_next(280, 4),
-            on.on_next(320, 5),
-            on.on_next(350, 6),
-            on.on_next(380, 7),
-            on.on_next(420, 8),
-            on.on_next(470, 9),
-            on.on_error(600, ex)
+            on.next(100, 1),
+            on.next(210, 2),
+            on.next(240, 3),
+            on.next(280, 4),
+            on.next(320, 5),
+            on.next(350, 6),
+            on.next(380, 7),
+            on.next(420, 8),
+            on.next(470, 9),
+            on.error(600, ex)
         });
 
         WHEN("group each int with the next 2 ints"){
@@ -436,10 +436,10 @@ SCENARIO("buffer count error 2", "[buffer][operators]"){
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.on_next(280, rxu::to_vector({ 2, 3, 4 })),
-                    v_on.on_next(350, rxu::to_vector({ 4, 5, 6 })),
-                    v_on.on_next(420, rxu::to_vector({ 6, 7, 8 })),
-                    v_on.on_error(600, ex)
+                    v_on.next(280, rxu::to_vector({ 2, 3, 4 })),
+                    v_on.next(350, rxu::to_vector({ 4, 5, 6 })),
+                    v_on.next(420, rxu::to_vector({ 6, 7, 8 })),
+                    v_on.error(600, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);

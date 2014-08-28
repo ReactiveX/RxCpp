@@ -13,12 +13,12 @@ SCENARIO("take 2", "[take][operators]"){
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(210, 2),
-            on.on_next(220, 3),
-            on.on_next(230, 4),
-            on.on_next(240, 5),
-            on.on_completed(250)
+            on.next(150, 1),
+            on.next(210, 2),
+            on.next(220, 3),
+            on.next(230, 4),
+            on.next(240, 5),
+            on.completed(250)
         });
 
         WHEN("2 values are taken"){
@@ -34,9 +34,9 @@ SCENARIO("take 2", "[take][operators]"){
 
             THEN("the output only contains items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, 2),
-                    on.on_next(220, 3),
-                    on.on_completed(220)
+                    on.next(210, 2),
+                    on.next(220, 3),
+                    on.completed(220)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -61,26 +61,26 @@ SCENARIO("take, complete after", "[take][operators]"){
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(70, 6),
-            on.on_next(150, 4),
-            on.on_next(210, 9),
-            on.on_next(230, 13),
-            on.on_next(270, 7),
-            on.on_next(280, 1),
-            on.on_next(300, -1),
-            on.on_next(310, 3),
-            on.on_next(340, 8),
-            on.on_next(370, 11),
-            on.on_next(410, 15),
-            on.on_next(415, 16),
-            on.on_next(460, 72),
-            on.on_next(510, 76),
-            on.on_next(560, 32),
-            on.on_next(570, -100),
-            on.on_next(580, -3),
-            on.on_next(590, 5),
-            on.on_next(630, 10),
-            on.on_completed(690)
+            on.next(70, 6),
+            on.next(150, 4),
+            on.next(210, 9),
+            on.next(230, 13),
+            on.next(270, 7),
+            on.next(280, 1),
+            on.next(300, -1),
+            on.next(310, 3),
+            on.next(340, 8),
+            on.next(370, 11),
+            on.next(410, 15),
+            on.next(415, 16),
+            on.next(460, 72),
+            on.next(510, 76),
+            on.next(560, 32),
+            on.next(570, -100),
+            on.next(580, -3),
+            on.next(590, 5),
+            on.next(630, 10),
+            on.completed(690)
         });
 
         WHEN("20 values are taken"){
@@ -96,24 +96,24 @@ SCENARIO("take, complete after", "[take][operators]"){
 
             THEN("the output only contains items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, 9),
-                    on.on_next(230, 13),
-                    on.on_next(270, 7),
-                    on.on_next(280, 1),
-                    on.on_next(300, -1),
-                    on.on_next(310, 3),
-                    on.on_next(340, 8),
-                    on.on_next(370, 11),
-                    on.on_next(410, 15),
-                    on.on_next(415, 16),
-                    on.on_next(460, 72),
-                    on.on_next(510, 76),
-                    on.on_next(560, 32),
-                    on.on_next(570, -100),
-                    on.on_next(580, -3),
-                    on.on_next(590, 5),
-                    on.on_next(630, 10),
-                    on.on_completed(690)
+                    on.next(210, 9),
+                    on.next(230, 13),
+                    on.next(270, 7),
+                    on.next(280, 1),
+                    on.next(300, -1),
+                    on.next(310, 3),
+                    on.next(340, 8),
+                    on.next(370, 11),
+                    on.next(410, 15),
+                    on.next(415, 16),
+                    on.next(460, 72),
+                    on.next(510, 76),
+                    on.next(560, 32),
+                    on.next(570, -100),
+                    on.next(580, -3),
+                    on.next(590, 5),
+                    on.next(630, 10),
+                    on.completed(690)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -138,26 +138,26 @@ SCENARIO("take, complete same", "[take][operators]"){
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(70, 6),
-            on.on_next(150, 4),
-            on.on_next(210, 9),
-            on.on_next(230, 13),
-            on.on_next(270, 7),
-            on.on_next(280, 1),
-            on.on_next(300, -1),
-            on.on_next(310, 3),
-            on.on_next(340, 8),
-            on.on_next(370, 11),
-            on.on_next(410, 15),
-            on.on_next(415, 16),
-            on.on_next(460, 72),
-            on.on_next(510, 76),
-            on.on_next(560, 32),
-            on.on_next(570, -100),
-            on.on_next(580, -3),
-            on.on_next(590, 5),
-            on.on_next(630, 10),
-            on.on_completed(690)
+            on.next(70, 6),
+            on.next(150, 4),
+            on.next(210, 9),
+            on.next(230, 13),
+            on.next(270, 7),
+            on.next(280, 1),
+            on.next(300, -1),
+            on.next(310, 3),
+            on.next(340, 8),
+            on.next(370, 11),
+            on.next(410, 15),
+            on.next(415, 16),
+            on.next(460, 72),
+            on.next(510, 76),
+            on.next(560, 32),
+            on.next(570, -100),
+            on.next(580, -3),
+            on.next(590, 5),
+            on.next(630, 10),
+            on.completed(690)
         });
 
         WHEN("17 values are taken"){
@@ -173,24 +173,24 @@ SCENARIO("take, complete same", "[take][operators]"){
 
             THEN("the output only contains items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, 9),
-                    on.on_next(230, 13),
-                    on.on_next(270, 7),
-                    on.on_next(280, 1),
-                    on.on_next(300, -1),
-                    on.on_next(310, 3),
-                    on.on_next(340, 8),
-                    on.on_next(370, 11),
-                    on.on_next(410, 15),
-                    on.on_next(415, 16),
-                    on.on_next(460, 72),
-                    on.on_next(510, 76),
-                    on.on_next(560, 32),
-                    on.on_next(570, -100),
-                    on.on_next(580, -3),
-                    on.on_next(590, 5),
-                    on.on_next(630, 10),
-                    on.on_completed(630)
+                    on.next(210, 9),
+                    on.next(230, 13),
+                    on.next(270, 7),
+                    on.next(280, 1),
+                    on.next(300, -1),
+                    on.next(310, 3),
+                    on.next(340, 8),
+                    on.next(370, 11),
+                    on.next(410, 15),
+                    on.next(415, 16),
+                    on.next(460, 72),
+                    on.next(510, 76),
+                    on.next(560, 32),
+                    on.next(570, -100),
+                    on.next(580, -3),
+                    on.next(590, 5),
+                    on.next(630, 10),
+                    on.completed(630)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -215,26 +215,26 @@ SCENARIO("take, complete before", "[take][operators]"){
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(70, 6),
-            on.on_next(150, 4),
-            on.on_next(210, 9),
-            on.on_next(230, 13),
-            on.on_next(270, 7),
-            on.on_next(280, 1),
-            on.on_next(300, -1),
-            on.on_next(310, 3),
-            on.on_next(340, 8),
-            on.on_next(370, 11),
-            on.on_next(410, 15),
-            on.on_next(415, 16),
-            on.on_next(460, 72),
-            on.on_next(510, 76),
-            on.on_next(560, 32),
-            on.on_next(570, -100),
-            on.on_next(580, -3),
-            on.on_next(590, 5),
-            on.on_next(630, 10),
-            on.on_completed(690)
+            on.next(70, 6),
+            on.next(150, 4),
+            on.next(210, 9),
+            on.next(230, 13),
+            on.next(270, 7),
+            on.next(280, 1),
+            on.next(300, -1),
+            on.next(310, 3),
+            on.next(340, 8),
+            on.next(370, 11),
+            on.next(410, 15),
+            on.next(415, 16),
+            on.next(460, 72),
+            on.next(510, 76),
+            on.next(560, 32),
+            on.next(570, -100),
+            on.next(580, -3),
+            on.next(590, 5),
+            on.next(630, 10),
+            on.completed(690)
         });
 
         WHEN("10 values are taken"){
@@ -250,17 +250,17 @@ SCENARIO("take, complete before", "[take][operators]"){
 
             THEN("the output only contains items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, 9),
-                    on.on_next(230, 13),
-                    on.on_next(270, 7),
-                    on.on_next(280, 1),
-                    on.on_next(300, -1),
-                    on.on_next(310, 3),
-                    on.on_next(340, 8),
-                    on.on_next(370, 11),
-                    on.on_next(410, 15),
-                    on.on_next(415, 16),
-                    on.on_completed(415)
+                    on.next(210, 9),
+                    on.next(230, 13),
+                    on.next(270, 7),
+                    on.next(280, 1),
+                    on.next(300, -1),
+                    on.next(310, 3),
+                    on.next(340, 8),
+                    on.next(370, 11),
+                    on.next(410, 15),
+                    on.next(415, 16),
+                    on.completed(415)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -287,26 +287,26 @@ SCENARIO("take, error after", "[take][operators]"){
         std::runtime_error ex("take on_error from source");
 
         auto xs = sc.make_hot_observable({
-            on.on_next(70, 6),
-            on.on_next(150, 4),
-            on.on_next(210, 9),
-            on.on_next(230, 13),
-            on.on_next(270, 7),
-            on.on_next(280, 1),
-            on.on_next(300, -1),
-            on.on_next(310, 3),
-            on.on_next(340, 8),
-            on.on_next(370, 11),
-            on.on_next(410, 15),
-            on.on_next(415, 16),
-            on.on_next(460, 72),
-            on.on_next(510, 76),
-            on.on_next(560, 32),
-            on.on_next(570, -100),
-            on.on_next(580, -3),
-            on.on_next(590, 5),
-            on.on_next(630, 10),
-            on.on_error(690, ex)
+            on.next(70, 6),
+            on.next(150, 4),
+            on.next(210, 9),
+            on.next(230, 13),
+            on.next(270, 7),
+            on.next(280, 1),
+            on.next(300, -1),
+            on.next(310, 3),
+            on.next(340, 8),
+            on.next(370, 11),
+            on.next(410, 15),
+            on.next(415, 16),
+            on.next(460, 72),
+            on.next(510, 76),
+            on.next(560, 32),
+            on.next(570, -100),
+            on.next(580, -3),
+            on.next(590, 5),
+            on.next(630, 10),
+            on.error(690, ex)
         });
 
         WHEN("20 values are taken"){
@@ -322,24 +322,24 @@ SCENARIO("take, error after", "[take][operators]"){
 
             THEN("the output only contains items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, 9),
-                    on.on_next(230, 13),
-                    on.on_next(270, 7),
-                    on.on_next(280, 1),
-                    on.on_next(300, -1),
-                    on.on_next(310, 3),
-                    on.on_next(340, 8),
-                    on.on_next(370, 11),
-                    on.on_next(410, 15),
-                    on.on_next(415, 16),
-                    on.on_next(460, 72),
-                    on.on_next(510, 76),
-                    on.on_next(560, 32),
-                    on.on_next(570, -100),
-                    on.on_next(580, -3),
-                    on.on_next(590, 5),
-                    on.on_next(630, 10),
-                    on.on_error(690, ex)
+                    on.next(210, 9),
+                    on.next(230, 13),
+                    on.next(270, 7),
+                    on.next(280, 1),
+                    on.next(300, -1),
+                    on.next(310, 3),
+                    on.next(340, 8),
+                    on.next(370, 11),
+                    on.next(410, 15),
+                    on.next(415, 16),
+                    on.next(460, 72),
+                    on.next(510, 76),
+                    on.next(560, 32),
+                    on.next(570, -100),
+                    on.next(580, -3),
+                    on.next(590, 5),
+                    on.next(630, 10),
+                    on.error(690, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -364,26 +364,26 @@ SCENARIO("take, error same", "[take][operators]"){
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(70, 6),
-            on.on_next(150, 4),
-            on.on_next(210, 9),
-            on.on_next(230, 13),
-            on.on_next(270, 7),
-            on.on_next(280, 1),
-            on.on_next(300, -1),
-            on.on_next(310, 3),
-            on.on_next(340, 8),
-            on.on_next(370, 11),
-            on.on_next(410, 15),
-            on.on_next(415, 16),
-            on.on_next(460, 72),
-            on.on_next(510, 76),
-            on.on_next(560, 32),
-            on.on_next(570, -100),
-            on.on_next(580, -3),
-            on.on_next(590, 5),
-            on.on_next(630, 10),
-            on.on_error(690, std::runtime_error("error in unsubscribed stream"))
+            on.next(70, 6),
+            on.next(150, 4),
+            on.next(210, 9),
+            on.next(230, 13),
+            on.next(270, 7),
+            on.next(280, 1),
+            on.next(300, -1),
+            on.next(310, 3),
+            on.next(340, 8),
+            on.next(370, 11),
+            on.next(410, 15),
+            on.next(415, 16),
+            on.next(460, 72),
+            on.next(510, 76),
+            on.next(560, 32),
+            on.next(570, -100),
+            on.next(580, -3),
+            on.next(590, 5),
+            on.next(630, 10),
+            on.error(690, std::runtime_error("error in unsubscribed stream"))
         });
 
         WHEN("17 values are taken"){
@@ -399,24 +399,24 @@ SCENARIO("take, error same", "[take][operators]"){
 
             THEN("the output only contains items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, 9),
-                    on.on_next(230, 13),
-                    on.on_next(270, 7),
-                    on.on_next(280, 1),
-                    on.on_next(300, -1),
-                    on.on_next(310, 3),
-                    on.on_next(340, 8),
-                    on.on_next(370, 11),
-                    on.on_next(410, 15),
-                    on.on_next(415, 16),
-                    on.on_next(460, 72),
-                    on.on_next(510, 76),
-                    on.on_next(560, 32),
-                    on.on_next(570, -100),
-                    on.on_next(580, -3),
-                    on.on_next(590, 5),
-                    on.on_next(630, 10),
-                    on.on_completed(630)
+                    on.next(210, 9),
+                    on.next(230, 13),
+                    on.next(270, 7),
+                    on.next(280, 1),
+                    on.next(300, -1),
+                    on.next(310, 3),
+                    on.next(340, 8),
+                    on.next(370, 11),
+                    on.next(410, 15),
+                    on.next(415, 16),
+                    on.next(460, 72),
+                    on.next(510, 76),
+                    on.next(560, 32),
+                    on.next(570, -100),
+                    on.next(580, -3),
+                    on.next(590, 5),
+                    on.next(630, 10),
+                    on.completed(630)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -441,26 +441,26 @@ SCENARIO("take, error before", "[take][operators]"){
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(70, 6),
-            on.on_next(150, 4),
-            on.on_next(210, 9),
-            on.on_next(230, 13),
-            on.on_next(270, 7),
-            on.on_next(280, 1),
-            on.on_next(300, -1),
-            on.on_next(310, 3),
-            on.on_next(340, 8),
-            on.on_next(370, 11),
-            on.on_next(410, 15),
-            on.on_next(415, 16),
-            on.on_next(460, 72),
-            on.on_next(510, 76),
-            on.on_next(560, 32),
-            on.on_next(570, -100),
-            on.on_next(580, -3),
-            on.on_next(590, 5),
-            on.on_next(630, 10),
-            on.on_error(690, std::runtime_error("error in unsubscribed stream"))
+            on.next(70, 6),
+            on.next(150, 4),
+            on.next(210, 9),
+            on.next(230, 13),
+            on.next(270, 7),
+            on.next(280, 1),
+            on.next(300, -1),
+            on.next(310, 3),
+            on.next(340, 8),
+            on.next(370, 11),
+            on.next(410, 15),
+            on.next(415, 16),
+            on.next(460, 72),
+            on.next(510, 76),
+            on.next(560, 32),
+            on.next(570, -100),
+            on.next(580, -3),
+            on.next(590, 5),
+            on.next(630, 10),
+            on.error(690, std::runtime_error("error in unsubscribed stream"))
         });
 
         WHEN("3 values are taken"){
@@ -476,10 +476,10 @@ SCENARIO("take, error before", "[take][operators]"){
 
             THEN("the output only contains items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, 9),
-                    on.on_next(230, 13),
-                    on.on_next(270, 7),
-                    on.on_completed(270)
+                    on.next(210, 9),
+                    on.next(230, 13),
+                    on.next(270, 7),
+                    on.completed(270)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -504,25 +504,25 @@ SCENARIO("take, dispose before", "[take][operators]"){
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(70, 6),
-            on.on_next(150, 4),
-            on.on_next(210, 9),
-            on.on_next(230, 13),
-            on.on_next(270, 7),
-            on.on_next(280, 1),
-            on.on_next(300, -1),
-            on.on_next(310, 3),
-            on.on_next(340, 8),
-            on.on_next(370, 11),
-            on.on_next(410, 15),
-            on.on_next(415, 16),
-            on.on_next(460, 72),
-            on.on_next(510, 76),
-            on.on_next(560, 32),
-            on.on_next(570, -100),
-            on.on_next(580, -3),
-            on.on_next(590, 5),
-            on.on_next(630, 10)
+            on.next(70, 6),
+            on.next(150, 4),
+            on.next(210, 9),
+            on.next(230, 13),
+            on.next(270, 7),
+            on.next(280, 1),
+            on.next(300, -1),
+            on.next(310, 3),
+            on.next(340, 8),
+            on.next(370, 11),
+            on.next(410, 15),
+            on.next(415, 16),
+            on.next(460, 72),
+            on.next(510, 76),
+            on.next(560, 32),
+            on.next(570, -100),
+            on.next(580, -3),
+            on.next(590, 5),
+            on.next(630, 10)
         });
 
         WHEN("3 values are taken"){
@@ -539,8 +539,8 @@ SCENARIO("take, dispose before", "[take][operators]"){
 
             THEN("the output only contains items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, 9),
-                    on.on_next(230, 13)
+                    on.next(210, 9),
+                    on.next(230, 13)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -565,25 +565,25 @@ SCENARIO("take, dispose after", "[take][operators]"){
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(70, 6),
-            on.on_next(150, 4),
-            on.on_next(210, 9),
-            on.on_next(230, 13),
-            on.on_next(270, 7),
-            on.on_next(280, 1),
-            on.on_next(300, -1),
-            on.on_next(310, 3),
-            on.on_next(340, 8),
-            on.on_next(370, 11),
-            on.on_next(410, 15),
-            on.on_next(415, 16),
-            on.on_next(460, 72),
-            on.on_next(510, 76),
-            on.on_next(560, 32),
-            on.on_next(570, -100),
-            on.on_next(580, -3),
-            on.on_next(590, 5),
-            on.on_next(630, 10)
+            on.next(70, 6),
+            on.next(150, 4),
+            on.next(210, 9),
+            on.next(230, 13),
+            on.next(270, 7),
+            on.next(280, 1),
+            on.next(300, -1),
+            on.next(310, 3),
+            on.next(340, 8),
+            on.next(370, 11),
+            on.next(410, 15),
+            on.next(415, 16),
+            on.next(460, 72),
+            on.next(510, 76),
+            on.next(560, 32),
+            on.next(570, -100),
+            on.next(580, -3),
+            on.next(590, 5),
+            on.next(630, 10)
         });
 
         WHEN("3 values are taken"){
@@ -600,10 +600,10 @@ SCENARIO("take, dispose after", "[take][operators]"){
 
             THEN("the output only contains items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, 9),
-                    on.on_next(230, 13),
-                    on.on_next(270, 7),
-                    on.on_completed(270)
+                    on.next(210, 9),
+                    on.next(230, 13),
+                    on.next(270, 7),
+                    on.completed(270)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);

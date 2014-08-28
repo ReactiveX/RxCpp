@@ -13,15 +13,15 @@ SCENARIO("map stops on completion", "[map][operators]"){
         long invoked = 0;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(180, 1),
-            on.on_next(210, 2),
-            on.on_next(240, 3),
-            on.on_next(290, 4),
-            on.on_next(350, 5),
-            on.on_completed(400),
-            on.on_next(410, -1),
-            on.on_completed(420),
-            on.on_error(430, std::runtime_error("error on unsubscribed stream"))
+            on.next(180, 1),
+            on.next(210, 2),
+            on.next(240, 3),
+            on.next(290, 4),
+            on.next(350, 5),
+            on.completed(400),
+            on.next(410, -1),
+            on.completed(420),
+            on.error(430, std::runtime_error("error on unsubscribed stream"))
         });
 
         WHEN("mapped to ints that are one larger"){
@@ -40,11 +40,11 @@ SCENARIO("map stops on completion", "[map][operators]"){
 
             THEN("the output stops on completion"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, 3),
-                    on.on_next(240, 4),
-                    on.on_next(290, 5),
-                    on.on_next(350, 6),
-                    on.on_completed(400)
+                    on.next(210, 3),
+                    on.next(240, 4),
+                    on.next(290, 5),
+                    on.next(350, 6),
+                    on.completed(400)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
