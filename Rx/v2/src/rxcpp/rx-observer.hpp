@@ -381,11 +381,22 @@ auto make_observer_dynamic(OnNext&& on, OnError&& oe, OnCompleted&& oc)
                         dynamic_observer<T>(make_observer<T>(std::forward<OnNext>(on), std::forward<OnError>(oe), std::forward<OnCompleted>(oc))));
 }
 
+namespace detail {
+
+template<class F>
+struct maybe_from_result
+{
+    typedef decltype((*(F*)nullptr)()) decl_result_type;
+    typedef typename std::decay<decl_result_type>::type result_type;
+    typedef rxu::maybe<result_type> type;
+};
+
+}
 
 template<class F, class OnError>
 auto on_exception(const F& f, const OnError& c)
-    ->  typename std::enable_if<detail::is_on_error<OnError>::value, rxu::detail::maybe<decltype(f())>>::type {
-    rxu::detail::maybe<decltype(f())> r;
+    ->  typename std::enable_if<detail::is_on_error<OnError>::value, typename detail::maybe_from_result<F>::type>::type {
+    typename detail::maybe_from_result<F>::type r;
     try {
         r.reset(f());
     } catch (...) {
@@ -396,8 +407,8 @@ auto on_exception(const F& f, const OnError& c)
 
 template<class F, class Subscriber>
 auto on_exception(const F& f, const Subscriber& s)
-    ->  typename std::enable_if<is_subscriber<Subscriber>::value, rxu::detail::maybe<decltype(f())>>::type {
-    rxu::detail::maybe<decltype(f())> r;
+    ->  typename std::enable_if<is_subscriber<Subscriber>::value, typename detail::maybe_from_result<F>::type>::type {
+    typename detail::maybe_from_result<F>::type r;
     try {
         r.reset(f());
     } catch (...) {
