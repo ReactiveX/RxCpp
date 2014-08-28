@@ -31,8 +31,8 @@ SCENARIO("create stops on completion", "[create][sources]"){
 
             THEN("the output contains all items"){
                 auto required = rxu::to_vector({
-                    on.on_next(200, 1),
-                    on.on_next(200, 2)
+                    on.next(200, 1),
+                    on.next(200, 2)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);

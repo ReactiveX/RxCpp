@@ -12,7 +12,7 @@ SCENARIO("distinct_until_changed - never", "[distinct_until_changed][operators]"
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(150, 1)
+            on.next(150, 1)
         });
 
         WHEN("distinct values are taken"){
@@ -47,8 +47,8 @@ SCENARIO("distinct_until_changed - empty", "[distinct_until_changed][operators]"
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_completed(250)
+            on.next(150, 1),
+            on.completed(250)
         });
 
         WHEN("distinct values are taken"){
@@ -61,7 +61,7 @@ SCENARIO("distinct_until_changed - empty", "[distinct_until_changed][operators]"
 
             THEN("the output only contains complete message"){
                 auto required = rxu::to_vector({
-                    on.on_completed(250)
+                    on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -86,9 +86,9 @@ SCENARIO("distinct_until_changed - return", "[distinct_until_changed][operators]
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(210, 2),
-            on.on_completed(250)
+            on.next(150, 1),
+            on.next(210, 2),
+            on.completed(250)
         });
 
         WHEN("distinct values are taken"){
@@ -101,8 +101,8 @@ SCENARIO("distinct_until_changed - return", "[distinct_until_changed][operators]
 
             THEN("the output only contains distinct items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, 2),
-                    on.on_completed(250)
+                    on.next(210, 2),
+                    on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -127,10 +127,10 @@ SCENARIO("distinct_until_changed - throw", "[distinct_until_changed][operators]"
         const rxsc::test::messages<int> on;
 
         std::runtime_error ex("distinct_until_changed on_error from source");
-        
+
         auto xs = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_error(250, ex)
+            on.next(150, 1),
+            on.error(250, ex)
         });
 
         WHEN("distinct values are taken"){
@@ -143,7 +143,7 @@ SCENARIO("distinct_until_changed - throw", "[distinct_until_changed][operators]"
 
             THEN("the output only contains only error"){
                 auto required = rxu::to_vector({
-                    on.on_error(250, ex)
+                    on.error(250, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -168,12 +168,12 @@ SCENARIO("distinct_until_changed - all changes", "[distinct_until_changed][opera
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(210, 2),
-            on.on_next(220, 3),
-            on.on_next(230, 4),
-            on.on_next(240, 5),
-            on.on_completed(250)
+            on.next(150, 1),
+            on.next(210, 2),
+            on.next(220, 3),
+            on.next(230, 4),
+            on.next(240, 5),
+            on.completed(250)
         });
 
         WHEN("distinct values are taken"){
@@ -186,11 +186,11 @@ SCENARIO("distinct_until_changed - all changes", "[distinct_until_changed][opera
 
             THEN("the output only contains distinct items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, 2),
-                    on.on_next(220, 3),
-                    on.on_next(230, 4),
-                    on.on_next(240, 5),
-                    on.on_completed(250)
+                    on.next(210, 2),
+                    on.next(220, 3),
+                    on.next(230, 4),
+                    on.next(240, 5),
+                    on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -215,12 +215,12 @@ SCENARIO("distinct_until_changed - all same", "[distinct_until_changed][operator
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(210, 2),
-            on.on_next(220, 2),
-            on.on_next(230, 2),
-            on.on_next(240, 2),
-            on.on_completed(250)
+            on.next(150, 1),
+            on.next(210, 2),
+            on.next(220, 2),
+            on.next(230, 2),
+            on.next(240, 2),
+            on.completed(250)
         });
 
         WHEN("distinct values are taken"){
@@ -233,8 +233,8 @@ SCENARIO("distinct_until_changed - all same", "[distinct_until_changed][operator
 
             THEN("the output only contains distinct items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, 2),
-                    on.on_completed(250)
+                    on.next(210, 2),
+                    on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -259,15 +259,15 @@ SCENARIO("distinct_until_changed - some changes", "[distinct_until_changed][oper
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(210, 2), //*
-            on.on_next(215, 3), //*
-            on.on_next(220, 3),
-            on.on_next(225, 2), //*
-            on.on_next(230, 2),
-            on.on_next(230, 1), //*
-            on.on_next(240, 2), //*
-            on.on_completed(250)
+            on.next(150, 1),
+            on.next(210, 2), //*
+            on.next(215, 3), //*
+            on.next(220, 3),
+            on.next(225, 2), //*
+            on.next(230, 2),
+            on.next(230, 1), //*
+            on.next(240, 2), //*
+            on.completed(250)
         });
 
         WHEN("distinct values are taken"){
@@ -280,12 +280,12 @@ SCENARIO("distinct_until_changed - some changes", "[distinct_until_changed][oper
 
             THEN("the output only contains distinct items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, 2), //*
-                    on.on_next(215, 3), //*
-                    on.on_next(225, 2), //*
-                    on.on_next(230, 1), //*
-                    on.on_next(240, 2), //*
-                    on.on_completed(250)
+                    on.next(210, 2), //*
+                    on.next(215, 3), //*
+                    on.next(225, 2), //*
+                    on.next(230, 1), //*
+                    on.next(240, 2), //*
+                    on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);

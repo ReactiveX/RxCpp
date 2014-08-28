@@ -31,21 +31,21 @@ SCENARIO("filter stops on completion", "[filter][operators]"){
         long invoked = 0;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(110, 1),
-            on.on_next(180, 2),
-            on.on_next(230, 3),
-            on.on_next(270, 4),
-            on.on_next(340, 5),
-            on.on_next(380, 6),
-            on.on_next(390, 7),
-            on.on_next(450, 8),
-            on.on_next(470, 9),
-            on.on_next(560, 10),
-            on.on_next(580, 11),
-            on.on_completed(600),
-            on.on_next(610, 12),
-            on.on_error(620, std::runtime_error("error in unsubscribed stream")),
-            on.on_completed(630)
+            on.next(110, 1),
+            on.next(180, 2),
+            on.next(230, 3),
+            on.next(270, 4),
+            on.next(340, 5),
+            on.next(380, 6),
+            on.next(390, 7),
+            on.next(450, 8),
+            on.next(470, 9),
+            on.next(560, 10),
+            on.next(580, 11),
+            on.completed(600),
+            on.next(610, 12),
+            on.error(620, std::runtime_error("error in unsubscribed stream")),
+            on.completed(630)
         });
 
         WHEN("filtered to ints that are primes"){
@@ -76,11 +76,11 @@ SCENARIO("filter stops on completion", "[filter][operators]"){
             );
             THEN("the output only contains primes"){
                 auto required = rxu::to_vector({
-                    on.on_next(230, 3),
-                    on.on_next(340, 5),
-                    on.on_next(390, 7),
-                    on.on_next(580, 11),
-                    on.on_completed(600)
+                    on.next(230, 3),
+                    on.next(340, 5),
+                    on.next(390, 7),
+                    on.next(580, 11),
+                    on.completed(600)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -111,18 +111,18 @@ SCENARIO("filter stops on disposal", "[where][filter][operators]"){
         long invoked = 0;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(110, 1),
-            on.on_next(180, 2),
-            on.on_next(230, 3),
-            on.on_next(270, 4),
-            on.on_next(340, 5),
-            on.on_next(380, 6),
-            on.on_next(390, 7),
-            on.on_next(450, 8),
-            on.on_next(470, 9),
-            on.on_next(560, 10),
-            on.on_next(580, 11),
-            on.on_completed(600)
+            on.next(110, 1),
+            on.next(180, 2),
+            on.next(230, 3),
+            on.next(270, 4),
+            on.next(340, 5),
+            on.next(380, 6),
+            on.next(390, 7),
+            on.next(450, 8),
+            on.next(470, 9),
+            on.next(560, 10),
+            on.next(580, 11),
+            on.completed(600)
         });
 
         WHEN("filtered to ints that are primes"){
@@ -152,9 +152,9 @@ SCENARIO("filter stops on disposal", "[where][filter][operators]"){
 
             THEN("the output only contains primes that arrived before disposal"){
                 auto required = rxu::to_vector({
-                    on.on_next(230, 3),
-                    on.on_next(340, 5),
-                    on.on_next(390, 7)
+                    on.next(230, 3),
+                    on.next(340, 5),
+                    on.next(390, 7)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -186,21 +186,21 @@ SCENARIO("filter stops on error", "[where][filter][operators]"){
         std::runtime_error ex("filter on_error from source");
 
         auto xs = sc.make_hot_observable({
-            on.on_next(110, 1),
-            on.on_next(180, 2),
-            on.on_next(230, 3),
-            on.on_next(270, 4),
-            on.on_next(340, 5),
-            on.on_next(380, 6),
-            on.on_next(390, 7),
-            on.on_next(450, 8),
-            on.on_next(470, 9),
-            on.on_next(560, 10),
-            on.on_next(580, 11),
-            on.on_error(600, ex),
-            on.on_next(610, 12),
-            on.on_error(620, std::runtime_error("error in unsubscribed stream")),
-            on.on_completed(630)
+            on.next(110, 1),
+            on.next(180, 2),
+            on.next(230, 3),
+            on.next(270, 4),
+            on.next(340, 5),
+            on.next(380, 6),
+            on.next(390, 7),
+            on.next(450, 8),
+            on.next(470, 9),
+            on.next(560, 10),
+            on.next(580, 11),
+            on.error(600, ex),
+            on.next(610, 12),
+            on.error(620, std::runtime_error("error in unsubscribed stream")),
+            on.completed(630)
         });
 
         WHEN("filtered to ints that are primes"){
@@ -229,11 +229,11 @@ SCENARIO("filter stops on error", "[where][filter][operators]"){
 
             THEN("the output only contains primes"){
                 auto required = rxu::to_vector({
-                    on.on_next(230, 3),
-                    on.on_next(340, 5),
-                    on.on_next(390, 7),
-                    on.on_next(580, 11),
-                    on.on_error(600, ex),
+                    on.next(230, 3),
+                    on.next(340, 5),
+                    on.next(390, 7),
+                    on.next(580, 11),
+                    on.error(600, ex),
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -265,21 +265,21 @@ SCENARIO("filter stops on throw from predicate", "[where][filter][operators]"){
         std::runtime_error ex("filter predicate error");
 
         auto xs = sc.make_hot_observable({
-            on.on_next(110, 1),
-            on.on_next(180, 2),
-            on.on_next(230, 3),
-            on.on_next(270, 4),
-            on.on_next(340, 5),
-            on.on_next(380, 6),
-            on.on_next(390, 7),
-            on.on_next(450, 8),
-            on.on_next(470, 9),
-            on.on_next(560, 10),
-            on.on_next(580, 11),
-            on.on_completed(600),
-            on.on_next(610, 12),
-            on.on_error(620, std::runtime_error("error in unsubscribed stream")),
-            on.on_completed(630)
+            on.next(110, 1),
+            on.next(180, 2),
+            on.next(230, 3),
+            on.next(270, 4),
+            on.next(340, 5),
+            on.next(380, 6),
+            on.next(390, 7),
+            on.next(450, 8),
+            on.next(470, 9),
+            on.next(560, 10),
+            on.next(580, 11),
+            on.completed(600),
+            on.next(610, 12),
+            on.error(620, std::runtime_error("error in unsubscribed stream")),
+            on.completed(630)
         });
 
         WHEN("filtered to ints that are primes"){
@@ -314,9 +314,9 @@ SCENARIO("filter stops on throw from predicate", "[where][filter][operators]"){
 
             THEN("the output only contains primes"){
                 auto required = rxu::to_vector({
-                    on.on_next(230, 3),
-                    on.on_next(340, 5),
-                    on.on_error(380, ex)
+                    on.next(230, 3),
+                    on.next(340, 5),
+                    on.error(380, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -346,21 +346,21 @@ SCENARIO("filter stops on dispose from predicate", "[where][filter][operators]")
         long invoked = 0;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(110, 1),
-            on.on_next(180, 2),
-            on.on_next(230, 3),
-            on.on_next(270, 4),
-            on.on_next(340, 5),
-            on.on_next(380, 6),
-            on.on_next(390, 7),
-            on.on_next(450, 8),
-            on.on_next(470, 9),
-            on.on_next(560, 10),
-            on.on_next(580, 11),
-            on.on_completed(600),
-            on.on_next(610, 12),
-            on.on_error(620, std::exception()),
-            on.on_completed(630)
+            on.next(110, 1),
+            on.next(180, 2),
+            on.next(230, 3),
+            on.next(270, 4),
+            on.next(340, 5),
+            on.next(380, 6),
+            on.next(390, 7),
+            on.next(450, 8),
+            on.next(470, 9),
+            on.next(560, 10),
+            on.next(580, 11),
+            on.completed(600),
+            on.next(610, 12),
+            on.error(620, std::exception()),
+            on.completed(630)
         });
 
         auto res = w.make_subscriber<int>();
@@ -402,9 +402,9 @@ SCENARIO("filter stops on dispose from predicate", "[where][filter][operators]")
 
             THEN("the output only contains primes"){
                 auto required = rxu::to_vector({
-                    on.on_next(230, 3),
-                    on.on_next(340, 5),
-                    on.on_next(390, 7)
+                    on.next(230, 3),
+                    on.next(340, 5),
+                    on.next(390, 7)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);

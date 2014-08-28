@@ -14,7 +14,7 @@ SCENARIO("scan: seed, never", "[scan][operators]"){
         int seed = 1;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(150, 1),
+            on.next(150, 1),
         });
 
         WHEN("mapped to ints that are one larger"){
@@ -56,8 +56,8 @@ SCENARIO("scan: seed, empty", "[scan][operators]"){
         int seed = 1;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_completed(250)
+            on.next(150, 1),
+            on.completed(250)
         });
 
         WHEN("mapped to ints that are one larger"){
@@ -75,7 +75,7 @@ SCENARIO("scan: seed, empty", "[scan][operators]"){
 
             THEN("the output stops on completion"){
                 auto required = rxu::to_vector({
-                    on.on_completed(250)
+                    on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -101,9 +101,9 @@ SCENARIO("scan: seed, return", "[scan][operators]"){
         int seed = 1;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(220, 2),
-            on.on_completed(250)
+            on.next(150, 1),
+            on.next(220, 2),
+            on.completed(250)
         });
 
         WHEN("mapped to ints that are one larger"){
@@ -121,8 +121,8 @@ SCENARIO("scan: seed, return", "[scan][operators]"){
 
             THEN("the output stops on completion"){
                 auto required = rxu::to_vector({
-                    on.on_next(220, seed + 2),
-                    on.on_completed(250)
+                    on.next(220, seed + 2),
+                    on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -150,8 +150,8 @@ SCENARIO("scan: seed, throw", "[scan][operators]"){
         std::runtime_error ex("scan on_error from source");
 
         auto xs = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_error(250, ex)
+            on.next(150, 1),
+            on.error(250, ex)
         });
 
         WHEN("mapped to ints that are one larger"){
@@ -169,7 +169,7 @@ SCENARIO("scan: seed, throw", "[scan][operators]"){
 
             THEN("the output stops on error"){
                 auto required = rxu::to_vector({
-                    on.on_error(250, ex)
+                    on.error(250, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -195,12 +195,12 @@ SCENARIO("scan: seed, some data", "[scan][operators]"){
         int seed = 1;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(210, 2),
-            on.on_next(220, 3),
-            on.on_next(230, 4),
-            on.on_next(240, 5),
-            on.on_completed(250)
+            on.next(150, 1),
+            on.next(210, 2),
+            on.next(220, 3),
+            on.next(230, 4),
+            on.next(240, 5),
+            on.completed(250)
         });
 
         WHEN("mapped to ints that are one larger"){
@@ -218,11 +218,11 @@ SCENARIO("scan: seed, some data", "[scan][operators]"){
 
             THEN("the output stops on completion"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, seed + 2),
-                    on.on_next(220, seed + 2 + 3),
-                    on.on_next(230, seed + 2 + 3 + 4),
-                    on.on_next(240, seed + 2 + 3 + 4 + 5),
-                    on.on_completed(250)
+                    on.next(210, seed + 2),
+                    on.next(220, seed + 2 + 3),
+                    on.next(230, seed + 2 + 3 + 4),
+                    on.next(240, seed + 2 + 3 + 4 + 5),
+                    on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -250,12 +250,12 @@ SCENARIO("scan: seed, accumulator throws", "[scan][operators]"){
         std::runtime_error ex("scan on_error from source");
 
         auto xs = sc.make_hot_observable({
-            on.on_next(150, 1),
-            on.on_next(210, 2),
-            on.on_next(220, 3),
-            on.on_next(230, 4),
-            on.on_next(240, 5),
-            on.on_completed(250)
+            on.next(150, 1),
+            on.next(210, 2),
+            on.next(220, 3),
+            on.next(230, 4),
+            on.next(240, 5),
+            on.completed(250)
         });
 
         WHEN("mapped to ints that are one larger"){
@@ -276,9 +276,9 @@ SCENARIO("scan: seed, accumulator throws", "[scan][operators]"){
 
             THEN("the output stops on error"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, seed + 2),
-                    on.on_next(220, seed + 2 + 3),
-                    on.on_error(230, ex)
+                    on.next(210, seed + 2),
+                    on.next(220, seed + 2 + 3),
+                    on.error(230, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);

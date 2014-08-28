@@ -49,20 +49,20 @@ SCENARIO("publish basic", "[publish][multicast][subject][operators]"){
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(110, 7),
-            on.on_next(220, 3),
-            on.on_next(280, 4),
-            on.on_next(290, 1),
-            on.on_next(340, 8),
-            on.on_next(360, 5),
-            on.on_next(370, 6),
-            on.on_next(390, 7),
-            on.on_next(410, 13),
-            on.on_next(430, 2),
-            on.on_next(450, 9),
-            on.on_next(520, 11),
-            on.on_next(560, 20),
-            on.on_completed(600)
+            on.next(110, 7),
+            on.next(220, 3),
+            on.next(280, 4),
+            on.next(290, 1),
+            on.next(340, 8),
+            on.next(360, 5),
+            on.next(370, 6),
+            on.next(390, 7),
+            on.next(410, 13),
+            on.next(430, 2),
+            on.next(450, 9),
+            on.next(520, 11),
+            on.next(560, 20),
+            on.completed(600)
         });
 
         auto res = w.make_subscriber<int>();
@@ -130,11 +130,11 @@ SCENARIO("publish basic", "[publish][multicast][subject][operators]"){
 
             THEN("the output only contains items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(340, 8),
-                    on.on_next(360, 5),
-                    on.on_next(370, 6),
-                    on.on_next(390, 7),
-                    on.on_next(520, 11)
+                    on.next(340, 8),
+                    on.next(360, 5),
+                    on.next(370, 6),
+                    on.next(390, 7),
+                    on.next(520, 11)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -164,20 +164,20 @@ SCENARIO("publish error", "[publish][error][multicast][subject][operators]"){
         std::runtime_error ex("publish on_error");
 
         auto xs = sc.make_hot_observable({
-            on.on_next(110, 7),
-            on.on_next(220, 3),
-            on.on_next(280, 4),
-            on.on_next(290, 1),
-            on.on_next(340, 8),
-            on.on_next(360, 5),
-            on.on_next(370, 6),
-            on.on_next(390, 7),
-            on.on_next(410, 13),
-            on.on_next(430, 2),
-            on.on_next(450, 9),
-            on.on_next(520, 11),
-            on.on_next(560, 20),
-            on.on_error(600, ex)
+            on.next(110, 7),
+            on.next(220, 3),
+            on.next(280, 4),
+            on.next(290, 1),
+            on.next(340, 8),
+            on.next(360, 5),
+            on.next(370, 6),
+            on.next(390, 7),
+            on.next(410, 13),
+            on.next(430, 2),
+            on.next(450, 9),
+            on.next(520, 11),
+            on.next(560, 20),
+            on.error(600, ex)
         });
 
         auto res = w.make_subscriber<int>();
@@ -231,13 +231,13 @@ SCENARIO("publish error", "[publish][error][multicast][subject][operators]"){
 
             THEN("the output only contains items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(340, 8),
-                    on.on_next(360, 5),
-                    on.on_next(370, 6),
-                    on.on_next(390, 7),
-                    on.on_next(520, 11),
-                    on.on_next(560, 20),
-                    on.on_error(600, ex)
+                    on.next(340, 8),
+                    on.next(360, 5),
+                    on.next(370, 6),
+                    on.next(390, 7),
+                    on.next(520, 11),
+                    on.next(560, 20),
+                    on.error(600, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -263,20 +263,20 @@ SCENARIO("publish basic with initial value", "[publish][multicast][behavior][ope
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-                on.on_next(110, 7),
-                on.on_next(220, 3),
-                on.on_next(280, 4),
-                on.on_next(290, 1),
-                on.on_next(340, 8),
-                on.on_next(360, 5),
-                on.on_next(370, 6),
-                on.on_next(390, 7),
-                on.on_next(410, 13),
-                on.on_next(430, 2),
-                on.on_next(450, 9),
-                on.on_next(520, 11),
-                on.on_next(560, 20),
-                on.on_completed(600)
+                on.next(110, 7),
+                on.next(220, 3),
+                on.next(280, 4),
+                on.next(290, 1),
+                on.next(340, 8),
+                on.next(360, 5),
+                on.next(370, 6),
+                on.next(390, 7),
+                on.next(410, 13),
+                on.next(430, 2),
+                on.next(450, 9),
+                on.next(520, 11),
+                on.next(560, 20),
+                on.completed(600)
             });
 
         auto res = w.make_subscriber<int>();
@@ -343,12 +343,12 @@ SCENARIO("publish basic with initial value", "[publish][multicast][behavior][ope
 
             THEN("the output only contains items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(200, 1979),
-                    on.on_next(340, 8),
-                    on.on_next(360, 5),
-                    on.on_next(370, 6),
-                    on.on_next(390, 7),
-                    on.on_next(520, 11)
+                    on.next(200, 1979),
+                    on.next(340, 8),
+                    on.next(360, 5),
+                    on.next(370, 6),
+                    on.next(390, 7),
+                    on.next(520, 11)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);

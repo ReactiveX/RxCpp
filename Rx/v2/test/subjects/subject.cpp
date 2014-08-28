@@ -441,18 +441,18 @@ SCENARIO("subject - infinite source", "[subject][subjects]"){
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(70, 1),
-            on.on_next(110, 2),
-            on.on_next(220, 3),
-            on.on_next(270, 4),
-            on.on_next(340, 5),
-            on.on_next(410, 6),
-            on.on_next(520, 7),
-            on.on_next(630, 8),
-            on.on_next(710, 9),
-            on.on_next(870, 10),
-            on.on_next(940, 11),
-            on.on_next(1020, 12)
+            on.next(70, 1),
+            on.next(110, 2),
+            on.next(220, 3),
+            on.next(270, 4),
+            on.next(340, 5),
+            on.next(410, 6),
+            on.next(520, 7),
+            on.next(630, 8),
+            on.next(710, 9),
+            on.next(870, 10),
+            on.next(940, 11),
+            on.next(1020, 12)
         });
 
         rxsub::subject<int> s;
@@ -494,9 +494,9 @@ SCENARIO("subject - infinite source", "[subject][subjects]"){
 
             THEN("result1 contains expected messages"){
                 auto required = rxu::to_vector({
-                    on.on_next(340, 5),
-                    on.on_next(410, 6),
-                    on.on_next(520, 7)
+                    on.next(340, 5),
+                    on.next(410, 6),
+                    on.next(520, 7)
                 });
                 auto actual = results1.get_observer().messages();
                 REQUIRE(required == actual);
@@ -504,9 +504,9 @@ SCENARIO("subject - infinite source", "[subject][subjects]"){
 
             THEN("result2 contains expected messages"){
                 auto required = rxu::to_vector({
-                    on.on_next(410, 6),
-                    on.on_next(520, 7),
-                    on.on_next(630, 8)
+                    on.next(410, 6),
+                    on.next(520, 7),
+                    on.next(630, 8)
                 });
                 auto actual = results2.get_observer().messages();
                 REQUIRE(required == actual);
@@ -514,7 +514,7 @@ SCENARIO("subject - infinite source", "[subject][subjects]"){
 
             THEN("result3 contains expected messages"){
                 auto required = rxu::to_vector({
-                    on.on_next(940, 11)
+                    on.next(940, 11)
                 });
                 auto actual = results3.get_observer().messages();
                 REQUIRE(required == actual);
@@ -532,17 +532,17 @@ SCENARIO("subject - finite source", "[subject][subjects]"){
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(70, 1),
-            on.on_next(110, 2),
-            on.on_next(220, 3),
-            on.on_next(270, 4),
-            on.on_next(340, 5),
-            on.on_next(410, 6),
-            on.on_next(520, 7),
-            on.on_completed(630),
-            on.on_next(640, 9),
-            on.on_completed(650),
-            on.on_error(660, std::runtime_error("error on unsubscribed stream"))
+            on.next(70, 1),
+            on.next(110, 2),
+            on.next(220, 3),
+            on.next(270, 4),
+            on.next(340, 5),
+            on.next(410, 6),
+            on.next(520, 7),
+            on.completed(630),
+            on.next(640, 9),
+            on.completed(650),
+            on.error(660, std::runtime_error("error on unsubscribed stream"))
         });
 
         rxsub::subject<int> s;
@@ -584,9 +584,9 @@ SCENARIO("subject - finite source", "[subject][subjects]"){
 
             THEN("result1 contains expected messages"){
                 auto required = rxu::to_vector({
-                    on.on_next(340, 5),
-                    on.on_next(410, 6),
-                    on.on_next(520, 7)
+                    on.next(340, 5),
+                    on.next(410, 6),
+                    on.next(520, 7)
                 });
                 auto actual = results1.get_observer().messages();
                 REQUIRE(required == actual);
@@ -594,9 +594,9 @@ SCENARIO("subject - finite source", "[subject][subjects]"){
 
             THEN("result2 contains expected messages"){
                 auto required = rxu::to_vector({
-                    on.on_next(410, 6),
-                    on.on_next(520, 7),
-                    on.on_completed(630)
+                    on.next(410, 6),
+                    on.next(520, 7),
+                    on.completed(630)
                 });
                 auto actual = results2.get_observer().messages();
                 REQUIRE(required == actual);
@@ -604,7 +604,7 @@ SCENARIO("subject - finite source", "[subject][subjects]"){
 
             THEN("result3 contains expected messages"){
                 auto required = rxu::to_vector({
-                    on.on_completed(900)
+                    on.completed(900)
                 });
                 auto actual = results3.get_observer().messages();
                 REQUIRE(required == actual);
@@ -625,17 +625,17 @@ SCENARIO("subject - on_error in source", "[subject][subjects]"){
         std::runtime_error ex("subject on_error in stream");
 
         auto xs = sc.make_hot_observable({
-            on.on_next(70, 1),
-            on.on_next(110, 2),
-            on.on_next(220, 3),
-            on.on_next(270, 4),
-            on.on_next(340, 5),
-            on.on_next(410, 6),
-            on.on_next(520, 7),
-            on.on_error(630, ex),
-            on.on_next(640, 9),
-            on.on_completed(650),
-            on.on_error(660, std::runtime_error("error on unsubscribed stream"))
+            on.next(70, 1),
+            on.next(110, 2),
+            on.next(220, 3),
+            on.next(270, 4),
+            on.next(340, 5),
+            on.next(410, 6),
+            on.next(520, 7),
+            on.error(630, ex),
+            on.next(640, 9),
+            on.completed(650),
+            on.error(660, std::runtime_error("error on unsubscribed stream"))
         });
 
         rxsub::subject<int> s;
@@ -677,9 +677,9 @@ SCENARIO("subject - on_error in source", "[subject][subjects]"){
 
             THEN("result1 contains expected messages"){
                 auto required = rxu::to_vector({
-                    on.on_next(340, 5),
-                    on.on_next(410, 6),
-                    on.on_next(520, 7)
+                    on.next(340, 5),
+                    on.next(410, 6),
+                    on.next(520, 7)
                 });
                 auto actual = results1.get_observer().messages();
                 REQUIRE(required == actual);
@@ -687,9 +687,9 @@ SCENARIO("subject - on_error in source", "[subject][subjects]"){
 
             THEN("result2 contains expected messages"){
                 auto required = rxu::to_vector({
-                    on.on_next(410, 6),
-                    on.on_next(520, 7),
-                    on.on_error(630, ex)
+                    on.next(410, 6),
+                    on.next(520, 7),
+                    on.error(630, ex)
                 });
                 auto actual = results2.get_observer().messages();
                 REQUIRE(required == actual);
@@ -697,7 +697,7 @@ SCENARIO("subject - on_error in source", "[subject][subjects]"){
 
             THEN("result3 contains expected messages"){
                 auto required = rxu::to_vector({
-                    on.on_error(900, ex)
+                    on.error(900, ex)
                 });
                 auto actual = results3.get_observer().messages();
                 REQUIRE(required == actual);

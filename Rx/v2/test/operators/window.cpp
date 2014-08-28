@@ -17,16 +17,16 @@ SCENARIO("window count, basic", "[window][operators]"){
         const rxsc::test::messages<rx::observable<int>> o_on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(100, 1),
-            on.on_next(210, 2),
-            on.on_next(240, 3),
-            on.on_next(280, 4),
-            on.on_next(320, 5),
-            on.on_next(350, 6),
-            on.on_next(380, 7),
-            on.on_next(420, 8),
-            on.on_next(470, 9),
-            on.on_completed(600)
+            on.next(100, 1),
+            on.next(210, 2),
+            on.next(240, 3),
+            on.next(280, 4),
+            on.next(320, 5),
+            on.next(350, 6),
+            on.next(380, 7),
+            on.next(420, 8),
+            on.next(470, 9),
+            on.completed(600)
         });
 
         WHEN("group each int with the next 2 ints"){
@@ -42,18 +42,18 @@ SCENARIO("window count, basic", "[window][operators]"){
 
             THEN("the output contains merged groups of ints"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, 2),
-                    on.on_next(240, 3),
-                    on.on_next(280, 4),
-                    on.on_next(280, 4),
-                    on.on_next(320, 5),
-                    on.on_next(350, 6),
-                    on.on_next(350, 6),
-                    on.on_next(380, 7),
-                    on.on_next(420, 8),
-                    on.on_next(420, 8),
-                    on.on_next(470, 9),
-                    on.on_completed(600)
+                    on.next(210, 2),
+                    on.next(240, 3),
+                    on.next(280, 4),
+                    on.next(280, 4),
+                    on.next(320, 5),
+                    on.next(350, 6),
+                    on.next(350, 6),
+                    on.next(380, 7),
+                    on.next(420, 8),
+                    on.next(420, 8),
+                    on.next(470, 9),
+                    on.completed(600)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -78,16 +78,16 @@ SCENARIO("window count, inner timings", "[window][operators]"){
         const rxsc::test::messages<rx::observable<int>> o_on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(100, 1),
-            on.on_next(210, 2),
-            on.on_next(240, 3),
-            on.on_next(280, 4),
-            on.on_next(320, 5),
-            on.on_next(350, 6),
-            on.on_next(380, 7),
-            on.on_next(420, 8),
-            on.on_next(470, 9),
-            on.on_completed(600)
+            on.next(100, 1),
+            on.next(210, 2),
+            on.next(240, 3),
+            on.next(280, 4),
+            on.next(320, 5),
+            on.next(350, 6),
+            on.next(380, 7),
+            on.next(420, 8),
+            on.next(470, 9),
+            on.completed(600)
         });
 
         WHEN("group each int with the next 2 ints"){
@@ -126,10 +126,10 @@ SCENARIO("window count, inner timings", "[window][operators]"){
 
             THEN("the 1st output window contains ints"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, 2),
-                    on.on_next(240, 3),
-                    on.on_next(280, 4),
-                    on.on_completed(280)
+                    on.next(210, 2),
+                    on.next(240, 3),
+                    on.next(280, 4),
+                    on.completed(280)
                 });
                 auto actual = observers[0].messages();
                 REQUIRE(required == actual);
@@ -137,10 +137,10 @@ SCENARIO("window count, inner timings", "[window][operators]"){
 
             THEN("the 2nd output window contains ints"){
                 auto required = rxu::to_vector({
-                    on.on_next(280, 4),
-                    on.on_next(320, 5),
-                    on.on_next(350, 6),
-                    on.on_completed(350)
+                    on.next(280, 4),
+                    on.next(320, 5),
+                    on.next(350, 6),
+                    on.completed(350)
                 });
                 auto actual = observers[1].messages();
                 REQUIRE(required == actual);
@@ -148,10 +148,10 @@ SCENARIO("window count, inner timings", "[window][operators]"){
 
             THEN("the 3rd output window contains ints"){
                 auto required = rxu::to_vector({
-                    on.on_next(350, 6),
-                    on.on_next(380, 7),
-                    on.on_next(420, 8),
-                    on.on_completed(420)
+                    on.next(350, 6),
+                    on.next(380, 7),
+                    on.next(420, 8),
+                    on.completed(420)
                 });
                 auto actual = observers[2].messages();
                 REQUIRE(required == actual);
@@ -159,9 +159,9 @@ SCENARIO("window count, inner timings", "[window][operators]"){
 
             THEN("the 4th output window contains ints"){
                 auto required = rxu::to_vector({
-                    on.on_next(420, 8),
-                    on.on_next(470, 9),
-                    on.on_completed(600)
+                    on.next(420, 8),
+                    on.next(470, 9),
+                    on.completed(600)
                 });
                 auto actual = observers[3].messages();
                 REQUIRE(required == actual);
@@ -169,7 +169,7 @@ SCENARIO("window count, inner timings", "[window][operators]"){
 
             THEN("the 5th output window only contains complete message"){
                 auto required = rxu::to_vector({
-                    on.on_completed(600)
+                    on.completed(600)
                 });
                 auto actual = observers[4].messages();
                 REQUIRE(required == actual);
@@ -194,16 +194,16 @@ SCENARIO("window count, dispose", "[window][operators]"){
         const rxsc::test::messages<rx::observable<int>> o_on;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(100, 1),
-            on.on_next(210, 2),
-            on.on_next(240, 3),
-            on.on_next(280, 4),
-            on.on_next(320, 5),
-            on.on_next(350, 6),
-            on.on_next(380, 7),
-            on.on_next(420, 8),
-            on.on_next(470, 9),
-            on.on_completed(600)
+            on.next(100, 1),
+            on.next(210, 2),
+            on.next(240, 3),
+            on.next(280, 4),
+            on.next(320, 5),
+            on.next(350, 6),
+            on.next(380, 7),
+            on.next(420, 8),
+            on.next(470, 9),
+            on.completed(600)
         });
 
         WHEN("group each int with the next 2 ints"){
@@ -220,13 +220,13 @@ SCENARIO("window count, dispose", "[window][operators]"){
 
             THEN("the output contains merged groups of ints"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, 2),
-                    on.on_next(240, 3),
-                    on.on_next(280, 4),
-                    on.on_next(280, 4),
-                    on.on_next(320, 5),
-                    on.on_next(350, 6),
-                    on.on_next(350, 6)
+                    on.next(210, 2),
+                    on.next(240, 3),
+                    on.next(280, 4),
+                    on.next(280, 4),
+                    on.next(320, 5),
+                    on.next(350, 6),
+                    on.next(350, 6)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -253,16 +253,16 @@ SCENARIO("window count, error", "[window][operators]"){
         std::runtime_error ex("window on_error from source");
 
         auto xs = sc.make_hot_observable({
-            on.on_next(100, 1),
-            on.on_next(210, 2),
-            on.on_next(240, 3),
-            on.on_next(280, 4),
-            on.on_next(320, 5),
-            on.on_next(350, 6),
-            on.on_next(380, 7),
-            on.on_next(420, 8),
-            on.on_next(470, 9),
-            on.on_error(600, ex)
+            on.next(100, 1),
+            on.next(210, 2),
+            on.next(240, 3),
+            on.next(280, 4),
+            on.next(320, 5),
+            on.next(350, 6),
+            on.next(380, 7),
+            on.next(420, 8),
+            on.next(470, 9),
+            on.error(600, ex)
         });
 
         WHEN("group each int with the next 2 ints"){
@@ -278,18 +278,18 @@ SCENARIO("window count, error", "[window][operators]"){
 
             THEN("the output contains merged groups of ints"){
                 auto required = rxu::to_vector({
-                    on.on_next(210, 2),
-                    on.on_next(240, 3),
-                    on.on_next(280, 4),
-                    on.on_next(280, 4),
-                    on.on_next(320, 5),
-                    on.on_next(350, 6),
-                    on.on_next(350, 6),
-                    on.on_next(380, 7),
-                    on.on_next(420, 8),
-                    on.on_next(420, 8),
-                    on.on_next(470, 9),
-                    on.on_error(600, ex)
+                    on.next(210, 2),
+                    on.next(240, 3),
+                    on.next(280, 4),
+                    on.next(280, 4),
+                    on.next(320, 5),
+                    on.next(350, 6),
+                    on.next(350, 6),
+                    on.next(380, 7),
+                    on.next(420, 8),
+                    on.next(420, 8),
+                    on.next(470, 9),
+                    on.error(600, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
