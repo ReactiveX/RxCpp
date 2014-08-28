@@ -242,19 +242,19 @@ SCENARIO("flat_map completes", "[flat_map][map][operators]"){
         const rxsc::test::messages<std::string> s_on;
 
         auto xs = sc.make_cold_observable({
-            i_on.on_next(100, 4),
-            i_on.on_next(200, 2),
-            i_on.on_next(300, 3),
-            i_on.on_next(400, 1),
-            i_on.on_completed(500)
+            i_on.next(100, 4),
+            i_on.next(200, 2),
+            i_on.next(300, 3),
+            i_on.next(400, 1),
+            i_on.completed(500)
         });
 
         auto ys = sc.make_cold_observable({
-            s_on.on_next(50, "foo"),
-            s_on.on_next(100, "bar"),
-            s_on.on_next(150, "baz"),
-            s_on.on_next(200, "qux"),
-            s_on.on_completed(250)
+            s_on.next(50, "foo"),
+            s_on.next(100, "bar"),
+            s_on.next(150, "baz"),
+            s_on.next(200, "qux"),
+            s_on.completed(250)
         });
 
         WHEN("each int is mapped to the strings"){
@@ -274,23 +274,23 @@ SCENARIO("flat_map completes", "[flat_map][map][operators]"){
 
             THEN("the output contains strings repeated for each int"){
                 auto required = rxu::to_vector({
-                    s_on.on_next(350, "foo"),
-                    s_on.on_next(400, "bar"),
-                    s_on.on_next(450, "baz"),
-                    s_on.on_next(450, "foo"),
-                    s_on.on_next(500, "qux"),
-                    s_on.on_next(500, "bar"),
-                    s_on.on_next(550, "baz"),
-                    s_on.on_next(550, "foo"),
-                    s_on.on_next(600, "qux"),
-                    s_on.on_next(600, "bar"),
-                    s_on.on_next(650, "baz"),
-                    s_on.on_next(650, "foo"),
-                    s_on.on_next(700, "qux"),
-                    s_on.on_next(700, "bar"),
-                    s_on.on_next(750, "baz"),
-                    s_on.on_next(800, "qux"),
-                    s_on.on_completed(850)
+                    s_on.next(350, "foo"),
+                    s_on.next(400, "bar"),
+                    s_on.next(450, "baz"),
+                    s_on.next(450, "foo"),
+                    s_on.next(500, "qux"),
+                    s_on.next(500, "bar"),
+                    s_on.next(550, "baz"),
+                    s_on.next(550, "foo"),
+                    s_on.next(600, "qux"),
+                    s_on.next(600, "bar"),
+                    s_on.next(650, "baz"),
+                    s_on.next(650, "foo"),
+                    s_on.next(700, "qux"),
+                    s_on.next(700, "bar"),
+                    s_on.next(750, "baz"),
+                    s_on.next(800, "qux"),
+                    s_on.completed(850)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -327,20 +327,20 @@ SCENARIO("flat_map source never ends", "[flat_map][map][operators]"){
         const rxsc::test::messages<std::string> s_on;
 
         auto xs = sc.make_cold_observable({
-            i_on.on_next(100, 4),
-            i_on.on_next(200, 2),
-            i_on.on_next(300, 3),
-            i_on.on_next(400, 1),
-            i_on.on_next(500, 5),
-            i_on.on_next(700, 0)
+            i_on.next(100, 4),
+            i_on.next(200, 2),
+            i_on.next(300, 3),
+            i_on.next(400, 1),
+            i_on.next(500, 5),
+            i_on.next(700, 0)
         });
 
         auto ys = sc.make_cold_observable({
-            s_on.on_next(50, "foo"),
-            s_on.on_next(100, "bar"),
-            s_on.on_next(150, "baz"),
-            s_on.on_next(200, "qux"),
-            s_on.on_completed(250)
+            s_on.next(50, "foo"),
+            s_on.next(100, "bar"),
+            s_on.next(150, "baz"),
+            s_on.next(200, "qux"),
+            s_on.completed(250)
         });
 
         WHEN("each int is mapped to the strings"){
@@ -356,27 +356,27 @@ SCENARIO("flat_map source never ends", "[flat_map][map][operators]"){
 
             THEN("the output contains strings repeated for each int"){
                 auto required = rxu::to_vector({
-                    s_on.on_next(350, "foo"),
-                    s_on.on_next(400, "bar"),
-                    s_on.on_next(450, "baz"),
-                    s_on.on_next(450, "foo"),
-                    s_on.on_next(500, "qux"),
-                    s_on.on_next(500, "bar"),
-                    s_on.on_next(550, "baz"),
-                    s_on.on_next(550, "foo"),
-                    s_on.on_next(600, "qux"),
-                    s_on.on_next(600, "bar"),
-                    s_on.on_next(650, "baz"),
-                    s_on.on_next(650, "foo"),
-                    s_on.on_next(700, "qux"),
-                    s_on.on_next(700, "bar"),
-                    s_on.on_next(750, "baz"),
-                    s_on.on_next(750, "foo"),
-                    s_on.on_next(800, "qux"),
-                    s_on.on_next(800, "bar"),
-                    s_on.on_next(850, "baz"),
-                    s_on.on_next(900, "qux"),
-                    s_on.on_next(950, "foo")
+                    s_on.next(350, "foo"),
+                    s_on.next(400, "bar"),
+                    s_on.next(450, "baz"),
+                    s_on.next(450, "foo"),
+                    s_on.next(500, "qux"),
+                    s_on.next(500, "bar"),
+                    s_on.next(550, "baz"),
+                    s_on.next(550, "foo"),
+                    s_on.next(600, "qux"),
+                    s_on.next(600, "bar"),
+                    s_on.next(650, "baz"),
+                    s_on.next(650, "foo"),
+                    s_on.next(700, "qux"),
+                    s_on.next(700, "bar"),
+                    s_on.next(750, "baz"),
+                    s_on.next(750, "foo"),
+                    s_on.next(800, "qux"),
+                    s_on.next(800, "bar"),
+                    s_on.next(850, "baz"),
+                    s_on.next(900, "qux"),
+                    s_on.next(950, "foo")
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -414,21 +414,21 @@ SCENARIO("flat_map inner error", "[flat_map][map][operators]"){
         const rxsc::test::messages<std::string> s_on;
 
         auto xs = sc.make_cold_observable({
-            i_on.on_next(100, 4),
-            i_on.on_next(200, 2),
-            i_on.on_next(300, 3),
-            i_on.on_next(400, 1),
-            i_on.on_completed(500)
+            i_on.next(100, 4),
+            i_on.next(200, 2),
+            i_on.next(300, 3),
+            i_on.next(400, 1),
+            i_on.completed(500)
         });
 
         std::runtime_error ex("filter on_error from inner source");
 
         auto ys = sc.make_cold_observable({
-            s_on.on_next(55, "foo"),
-            s_on.on_next(104, "bar"),
-            s_on.on_next(153, "baz"),
-            s_on.on_next(202, "qux"),
-            s_on.on_error(301, ex)
+            s_on.next(55, "foo"),
+            s_on.next(104, "bar"),
+            s_on.next(153, "baz"),
+            s_on.next(202, "qux"),
+            s_on.error(301, ex)
         });
 
         WHEN("each int is mapped to the strings"){
@@ -444,15 +444,15 @@ SCENARIO("flat_map inner error", "[flat_map][map][operators]"){
 
             THEN("the output contains strings repeated for each int"){
                 auto required = rxu::to_vector({
-                    s_on.on_next(355, "foo"),
-                    s_on.on_next(404, "bar"),
-                    s_on.on_next(453, "baz"),
-                    s_on.on_next(455, "foo"),
-                    s_on.on_next(502, "qux"),
-                    s_on.on_next(504, "bar"),
-                    s_on.on_next(553, "baz"),
-                    s_on.on_next(555, "foo"),
-                    s_on.on_error(601, ex)
+                    s_on.next(355, "foo"),
+                    s_on.next(404, "bar"),
+                    s_on.next(453, "baz"),
+                    s_on.next(455, "foo"),
+                    s_on.next(502, "qux"),
+                    s_on.next(504, "bar"),
+                    s_on.next(553, "baz"),
+                    s_on.next(555, "foo"),
+                    s_on.error(601, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);

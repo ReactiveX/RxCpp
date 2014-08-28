@@ -398,9 +398,9 @@ public:
             }
         };
 
-        static const on_next_factory on_next;
-        static const on_completed_factory on_completed;
-        static const on_error_factory on_error;
+        static const on_next_factory next;
+        static const on_completed_factory completed;
+        static const on_error_factory error;
 
         struct subscribe_factory
         {
@@ -587,15 +587,15 @@ public:
 
 template<class T>
 //static
-RXCPP_SELECT_ANY const typename test::messages<T>::on_next_factory test::messages<T>::on_next = test::messages<T>::on_next_factory();
+RXCPP_SELECT_ANY const typename test::messages<T>::on_next_factory test::messages<T>::next = test::messages<T>::on_next_factory();
 
 template<class T>
 //static
-RXCPP_SELECT_ANY const typename test::messages<T>::on_completed_factory test::messages<T>::on_completed = test::messages<T>::on_completed_factory();
+RXCPP_SELECT_ANY const typename test::messages<T>::on_completed_factory test::messages<T>::completed = test::messages<T>::on_completed_factory();
 
 template<class T>
 //static
-RXCPP_SELECT_ANY const typename test::messages<T>::on_error_factory test::messages<T>::on_error = test::messages<T>::on_error_factory();
+RXCPP_SELECT_ANY const typename test::messages<T>::on_error_factory test::messages<T>::error = test::messages<T>::on_error_factory();
 
 template<class T>
 //static

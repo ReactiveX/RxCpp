@@ -15,36 +15,36 @@ SCENARIO("switch_on_next - some changes", "[switch_on_next][operators]"){
         const rxsc::test::messages<rx::observable<int>> o_on;
 
         auto ys1 = sc.make_cold_observable({
-            on.on_next(10, 101),
-            on.on_next(20, 102),
-            on.on_next(110, 103),
-            on.on_next(120, 104),
-            on.on_next(210, 105),
-            on.on_next(220, 106),
-            on.on_completed(230)
+            on.next(10, 101),
+            on.next(20, 102),
+            on.next(110, 103),
+            on.next(120, 104),
+            on.next(210, 105),
+            on.next(220, 106),
+            on.completed(230)
         });
 
         auto ys2 = sc.make_cold_observable({
-            on.on_next(10, 201),
-            on.on_next(20, 202),
-            on.on_next(30, 203),
-            on.on_next(40, 204),
-            on.on_completed(50)
+            on.next(10, 201),
+            on.next(20, 202),
+            on.next(30, 203),
+            on.next(40, 204),
+            on.completed(50)
         });
 
         auto ys3 = sc.make_cold_observable({
-            on.on_next(10, 301),
-            on.on_next(20, 302),
-            on.on_next(30, 303),
-            on.on_next(40, 304),
-            on.on_completed(150)
+            on.next(10, 301),
+            on.next(20, 302),
+            on.next(30, 303),
+            on.next(40, 304),
+            on.completed(150)
         });
 
         auto xs = sc.make_hot_observable({
-            o_on.on_next(300, ys1),
-            o_on.on_next(400, ys2),
-            o_on.on_next(500, ys3),
-            o_on.on_completed(600)
+            o_on.next(300, ys1),
+            o_on.next(400, ys2),
+            o_on.next(500, ys3),
+            o_on.completed(600)
         });
 
         WHEN("distinct values are taken"){
@@ -57,17 +57,17 @@ SCENARIO("switch_on_next - some changes", "[switch_on_next][operators]"){
 
             THEN("the output only contains distinct items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(310, 101),
-                    on.on_next(320, 102),
-                    on.on_next(410, 201),
-                    on.on_next(420, 202),
-                    on.on_next(430, 203),
-                    on.on_next(440, 204),
-                    on.on_next(510, 301),
-                    on.on_next(520, 302),
-                    on.on_next(530, 303),
-                    on.on_next(540, 304),
-                    on.on_completed(650)
+                    on.next(310, 101),
+                    on.next(320, 102),
+                    on.next(410, 201),
+                    on.next(420, 202),
+                    on.next(430, 203),
+                    on.next(440, 204),
+                    on.next(510, 301),
+                    on.next(520, 302),
+                    on.next(530, 303),
+                    on.next(540, 304),
+                    on.completed(650)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -118,36 +118,36 @@ SCENARIO("switch_on_next - inner throws", "[switch_on_next][operators]"){
         std::runtime_error ex("switch_on_next on_error from source");
 
         auto ys1 = sc.make_cold_observable({
-            on.on_next(10, 101),
-            on.on_next(20, 102),
-            on.on_next(110, 103),
-            on.on_next(120, 104),
-            on.on_next(210, 105),
-            on.on_next(220, 106),
-            on.on_completed(230)
+            on.next(10, 101),
+            on.next(20, 102),
+            on.next(110, 103),
+            on.next(120, 104),
+            on.next(210, 105),
+            on.next(220, 106),
+            on.completed(230)
         });
 
         auto ys2 = sc.make_cold_observable({
-            on.on_next(10, 201),
-            on.on_next(20, 202),
-            on.on_next(30, 203),
-            on.on_next(40, 204),
-            on.on_error(50, ex)
+            on.next(10, 201),
+            on.next(20, 202),
+            on.next(30, 203),
+            on.next(40, 204),
+            on.error(50, ex)
         });
 
         auto ys3 = sc.make_cold_observable({
-            on.on_next(10, 301),
-            on.on_next(20, 302),
-            on.on_next(30, 303),
-            on.on_next(40, 304),
-            on.on_completed(150)
+            on.next(10, 301),
+            on.next(20, 302),
+            on.next(30, 303),
+            on.next(40, 304),
+            on.completed(150)
         });
 
         auto xs = sc.make_hot_observable({
-            o_on.on_next(300, ys1),
-            o_on.on_next(400, ys2),
-            o_on.on_next(500, ys3),
-            o_on.on_completed(600)
+            o_on.next(300, ys1),
+            o_on.next(400, ys2),
+            o_on.next(500, ys3),
+            o_on.completed(600)
         });
 
         WHEN("distinct values are taken"){
@@ -160,13 +160,13 @@ SCENARIO("switch_on_next - inner throws", "[switch_on_next][operators]"){
 
             THEN("the output only contains distinct items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(310, 101),
-                    on.on_next(320, 102),
-                    on.on_next(410, 201),
-                    on.on_next(420, 202),
-                    on.on_next(430, 203),
-                    on.on_next(440, 204),
-                    on.on_error(450, ex)
+                    on.next(310, 101),
+                    on.next(320, 102),
+                    on.next(410, 201),
+                    on.next(420, 202),
+                    on.next(430, 203),
+                    on.next(440, 204),
+                    on.error(450, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -215,27 +215,27 @@ SCENARIO("switch_on_next - outer throws", "[switch_on_next][operators]"){
         std::runtime_error ex("switch_on_next on_error from source");
 
         auto ys1 = sc.make_cold_observable({
-            on.on_next(10, 101),
-            on.on_next(20, 102),
-            on.on_next(110, 103),
-            on.on_next(120, 104),
-            on.on_next(210, 105),
-            on.on_next(220, 106),
-            on.on_completed(230)
+            on.next(10, 101),
+            on.next(20, 102),
+            on.next(110, 103),
+            on.next(120, 104),
+            on.next(210, 105),
+            on.next(220, 106),
+            on.completed(230)
         });
 
         auto ys2 = sc.make_cold_observable({
-            on.on_next(10, 201),
-            on.on_next(20, 202),
-            on.on_next(30, 203),
-            on.on_next(40, 204),
-            on.on_completed(50)
+            on.next(10, 201),
+            on.next(20, 202),
+            on.next(30, 203),
+            on.next(40, 204),
+            on.completed(50)
         });
 
         auto xs = sc.make_hot_observable({
-            o_on.on_next(300, ys1),
-            o_on.on_next(400, ys2),
-            o_on.on_error(500, ex)
+            o_on.next(300, ys1),
+            o_on.next(400, ys2),
+            o_on.error(500, ex)
         });
 
         WHEN("distinct values are taken"){
@@ -248,13 +248,13 @@ SCENARIO("switch_on_next - outer throws", "[switch_on_next][operators]"){
 
             THEN("the output only contains distinct items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(310, 101),
-                    on.on_next(320, 102),
-                    on.on_next(410, 201),
-                    on.on_next(420, 202),
-                    on.on_next(430, 203),
-                    on.on_next(440, 204),
-                    on.on_error(500, ex)
+                    on.next(310, 101),
+                    on.next(320, 102),
+                    on.next(410, 201),
+                    on.next(420, 202),
+                    on.next(430, 203),
+                    on.next(440, 204),
+                    on.error(500, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -295,7 +295,7 @@ SCENARIO("switch_on_next - no inner", "[switch_on_next][operators]"){
         const rxsc::test::messages<rx::observable<int>> o_on;
 
         auto xs = sc.make_hot_observable({
-            o_on.on_completed(500)
+            o_on.completed(500)
         });
 
         WHEN("distinct values are taken"){
@@ -308,7 +308,7 @@ SCENARIO("switch_on_next - no inner", "[switch_on_next][operators]"){
 
             THEN("the output only contains distinct items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_completed(500)
+                    on.completed(500)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -333,18 +333,18 @@ SCENARIO("switch_on_next - inner completes", "[switch_on_next][operators]"){
         const rxsc::test::messages<rx::observable<int>> o_on;
 
         auto ys1 = sc.make_cold_observable({
-            on.on_next(10, 101),
-            on.on_next(20, 102),
-            on.on_next(110, 103),
-            on.on_next(120, 104),
-            on.on_next(210, 105),
-            on.on_next(220, 106),
-            on.on_completed(230)
+            on.next(10, 101),
+            on.next(20, 102),
+            on.next(110, 103),
+            on.next(120, 104),
+            on.next(210, 105),
+            on.next(220, 106),
+            on.completed(230)
         });
 
         auto xs = sc.make_hot_observable({
-            o_on.on_next(300, ys1),
-            o_on.on_completed(540)
+            o_on.next(300, ys1),
+            o_on.completed(540)
         });
 
         WHEN("distinct values are taken"){
@@ -357,13 +357,13 @@ SCENARIO("switch_on_next - inner completes", "[switch_on_next][operators]"){
 
             THEN("the output only contains distinct items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.on_next(310, 101),
-                    on.on_next(320, 102),
-                    on.on_next(410, 103),
-                    on.on_next(420, 104),
-                    on.on_next(510, 105),
-                    on.on_next(520, 106),
-                    on.on_completed(540)
+                    on.next(310, 101),
+                    on.next(320, 102),
+                    on.next(410, 103),
+                    on.next(420, 104),
+                    on.next(510, 105),
+                    on.next(520, 106),
+                    on.completed(540)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);

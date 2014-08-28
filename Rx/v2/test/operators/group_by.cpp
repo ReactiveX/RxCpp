@@ -166,25 +166,25 @@ SCENARIO("group_by", "[group_by][operators]"){
         int marbleInvoked = 0;
 
         auto xs = sc.make_hot_observable({
-            on.on_next(90, "error"),
-            on.on_next(110, "error"),
-            on.on_next(130, "error"),
-            on.on_next(220, "  foo"),
-            on.on_next(240, " FoO "),
-            on.on_next(270, "baR  "),
-            on.on_next(310, "foO "),
-            on.on_next(350, " Baz   "),
-            on.on_next(360, "  qux "),
-            on.on_next(390, "   bar"),
-            on.on_next(420, " BAR  "),
-            on.on_next(470, "FOO "),
-            on.on_next(480, "baz  "),
-            on.on_next(510, " bAZ "),
-            on.on_next(530, "    fOo    "),
-            on.on_completed(570),
-            on.on_next(580, "error"),
-            on.on_completed(600),
-            on.on_error(650, new std::runtime_error("error in completed sequence"))
+            on.next(90, "error"),
+            on.next(110, "error"),
+            on.next(130, "error"),
+            on.next(220, "  foo"),
+            on.next(240, " FoO "),
+            on.next(270, "baR  "),
+            on.next(310, "foO "),
+            on.next(350, " Baz   "),
+            on.next(360, "  qux "),
+            on.next(390, "   bar"),
+            on.next(420, " BAR  "),
+            on.next(470, "FOO "),
+            on.next(480, "baz  "),
+            on.next(510, " bAZ "),
+            on.next(530, "    fOo    "),
+            on.completed(570),
+            on.next(580, "error"),
+            on.completed(600),
+            on.error(650, new std::runtime_error("error in completed sequence"))
         });
 
         WHEN("group each int with the next 2 ints"){
@@ -211,11 +211,11 @@ SCENARIO("group_by", "[group_by][operators]"){
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    on.on_next(220, "foo"),
-                    on.on_next(270, "baR"),
-                    on.on_next(350, "Baz"),
-                    on.on_next(360, "qux"),
-                    on.on_completed(570)
+                    on.next(220, "foo"),
+                    on.next(270, "baR"),
+                    on.next(350, "Baz"),
+                    on.next(360, "qux"),
+                    on.completed(570)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
