@@ -1038,6 +1038,27 @@ public:
             rxo::detail::repeat<T, this_type, Count>(*this, t));
     }
 
+    /// retry ->
+    /// infinitely retrys this observable
+    ///
+    ///
+    auto retry() const
+        ->      observable<T, rxo::detail::retry<T, this_type, int>> {
+        return  observable<T, rxo::detail::retry<T, this_type, int>>(
+            rxo::detail::retry<T, this_type, int>(*this, 0));
+    }
+
+    /// retry ->
+    /// retrys this observable for given number of times
+    ///
+    ///
+    template<class Count>
+    auto retry(Count t) const
+        ->      observable<T, rxo::detail::retry<T, this_type, Count>> {
+        return  observable<T, rxo::detail::retry<T, this_type, Count>>(
+            rxo::detail::retry<T, this_type, Count>(*this, t));
+    }
+
     /// start_with ->
     /// start with the supplied values, then concatenate this observable
     ///
