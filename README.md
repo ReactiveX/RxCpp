@@ -1,4 +1,6 @@
-[![Build Status](https://travis-ci.org/Reactive-Extensions/RxCpp.png)](https://travis-ci.org/Reactive-Extensions/RxCpp)
+[![Build Status](http://img.shields.io/travis/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://travis-ci.org/Reactive-Extensions/RxCpp)
+[![NuGet version](http://img.shields.io/nuget/v/RxCpp.svg?style=flat-square)](http://www.nuget.org/packages/RxCpp/)
+[![NuGet downloads](http://img.shields.io/nuget/dt/RxCpp.svg?style=flat-square)](http://www.nuget.org/packages/RxCpp/)
 
 # Reactive Extensions:
 
