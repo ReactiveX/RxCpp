@@ -104,6 +104,21 @@ public:
     {
     }
 
+    template<class U, class O>
+    friend class subscriber;
+
+    template<class O>
+    subscriber(
+        const subscriber<T, O>& o,
+        typename std::enable_if<
+               !std::is_same<O, observer<T>>::value &&
+               std::is_same<Observer, observer<T>>::value, void**>::type select = nullptr)
+        : lifetime(o.lifetime)
+        , destination(o.destination.as_dynamic())
+        , id(o.id)
+    {
+    }
+
     template<class U>
     subscriber(trace_id id, composite_subscription cs, U&& o)
         : lifetime(std::move(cs))

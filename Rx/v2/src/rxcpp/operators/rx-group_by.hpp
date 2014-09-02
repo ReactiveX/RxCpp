@@ -59,6 +59,7 @@ struct group_by
     typedef group_by_traits<T, Observable, KeySelector, MarbleSelector, BinaryPredicate> traits_type;
     typedef typename traits_type::key_selector_type key_selector_type;
     typedef typename traits_type::marble_selector_type marble_selector_type;
+    typedef typename traits_type::marble_type marble_type;
     typedef typename traits_type::predicate_type predicate_type;
     typedef typename traits_type::subject_type subject_type;
     typedef typename traits_type::key_type key_type;
@@ -83,7 +84,7 @@ struct group_by
     {
     }
 
-    struct group_by_observable
+    struct group_by_observable : public rxs::source_base<marble_type>
     {
         subject_type subject;
         key_type key;
@@ -109,7 +110,6 @@ struct group_by
     {
         typedef group_by_observer<Subscriber> this_type;
         typedef typename traits_type::grouped_observable_type value_type;
-        typedef typename traits_type::marble_type marble_type;
         typedef typename std::decay<Subscriber>::type dest_type;
         typedef observer<T, this_type> observer_type;
         dest_type dest;
