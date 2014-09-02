@@ -28,7 +28,7 @@ struct has_on_get_key_for
 
 template<class K, class T>
 class dynamic_grouped_observable
-    : public rxs::source_base<T>
+    : public dynamic_observable<T>
 {
 public:
     typedef typename std::decay<K>::type key_type;
@@ -38,10 +38,8 @@ private:
     struct state_type
         : public std::enable_shared_from_this<state_type>
     {
-        typedef std::function<void(subscriber<T>)> onsubscribe_type;
         typedef std::function<key_type()> ongetkey_type;
 
-        onsubscribe_type on_subscribe;
         ongetkey_type on_get_key;
     };
     std::shared_ptr<state_type> state;
@@ -62,9 +60,6 @@ private:
     template<class SO>
     void construct(SO&& source, const rxs::tag_source&) {
         auto so = std::make_shared<typename std::decay<SO>::type>(std::forward<SO>(source));
-        state->on_subscribe = [so](subscriber<T> o) mutable {
-            so->on_subscribe(std::move(o));
-        };
         state->on_get_key = [so]() mutable {
             return so->on_get_key();
         };
@@ -77,46 +72,23 @@ public:
     }
 
     template<class SOF>
-    explicit dynamic_grouped_observable(SOF&& sof)
-        : state(std::make_shared<state_type>())
+    explicit dynamic_grouped_observable(SOF sof)
+        : dynamic_observable<T>(sof)
+        , state(std::make_shared<state_type>())
     {
-        construct(std::forward<SOF>(sof),
+        construct(std::move(sof),
                   typename std::conditional<is_dynamic_grouped_observable<SOF>::value, tag_dynamic_grouped_observable, rxs::tag_source>::type());
     }
 
     template<class SF, class CF>
     dynamic_grouped_observable(SF&& sf, CF&& cf)
-        : state(std::make_shared<state_type>())
+        : dynamic_observable<T>(std::forward<SF>(sf))
+        , state(std::make_shared<state_type>())
     {
-        state->on_subscribe = std::forward<SF>(sf);
         state->on_connect = std::forward<CF>(cf);
     }
 
-    void on_subscribe(subscriber<T> o) const {
-        state->on_subscribe(std::move(o));
-    }
-
-    template<class Subscriber>
-    typename std::enable_if<!std::is_same<typename std::decay<Subscriber>::type, observer<T>>::value, void>::type
-    on_subscribe(Subscriber&& o) const {
-        auto so = std::make_shared<typename std::decay<Subscriber>::type>(std::forward<Subscriber>(o));
-        state->on_subscribe(
-            make_subscriber<T>(
-                *so,
-            // on_next
-                [so](T t){
-                    so->on_next(t);
-                },
-            // on_error
-                [so](std::exception_ptr e){
-                    so->on_error(e);
-                },
-            // on_completed
-                [so](){
-                    so->on_completed();
-                }).
-            as_dynamic());
-    }
+    using dynamic_observable<T>::on_subscribe;
 
     key_type on_get_key() const {
         return state->on_get_key();
