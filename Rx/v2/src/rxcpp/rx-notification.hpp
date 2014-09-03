@@ -93,6 +93,17 @@ inline std::ostream& operator<< (std::ostream& os, const std::vector<T>& v) {
     return os;
 }
 
+template<class T>
+auto equals(const T& lhs, const T& rhs, int)
+    -> decltype(lhs == rhs, true) {
+    return lhs == rhs;
+}
+
+template<class T>
+bool equals(const T& lhs, const T& rhs, ...) {
+    throw std::runtime_error("value does not support equality tests");
+    return false;
+}
 
 }
 
@@ -116,7 +127,7 @@ private:
         virtual bool equals(const typename base::type& other) const {
             bool result = false;
             other->accept(make_subscriber<T>(make_observer_dynamic<T>([this, &result](T v) {
-                    result = this->value == v;
+                    result = detail::equals(this->value, v, 0);
                 })));
             return result;
         }
