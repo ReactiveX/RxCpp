@@ -1,0 +1,19 @@
+version: 2.1.{build}
+
+branches:
+# whitelist
+    only:
+        - master
+        - appveyor
+
+install:
+    - git submodule -q update --init
+
+before_build:
+    - mkdir projects\build
+    - cd projects\build
+    - cmake -G"Visual Studio 12" -T"v120" -B. ..\CMake\
+    - cd ..\..
+
+build:
+    project: projects\build\rxcpp.sln
