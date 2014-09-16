@@ -64,5 +64,6 @@ namespace rxo=operators;
 #include "operators/rx-take.hpp"
 #include "operators/rx-take_until.hpp"
 #include "operators/rx-window.hpp"
+#include "operators/rx-window_time.hpp"
 #include "operators/rx-retry.hpp"
 #endif
