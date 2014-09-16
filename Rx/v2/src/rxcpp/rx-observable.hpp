@@ -498,6 +498,42 @@ public:
         return                    lift<observable<T>>(rxo::detail::window<T>(count, skip));
     }
 
+    /// window_with_time ->
+    /// produce observables every skip time interval and collect items from this observable for period of time into each produced observable.
+    ///
+    template<class Duration, class Coordination>
+    auto window_with_time(Duration period, Duration skip, Coordination coordination) const
+        -> decltype(EXPLICIT_THIS lift<observable<T>>(rxo::detail::window_with_time<T, Duration, Coordination>(period, skip, coordination))) {
+        return                    lift<observable<T>>(rxo::detail::window_with_time<T, Duration, Coordination>(period, skip, coordination));
+    }
+
+    /// window_with_time ->
+    /// produce observables every skip time interval and collect items from this observable for period of time into each produced observable.
+    ///
+    template<class Duration>
+    auto window_with_time(Duration period, Duration skip) const
+        -> decltype(EXPLICIT_THIS lift<observable<T>>(rxo::detail::window_with_time<T, Duration, identity_one_worker>(period, skip, identity_current_thread()))) {
+        return                    lift<observable<T>>(rxo::detail::window_with_time<T, Duration, identity_one_worker>(period, skip, identity_current_thread()));
+    }
+
+    /// window_with_time ->
+    /// produce observables every period time interval and collect items from this observable for period of time into each produced observable.
+    ///
+    template<class Duration, class Coordination>
+    auto window_with_time(Duration period, Coordination coordination) const
+        -> decltype(EXPLICIT_THIS lift<observable<T>>(rxo::detail::window_with_time<T, Duration, Coordination>(period, period, coordination))) {
+        return                    lift<observable<T>>(rxo::detail::window_with_time<T, Duration, Coordination>(period, period, coordination));
+    }
+
+    /// window_with_time ->
+    /// produce observables every period time interval and collect items from this observable for period of time into each produced observable.
+    ///
+    template<class Duration>
+    auto window_with_time(Duration period) const
+        -> decltype(EXPLICIT_THIS lift<observable<T>>(rxo::detail::window_with_time<T, Duration, identity_one_worker>(period, period, identity_current_thread()))) {
+        return                    lift<observable<T>>(rxo::detail::window_with_time<T, Duration, identity_one_worker>(period, period, identity_current_thread()));
+    }
+
     /// buffer ->
     /// collect count items from this observable and produce a vector of them to emit from the new observable that is returned.
     ///
