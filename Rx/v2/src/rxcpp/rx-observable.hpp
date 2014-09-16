@@ -514,6 +514,48 @@ public:
         return                    lift<std::vector<T>>(rxo::detail::buffer_count<T>(count, skip));
     }
 
+    /// buffer_with_time ->
+    /// start a new vector every skip time interval and collect items into it from this observable for period of time.
+    ///
+    template<class Duration, class Coordination>
+    auto buffer_with_time(Duration period, Duration skip, Coordination coordination) const
+        -> typename std::enable_if<
+            is_coordination<Coordination>::value,
+            decltype(EXPLICIT_THIS lift<std::vector<T>>(rxo::detail::buffer_with_time<T, Duration, Coordination>(period, skip, coordination)))>::type {
+        return                     lift<std::vector<T>>(rxo::detail::buffer_with_time<T, Duration, Coordination>(period, skip, coordination));
+    }
+
+    /// buffer_with_time ->
+    /// start a new vector every skip time interval and collect items into it from this observable for period of time.
+    ///
+    template<class Duration>
+    auto buffer_with_time(Duration period, Duration skip) const
+        -> typename std::enable_if<
+            !is_coordination<Duration>::value,
+            decltype(EXPLICIT_THIS lift<std::vector<T>>(rxo::detail::buffer_with_time<T, Duration, identity_one_worker>(period, skip, identity_current_thread())))>::type {
+        return                     lift<std::vector<T>>(rxo::detail::buffer_with_time<T, Duration, identity_one_worker>(period, skip, identity_current_thread()));
+    }
+
+    /// buffer_with_time ->
+    /// start a new vector every period time interval and collect items into it from this observable for period of time.
+    ///
+    template<class Duration, class Coordination>
+    auto buffer_with_time(Duration period, Coordination coordination) const
+        -> typename std::enable_if<
+            is_coordination<Coordination>::value,
+            decltype(EXPLICIT_THIS lift<std::vector<T>>(rxo::detail::buffer_with_time<T, Duration, Coordination>(period, period, coordination)))>::type {
+        return                     lift<std::vector<T>>(rxo::detail::buffer_with_time<T, Duration, Coordination>(period, period, coordination));
+    }
+
+    /// buffer_with_time ->
+    /// start a new vector every period time interval and collect items into it from this observable for period of time.
+    ///
+    template<class Duration>
+    auto buffer_with_time(Duration period) const
+        -> decltype(EXPLICIT_THIS lift<std::vector<T>>(rxo::detail::buffer_with_time<T, Duration, identity_one_worker>(period, period, identity_current_thread()))) {
+        return                    lift<std::vector<T>>(rxo::detail::buffer_with_time<T, Duration, identity_one_worker>(period, period, identity_current_thread()));
+    }
+
     template<class Coordination>
     struct defer_switch_on_next : public defer_observable<
         is_observable<value_type>,
