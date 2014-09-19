@@ -56,12 +56,14 @@ struct window_with_time
                 , dest(std::move(d))
                 , coordinator(std::move(c))
                 , worker(std::move(coordinator.get_worker()))
+                , expected(worker.now())
             {
             }
             dest_type dest;
             coordinator_type coordinator;
             rxsc::worker worker;
             mutable std::deque<rxcpp::subjects::subject<T>> subj;
+            rxsc::scheduler::clock_type::time_point expected;
         };
         std::shared_ptr<window_with_time_subscriber_values> state;
 
@@ -73,17 +75,19 @@ struct window_with_time
                 localState->subj[0].get_subscriber().on_completed();
                 localState->subj.pop_front();
             };
-            auto create_window = [localState, release_window](const rxsc::schedulable& self) {
+            auto create_window = [localState, release_window](const rxsc::schedulable&) {
                 localState->subj.push_back(rxcpp::subjects::subject<T>());
                 localState->dest.on_next(localState->subj[localState->subj.size() - 1].get_observable().as_dynamic());
-                localState->worker.schedule(localState->worker.now() + localState->period, release_window);
-                self.schedule(localState->worker.now() + localState->skip);
+
+                auto produce_at = localState->expected + localState->period;
+                localState->expected += localState->skip;
+                localState->worker.schedule(produce_at, release_window);
             };
 
-            state->subj.push_back(rxcpp::subjects::subject<T>());
-            state->dest.on_next(state->subj[0].get_observable().as_dynamic());
-            state->worker.schedule(state->worker.now() + state->period, release_window);
-            state->worker.schedule(state->worker.now() + state->skip, create_window);
+            state->worker.schedule_periodically(
+                state->expected,
+                state->skip,
+                create_window);
         }
 
         void on_next(T v) const {
