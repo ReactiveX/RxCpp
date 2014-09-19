@@ -58,12 +58,14 @@ struct buffer_with_time
                 , dest(std::move(d))
                 , coordinator(std::move(c))
                 , worker(std::move(coordinator.get_worker()))
+                , expected(worker.now())
             {
             }
             dest_type dest;
             coordinator_type coordinator;
             rxsc::worker worker;
             mutable std::deque<value_type> chunks;
+            rxsc::scheduler::clock_type::time_point expected;
         };
         std::shared_ptr<buffer_with_time_subscriber_values> state;
 
@@ -75,15 +77,17 @@ struct buffer_with_time
                 localState->dest.on_next(std::move(localState->chunks.front()));
                 localState->chunks.pop_front();
             };
-            auto create_buffer = [localState, produce_buffer](const rxsc::schedulable& self) {
+            auto create_buffer = [localState, produce_buffer](const rxsc::schedulable&) {
                 localState->chunks.emplace_back();
-                localState->worker.schedule(localState->worker.now() + localState->period, produce_buffer);
-                self.schedule(localState->worker.now() + localState->skip);
+                auto produce_at = localState->expected + localState->period;
+                localState->expected += localState->skip;
+                localState->worker.schedule(produce_at, produce_buffer);
             };
 
-            state->chunks.emplace_back();
-            state->worker.schedule(state->worker.now() + state->period, produce_buffer);
-            state->worker.schedule(state->worker.now() + state->skip, create_buffer);
+            state->worker.schedule_periodically(
+                state->expected,
+                state->skip,
+                create_buffer);
         }
         void on_next(T v) const {
             for(auto& chunk : state->chunks) {
