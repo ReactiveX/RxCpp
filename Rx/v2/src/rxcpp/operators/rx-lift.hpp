@@ -75,7 +75,7 @@ class lift_factory
 public:
     lift_factory(operator_type op) : chain(std::move(op)) {}
     template<class Observable>
-    auto operator()(Observable&& source)
+    auto operator()(const Observable& source)
         -> decltype(source.template lift<ResultType>(chain)) {
         return      source.template lift<ResultType>(chain);
         static_assert(rxcpp::detail::is_lift_function_for<typename Observable::value_type, subscriber<ResultType>, Operator>::value, "Function passed for lift() must have the signature subscriber<...>(subscriber<T, ...>)");
