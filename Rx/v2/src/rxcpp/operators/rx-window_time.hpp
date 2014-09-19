@@ -144,13 +144,13 @@ public:
 template<class Duration, class Coordination>
 inline auto window_with_time(Duration period, Coordination coordination)
     ->      detail::window_with_time_factory<Duration, Coordination> {
-    return  detail::window_with_time_factory(period, period, coordination);
+    return  detail::window_with_time_factory<Duration, Coordination>(period, period, coordination);
 }
 
 template<class Duration, class Coordination>
 inline auto window_with_time(Duration period, Duration skip, Coordination coordination)
     ->      detail::window_with_time_factory<Duration, Coordination> {
-    return  detail::window_with_time_factory(period, skip, coordination);
+    return  detail::window_with_time_factory<Duration, Coordination>(period, skip, coordination);
 }
 
 }

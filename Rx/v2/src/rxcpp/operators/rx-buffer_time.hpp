@@ -16,6 +16,9 @@ namespace detail {
 template<class T, class Duration, class Coordination>
 struct buffer_with_time
 {
+    static_assert(std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>::value, "Duration parameter must convert to rxsc::scheduler::clock_type::duration");
+    static_assert(is_coordination<Coordination>::value, "Coordination parameter must satisfy the requirements for a Coordination");
+
     typedef typename std::decay<T>::type source_value_type;
     typedef typename std::decay<Coordination>::type coordination_type;
     typedef typename coordination_type::coordinator_type coordinator_type;
@@ -41,7 +44,7 @@ struct buffer_with_time
     }
 
     template<class Subscriber>
-    struct buffer_with_time_observer 
+    struct buffer_with_time_observer
     {
         typedef buffer_with_time_observer<Subscriber> this_type;
         typedef std::vector<T> value_type;
@@ -134,8 +137,8 @@ public:
     buffer_with_time_factory(duration_type p, duration_type s, coordination_type c) : period(p), skip(s), coordination(c) {}
     template<class Observable>
     auto operator()(Observable&& source)
-        -> decltype(source.template lift<std::vector<std::decay<Observable>::type::value_type>>(buffer_with_time<typename std::decay<Observable>::type::value_type, Duration, Coordination>(period, skip, coordination))) {
-        return      source.template lift<std::vector<std::decay<Observable>::type::value_type>>(buffer_with_time<typename std::decay<Observable>::type::value_type, Duration, Coordination>(period, skip, coordination));
+        -> decltype(source.template lift<std::vector<typename std::decay<Observable>::type::value_type>>(buffer_with_time<typename std::decay<Observable>::type::value_type, Duration, Coordination>(period, skip, coordination))) {
+        return      source.template lift<std::vector<typename std::decay<Observable>::type::value_type>>(buffer_with_time<typename std::decay<Observable>::type::value_type, Duration, Coordination>(period, skip, coordination));
     }
 };
 
