@@ -473,7 +473,7 @@ SCENARIO("buffer with time on intervals", "[buffer_with_time][operators][long][h
 
             #define TIME milliseconds
             #define UNIT *15
-            
+
             auto sc = rxsc::make_current_thread();
             auto so = rx::synchronize_in_one_worker(sc);
             auto start = sc.now() + TIME(5 UNIT);
@@ -486,7 +486,7 @@ SCENARIO("buffer with time on intervals", "[buffer_with_time][operators][long][h
                     [](std::vector<long> counter){
                         printf("on_next: ");
                         std::for_each(counter.begin(), counter.end(), [](long c){
-                            printf("%d ", c);
+                            printf("%ld ", c);
                         });
                         printf("\n");
                     },
@@ -517,7 +517,7 @@ SCENARIO("buffer with time on intervals, implicit coordination", "[buffer_with_t
 
             #define TIME milliseconds
             #define UNIT *15
-            
+
             auto sc = rxsc::make_current_thread();
             auto so = rx::synchronize_in_one_worker(sc);
             auto start = sc.now() + TIME(5 UNIT);
@@ -530,7 +530,7 @@ SCENARIO("buffer with time on intervals, implicit coordination", "[buffer_with_t
                     [](std::vector<long> counter){
                         printf("on_next: ");
                         std::for_each(counter.begin(), counter.end(), [](long c){
-                            printf("%d ", c);
+                            printf("%ld ", c);
                         });
                         printf("\n");
                     },
@@ -562,7 +562,7 @@ SCENARIO("buffer with time on overlapping intervals", "[buffer_with_time][operat
 
             #define TIME milliseconds
             #define UNIT *15
-            
+
             auto sc = rxsc::make_current_thread();
             auto so = rx::synchronize_in_one_worker(sc);
             auto start = sc.now() + TIME(5 UNIT);
@@ -575,7 +575,7 @@ SCENARIO("buffer with time on overlapping intervals", "[buffer_with_time][operat
                     [](std::vector<long> counter){
                         printf("on_next: ");
                         std::for_each(counter.begin(), counter.end(), [](long c){
-                            printf("%d ", c);
+                            printf("%ld ", c);
                         });
                         printf("\n");
                     },
@@ -607,7 +607,7 @@ SCENARIO("buffer with time on overlapping intervals, implicit coordination", "[b
 
             #define TIME milliseconds
             #define UNIT *15
-            
+
             auto sc = rxsc::make_current_thread();
             auto so = rx::synchronize_in_one_worker(sc);
             auto start = sc.now() + TIME(5 UNIT);
@@ -620,7 +620,7 @@ SCENARIO("buffer with time on overlapping intervals, implicit coordination", "[b
                     [](std::vector<long> counter){
                         printf("on_next: ");
                         std::for_each(counter.begin(), counter.end(), [](long c){
-                            printf("%d ", c);
+                            printf("%ld ", c);
                         });
                         printf("\n");
                     },
@@ -652,7 +652,7 @@ SCENARIO("buffer with time on intervals, error", "[buffer_with_time][operators][
 
             #define TIME milliseconds
             #define UNIT *15
-            
+
             auto sc = rxsc::make_current_thread();
             auto so = rx::synchronize_in_one_worker(sc);
             auto start = sc.now() + TIME(5 UNIT);
@@ -668,7 +668,7 @@ SCENARIO("buffer with time on intervals, error", "[buffer_with_time][operators][
                     [](std::vector<long> counter){
                         printf("on_next: ");
                         std::for_each(counter.begin(), counter.end(), [](long c){
-                            printf("%d ", c);
+                            printf("%ld ", c);
                         });
                         printf("\n");
                     },
