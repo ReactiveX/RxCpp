@@ -95,7 +95,7 @@ inline std::ostream& operator<< (std::ostream& os, const std::vector<T>& v) {
 
 template<class T>
 auto equals(const T& lhs, const T& rhs, int)
-    -> decltype(lhs == rhs, true) {
+    -> decltype(bool(lhs == rhs)) {
     return lhs == rhs;
 }
 
