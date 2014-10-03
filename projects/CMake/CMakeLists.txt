@@ -7,11 +7,16 @@ MESSAGE( STATUS "CMAKE_CXX_COMPILER_ID: " ${CMAKE_CXX_COMPILER_ID} )
 FIND_PACKAGE(Threads)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    list( APPEND CMAKE_CXX_FLAGS " -std=c++11 -ftemplate-depth=1024 ${CMAKE_CXX_FLAGS}")
+    add_compile_options( -Wall -Wextra -Werror )
+    add_compile_options( -std=c++11 )
+    add_compile_options( -ftemplate-depth=1024 ) # sometimes you just do what the compiler tells you
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    list( APPEND CMAKE_CXX_FLAGS " -std=c++11 ${CMAKE_CXX_FLAGS}")
+    add_compile_options( -Wall -Wextra -Werror )
+    add_compile_options( -std=c++11 )
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
-    list( APPEND CMAKE_CXX_FLAGS " /DUNICODE /D_UNICODE /bigobj ${CMAKE_CXX_FLAGS}")
+    add_compile_options( /W4 /WX )
+    add_compile_options( /wd4503 ) # truncated symbol
+    add_definitions( /DUNICODE /D_UNICODE ) # it is a new millenium
 endif()
 
 
@@ -21,9 +26,7 @@ get_filename_component(RXCPP_DIR "${RXCPP_DIR}" PATH)
 
 MESSAGE( STATUS "RXCPP_DIR: " ${RXCPP_DIR} )
 
-
 include_directories(${RXCPP_DIR}/ext/catch/include ${RXCPP_DIR}/Ix/CPP/src ${RXCPP_DIR}/Rx/v2/src)
-
 
 set(TEST_DIR ${RXCPP_DIR}/Rx/v2/test)
 
@@ -38,8 +41,8 @@ set(TEST_SOURCES
     ${TEST_DIR}/sources/interval.cpp
     ${TEST_DIR}/sources/scope.cpp
     ${TEST_DIR}/operators/buffer.cpp
-    ${TEST_DIR}/operators/combine_latest.1.cpp
-    ${TEST_DIR}/operators/combine_latest.2.cpp
+    #${TEST_DIR}/operators/combine_latest.1.cpp
+    #${TEST_DIR}/operators/combine_latest.2.cpp
     ${TEST_DIR}/operators/concat.cpp
     ${TEST_DIR}/operators/concat_map.cpp
     ${TEST_DIR}/operators/distinct_until_changed.cpp
@@ -69,7 +72,7 @@ TARGET_LINK_LIBRARIES(rxcppv2_test ${CMAKE_THREAD_LIBS_INIT})
 # define the sources of the self test
 set(ONE_SOURCES
     ${TEST_DIR}/test.cpp
-#    ${TEST_DIR}/operators/subscribe_on.cpp
+    ${TEST_DIR}/operators/buffer.cpp
 )
 add_executable(one_test ${ONE_SOURCES})
 TARGET_LINK_LIBRARIES(one_test ${CMAKE_THREAD_LIBS_INIT})

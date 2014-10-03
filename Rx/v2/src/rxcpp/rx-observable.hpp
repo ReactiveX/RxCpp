@@ -341,7 +341,7 @@ private:
         if (rxsc::current_thread::is_schedule_required()) {
             const auto& sc = rxsc::make_current_thread();
             sc.create_worker(o.get_subscription()).schedule(
-                [&](const rxsc::schedulable& scbl) {
+                [&](const rxsc::schedulable&) {
                     safe_subscribe();
                 });
         } else {
@@ -820,14 +820,23 @@ public:
                                                                                                                                         rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, Coordination>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<Coordination>(sf)));
     }
 
+#if 0
+    template<class Coordination, class Selector, class T, class C = rxu::types_checked>
+    struct defer_combine_latest : public defer_observable<std::false_type, void, rxo::detail::map>{};
+#if 0
     template<class Coordination, class Selector, class... ObservableN>
-    struct defer_combine_latest : public defer_observable<
-        rxu::all_true<is_coordination<Coordination>::value, !is_coordination<Selector>::value, !is_observable<Selector>::value, is_observable<ObservableN>::value...>,
-        this_type,
-        rxo::detail::combine_latest, Coordination, Selector, ObservableN...>
+    struct defer_combine_latest<
+        Coordination,
+        Selector,
+        rxu::types<ObservableN...>,
+        typename rxu::types_checked_from<typename Coordination::coordination_tag>::type> :
+        public defer_observable<
+            rxu::all_true<is_coordination<Coordination>::value, !is_coordination<Selector>::value, !is_observable<Selector>::value, is_observable<ObservableN>::value...>,
+            this_type,
+            rxo::detail::combine_latest, Coordination, Selector, ObservableN...>
     {
     };
-
+#endif
     /// combine_latest ->
     /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
     /// for each item from all of the observables use the Selector to select a value to emit from the new observable that is returned.
@@ -835,9 +844,9 @@ public:
     template<class Selector, class... ObservableN>
     auto combine_latest(Selector&& s, ObservableN... on) const
         ->  typename std::enable_if<
-                        defer_combine_latest<identity_one_worker, Selector, this_type, ObservableN...>::value,
-            typename    defer_combine_latest<identity_one_worker, Selector, this_type, ObservableN...>::observable_type>::type {
-        return          defer_combine_latest<identity_one_worker, Selector, this_type, ObservableN...>::make(*this, identity_current_thread(), std::forward<Selector>(s), std::make_tuple(*this, on...));
+                        defer_combine_latest<identity_one_worker, Selector, this_type, rxu::types<ObservableN...>>::value,
+            typename    defer_combine_latest<identity_one_worker, Selector, this_type, rxu::types<ObservableN...>>::observable_type>::type {
+        return          defer_combine_latest<identity_one_worker, Selector, this_type, rxu::types<ObservableN...>>::make(*this, identity_current_thread(), std::forward<Selector>(s), std::make_tuple(*this, on...));
     }
 
     /// combine_latest ->
@@ -847,9 +856,9 @@ public:
     template<class Coordination, class Selector, class... ObservableN>
     auto combine_latest(Coordination cn, Selector&& s, ObservableN... on) const
         ->  typename std::enable_if<
-                        defer_combine_latest<Coordination, Selector, this_type, ObservableN...>::value,
-            typename    defer_combine_latest<Coordination, Selector, this_type, ObservableN...>::observable_type>::type {
-        return          defer_combine_latest<Coordination, Selector, this_type, ObservableN...>::make(*this, std::move(cn), std::forward<Selector>(s), std::make_tuple(*this, on...));
+                        defer_combine_latest<Coordination, Selector, this_type, rxu::types<ObservableN...>>::value,
+            typename    defer_combine_latest<Coordination, Selector, this_type, rxu::types<ObservableN...>>::observable_type>::type {
+        return          defer_combine_latest<Coordination, Selector, this_type, rxu::types<ObservableN...>>::make(*this, std::move(cn), std::forward<Selector>(s), std::make_tuple(*this, on...));
     }
 
     /// combine_latest ->
@@ -859,9 +868,9 @@ public:
     template<class... ObservableN>
     auto combine_latest(ObservableN... on) const
         ->  typename std::enable_if<
-                        defer_combine_latest<identity_one_worker, rxu::detail::pack, this_type, ObservableN...>::value,
-            typename    defer_combine_latest<identity_one_worker, rxu::detail::pack, this_type, ObservableN...>::observable_type>::type {
-        return          defer_combine_latest<identity_one_worker, rxu::detail::pack, this_type, ObservableN...>::make(*this, identity_current_thread(), rxu::pack(), std::make_tuple(*this, on...));
+                        defer_combine_latest<identity_one_worker, rxu::detail::pack, this_type, rxu::types<ObservableN...>>::value,
+            typename    defer_combine_latest<identity_one_worker, rxu::detail::pack, this_type, rxu::types<ObservableN...>>::observable_type>::type {
+        return          defer_combine_latest<identity_one_worker, rxu::detail::pack, this_type, rxu::types<ObservableN...>>::make(*this, identity_current_thread(), rxu::pack(), std::make_tuple(*this, on...));
     }
 
     /// combine_latest ->
@@ -871,11 +880,11 @@ public:
     template<class Coordination, class... ObservableN>
     auto combine_latest(Coordination cn, ObservableN... on) const
         ->  typename std::enable_if<
-                        defer_combine_latest<Coordination, rxu::detail::pack, this_type, ObservableN...>::value,
-            typename    defer_combine_latest<Coordination, rxu::detail::pack, this_type, ObservableN...>::observable_type>::type {
-        return          defer_combine_latest<Coordination, rxu::detail::pack, this_type, ObservableN...>::make(*this, std::move(cn), rxu::pack(), std::make_tuple(*this, on...));
+                        defer_combine_latest<Coordination, rxu::detail::pack, this_type, rxu::types<ObservableN...>>::value,
+            typename    defer_combine_latest<Coordination, rxu::detail::pack, this_type, rxu::types<ObservableN...>>::observable_type>::type {
+        return          defer_combine_latest<Coordination, rxu::detail::pack, this_type, rxu::types<ObservableN...>>::make(*this, std::move(cn), rxu::pack(), std::make_tuple(*this, on...));
     }
-
+#endif
     /// group_by ->
     ///
     template<class KeySelector, class MarbleSelector, class BinaryPredicate>
