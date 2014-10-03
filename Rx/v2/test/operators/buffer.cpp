@@ -490,7 +490,7 @@ SCENARIO("buffer with time on intervals", "[buffer_with_time][operators][long][h
                         });
                         printf("\n");
                     },
-                    [](std::exception_ptr e){
+                    [](std::exception_ptr){
                         printf("on_error\n");
                     },
                     [](){
@@ -534,7 +534,7 @@ SCENARIO("buffer with time on intervals, implicit coordination", "[buffer_with_t
                         });
                         printf("\n");
                     },
-                    [](std::exception_ptr e){
+                    [](std::exception_ptr){
                         printf("on_error\n");
                     },
                     [](){
@@ -579,7 +579,7 @@ SCENARIO("buffer with time on overlapping intervals", "[buffer_with_time][operat
                         });
                         printf("\n");
                     },
-                    [](std::exception_ptr e){
+                    [](std::exception_ptr){
                         printf("on_error\n");
                     },
                     [](){
@@ -624,7 +624,7 @@ SCENARIO("buffer with time on overlapping intervals, implicit coordination", "[b
                         });
                         printf("\n");
                     },
-                    [](std::exception_ptr e){
+                    [](std::exception_ptr){
                         printf("on_error\n");
                     },
                     [](){
@@ -672,7 +672,7 @@ SCENARIO("buffer with time on intervals, error", "[buffer_with_time][operators][
                         });
                         printf("\n");
                     },
-                    [](std::exception_ptr e){
+                    [](std::exception_ptr){
                         printf("on_error\n");
                     },
                     [](){

@@ -450,7 +450,7 @@ public:
     /// into the expression.
     ///
     template<class ResultType, class Operator>
-    auto lift_if(Operator&& op) const
+    auto lift_if(Operator&&) const
         -> typename std::enable_if<!detail::is_lift_function_for<T, subscriber<ResultType>, Operator>::value,
             decltype(rxs::from<ResultType>())>::type {
         return       rxs::from<ResultType>();
