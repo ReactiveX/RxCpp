@@ -52,7 +52,6 @@ SCENARIO("for loop subscribes to map", "[hide][for][just][subscribe][long][perf]
     }
 }
 
-#if 0
 SCENARIO("for loop subscribes to combine_latest", "[hide][for][just][combine_latest][subscribe][long][perf]"){
     const int& subscriptions = static_subscriptions;
     GIVEN("a for loop"){
@@ -73,7 +72,7 @@ SCENARIO("for loop subscribes to combine_latest", "[hide][for][just][combine_lat
                         .combine_latest([](int i, int j) {
                             return i + j;
                         }, rx::observable<>::just(2))
-                        .subscribe([&](int i){
+                        .subscribe([&](int){
                             ++c;
                         });
                 }
@@ -90,7 +89,6 @@ SCENARIO("for loop subscribes to combine_latest", "[hide][for][just][combine_lat
         }
     }
 }
-#endif
 
 SCENARIO("synchronized range debug", "[hide][subscribe][range][synchronize_debug][synchronize][long][perf]"){
     GIVEN("range"){
