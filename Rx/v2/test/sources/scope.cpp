@@ -348,7 +348,7 @@ SCENARIO("scope, throw resource selector", "[scope][sources]"){
                                 throw ex;
                                 //return resource(sc.clock());
                             },
-                            [&](resource r){
+                            [&](resource){
                                 ++observable_factory_invoked;
                                 return rx::observable<>::never<int>();
                             }
@@ -400,7 +400,7 @@ SCENARIO("scope, throw resource usage", "[scope][sources]"){
                                 ++resource_factory_invoked;
                                 return resource(sc.clock());
                             },
-                            [&](resource r) -> rx::observable<int> {
+                            [&](resource) -> rx::observable<int> {
                                 ++observable_factory_invoked;
                                 throw ex;
                             }

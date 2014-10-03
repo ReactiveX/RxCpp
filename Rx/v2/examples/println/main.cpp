@@ -40,9 +40,9 @@ auto println(OStream& os)
 #endif
 
 #ifdef UNICODE
-int wmain(int argc, wchar_t** argv)
+int wmain()
 #else
-int main(int argc, char** argv)
+int main()
 #endif
 {
     auto get_names = [](){return rx::observable<>::from<std::string>(
