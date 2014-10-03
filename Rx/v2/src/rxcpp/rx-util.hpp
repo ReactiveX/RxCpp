@@ -23,6 +23,14 @@
 #endif
 #endif
 
+#if !defined(RXCPP_DELETE)
+#if defined(_MSC_VER)
+#define RXCPP_DELETE __pragma(warning(disable: 4822)) =delete
+#else
+#define RXCPP_DELETE =delete
+#endif
+#endif
+
 #define RXCPP_CONCAT(Prefix, Suffix) Prefix ## Suffix
 #define RXCPP_CONCAT_EVALUATE(Prefix, Suffix) RXCPP_CONCAT(Prefix, Suffix)
 
@@ -78,6 +86,9 @@ struct all_true<B0, BN...>
 {
     static const bool value = B0 && all_true<BN...>::value;
 };
+
+template<class... TN>
+struct types;
 
 //
 // based on Walter Brown's void_t proposal
