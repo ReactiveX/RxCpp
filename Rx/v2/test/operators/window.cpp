@@ -97,7 +97,7 @@ SCENARIO("window count, inner timings", "[window][operators]"){
 
             w.schedule_absolute(
                 rxsc::test::created_time,
-                [&](const rxsc::schedulable& scbl) {
+                [&](const rxsc::schedulable&) {
                     res = xs
                         .window(3, 2);
                 }
@@ -105,7 +105,7 @@ SCENARIO("window count, inner timings", "[window][operators]"){
 
             w.schedule_absolute(
                 rxsc::test::subscribed_time,
-                [&](const rxsc::schedulable& scbl) {
+                [&](const rxsc::schedulable&) {
                     res.subscribe(
                         // on_next
                         [&](rx::observable<int> window) {
