@@ -71,7 +71,7 @@ struct window_with_time
             : state(std::make_shared<window_with_time_subscriber_values>(window_with_time_subscriber_values(std::move(d), v, std::move(c))))
         {
             auto localState = state;
-            auto release_window = [localState](const rxsc::schedulable& self) {
+            auto release_window = [localState](const rxsc::schedulable&) {
                 localState->subj[0].get_subscriber().on_completed();
                 localState->subj.pop_front();
             };

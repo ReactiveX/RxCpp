@@ -60,7 +60,7 @@ struct buffer_count
             for(auto& chunk : chunks) {
                 chunk.push_back(v);
             }
-            while (!chunks.empty() && chunks.front().size() == this->count) {
+            while (!chunks.empty() && int(chunks.front().size()) == this->count) {
                 dest.on_next(std::move(chunks.front()));
                 chunks.pop_front();
             }

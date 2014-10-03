@@ -679,7 +679,7 @@ auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, trace_id id,
 }
 
 template<class T, class OtherT, class OtherObserver, class I>
-auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const composite_subscription& cs,
+auto make_subscriber(const subscriber<OtherT, OtherObserver>& , const composite_subscription& cs,
     const                   observer<T, I>& o)
     ->      subscriber<T,   observer<T, I>> {
     return  subscriber<T,   observer<T, I>>(trace_id::make_next_id_subscriber(), cs, o);
