@@ -469,7 +469,6 @@ SCENARIO("buffer with time on intervals", "[buffer_with_time][operators][long][h
             //                      5-6
             //                         -7
             using namespace std::chrono;
-            typedef steady_clock clock;
 
             #define TIME milliseconds
             #define UNIT *15
@@ -513,7 +512,6 @@ SCENARIO("buffer with time on intervals, implicit coordination", "[buffer_with_t
             //                      5-6
             //                         -7
             using namespace std::chrono;
-            typedef steady_clock clock;
 
             #define TIME milliseconds
             #define UNIT *15
@@ -558,7 +556,6 @@ SCENARIO("buffer with time on overlapping intervals", "[buffer_with_time][operat
             //                    4-5
             //                      5
             using namespace std::chrono;
-            typedef steady_clock clock;
 
             #define TIME milliseconds
             #define UNIT *15
@@ -603,7 +600,6 @@ SCENARIO("buffer with time on overlapping intervals, implicit coordination", "[b
             //                    4-5
             //                      5
             using namespace std::chrono;
-            typedef steady_clock clock;
 
             #define TIME milliseconds
             #define UNIT *15
@@ -648,7 +644,6 @@ SCENARIO("buffer with time on intervals, error", "[buffer_with_time][operators][
             //                    4-5
             //                      5
             using namespace std::chrono;
-            typedef steady_clock clock;
 
             #define TIME milliseconds
             #define UNIT *15

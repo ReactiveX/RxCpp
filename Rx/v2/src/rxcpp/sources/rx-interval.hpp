@@ -43,8 +43,6 @@ struct interval : public source_base<long>
     void on_subscribe(Subscriber o) const {
         static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
 
-        typedef typename coordinator_type::template get<Subscriber>::type output_type;
-
         // creates a worker whose lifetime is the same as this subscription
         auto coordinator = initial.coordination.create_coordinator(o.get_subscription());
 
