@@ -26,7 +26,8 @@ get_filename_component(RXCPP_DIR "${RXCPP_DIR}" PATH)
 
 MESSAGE( STATUS "RXCPP_DIR: " ${RXCPP_DIR} )
 
-include_directories(${RXCPP_DIR}/ext/catch/include ${RXCPP_DIR}/Ix/CPP/src ${RXCPP_DIR}/Rx/v2/src)
+include_directories(SYSTEM ${RXCPP_DIR}/ext/catch/include)
+include_directories(${RXCPP_DIR}/Ix/CPP/src ${RXCPP_DIR}/Rx/v2/src)
 
 set(TEST_DIR ${RXCPP_DIR}/Rx/v2/test)
 
