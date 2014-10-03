@@ -334,6 +334,8 @@ struct endline
     void operator()() const {
         os << std::endl;
     }
+private:
+    endline& operator=(const endline&) RXCPP_DELETE;
 };
 
 template<class OStream, class ValueType>
@@ -345,6 +347,8 @@ struct insert_value
     void operator()() const {
         os << value;
     }
+private:
+    insert_value& operator=(const insert_value&) RXCPP_DELETE;
 };
 
 template<class OStream, class Function>
@@ -356,6 +360,8 @@ struct insert_function
     void operator()() const {
         call(os);
     }
+private:
+    insert_function& operator=(const insert_function&) RXCPP_DELETE;
 };
 
 template<class OStream, class Delimit>

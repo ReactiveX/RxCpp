@@ -42,8 +42,8 @@ set(TEST_SOURCES
     ${TEST_DIR}/sources/interval.cpp
     ${TEST_DIR}/sources/scope.cpp
     ${TEST_DIR}/operators/buffer.cpp
-    #${TEST_DIR}/operators/combine_latest.1.cpp
-    #${TEST_DIR}/operators/combine_latest.2.cpp
+    ${TEST_DIR}/operators/combine_latest.1.cpp
+    ${TEST_DIR}/operators/combine_latest.2.cpp
     ${TEST_DIR}/operators/concat.cpp
     ${TEST_DIR}/operators/concat_map.cpp
     ${TEST_DIR}/operators/distinct_until_changed.cpp
@@ -73,7 +73,8 @@ TARGET_LINK_LIBRARIES(rxcppv2_test ${CMAKE_THREAD_LIBS_INIT})
 # define the sources of the self test
 set(ONE_SOURCES
     ${TEST_DIR}/test.cpp
-    ${TEST_DIR}/operators/buffer.cpp
+    #${TEST_DIR}/operators/combine_latest.1.cpp
+    #${TEST_DIR}/operators/combine_latest.2.cpp
 )
 add_executable(one_test ${ONE_SOURCES})
 TARGET_LINK_LIBRARIES(one_test ${CMAKE_THREAD_LIBS_INIT})

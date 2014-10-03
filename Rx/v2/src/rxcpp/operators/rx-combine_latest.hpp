@@ -15,7 +15,6 @@ namespace detail {
 
 template<class Coordination, class Selector, class... ObservableN>
 struct combine_latest_traits {
-    static_assert(rxu::all_true<is_observable<ObservableN>::value...>::value, "combine_latest requires observables");
 
     typedef std::tuple<ObservableN...> tuple_source_type;
     typedef std::tuple<rxu::detail::maybe<typename ObservableN::value_type>...> tuple_source_value_type;
@@ -137,6 +136,7 @@ struct combine_latest : public operator_base<typename combine_latest_traits<Coor
     template<class State, int... IndexN>
     void subscribe_all(std::shared_ptr<State> state, rxu::values<int, IndexN...>) const {
         bool subscribed[] = {(subscribe_one<IndexN>(state), true)...};
+        subscribed[0] = (*subscribed); // silence warning
     }
 
     template<class Subscriber>
