@@ -31,6 +31,8 @@ struct subscribe_on : public operator_base<T>
         }
         source_type source;
         coordination_type coordination;
+    private:
+        subscribe_on_values& operator=(subscribe_on_values o) RXCPP_DELETE;
     };
     const subscribe_on_values initial;
 
@@ -59,6 +61,8 @@ struct subscribe_on : public operator_base<T>
             composite_subscription source_lifetime;
             coordinator_type coordinator;
             output_type out;
+        private:
+            subscribe_on_state_type& operator=(subscribe_on_state_type o) RXCPP_DELETE;
         };
 
         auto coordinator = initial.coordination.create_coordinator(s.get_subscription());
@@ -99,6 +103,8 @@ struct subscribe_on : public operator_base<T>
 
         controller.schedule(selectedProducer.get());
     }
+private:
+    subscribe_on& operator=(subscribe_on o) RXCPP_DELETE;
 };
 
 template<class Coordination>

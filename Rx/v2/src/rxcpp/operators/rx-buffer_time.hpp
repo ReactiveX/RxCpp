@@ -73,7 +73,7 @@ struct buffer_with_time
             : state(std::make_shared<buffer_with_time_subscriber_values>(buffer_with_time_subscriber_values(std::move(d), v, std::move(c))))
         {
             auto localState = state;
-            auto produce_buffer = [localState](const rxsc::schedulable& self) {
+            auto produce_buffer = [localState](const rxsc::schedulable&) {
                 localState->dest.on_next(std::move(localState->chunks.front()));
                 localState->chunks.pop_front();
             };
