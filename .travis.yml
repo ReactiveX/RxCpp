@@ -11,7 +11,7 @@ compiler:
 
 env:
   - BUILD_TYPE=Release
-  
+
 matrix:
   exclude:
     - compiler: gcc
@@ -29,7 +29,7 @@ install:
 
 script:
   - cd projects/build
-  - ctest -V
+  - ./rxcppv2_test
   - cd ../..
 
 branches:
