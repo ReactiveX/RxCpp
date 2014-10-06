@@ -278,7 +278,7 @@ SCENARIO("combine_latest never N", "[combine_latest][join][operators]"){
         auto w = sc.create_worker();
         const rxsc::test::messages<int> on;
 
-        const size_t N = 16;
+        const int N = 16;
 
         std::vector<rxcpp::test::testable_observable<int>> n;
         for (int i = 0; i < N; ++i) {
@@ -331,7 +331,7 @@ SCENARIO("combine_latest empty N", "[combine_latest][join][operators]"){
         auto w = sc.create_worker();
         const rxsc::test::messages<int> on;
 
-        const size_t N = 16;
+        const int N = 16;
 
         std::vector<rxcpp::test::testable_observable<int>> e;
         for (int i = 0; i < N; ++i) {
