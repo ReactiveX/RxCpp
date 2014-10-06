@@ -820,7 +820,7 @@ public:
                                                                                                                                         rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, Coordination>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<Coordination>(sf)));
     }
 
-    template<class Source, class Coordination, class T, class C = rxu::types_checked>
+    template<class Source, class Coordination, class TS, class C = rxu::types_checked>
     struct select_combine_latest_cn : public std::false_type {};
 
     template<class Source, class Coordination, class T0, class... TN>
@@ -836,7 +836,7 @@ public:
     };
 
     template<class Source, class Coordination, class T0, class... TN>
-    struct select_combine_latest_cn<Source, Coordination, rxu::types<T0, TN...>, typename rxu::types_checked_from<typename TN::value_type..., typename std::result_of<T0(typename TN::value_type...)>::type, typename Coordination::coordination_tag, typename TN::observable_tag...>::type>
+    struct select_combine_latest_cn<Source, Coordination, rxu::types<T0, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::result_of<T0(typename Source::value_type, typename TN::value_type...)>::type, typename Coordination::coordination_tag, typename TN::observable_tag...>::type>
         : public std::true_type
     {
         typedef rxo::detail::combine_latest<Coordination, T0, Source, TN...> operator_type;
@@ -847,7 +847,7 @@ public:
         };
     };
 
-    template<class Source, class T, class C = rxu::types_checked>
+    template<class Source, class TS, class C = rxu::types_checked>
     struct select_combine_latest : public std::false_type {
         template<class T0, class T1, class... TN>
         void operator()(const Source&, T0, T1, TN...) const {
@@ -857,7 +857,7 @@ public:
                 , "T0 must be selector, coordination or observable");
             static_assert(is_observable<T1>::value  ||
                 std::is_convertible<T1, std::function<void(typename TN::value_type...)>>::value, "T1 must be selector or observable");
-            static_assert(rxu::all_true<is_observable<TN>::value...>::value, "TN... must be observable");
+            static_assert(rxu::all_true<true, is_observable<TN>::value...>::value, "TN... must be observable");
         }
         template<class T0>
         void operator()(const Source&, T0) const {
@@ -872,7 +872,7 @@ public:
     };
 
     template<class Source, class Selector, class... TN>
-    struct select_combine_latest<Source, rxu::types<Selector, TN...>, typename rxu::types_checked_from<typename TN::value_type..., typename std::result_of<Selector(typename TN::value_type...)>::type, typename TN::observable_tag...>::type>
+    struct select_combine_latest<Source, rxu::types<Selector, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::result_of<Selector(typename Source::value_type, typename TN::value_type...)>::type, typename TN::observable_tag...>::type>
         : public std::true_type
     {
         typedef rxo::detail::combine_latest<identity_one_worker, Selector, Source, TN...> operator_type;
