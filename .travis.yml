@@ -21,10 +21,11 @@ before_install:
   - sh projects/scripts/travis-install.sh
 
 install:
+  - export PATH=/usr/bin:$PATH
   - cd projects
   - cmake -GUnix\ Makefiles -HCMake -Bbuild -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX
   - cd build
-  - make -j4
+  - make -j2
   - cd ../..
 
 script:
