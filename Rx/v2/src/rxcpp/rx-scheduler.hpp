@@ -38,6 +38,7 @@ typedef std::shared_ptr<const scheduler_interface> const_scheduler_interface_ptr
 class recursed
 {
     bool& isrequested;
+    recursed operator=(const recursed&);
 public:
     explicit recursed(bool& r)
         : isrequested(r)
@@ -56,6 +57,7 @@ class recurse
     bool& isallowed;
     mutable bool isrequested;
     recursed requestor;
+    recurse operator=(const recurse&);
 public:
     explicit recurse(bool& a)
         : isallowed(a)
@@ -86,6 +88,7 @@ class recursion
 {
     mutable bool isallowed;
     recurse recursor;
+    recursion operator=(const recursion&);
 public:
     recursion()
         : isallowed(true)
@@ -433,7 +436,7 @@ class schedulable : public schedulable_base
         {
             // does not aquire recursion scope
         }
-        recursed_scope_type& operator=(const recursed_scope_type& o)
+        recursed_scope_type& operator=(const recursed_scope_type& )
         {
             // no change in recursion scope
             return *this;

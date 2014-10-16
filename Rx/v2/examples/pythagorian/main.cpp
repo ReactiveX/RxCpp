@@ -39,7 +39,7 @@ struct trace_calls : rxcpp::trace_noop
     }
 
     template<class Observable>
-    inline void subscribe_return(const Observable& o) {
+    inline void subscribe_return(const Observable&) {
         subscribes++;
     }
 
@@ -106,9 +106,9 @@ namespace rxu=rxcpp::util;
 // DO NOT USE: 'using namespace std;'
 
 #ifdef UNICODE
-int wmain(int argc, wchar_t** argv)
+int wmain()
 #else
-int main(int argc, char** argv)
+int main()
 #endif
 {
     int c = 0;
@@ -125,16 +125,16 @@ int main(int argc, char** argv)
                                     .map([=](int y){return std::make_tuple(x, y, z);})
                                     // forget type to workaround lambda deduction bug on msvc 2013
                                     .as_dynamic();},
-                            [](int x, std::tuple<int,int,int> triplet){return triplet;})
+                            [](int /*x*/, std::tuple<int,int,int> triplet){return triplet;})
                         // forget type to workaround lambda deduction bug on msvc 2013
                         .as_dynamic();},
-                [](int z, std::tuple<int,int,int> triplet){return triplet;});
+                [](int /*z*/, std::tuple<int,int,int> triplet){return triplet;});
 
     int ct = 0;
 
     triples
         .take(100)
-        .subscribe(rxu::apply_to([&ct](int x,int y,int z){
+        .subscribe(rxu::apply_to([&ct](int /*x*/,int /*y*/,int /*z*/){
             ++ct;
         }));
 

@@ -112,7 +112,7 @@ public:
         const subscriber<T, O>& o,
         typename std::enable_if<
                !std::is_same<O, observer<T>>::value &&
-               std::is_same<Observer, observer<T>>::value, void**>::type select = nullptr)
+               std::is_same<Observer, observer<T>>::value, void**>::type = nullptr)
         : lifetime(o.lifetime)
         , destination(o.destination.as_dynamic())
         , id(o.id)
@@ -679,13 +679,13 @@ auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, trace_id id,
 }
 
 template<class T, class OtherT, class OtherObserver, class I>
-auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, const composite_subscription& cs,
+auto make_subscriber(const subscriber<OtherT, OtherObserver>& , const composite_subscription& cs,
     const                   observer<T, I>& o)
     ->      subscriber<T,   observer<T, I>> {
     return  subscriber<T,   observer<T, I>>(trace_id::make_next_id_subscriber(), cs, o);
 }
 template<class T, class OtherT, class OtherObserver, class I>
-auto make_subscriber(const subscriber<OtherT, OtherObserver>& scbr, trace_id id, const composite_subscription& cs,
+auto make_subscriber(const subscriber<OtherT, OtherObserver>&, trace_id id, const composite_subscription& cs,
     const                   observer<T, I>& o)
     ->      subscriber<T,   observer<T, I>> {
     return  subscriber<T,   observer<T, I>>(std::move(id), cs, o);

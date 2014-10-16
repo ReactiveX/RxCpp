@@ -11,7 +11,6 @@ SCENARIO("schedule_periodically", "[hide][periodically][scheduler][long][perf][s
     GIVEN("schedule_periodically"){
         WHEN("the period is 1sec and the initial is 2sec"){
             using namespace std::chrono;
-            typedef steady_clock clock;
 
             int c = 0;
             auto sc = rxsc::make_current_thread();
@@ -76,7 +75,6 @@ SCENARIO("intervals", "[hide][periodically][interval][scheduler][long][perf][sou
     GIVEN("10 intervals of 1 seconds"){
         WHEN("the period is 1sec and the initial is 2sec"){
             using namespace std::chrono;
-            typedef steady_clock clock;
 
             int c = 0;
             auto sc = rxsc::make_current_thread();

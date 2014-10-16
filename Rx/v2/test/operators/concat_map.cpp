@@ -36,14 +36,14 @@ SCENARIO("concat_map pythagorian ranges", "[hide][range][concat_map][pythagorian
                                             .map([z, x](int y){return std::make_tuple(x, y, z);})
                                             // forget type to workaround lambda deduction bug on msvc 2013
                                             .as_dynamic();},
-                                    [](int x, std::tuple<int,int,int> triplet){return triplet;})
+                                    [](int /*x*/, std::tuple<int,int,int> triplet){return triplet;})
                                 // forget type to workaround lambda deduction bug on msvc 2013
                                 .as_dynamic();},
-                        [](int z, std::tuple<int,int,int> triplet){return triplet;});
+                        [](int /*z*/, std::tuple<int,int,int> triplet){return triplet;});
             triples
                 .take(tripletCount)
                 .subscribe(
-                    rxu::apply_to([&ct](int x,int y,int z){++ct;}),
+                    rxu::apply_to([&ct](int /*x*/,int /*y*/,int /*z*/){++ct;}),
                     [](std::exception_ptr){abort();});
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
@@ -83,11 +83,11 @@ SCENARIO("synchronize concat_map pythagorian ranges", "[hide][range][concat_map]
                                             .map([z, x](int y){return std::make_tuple(x, y, z);})
                                             // forget type to workaround lambda deduction bug on msvc 2013
                                             .as_dynamic();},
-                                    [](int x, std::tuple<int,int,int> triplet){return triplet;},
+                                    [](int /*x*/, std::tuple<int,int,int> triplet){return triplet;},
                                     so)
                                 // forget type to workaround lambda deduction bug on msvc 2013
                                 .as_dynamic();},
-                        [](int z, std::tuple<int,int,int> triplet){return triplet;},
+                        [](int /*z*/, std::tuple<int,int,int> triplet){return triplet;},
                         so);
             int ct = triples
                 .take(tripletCount)
@@ -131,11 +131,11 @@ SCENARIO("observe_on concat_map pythagorian ranges", "[hide][range][concat_map][
                                             .map([z, x](int y){return std::make_tuple(x, y, z);})
                                             // forget type to workaround lambda deduction bug on msvc 2013
                                             .as_dynamic();},
-                                    [](int x, std::tuple<int,int,int> triplet){return triplet;},
+                                    [](int /*x*/, std::tuple<int,int,int> triplet){return triplet;},
                                     so)
                                 // forget type to workaround lambda deduction bug on msvc 2013
                                 .as_dynamic();},
-                        [](int z, std::tuple<int,int,int> triplet){return triplet;},
+                        [](int /*z*/, std::tuple<int,int,int> triplet){return triplet;},
                         so);
 
             int ct = triples
@@ -180,11 +180,11 @@ SCENARIO("serialize concat_map pythagorian ranges", "[hide][range][concat_map][s
                                             .map([z, x](int y){return std::make_tuple(x, y, z);})
                                             // forget type to workaround lambda deduction bug on msvc 2013
                                             .as_dynamic();},
-                                    [](int x, std::tuple<int,int,int> triplet){return triplet;},
+                                    [](int /*x*/, std::tuple<int,int,int> triplet){return triplet;},
                                     so)
                                 // forget type to workaround lambda deduction bug on msvc 2013
                                 .as_dynamic();},
-                        [](int z, std::tuple<int,int,int> triplet){return triplet;},
+                        [](int /*z*/, std::tuple<int,int,int> triplet){return triplet;},
                         so);
 
             int ct = triples

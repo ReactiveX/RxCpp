@@ -34,7 +34,7 @@ SCENARIO("for loop subscribes to map", "[hide][for][just][subscribe][long][perf]
                             std::stringstream(s) >> i;
                             return i;
                         })
-                        .subscribe([&](int i){
+                        .subscribe([&](int){
                             ++c;
                         });
                 }
@@ -72,7 +72,7 @@ SCENARIO("for loop subscribes to combine_latest", "[hide][for][just][combine_lat
                         .combine_latest([](int i, int j) {
                             return i + j;
                         }, rx::observable<>::just(2))
-                        .subscribe([&](int i){
+                        .subscribe([&](int){
                             ++c;
                         });
                 }
@@ -122,9 +122,8 @@ SCENARIO("synchronized range debug", "[hide][subscribe][range][synchronize_debug
                             ++std::get<1>(*completionstate);
                             std::get<2>(*completionstate).on_next(n);
                         },
-                        [=](std::exception_ptr e){
+                        [=](std::exception_ptr){
                             abort();
-                            std::get<2>(*completionstate).on_error(e);
                         },
                         [=](){
                             if (std::get<1>(*completionstate) != values) {
@@ -146,7 +145,7 @@ SCENARIO("synchronized range debug", "[hide][subscribe][range][synchronize_debug
                     .lift<int>(liftrequirecompletion)
                     .subscribe(
                         rx::make_observer_dynamic<int>(
-                        [&](int i){
+                        [&](int){
                             ++v;
                         },
                         [&](){
@@ -161,7 +160,7 @@ SCENARIO("synchronized range debug", "[hide][subscribe][range][synchronize_debug
                     .lift<int>(liftrequirecompletion)
                     .subscribe(
                         rx::make_observer_dynamic<int>(
-                        [&](int i){
+                        [&](int){
                             ++v;
                         },
                         [&](){
@@ -176,7 +175,7 @@ SCENARIO("synchronized range debug", "[hide][subscribe][range][synchronize_debug
                     .lift<int>(liftrequirecompletion)
                     .subscribe(
                         rx::make_observer_dynamic<int>(
-                        [&](int i){
+                        [&](int){
                             ++v;
                         },
                         [&](){
@@ -232,9 +231,8 @@ SCENARIO("observe_on range debug", "[hide][subscribe][range][observe_on_debug][o
                             ++std::get<1>(*completionstate);
                             std::get<2>(*completionstate).on_next(n);
                         },
-                        [=](std::exception_ptr e){
+                        [=](std::exception_ptr){
                             abort();
-                            std::get<2>(*completionstate).on_error(e);
                         },
                         [=](){
                             if (std::get<1>(*completionstate) != values) {
@@ -255,7 +253,7 @@ SCENARIO("observe_on range debug", "[hide][subscribe][range][observe_on_debug][o
                     .lift<int>(liftrequirecompletion)
                     .subscribe(
                         rx::make_observer_dynamic<int>(
-                        [&](int i){
+                        [&](int){
                             ++v;
                         },
                         [&](){
@@ -269,7 +267,7 @@ SCENARIO("observe_on range debug", "[hide][subscribe][range][observe_on_debug][o
                     .lift<int>(liftrequirecompletion)
                     .subscribe(
                         rx::make_observer_dynamic<int>(
-                        [&](int i){
+                        [&](int){
                             ++v;
                         },
                         [&](){
@@ -283,7 +281,7 @@ SCENARIO("observe_on range debug", "[hide][subscribe][range][observe_on_debug][o
                     .lift<int>(liftrequirecompletion)
                     .subscribe(
                         rx::make_observer_dynamic<int>(
-                        [&](int i){
+                        [&](int){
                             ++v;
                         },
                         [&](){
@@ -329,12 +327,15 @@ SCENARIO("non-subscription traits", "[subscription][traits]"){
         void* v = nullptr;
         WHEN("tested"){
             THEN("is_subscription value is false for lambda"){
+                l();
                 REQUIRE(!rx::is_subscription<decltype(l)>::value);
             }
             THEN("is_subscription value is false for int"){
+                i = 0;
                 REQUIRE(!rx::is_subscription<decltype(i)>::value);
             }
             THEN("is_subscription value is false for void*"){
+                v = nullptr;
                 REQUIRE(!rx::is_subscription<decltype(v)>::value);
             }
             THEN("is_subscription value is false for void"){

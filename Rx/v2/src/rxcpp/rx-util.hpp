@@ -23,6 +23,14 @@
 #endif
 #endif
 
+#if !defined(RXCPP_DELETE)
+#if defined(_MSC_VER)
+#define RXCPP_DELETE __pragma(warning(disable: 4822)) =delete
+#else
+#define RXCPP_DELETE =delete
+#endif
+#endif
+
 #define RXCPP_CONCAT(Prefix, Suffix) Prefix ## Suffix
 #define RXCPP_CONCAT_EVALUATE(Prefix, Suffix) RXCPP_CONCAT(Prefix, Suffix)
 
@@ -78,6 +86,34 @@ struct all_true<B0, BN...>
 {
     static const bool value = B0 && all_true<BN...>::value;
 };
+
+template<class... TN>
+struct types;
+
+//
+// based on Walter Brown's void_t proposal
+// http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2014/n3911.pdf
+//
+
+struct types_checked {};
+
+namespace detail {
+template<class... TN> struct types_checked_from {typedef types_checked type;};
+}
+
+template<class... TN>
+struct types_checked_from {typedef typename detail::types_checked_from<TN...>::type type;};
+
+
+
+template<class T, class C = types_checked>
+struct value_type_from : public std::false_type {typedef types_checked type;};
+
+template<class T>
+struct value_type_from<T, typename types_checked_from<typename T::value_type>::type>
+    : public std::true_type {typedef typename T::value_type type;};
+
+
 
 namespace detail {
 
@@ -280,6 +316,7 @@ struct print_function
     template<class... TN>
     void operator()(const TN&... tn) const {
         bool inserts[] = {(os << tn, true)...};
+        inserts[0] = *(inserts); // silence warning
         delimit();
     }
 
@@ -297,6 +334,8 @@ struct endline
     void operator()() const {
         os << std::endl;
     }
+private:
+    endline& operator=(const endline&) RXCPP_DELETE;
 };
 
 template<class OStream, class ValueType>
@@ -308,6 +347,8 @@ struct insert_value
     void operator()() const {
         os << value;
     }
+private:
+    insert_value& operator=(const insert_value&) RXCPP_DELETE;
 };
 
 template<class OStream, class Function>
@@ -319,6 +360,8 @@ struct insert_function
     void operator()() const {
         call(os);
     }
+private:
+    insert_function& operator=(const insert_function&) RXCPP_DELETE;
 };
 
 template<class OStream, class Delimit>

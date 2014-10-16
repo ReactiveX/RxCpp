@@ -11,29 +11,23 @@ namespace rxcpp {
 
 struct tag_coordinator {};
 struct coordinator_base {typedef tag_coordinator coordinator_tag;};
+
+template<class T, class C = rxu::types_checked>
+struct is_coordinator : public std::false_type {};
+
 template<class T>
-class is_coordinator
-{
-    template<class C>
-    static typename C::coordinator_tag* check(int);
-    template<class C>
-    static void check(...);
-public:
-    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_coordinator*>::value;
-};
+struct is_coordinator<T, typename rxu::types_checked_from<typename T::coordinator_tag>::type>
+    : public std::is_convertible<typename T::coordinator_tag*, tag_coordinator*> {};
 
 struct tag_coordination {};
 struct coordination_base {typedef tag_coordination coordination_tag;};
+
+template<class T, class C = rxu::types_checked>
+struct is_coordination : public std::false_type {};
+
 template<class T>
-class is_coordination
-{
-    template<class C>
-    static typename C::coordination_tag* check(int);
-    template<class C>
-    static void check(...);
-public:
-    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_coordination*>::value;
-};
+struct is_coordination<T, typename rxu::types_checked_from<typename T::coordination_tag>::type>
+    : public std::is_convertible<typename T::coordination_tag*, tag_coordination*> {};
 
 template<class Input>
 class coordinator : public coordinator_base
