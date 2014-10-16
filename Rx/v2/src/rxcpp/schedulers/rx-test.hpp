@@ -174,7 +174,7 @@ public:
         abort();
     }
     virtual std::vector<rxn::subscription> subscriptions() const {
-        abort(); return std::vector<rxn::subscription>();
+        abort();
     }
 
     virtual std::vector<recorded_type> messages() const {
@@ -247,7 +247,7 @@ public:
             auto n = message.value();
             sc->schedule_relative(message.time(), make_schedulable(
                 controller,
-                [n, o](const schedulable& scbl) {
+                [n, o](const schedulable&) {
                     if (o.is_subscribed()) {
                         n->accept(o);
                     }
@@ -300,7 +300,7 @@ public:
             auto n = message.value();
             sc->schedule_absolute(message.time(), make_schedulable(
                 controller,
-                [this, n](const schedulable& scbl) {
+                [this, n](const schedulable&) {
                     auto local = this->observers;
                     for (auto& o : local) {
                         if (o.is_subscribed()) {
@@ -471,13 +471,13 @@ public:
             };
             std::shared_ptr<state_type> state(new state_type(this->make_subscriber<T>()));
 
-            schedule_absolute(created, [createSource, state](const schedulable& scbl) {
+            schedule_absolute(created, [createSource, state](const schedulable&) {
                 state->source.reset(new typename state_type::source_type(createSource()));
             });
-            schedule_absolute(subscribed, [state](const schedulable& scbl) {
+            schedule_absolute(subscribed, [state](const schedulable&) {
                 state->source->subscribe(state->o);
             });
-            schedule_absolute(unsubscribed, [state](const schedulable& scbl) {
+            schedule_absolute(unsubscribed, [state](const schedulable&) {
                 state->o.unsubscribe();
             });
 

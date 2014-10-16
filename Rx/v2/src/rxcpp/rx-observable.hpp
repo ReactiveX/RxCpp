@@ -341,7 +341,7 @@ private:
         if (rxsc::current_thread::is_schedule_required()) {
             const auto& sc = rxsc::make_current_thread();
             sc.create_worker(o.get_subscription()).schedule(
-                [&](const rxsc::schedulable& scbl) {
+                [&](const rxsc::schedulable&) {
                     safe_subscribe();
                 });
         } else {
@@ -433,6 +433,30 @@ public:
     }
 
     ///
+    /// takes any function that will take a subscriber for this observable and produce a subscriber.
+    /// this is intended to allow externally defined operators, that use make_subscriber, to be connected
+    /// into the expression.
+    ///
+    template<class ResultType, class Operator>
+    auto lift_if(Operator&& op) const
+        -> typename std::enable_if<detail::is_lift_function_for<T, subscriber<ResultType>, Operator>::value,
+            observable<typename rxo::detail::lift_operator<ResultType, source_operator_type, Operator>::value_type, rxo::detail::lift_operator<ResultType, source_operator_type, Operator>>>::type {
+        return  observable<typename rxo::detail::lift_operator<ResultType, source_operator_type, Operator>::value_type, rxo::detail::lift_operator<ResultType, source_operator_type, Operator>>(
+                                                                                                                        rxo::detail::lift_operator<ResultType, source_operator_type, Operator>(source_operator, std::forward<Operator>(op)));
+    }
+    ///
+    /// takes any function that will take a subscriber for this observable and produce a subscriber.
+    /// this is intended to allow externally defined operators, that use make_subscriber, to be connected
+    /// into the expression.
+    ///
+    template<class ResultType, class Operator>
+    auto lift_if(Operator&&) const
+        -> typename std::enable_if<!detail::is_lift_function_for<T, subscriber<ResultType>, Operator>::value,
+            decltype(rxs::from<ResultType>())>::type {
+        return       rxs::from<ResultType>();
+    }
+
+    ///
     /// subscribe will cause this observable to emit values to the provided subscriber.
     /// callers must provide enough arguments to make a subscriber.
     /// overrides are supported. thus
@@ -498,20 +522,91 @@ public:
         return                    lift<observable<T>>(rxo::detail::window<T>(count, skip));
     }
 
+    /// window_with_time ->
+    /// produce observables every skip time interval and collect items from this observable for period of time into each produced observable.
+    ///
+    template<class Duration, class Coordination>
+    auto window_with_time(Duration period, Duration skip, Coordination coordination) const
+        -> decltype(EXPLICIT_THIS lift<observable<T>>(rxo::detail::window_with_time<T, Duration, Coordination>(period, skip, coordination))) {
+        return                    lift<observable<T>>(rxo::detail::window_with_time<T, Duration, Coordination>(period, skip, coordination));
+    }
+
+    /// window_with_time ->
+    /// produce observables every skip time interval and collect items from this observable for period of time into each produced observable.
+    ///
+    template<class Duration>
+    auto window_with_time(Duration period, Duration skip) const
+        -> decltype(EXPLICIT_THIS lift<observable<T>>(rxo::detail::window_with_time<T, Duration, identity_one_worker>(period, skip, identity_current_thread()))) {
+        return                    lift<observable<T>>(rxo::detail::window_with_time<T, Duration, identity_one_worker>(period, skip, identity_current_thread()));
+    }
+
+    /// window_with_time ->
+    /// produce observables every period time interval and collect items from this observable for period of time into each produced observable.
+    ///
+    template<class Duration, class Coordination>
+    auto window_with_time(Duration period, Coordination coordination) const
+        -> decltype(EXPLICIT_THIS lift<observable<T>>(rxo::detail::window_with_time<T, Duration, Coordination>(period, period, coordination))) {
+        return                    lift<observable<T>>(rxo::detail::window_with_time<T, Duration, Coordination>(period, period, coordination));
+    }
+
+    /// window_with_time ->
+    /// produce observables every period time interval and collect items from this observable for period of time into each produced observable.
+    ///
+    template<class Duration>
+    auto window_with_time(Duration period) const
+        -> decltype(EXPLICIT_THIS lift<observable<T>>(rxo::detail::window_with_time<T, Duration, identity_one_worker>(period, period, identity_current_thread()))) {
+        return                    lift<observable<T>>(rxo::detail::window_with_time<T, Duration, identity_one_worker>(period, period, identity_current_thread()));
+    }
+
     /// buffer ->
     /// collect count items from this observable and produce a vector of them to emit from the new observable that is returned.
     ///
     auto buffer(int count) const
-        -> decltype(EXPLICIT_THIS lift<std::vector<T>>(rxo::detail::buffer_count<T>(count, count))) {
-        return                    lift<std::vector<T>>(rxo::detail::buffer_count<T>(count, count));
+        -> decltype(EXPLICIT_THIS lift_if<std::vector<T>>(rxo::detail::buffer_count<T>(count, count))) {
+        return                    lift_if<std::vector<T>>(rxo::detail::buffer_count<T>(count, count));
     }
 
     /// buffer ->
     /// start a new vector every skip items and collect count items from this observable into each vector to emit from the new observable that is returned.
     ///
     auto buffer(int count, int skip) const
-        -> decltype(EXPLICIT_THIS lift<std::vector<T>>(rxo::detail::buffer_count<T>(count, skip))) {
-        return                    lift<std::vector<T>>(rxo::detail::buffer_count<T>(count, skip));
+        -> decltype(EXPLICIT_THIS lift_if<std::vector<T>>(rxo::detail::buffer_count<T>(count, skip))) {
+        return                    lift_if<std::vector<T>>(rxo::detail::buffer_count<T>(count, skip));
+    }
+
+    /// buffer_with_time ->
+    /// start a new vector every skip time interval and collect items into it from this observable for period of time.
+    ///
+    template<class Coordination>
+    auto buffer_with_time(rxsc::scheduler::clock_type::duration period, rxsc::scheduler::clock_type::duration skip, Coordination coordination) const
+        -> decltype(EXPLICIT_THIS lift_if<std::vector<T>>(rxo::detail::buffer_with_time<T, rxsc::scheduler::clock_type::duration, Coordination>(period, skip, coordination))) {
+        return                    lift_if<std::vector<T>>(rxo::detail::buffer_with_time<T, rxsc::scheduler::clock_type::duration, Coordination>(period, skip, coordination));
+    }
+
+    /// buffer_with_time ->
+    /// start a new vector every skip time interval and collect items into it from this observable for period of time.
+    ///
+    auto buffer_with_time(rxsc::scheduler::clock_type::duration period, rxsc::scheduler::clock_type::duration skip) const
+        -> decltype(EXPLICIT_THIS lift_if<std::vector<T>>(rxo::detail::buffer_with_time<T, rxsc::scheduler::clock_type::duration, identity_one_worker>(period, skip, identity_current_thread()))) {
+        return                    lift_if<std::vector<T>>(rxo::detail::buffer_with_time<T, rxsc::scheduler::clock_type::duration, identity_one_worker>(period, skip, identity_current_thread()));
+    }
+
+    /// buffer_with_time ->
+    /// start a new vector every period time interval and collect items into it from this observable for period of time.
+    ///
+    template<class Coordination,
+        class Requires = typename std::enable_if<is_coordination<Coordination>::value, rxu::types_checked>::type>
+    auto buffer_with_time(rxsc::scheduler::clock_type::duration period, Coordination coordination) const
+        -> decltype(EXPLICIT_THIS lift_if<std::vector<T>>(rxo::detail::buffer_with_time<T, rxsc::scheduler::clock_type::duration, Coordination>(period, period, coordination))) {
+        return                    lift_if<std::vector<T>>(rxo::detail::buffer_with_time<T, rxsc::scheduler::clock_type::duration, Coordination>(period, period, coordination));
+    }
+
+    /// buffer_with_time ->
+    /// start a new vector every period time interval and collect items into it from this observable for period of time.
+    ///
+    auto buffer_with_time(rxsc::scheduler::clock_type::duration period) const
+        -> decltype(EXPLICIT_THIS lift_if<std::vector<T>>(rxo::detail::buffer_with_time<T, rxsc::scheduler::clock_type::duration, identity_one_worker>(period, period, identity_current_thread()))) {
+        return                    lift_if<std::vector<T>>(rxo::detail::buffer_with_time<T, rxsc::scheduler::clock_type::duration, identity_one_worker>(period, period, identity_current_thread()));
     }
 
     template<class Coordination>
@@ -725,60 +820,88 @@ public:
                                                                                                                                         rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, Coordination>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<Coordination>(sf)));
     }
 
-    template<class Coordination, class Selector, class... ObservableN>
-    struct defer_combine_latest : public defer_observable<
-        rxu::all_true<is_coordination<Coordination>::value, !is_coordination<Selector>::value, !is_observable<Selector>::value, is_observable<ObservableN>::value...>,
-        this_type,
-        rxo::detail::combine_latest, Coordination, Selector, ObservableN...>
+    template<class Source, class Coordination, class TS, class C = rxu::types_checked>
+    struct select_combine_latest_cn : public std::false_type {};
+
+    template<class Source, class Coordination, class T0, class... TN>
+    struct select_combine_latest_cn<Source, Coordination, rxu::types<T0, TN...>, typename rxu::types_checked_from<typename Coordination::coordination_tag, typename T0::observable_tag, typename TN::observable_tag...>::type>
+        : public std::true_type
+    {
+        typedef rxo::detail::combine_latest<Coordination, rxu::detail::pack, Source, T0, TN...> operator_type;
+        typedef observable<typename operator_type::value_type, operator_type> observable_type;
+        template<class... ObservableN>
+        observable_type operator()(const Source& src, Coordination cn, ObservableN... on) const {
+            return observable_type(operator_type(std::move(cn), rxu::pack(), std::make_tuple(src, std::move(on)...)));
+        };
+    };
+
+    template<class Source, class Coordination, class T0, class... TN>
+    struct select_combine_latest_cn<Source, Coordination, rxu::types<T0, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::result_of<T0(typename Source::value_type, typename TN::value_type...)>::type, typename Coordination::coordination_tag, typename TN::observable_tag...>::type>
+        : public std::true_type
+    {
+        typedef rxo::detail::combine_latest<Coordination, T0, Source, TN...> operator_type;
+        typedef observable<typename operator_type::value_type, operator_type> observable_type;
+        template<class... ObservableN>
+        observable_type operator()(const Source& src, Coordination cn, T0 t0, ObservableN... on) const {
+            return observable_type(operator_type(std::move(cn), std::move(t0), std::make_tuple(src, std::move(on)...)));
+        };
+    };
+
+    template<class Source, class TS, class C = rxu::types_checked>
+    struct select_combine_latest : public std::false_type {
+        template<class T0, class T1, class... TN>
+        void operator()(const Source&, T0, T1, TN...) const {
+            static_assert(is_coordination<T0>::value ||
+                is_observable<T0>::value ||
+                std::is_convertible<T0, std::function<void(typename T1::value_type, typename TN::value_type...)>>::value
+                , "T0 must be selector, coordination or observable");
+            static_assert(is_observable<T1>::value  ||
+                std::is_convertible<T1, std::function<void(typename TN::value_type...)>>::value, "T1 must be selector or observable");
+            static_assert(rxu::all_true<true, is_observable<TN>::value...>::value, "TN... must be observable");
+        }
+        template<class T0>
+        void operator()(const Source&, T0) const {
+            static_assert(is_observable<T0>::value, "T0 must be observable");
+        }
+    };
+
+    template<class Source, class T0, class T1, class... TN>
+    struct select_combine_latest<Source, rxu::types<T0, T1, TN...>, typename rxu::types_checked_from<typename T0::coordination_tag, typename T1::observable_tag, typename TN::observable_tag...>::type>
+        : public select_combine_latest_cn<Source, T0, rxu::types<T1, TN...>>
     {
     };
 
-    /// combine_latest ->
-    /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
-    /// for each item from all of the observables use the Selector to select a value to emit from the new observable that is returned.
-    ///
-    template<class Selector, class... ObservableN>
-    auto combine_latest(Selector&& s, ObservableN... on) const
-        ->  typename std::enable_if<
-                        defer_combine_latest<identity_one_worker, Selector, this_type, ObservableN...>::value,
-            typename    defer_combine_latest<identity_one_worker, Selector, this_type, ObservableN...>::observable_type>::type {
-        return          defer_combine_latest<identity_one_worker, Selector, this_type, ObservableN...>::make(*this, identity_current_thread(), std::forward<Selector>(s), std::make_tuple(*this, on...));
-    }
+    template<class Source, class Selector, class... TN>
+    struct select_combine_latest<Source, rxu::types<Selector, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::result_of<Selector(typename Source::value_type, typename TN::value_type...)>::type, typename TN::observable_tag...>::type>
+        : public std::true_type
+    {
+        typedef rxo::detail::combine_latest<identity_one_worker, Selector, Source, TN...> operator_type;
+        typedef observable<typename operator_type::value_type, operator_type> observable_type;
+        template<class... ObservableN>
+        observable_type operator()(const Source& src, Selector sel, ObservableN... on) const {
+            return observable_type(operator_type(identity_current_thread(), std::move(sel), std::make_tuple(src, std::move(on)...)));
+        };
+    };
+
+    template<class Source, class T0, class... TN>
+    struct select_combine_latest<Source, rxu::types<T0, TN...>, typename rxu::types_checked_from<typename T0::observable_tag, typename TN::observable_tag...>::type>
+        : public std::true_type
+    {
+        typedef rxo::detail::combine_latest<identity_one_worker, rxu::detail::pack, Source, T0, TN...> operator_type;
+        typedef observable<typename operator_type::value_type, operator_type> observable_type;
+        template<class... ObservableN>
+        observable_type operator()(const Source& src, ObservableN... on) const {
+            return observable_type(operator_type(identity_current_thread(), rxu::pack(), std::make_tuple(src, std::move(on)...)));
+        };
+    };
 
     /// combine_latest ->
-    /// The coordination is used to synchronize sources from different contexts.
     /// for each item from all of the observables use the Selector to select a value to emit from the new observable that is returned.
     ///
-    template<class Coordination, class Selector, class... ObservableN>
-    auto combine_latest(Coordination cn, Selector&& s, ObservableN... on) const
-        ->  typename std::enable_if<
-                        defer_combine_latest<Coordination, Selector, this_type, ObservableN...>::value,
-            typename    defer_combine_latest<Coordination, Selector, this_type, ObservableN...>::observable_type>::type {
-        return          defer_combine_latest<Coordination, Selector, this_type, ObservableN...>::make(*this, std::move(cn), std::forward<Selector>(s), std::make_tuple(*this, on...));
-    }
-
-    /// combine_latest ->
-    /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
-    /// for each item from all of the observables use the Selector to select a value to emit from the new observable that is returned.
-    ///
-    template<class... ObservableN>
-    auto combine_latest(ObservableN... on) const
-        ->  typename std::enable_if<
-                        defer_combine_latest<identity_one_worker, rxu::detail::pack, this_type, ObservableN...>::value,
-            typename    defer_combine_latest<identity_one_worker, rxu::detail::pack, this_type, ObservableN...>::observable_type>::type {
-        return          defer_combine_latest<identity_one_worker, rxu::detail::pack, this_type, ObservableN...>::make(*this, identity_current_thread(), rxu::pack(), std::make_tuple(*this, on...));
-    }
-
-    /// combine_latest ->
-    /// The coordination is used to synchronize sources from different contexts.
-    /// for each item from all of the observables use the Selector to select a value to emit from the new observable that is returned.
-    ///
-    template<class Coordination, class... ObservableN>
-    auto combine_latest(Coordination cn, ObservableN... on) const
-        ->  typename std::enable_if<
-                        defer_combine_latest<Coordination, rxu::detail::pack, this_type, ObservableN...>::value,
-            typename    defer_combine_latest<Coordination, rxu::detail::pack, this_type, ObservableN...>::observable_type>::type {
-        return          defer_combine_latest<Coordination, rxu::detail::pack, this_type, ObservableN...>::make(*this, std::move(cn), rxu::pack(), std::make_tuple(*this, on...));
+    template<class... AN>
+    auto combine_latest(AN... an) const
+        -> decltype(select_combine_latest<this_type, rxu::types<decltype(an)...>>{}(*(this_type*)nullptr,  std::move(an)...)) {
+        return      select_combine_latest<this_type, rxu::types<decltype(an)...>>{}(*this,                 std::move(an)...);
     }
 
     /// group_by ->

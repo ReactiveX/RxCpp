@@ -58,9 +58,9 @@ struct trace_noop
     inline void action_recurse(const Schedulable&) {}
 
     template<class Observable, class Subscriber>
-    inline void subscribe_enter(const Observable& o, const Subscriber& s) {}
+    inline void subscribe_enter(const Observable& , const Subscriber& ) {}
     template<class Observable>
-    inline void subscribe_return(const Observable& o) {}
+    inline void subscribe_return(const Observable& ) {}
 
     template<class SubscriberFrom, class SubscriberTo>
     inline void connect(const SubscriberFrom&, const SubscriberTo&) {}

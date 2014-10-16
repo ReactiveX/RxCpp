@@ -72,18 +72,18 @@ SCENARIO("publish basic", "[publish][multicast][subject][operators]"){
         WHEN("subscribed and then connected"){
 
             w.schedule_absolute(rxsc::test::created_time,
-                [&ys, &xs](const rxsc::schedulable& scbl){
+                [&ys, &xs](const rxsc::schedulable&){
                     ys = xs.publish().as_dynamic();
                     //ys = xs.publish_last().as_dynamic();
                 });
 
             w.schedule_absolute(rxsc::test::subscribed_time,
-                [&ys, &res](const rxsc::schedulable& scbl){
+                [&ys, &res](const rxsc::schedulable&){
                 ys.subscribe(res);
             });
 
             w.schedule_absolute(rxsc::test::unsubscribed_time,
-                [&res](const rxsc::schedulable& scbl){
+                [&res](const rxsc::schedulable&){
                     res.unsubscribe();
                 });
 
@@ -91,11 +91,11 @@ SCENARIO("publish basic", "[publish][multicast][subject][operators]"){
                 rx::composite_subscription connection;
 
                 w.schedule_absolute(300,
-                    [connection, &ys](const rxsc::schedulable& scbl){
+                    [connection, &ys](const rxsc::schedulable&){
                         ys.connect(connection);
                     });
                 w.schedule_absolute(400,
-                    [connection](const rxsc::schedulable& scbl){
+                    [connection](const rxsc::schedulable&){
                         connection.unsubscribe();
                     });
             }
@@ -104,11 +104,11 @@ SCENARIO("publish basic", "[publish][multicast][subject][operators]"){
                 rx::composite_subscription connection;
 
                 w.schedule_absolute(500,
-                    [connection, &ys](const rxsc::schedulable& scbl){
+                    [connection, &ys](const rxsc::schedulable&){
                         ys.connect(connection);
                     });
                 w.schedule_absolute(550,
-                    [connection](const rxsc::schedulable& scbl){
+                    [connection](const rxsc::schedulable&){
                         connection.unsubscribe();
                     });
             }
@@ -117,11 +117,11 @@ SCENARIO("publish basic", "[publish][multicast][subject][operators]"){
                 rx::composite_subscription connection;
 
                 w.schedule_absolute(650,
-                    [connection, &ys](const rxsc::schedulable& scbl){
+                    [connection, &ys](const rxsc::schedulable&){
                         ys.connect(connection);
                     });
                 w.schedule_absolute(800,
-                    [connection](const rxsc::schedulable& scbl){
+                    [connection](const rxsc::schedulable&){
                         connection.unsubscribe();
                     });
             }
@@ -187,17 +187,17 @@ SCENARIO("publish error", "[publish][error][multicast][subject][operators]"){
         WHEN("subscribed and then connected"){
 
             w.schedule_absolute(rxsc::test::created_time,
-                [&ys, &xs](const rxsc::schedulable& scbl){
+                [&ys, &xs](const rxsc::schedulable&){
                     ys = xs.publish().as_dynamic();
                 });
 
             w.schedule_absolute(rxsc::test::subscribed_time,
-                [&ys, &res](const rxsc::schedulable& scbl){
+                [&ys, &res](const rxsc::schedulable&){
                 ys.subscribe(res);
             });
 
             w.schedule_absolute(rxsc::test::unsubscribed_time,
-                [&res](const rxsc::schedulable& scbl){
+                [&res](const rxsc::schedulable&){
                     res.unsubscribe();
                 });
 
@@ -205,11 +205,11 @@ SCENARIO("publish error", "[publish][error][multicast][subject][operators]"){
                 rx::composite_subscription connection;
 
                 w.schedule_absolute(300,
-                    [connection, &ys](const rxsc::schedulable& scbl){
+                    [connection, &ys](const rxsc::schedulable&){
                         ys.connect(connection);
                     });
                 w.schedule_absolute(400,
-                    [connection](const rxsc::schedulable& scbl){
+                    [connection](const rxsc::schedulable&){
                         connection.unsubscribe();
                     });
             }
@@ -218,11 +218,11 @@ SCENARIO("publish error", "[publish][error][multicast][subject][operators]"){
                 rx::composite_subscription connection;
 
                 w.schedule_absolute(500,
-                    [connection, &ys](const rxsc::schedulable& scbl){
+                    [connection, &ys](const rxsc::schedulable&){
                         ys.connect(connection);
                     });
                 w.schedule_absolute(800,
-                    [connection](const rxsc::schedulable& scbl){
+                    [connection](const rxsc::schedulable&){
                         connection.unsubscribe();
                     });
             }
@@ -286,17 +286,17 @@ SCENARIO("publish basic with initial value", "[publish][multicast][behavior][ope
         WHEN("subscribed and then connected"){
 
             w.schedule_absolute(rxsc::test::created_time,
-                [&ys, &xs](const rxsc::schedulable& scbl){
+                [&ys, &xs](const rxsc::schedulable&){
                     ys = xs.publish(1979).as_dynamic();
                 });
 
             w.schedule_absolute(rxsc::test::subscribed_time,
-                [&ys, &res](const rxsc::schedulable& scbl){
+                [&ys, &res](const rxsc::schedulable&){
                 ys.subscribe(res);
             });
 
             w.schedule_absolute(rxsc::test::unsubscribed_time,
-                [&res](const rxsc::schedulable& scbl){
+                [&res](const rxsc::schedulable&){
                     res.unsubscribe();
                 });
 
@@ -304,11 +304,11 @@ SCENARIO("publish basic with initial value", "[publish][multicast][behavior][ope
                 rx::composite_subscription connection;
 
                 w.schedule_absolute(300,
-                    [connection, &ys](const rxsc::schedulable& scbl){
+                    [connection, &ys](const rxsc::schedulable&){
                         ys.connect(connection);
                     });
                 w.schedule_absolute(400,
-                    [connection](const rxsc::schedulable& scbl){
+                    [connection](const rxsc::schedulable&){
                         connection.unsubscribe();
                     });
             }
@@ -317,11 +317,11 @@ SCENARIO("publish basic with initial value", "[publish][multicast][behavior][ope
                 rx::composite_subscription connection;
 
                 w.schedule_absolute(500,
-                    [connection, &ys](const rxsc::schedulable& scbl){
+                    [connection, &ys](const rxsc::schedulable&){
                         ys.connect(connection);
                     });
                 w.schedule_absolute(550,
-                    [connection](const rxsc::schedulable& scbl){
+                    [connection](const rxsc::schedulable&){
                         connection.unsubscribe();
                     });
             }
@@ -330,11 +330,11 @@ SCENARIO("publish basic with initial value", "[publish][multicast][behavior][ope
                 rx::composite_subscription connection;
 
                 w.schedule_absolute(650,
-                    [connection, &ys](const rxsc::schedulable& scbl){
+                    [connection, &ys](const rxsc::schedulable&){
                         ys.connect(connection);
                     });
                 w.schedule_absolute(800,
-                    [connection](const rxsc::schedulable& scbl){
+                    [connection](const rxsc::schedulable&){
                         connection.unsubscribe();
                     });
             }

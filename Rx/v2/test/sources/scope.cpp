@@ -343,12 +343,12 @@ SCENARIO("scope, throw resource selector", "[scope][sources]"){
                 [&]() {
                     return rx::observable<>::
                         scope(
-                            [&](){
+                            [&]() -> resource {
                                 ++resource_factory_invoked;
                                 throw ex;
-                                return resource(sc.clock());
+                                //return resource(sc.clock());
                             },
-                            [&](resource r){
+                            [&](resource){
                                 ++observable_factory_invoked;
                                 return rx::observable<>::never<int>();
                             }
@@ -400,10 +400,9 @@ SCENARIO("scope, throw resource usage", "[scope][sources]"){
                                 ++resource_factory_invoked;
                                 return resource(sc.clock());
                             },
-                            [&](resource r){
+                            [&](resource) -> rx::observable<int> {
                                 ++observable_factory_invoked;
                                 throw ex;
-                                return rx::observable<>::never<int>();
                             }
                         )
                         // forget type to workaround lambda deduction bug on msvc 2013

@@ -771,7 +771,7 @@ SCENARIO("combine_latest selector throws", "[combine_latest][join][operators]"){
                 [&]() {
                     return o1
                         .combine_latest(
-                            [&ex](int v2, int v1) -> int {
+                            [&ex](int, int) -> int {
                                 throw ex;
                             },
                             o2
@@ -834,7 +834,7 @@ SCENARIO("combine_latest selector throws N", "[combine_latest][join][operators]"
                 [&]() {
                     return e[0]
                         .combine_latest(
-                            [&ex](int v0, int v1, int v2, int v3, int v4, int v5, int v6, int v7, int v8, int v9, int v10, int v11, int v12, int v13, int v14, int v15) -> int {
+                            [&ex](int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int) -> int {
                                 throw ex;
                             },
                             e[1], e[2], e[3], e[4], e[5], e[6], e[7], e[8], e[9], e[10], e[11], e[12], e[13], e[14], e[15]

@@ -94,6 +94,9 @@ struct reduce : public operator_base<typename reduce_traits<T, SourceOperator, A
         accumulator_type accumulator;
         result_selector_type result_selector;
         seed_type seed;
+
+    private:
+        reduce_initial_type& operator=(reduce_initial_type o) RXCPP_DELETE;
     };
     reduce_initial_type initial;
 
@@ -120,6 +123,9 @@ struct reduce : public operator_base<typename reduce_traits<T, SourceOperator, A
             observable<T, SourceOperator> source;
             seed_type current;
             Subscriber out;
+
+        private:
+            reduce_state_type& operator=(reduce_state_type o) RXCPP_DELETE;
         };
         auto state = std::make_shared<reduce_state_type>(initial, std::move(o));
         state->source.subscribe(
@@ -151,6 +157,8 @@ struct reduce : public operator_base<typename reduce_traits<T, SourceOperator, A
             }
         );
     }
+private:
+    reduce& operator=(reduce o) RXCPP_DELETE;
 };
 
 template<class Accumulator, class ResultSelector, class Seed>

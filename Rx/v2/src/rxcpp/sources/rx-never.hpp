@@ -17,7 +17,7 @@ template<class T>
 struct never : public source_base<T>
 {
     template<class Subscriber>
-    void on_subscribe(Subscriber o) const {
+    void on_subscribe(Subscriber) const {
     }
 };
 

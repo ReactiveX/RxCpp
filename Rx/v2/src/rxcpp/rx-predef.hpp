@@ -19,17 +19,13 @@ inline auto trace_activity() -> decltype(rxcpp_trace_activity(trace_tag()))& {
 
 
 struct tag_action {};
+template<class T, class C = rxu::types_checked>
+struct is_action : public std::false_type {};
+
 template<class T>
-class is_action
-{
-    struct not_void {};
-    template<class C>
-    static typename C::action_tag* check(int);
-    template<class C>
-    static not_void check(...);
-public:
-    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_action*>::value;
-};
+struct is_action<T, typename rxu::types_checked_from<typename T::action_tag>::type>
+    : public std::is_convertible<typename T::action_tag*, tag_action*> {};
+
 
 struct tag_worker {};
 template<class T>
