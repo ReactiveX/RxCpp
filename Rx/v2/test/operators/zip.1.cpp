@@ -69,7 +69,7 @@ SCENARIO("zip never N", "[zip][join][operators]"){
         const size_t N = 16;
 
         std::vector<rxcpp::test::testable_observable<int>> n;
-        for (int i = 0; i < N; ++i) {
+        for (size_t i = 0; i < N; ++i) {
             n.push_back(
                 sc.make_hot_observable({
                     on.next(150, 1)
@@ -293,7 +293,7 @@ SCENARIO("zip empty N", "[zip][join][operators]"){
         const size_t N = 16;
 
         std::vector<rxcpp::test::testable_observable<int>> e;
-        for (int i = 0; i < N; ++i) {
+        for (size_t i = 0; i < N; ++i) {
             e.push_back(
                 sc.make_hot_observable({
                     on.next(150, 1),
