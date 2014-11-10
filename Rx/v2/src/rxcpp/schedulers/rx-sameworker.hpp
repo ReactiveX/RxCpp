@@ -42,8 +42,7 @@ public:
 };
 
 inline scheduler make_same_worker(rxsc::worker w) {
-    auto i = make_scheduler<same_worker>(std::move(w));
-    return i;
+    return make_scheduler<same_worker>(std::move(w));
 }
 
 }
