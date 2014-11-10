@@ -5,6 +5,22 @@ namespace rxsc=rxcpp::schedulers;
 #include "rxcpp/rx-test.hpp"
 #include "catch.hpp"
 
+SCENARIO("scan: issue 41", "[scan][operators][issue][hide]"){
+    GIVEN("map of scan of interval"){
+        auto sc = rxsc::make_current_thread();
+        auto so = rxcpp::synchronize_in_one_worker(sc);
+        auto start = sc.now() + std::chrono::seconds(2);
+        auto period = std::chrono::seconds(1);
+
+        rxcpp::observable<>::interval(start, period, so)
+            .scan(0, [] (int a, int i) { return a + i; })
+            .map([] (int i) { return i * i; })
+            .take(10)
+            .subscribe([] (int i) { std::cout << i << std::endl; });
+
+    }
+}
+
 SCENARIO("scan: seed, never", "[scan][operators]"){
     GIVEN("a test hot observable of ints"){
         auto sc = rxsc::make_test();
