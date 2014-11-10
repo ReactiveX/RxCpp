@@ -45,7 +45,7 @@ struct scan : public operator_base<typename std::decay<Seed>::type>
         static_assert(std::is_convertible<decltype(check<T, seed_type, accumulator_type>(0)), seed_type>::value, "scan Accumulator must be a function with the signature Seed(Seed, T)");
     }
     template<class Subscriber>
-    void on_subscribe(Subscriber o) {
+    void on_subscribe(Subscriber o) const {
         struct scan_state_type
             : public scan_initial_type
             , public std::enable_shared_from_this<scan_state_type>
