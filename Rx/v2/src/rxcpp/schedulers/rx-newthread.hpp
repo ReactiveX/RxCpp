@@ -162,11 +162,15 @@ public:
     virtual worker create_worker(composite_subscription cs) const {
         return worker(cs, std::shared_ptr<new_worker>(new new_worker(cs, factory)));
     }
+
+    const static scheduler instance;
 };
 
+//static
+RXCPP_SELECT_ANY const scheduler new_thread::instance = make_scheduler<new_thread>();
+
 inline scheduler make_new_thread() {
-    static auto nt = make_scheduler<new_thread>();
-    return nt;
+    return new_thread::instance;
 }
 inline scheduler make_new_thread(thread_factory tf) {
     return make_scheduler<new_thread>(tf);
