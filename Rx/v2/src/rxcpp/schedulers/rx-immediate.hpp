@@ -70,11 +70,14 @@ public:
     virtual worker create_worker(composite_subscription cs) const {
         return worker(std::move(cs), wi);
     }
+    const static scheduler instance;
 };
 
+//static
+RXCPP_SELECT_ANY const scheduler immediate::instance = make_scheduler<immediate>();
+
 inline const scheduler& make_immediate() {
-    static auto i = make_scheduler<immediate>();
-    return i;
+    return immediate::instance;
 }
 
 }
