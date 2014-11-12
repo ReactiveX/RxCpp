@@ -594,6 +594,9 @@ struct list_not_empty {
 
 struct extract_list_front {
     template<class T>
+#ifdef __clang__
+    [[clang::optnone]] 
+#endif
     auto operator()(std::list<T>& list)
         -> decltype(std::move(list.front())) {
         auto val = std::move(list.front());
