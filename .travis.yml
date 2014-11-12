@@ -24,10 +24,10 @@ before_install:
   - sh projects/scripts/travis-install.sh
   - if [ "$CXX" == "g++" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
 
-  - sudo apt-get update -qq 
+  - sudo apt-get update -qq git status
 install:
   - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq "g++-${GCC_VERSION}"; fi
-  - if [ "$CXX" = "g++" ]; then export CXX="g++-${GCC_VERSION}" CC="gcc-${GCC_VERSION}";
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-${GCC_VERSION}" CC="gcc-${GCC_VERSION}"; fi
 
   - export PATH=/usr/bin:$PATH
   - cd projects
