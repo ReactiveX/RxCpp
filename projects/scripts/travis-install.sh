@@ -15,14 +15,29 @@ if [ "$TRAVIS_OS_NAME" = linux -o -z "$TRAVIS_OS_NAME" ]; then
     sudo apt-get install -qq --allow-unauthenticated --force-yes --fix-missing cmake libssl-dev || echo "ignore install failure"
 
     if [ "$CC" = clang ]; then
-        sudo apt-get install -qq --allow-unauthenticated --force-yes --fix-missing clang-3.5 || echo "ignore install failure"
-        sudo apt-get install --allow-unauthenticated --force-yes --fix-missing libgomp1=4.8.1-2ubuntu1~12.04 libitm1=4.8.1-2ubuntu1~12.04 libatomic1=4.8.1-2ubuntu1~12.04 libasan0=4.8.1-2ubuntu1~12.04 libtsan0=4.8.1-2ubuntu1~12.04 libquadmath0=4.8.1-2ubuntu1~12.04 libstdc++6=4.8.1-2ubuntu1~12.04 gcc-4.8-base=4.8.1-2ubuntu1~12.04 libstdc++-4.8-dev=4.8.1-2ubuntu1~12.04 cpp-4.8=4.8.1-2ubuntu1~12.04 libgcc-4.8-dev=4.8.1-2ubuntu1~12.04 || echo "ignore install failure"
+        sudo apt-get install -qq --allow-unauthenticated --force-yes --fix-missing clang-3.6 || echo "ignore install failure"
+
+	sudo update-alternatives --remove-all clang   || echo "ignore remove failure"
+	sudo update-alternatives --remove-all clang++ || echo "ignore remove failure"
+
+	sudo update-alternatives --install /usr/bin/clang   clang   /usr/bin/clang-3.6 20
+	sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-3.6 20
+
+	sudo update-alternatives --config clang
+	sudo update-alternatives --config clang++
     fi
 
     if [ "$CC" = gcc ]; then
-        sudo apt-get install --allow-unauthenticated --force-yes --fix-missing libgomp1=4.8.1-2ubuntu1~12.04 libitm1=4.8.1-2ubuntu1~12.04 libatomic1=4.8.1-2ubuntu1~12.04 libasan0=4.8.1-2ubuntu1~12.04 libtsan0=4.8.1-2ubuntu1~12.04 libquadmath0=4.8.1-2ubuntu1~12.04 libstdc++6=4.8.1-2ubuntu1~12.04 gcc-4.8-base=4.8.1-2ubuntu1~12.04 libstdc++-4.8-dev=4.8.1-2ubuntu1~12.04 cpp-4.8=4.8.1-2ubuntu1~12.04 libgcc-4.8-dev=4.8.1-2ubuntu1~12.04 gcc-4.8=4.8.1-2ubuntu1~12.04 g++-4.8=4.8.1-2ubuntu1~12.04 || echo "ignore install failure"
-        sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 20 || echo "ignore update failure"
-        sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 20 || echo "ignore update failure"
+        sudo apt-get install -qq --allow-unauthenticated --force-yes --fix-missing gcc-4.8 g++-4.8 || echo "ignore install failure"
+
+	sudo update-alternatives --remove-all gcc || echo "ignore remove failure"
+	sudo update-alternatives --remove-all g++ || echo "ignore remove failure"
+
+	sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 20
+	sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 20
+
+	sudo update-alternatives --config gcc
+	sudo update-alternatives --config g++
     fi
 
 elif [ "$TRAVIS_OS_NAME" = osx ]; then

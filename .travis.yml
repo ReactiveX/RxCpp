@@ -30,7 +30,7 @@ install:
 
 script:
   - cd projects/build
-  - ./rxcppv2_test
+  - ./rxcppv2_test --success -r compact
   - cd ../..
 
 branches:
