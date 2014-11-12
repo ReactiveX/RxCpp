@@ -904,6 +904,90 @@ public:
         return      select_combine_latest<this_type, rxu::types<decltype(an)...>>{}(*this,                 std::move(an)...);
     }
 
+    template<class Source, class Coordination, class TS, class C = rxu::types_checked>
+    struct select_zip_cn : public std::false_type {};
+
+    template<class Source, class Coordination, class T0, class... TN>
+    struct select_zip_cn<Source, Coordination, rxu::types<T0, TN...>, typename rxu::types_checked_from<typename Coordination::coordination_tag, typename T0::observable_tag, typename TN::observable_tag...>::type>
+        : public std::true_type
+    {
+        typedef rxo::detail::zip<Coordination, rxu::detail::pack, Source, T0, TN...> operator_type;
+        typedef observable<typename operator_type::value_type, operator_type> observable_type;
+        template<class... ObservableN>
+        observable_type operator()(const Source& src, Coordination cn, ObservableN... on) const {
+            return observable_type(operator_type(std::move(cn), rxu::pack(), std::make_tuple(src, std::move(on)...)));
+        };
+    };
+
+    template<class Source, class Coordination, class T0, class... TN>
+    struct select_zip_cn<Source, Coordination, rxu::types<T0, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::result_of<T0(typename Source::value_type, typename TN::value_type...)>::type, typename Coordination::coordination_tag, typename TN::observable_tag...>::type>
+        : public std::true_type
+    {
+        typedef rxo::detail::zip<Coordination, T0, Source, TN...> operator_type;
+        typedef observable<typename operator_type::value_type, operator_type> observable_type;
+        template<class... ObservableN>
+        observable_type operator()(const Source& src, Coordination cn, T0 t0, ObservableN... on) const {
+            return observable_type(operator_type(std::move(cn), std::move(t0), std::make_tuple(src, std::move(on)...)));
+        };
+    };
+
+    template<class Source, class TS, class C = rxu::types_checked>
+    struct select_zip : public std::false_type {
+        template<class T0, class T1, class... TN>
+        void operator()(const Source&, T0, T1, TN...) const {
+            static_assert(is_coordination<T0>::value ||
+                is_observable<T0>::value ||
+                std::is_convertible<T0, std::function<void(typename T1::value_type, typename TN::value_type...)>>::value
+                , "T0 must be selector, coordination or observable");
+            static_assert(is_observable<T1>::value  ||
+                std::is_convertible<T1, std::function<void(typename TN::value_type...)>>::value, "T1 must be selector or observable");
+            static_assert(rxu::all_true<true, is_observable<TN>::value...>::value, "TN... must be observable");
+        }
+        template<class T0>
+        void operator()(const Source&, T0) const {
+            static_assert(is_observable<T0>::value, "T0 must be observable");
+        }
+    };
+
+    template<class Source, class T0, class T1, class... TN>
+    struct select_zip<Source, rxu::types<T0, T1, TN...>, typename rxu::types_checked_from<typename T0::coordination_tag, typename T1::observable_tag, typename TN::observable_tag...>::type>
+        : public select_zip_cn<Source, T0, rxu::types<T1, TN...>>
+    {
+    };
+
+    template<class Source, class Selector, class... TN>
+    struct select_zip<Source, rxu::types<Selector, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::result_of<Selector(typename Source::value_type, typename TN::value_type...)>::type, typename TN::observable_tag...>::type>
+        : public std::true_type
+    {
+        typedef rxo::detail::zip<identity_one_worker, Selector, Source, TN...> operator_type;
+        typedef observable<typename operator_type::value_type, operator_type> observable_type;
+        template<class... ObservableN>
+        observable_type operator()(const Source& src, Selector sel, ObservableN... on) const {
+            return observable_type(operator_type(identity_current_thread(), std::move(sel), std::make_tuple(src, std::move(on)...)));
+        };
+    };
+
+    template<class Source, class T0, class... TN>
+    struct select_zip<Source, rxu::types<T0, TN...>, typename rxu::types_checked_from<typename T0::observable_tag, typename TN::observable_tag...>::type>
+        : public std::true_type
+    {
+        typedef rxo::detail::zip<identity_one_worker, rxu::detail::pack, Source, T0, TN...> operator_type;
+        typedef observable<typename operator_type::value_type, operator_type> observable_type;
+        template<class... ObservableN>
+        observable_type operator()(const Source& src, ObservableN... on) const {
+            return observable_type(operator_type(identity_current_thread(), rxu::pack(), std::make_tuple(src, std::move(on)...)));
+        };
+    };
+    
+    /// zip ->
+    /// bring by one item from all given observables and use the Selector to select a value to emit from the new observable that is returned.
+    ///
+    template<class... AN>
+    auto zip(AN... an) const
+        -> decltype(select_zip<this_type, rxu::types<decltype(an)...>>{}(*(this_type*)nullptr,  std::move(an)...)) {
+        return      select_zip<this_type, rxu::types<decltype(an)...>>{}(*this,                 std::move(an)...);
+    }
+
     /// group_by ->
     ///
     template<class KeySelector, class MarbleSelector, class BinaryPredicate>
