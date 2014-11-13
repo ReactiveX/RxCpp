@@ -66,6 +66,8 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/take.cpp
     ${TEST_DIR}/operators/take_until.cpp
     ${TEST_DIR}/operators/window.cpp
+    ${TEST_DIR}/operators/zip.1.cpp
+    ${TEST_DIR}/operators/zip.2.cpp
 )
 add_executable(rxcppv2_test ${TEST_SOURCES})
 TARGET_LINK_LIBRARIES(rxcppv2_test ${CMAKE_THREAD_LIBS_INIT})
