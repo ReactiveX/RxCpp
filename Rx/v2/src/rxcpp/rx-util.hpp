@@ -594,7 +594,7 @@ struct list_not_empty {
 
 struct extract_list_front {
     template<class T>
-#ifdef __clang__
+#if defined(__clang__) && defined(__linux__)
     [[clang::optnone]] 
 #endif
     auto operator()(std::list<T>& list)
