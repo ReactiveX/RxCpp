@@ -87,6 +87,21 @@ struct all_true<B0, BN...>
     static const bool value = B0 && all_true<BN...>::value;
 };
 
+struct all_values_true {
+    template<class... ValueN>
+    bool operator()(ValueN... vn);
+
+    template<class Value0>
+    bool operator()(Value0 v0) {
+        return v0;
+    }
+
+    template<class Value0, class... ValueN>
+    bool operator()(Value0 v0, ValueN... vn) {
+        return v0 && all_values_true()(vn...);
+    }
+};
+
 template<class... TN>
 struct types;
 
@@ -128,6 +143,18 @@ auto apply(std::tuple<ParamN...> p, values<int, IndexN...>, const F& f)
     return      f(std::forward<ParamN>(std::get<IndexN>(p))...);
 }
 
+template<class F_inner, class F_outer, class... ParamN, int... IndexN>
+auto apply_to_each(std::tuple<ParamN...>& p, values<int, IndexN...>, F_inner& f_inner, F_outer& f_outer)
+    -> decltype(f_outer(f_inner(std::get<IndexN>(p))...)) {
+    return      f_outer(f_inner(std::get<IndexN>(p))...);
+}
+
+template<class F_inner, class F_outer, class... ParamN, int... IndexN>
+auto apply_to_each(std::tuple<ParamN...>& p, values<int, IndexN...>, const F_inner& f_inner, const F_outer& f_outer)
+    -> decltype(f_outer(f_inner(std::forward<ParamN>(std::get<IndexN>(p)))...)) {
+    return      f_outer(f_inner(std::forward<ParamN>(std::get<IndexN>(p)))...);
+}
+
 }
 
 template<class F, class... ParamN>
@@ -139,6 +166,18 @@ template<class F, class... ParamN>
 auto apply(std::tuple<ParamN...> p, const F& f)
     -> decltype(detail::apply(std::move(p), typename values_from<int, sizeof...(ParamN)>::type(), f)) {
     return      detail::apply(std::move(p), typename values_from<int, sizeof...(ParamN)>::type(), f);
+}
+
+template<class F_inner, class F_outer, class... ParamN>
+auto apply_to_each(std::tuple<ParamN...>& p, F_inner& f_inner, F_outer& f_outer)
+    -> decltype(detail::apply_to_each(p, typename values_from<int, sizeof...(ParamN)>::type(), f_inner, f_outer)) {
+    return      detail::apply_to_each(p, typename values_from<int, sizeof...(ParamN)>::type(), f_inner, f_outer);
+}
+
+template<class F_inner, class F_outer, class... ParamN>
+auto apply_to_each(std::tuple<ParamN...>& p, const F_inner& f_inner, const F_outer& f_outer)
+    -> decltype(detail::apply_to_each(p, typename values_from<int, sizeof...(ParamN)>::type(), f_inner, f_outer)) {
+    return      detail::apply_to_each(p, typename values_from<int, sizeof...(ParamN)>::type(), f_inner, f_outer);
 }
 
 namespace detail {
@@ -545,6 +584,26 @@ inline auto surely(const std::tuple<T...>& tpl)
     -> decltype(apply(tpl, detail::surely())) {
     return      apply(tpl, detail::surely());
 }
+
+struct list_not_empty {
+    template<class T>
+    bool operator()(std::list<T>& list) const {
+        return !list.empty();
+    }
+};
+
+struct extract_list_front {
+    template<class T>
+#if defined(__clang__)
+    __attribute__((optnone))
+#endif
+    auto operator()(std::list<T>& list)
+        -> decltype(std::move(list.front())) {
+        auto val = std::move(list.front());
+        list.pop_front();
+        return std::move(val);
+    }
+};
 
 namespace detail {
 
