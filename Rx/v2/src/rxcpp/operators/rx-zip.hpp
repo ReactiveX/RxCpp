@@ -94,15 +94,10 @@ struct zip : public operator_base<typename zip_traits<Coordination, Selector, Ob
             [state](source_value_type st) {
                 auto& values = std::get<Index>(state->pending);
                 values.push_back(st);
-                auto lne = rxu::list_not_empty();
-                auto avt = rxu::all_values_true();
-                if (rxu::apply_to_each(state->pending, lne, avt)) {
-                //if (rxu::apply_to_each(state->pending, rxu::list_not_empty(), rxu::all_values_true())) {
+                if (rxu::apply_to_each(state->pending, rxu::list_not_empty(), rxu::all_values_true())) {
                     auto selectedResult = on_exception(
                         [&](){
-                            auto elf = rxu::extract_list_front();
-                            return rxu::apply_to_each(state->pending, elf, state->selector);
-                            //return rxu::apply_to_each(state->pending, rxu::extract_list_front(), state->selector);
+                            return rxu::apply_to_each(state->pending, rxu::extract_list_front(), state->selector);
                         },
                         state->out);
                     if (selectedResult.empty()) {

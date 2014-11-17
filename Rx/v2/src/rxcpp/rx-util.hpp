@@ -89,15 +89,15 @@ struct all_true<B0, BN...>
 
 struct all_values_true {
     template<class... ValueN>
-    bool operator()(ValueN... vn);
+    bool operator()(ValueN... vn) const;
 
     template<class Value0>
-    bool operator()(Value0 v0) {
+    bool operator()(Value0 v0) const {
         return v0;
     }
 
     template<class Value0, class... ValueN>
-    bool operator()(Value0 v0, ValueN... vn) {
+    bool operator()(Value0 v0, ValueN... vn) const {
         return v0 && all_values_true()(vn...);
     }
 };
@@ -145,14 +145,14 @@ auto apply(std::tuple<ParamN...> p, values<int, IndexN...>, const F& f)
 
 template<class F_inner, class F_outer, class... ParamN, int... IndexN>
 auto apply_to_each(std::tuple<ParamN...>& p, values<int, IndexN...>, F_inner& f_inner, F_outer& f_outer)
-    -> decltype(f_outer(f_inner(std::get<IndexN>(p))...)) {
-    return      f_outer(f_inner(std::get<IndexN>(p))...);
+    -> decltype(f_outer(std::move(f_inner(std::get<IndexN>(p)))...)) {
+    return      f_outer(std::move(f_inner(std::get<IndexN>(p)))...);
 }
 
 template<class F_inner, class F_outer, class... ParamN, int... IndexN>
 auto apply_to_each(std::tuple<ParamN...>& p, values<int, IndexN...>, const F_inner& f_inner, const F_outer& f_outer)
-    -> decltype(f_outer(f_inner(std::forward<ParamN>(std::get<IndexN>(p)))...)) {
-    return      f_outer(f_inner(std::forward<ParamN>(std::get<IndexN>(p)))...);
+    -> decltype(f_outer(std::move(f_inner(std::get<IndexN>(p)))...)) {
+    return      f_outer(std::move(f_inner(std::get<IndexN>(p)))...);
 }
 
 }
@@ -597,7 +597,7 @@ struct extract_list_front {
 #if defined(__clang__)
     __attribute__((optnone))
 #endif
-    auto operator()(std::list<T>& list)
+    auto operator()(std::list<T>& list) const
         -> decltype(std::move(list.front())) {
         auto val = std::move(list.front());
         list.pop_front();
