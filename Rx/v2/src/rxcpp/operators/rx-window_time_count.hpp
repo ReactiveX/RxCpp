@@ -51,7 +51,7 @@ struct window_with_time_or_count
         dest_type dest;
         coordinator_type coordinator;
         rxsc::worker worker;
-        mutable int number;
+        mutable int cursor;
         mutable int subj_id;
         mutable rxcpp::subjects::subject<T> subj;
 
@@ -60,7 +60,7 @@ struct window_with_time_or_count
             , dest(std::move(d))
             , coordinator(std::move(c))
             , worker(std::move(coordinator.get_worker()))
-            , number(0)
+            , cursor(0)
             , subj_id(0)
         {
             dest.on_next(subj.get_observable().as_dynamic());
@@ -76,7 +76,7 @@ struct window_with_time_or_count
             subj.get_subscriber().on_completed();
             subj = rxcpp::subjects::subject<T>();
             dest.on_next(subj.get_observable().as_dynamic());
-            number = 0;
+            cursor = 0;
             auto new_id = ++subj_id;
             auto produce_time = expected + period;
             worker.schedule(produce_time, [=](const rxsc::schedulable&){release_window(new_id, produce_time);});
@@ -84,7 +84,7 @@ struct window_with_time_or_count
 
         void on_next(T v) const {
             subj.get_subscriber().on_next(v);
-            if (++number == count) {
+            if (++cursor == count) {
                 release_window(subj_id, worker.now());
             }
         }
