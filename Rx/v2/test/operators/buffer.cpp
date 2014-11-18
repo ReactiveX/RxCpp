@@ -954,3 +954,174 @@ SCENARIO("buffer with time, same", "[buffer_with_time][operators]"){
         }
     }
 }
+
+SCENARIO("buffer with time or count, basic", "[buffer_with_time_or_count][operators]"){
+    GIVEN("1 hot observable of ints."){
+        auto sc = rxsc::make_test();
+        auto so = rx::synchronize_in_one_worker(sc);
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+        const rxsc::test::messages<std::vector<int>> v_on;
+
+        auto xs = sc.make_hot_observable({
+            on.next(205, 1),
+            on.next(210, 2),
+            on.next(240, 3),
+            on.next(280, 4),
+            on.next(320, 5),
+            on.next(350, 6),
+            on.next(370, 7),
+            on.next(420, 8),
+            on.next(470, 9),
+            on.completed(600)
+        });
+        WHEN("group ints on intervals"){
+            using namespace std::chrono;
+
+            auto res = w.start(
+                [&]() {
+                    return xs
+                        .buffer_with_time_or_count(milliseconds(70), 3, so)
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
+                }
+            );
+
+            THEN("the output contains groups of ints"){
+                auto required = rxu::to_vector({
+                    v_on.next(240, rxu::to_vector({ 1, 2, 3 })),
+                    v_on.next(310, rxu::to_vector({ 4 })),
+                    v_on.next(370, rxu::to_vector({ 5, 6, 7 })),
+                    v_on.next(440, rxu::to_vector({ 8 })),
+                    v_on.next(510, rxu::to_vector({ 9 })),
+                    v_on.next(580, std::vector<int>()),
+                    v_on.next(600, std::vector<int>()),
+                    v_on.completed(600)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription to the xs"){
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 600)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("buffer with time or count, error", "[buffer_with_time_or_count][operators]"){
+    GIVEN("1 hot observable of ints."){
+        auto sc = rxsc::make_test();
+        auto so = rx::synchronize_in_one_worker(sc);
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+        const rxsc::test::messages<std::vector<int>> v_on;
+
+        std::runtime_error ex("buffer_with_time on_error from source");
+
+        auto xs = sc.make_hot_observable({
+            on.next(205, 1),
+            on.next(210, 2),
+            on.next(240, 3),
+            on.next(280, 4),
+            on.next(320, 5),
+            on.next(350, 6),
+            on.next(370, 7),
+            on.next(420, 8),
+            on.next(470, 9),
+            on.error(600, ex)
+        });
+        WHEN("group ints on intervals"){
+            using namespace std::chrono;
+
+            auto res = w.start(
+                [&]() {
+                    return xs
+                        .buffer_with_time_or_count(milliseconds(70), 3, so)
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
+                }
+            );
+
+            THEN("the output contains groups of ints"){
+                auto required = rxu::to_vector({
+                    v_on.next(240, rxu::to_vector({ 1, 2, 3 })),
+                    v_on.next(310, rxu::to_vector({ 4 })),
+                    v_on.next(370, rxu::to_vector({ 5, 6, 7 })),
+                    v_on.next(440, rxu::to_vector({ 8 })),
+                    v_on.next(510, rxu::to_vector({ 9 })),
+                    v_on.next(580, std::vector<int>()),
+                    v_on.error(600, ex)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription to the xs"){
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 600)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("buffer with time or count, dispose", "[buffer_with_time_or_count][operators]"){
+    GIVEN("1 hot observable of ints."){
+        auto sc = rxsc::make_test();
+        auto so = rx::synchronize_in_one_worker(sc);
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+        const rxsc::test::messages<std::vector<int>> v_on;
+
+        auto xs = sc.make_hot_observable({
+            on.next(205, 1),
+            on.next(210, 2),
+            on.next(240, 3),
+            on.next(280, 4),
+            on.next(320, 5),
+            on.next(350, 6),
+            on.next(370, 7),
+            on.next(420, 8),
+            on.next(470, 9),
+            on.completed(600)
+        });
+        WHEN("group ints on intervals"){
+            using namespace std::chrono;
+
+            auto res = w.start(
+                [&]() {
+                    return xs
+                        .buffer_with_time_or_count(milliseconds(70), 3, so)
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
+                },
+                370
+            );
+
+            THEN("the output contains groups of ints"){
+                auto required = rxu::to_vector({
+                    v_on.next(240, rxu::to_vector({ 1, 2, 3 })),
+                    v_on.next(310, rxu::to_vector({ 4 })),
+                    v_on.next(370, rxu::to_vector({ 5, 6, 7 })),
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription to the xs"){
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 370)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
