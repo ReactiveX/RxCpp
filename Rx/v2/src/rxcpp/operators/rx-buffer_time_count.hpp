@@ -2,8 +2,8 @@
 
 #pragma once
 
-#if !defined(RXCPP_OPERATORS_RX_buffer_with_time_or_count_HPP)
-#define RXCPP_OPERATORS_RX_buffer_with_time_or_count_HPP
+#if !defined(RXCPP_OPERATORS_RX_BUFFER_WITH_TIME_OR_COUNT_HPP)
+#define RXCPP_OPERATORS_RX_BUFFER_WITH_TIME_OR_COUNT_HPP
 
 #include "../rx-includes.hpp"
 
@@ -54,7 +54,6 @@ struct buffer_with_time_or_count
         dest_type dest;
         coordinator_type coordinator;
         rxsc::worker worker;
-        mutable int number;
         mutable int chunk_id;
         mutable value_type chunk;
 
@@ -63,7 +62,6 @@ struct buffer_with_time_or_count
             , dest(std::move(d))
             , coordinator(std::move(c))
             , worker(std::move(coordinator.get_worker()))
-            , number(0)
             , chunk_id(0)
         {
             auto new_id = chunk_id;
@@ -77,7 +75,6 @@ struct buffer_with_time_or_count
 
             dest.on_next(chunk);
             chunk.resize(0);
-            number = 0;
             auto new_id = ++chunk_id;
             auto produce_time = expected + period;
             worker.schedule(produce_time, [=](const rxsc::schedulable&){produce_buffer(new_id, produce_time);});
@@ -85,7 +82,7 @@ struct buffer_with_time_or_count
 
         void on_next(T v) const {
             chunk.push_back(v);
-            if (++number == count) {
+            if (int(chunk.size()) == count) {
                 produce_buffer(chunk_id, worker.now());
             }
         }
@@ -94,7 +91,6 @@ struct buffer_with_time_or_count
         }
         void on_completed() const {
             dest.on_next(chunk);
-            chunk_id += 1;
             dest.on_completed();
         }
 
