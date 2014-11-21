@@ -41,62 +41,78 @@ struct window_with_time_or_count
     }
 
     template<class Subscriber>
-    struct window_with_time_or_count_observer : public window_with_time_or_count_values, public observer_base<observable<T>>
+    struct window_with_time_or_count_observer : public observer_base<observable<T>>
     {
         typedef window_with_time_or_count_observer<Subscriber> this_type;
         typedef observer_base<observable<T>> base_type;
         typedef typename base_type::value_type value_type;
         typedef typename std::decay<Subscriber>::type dest_type;
         typedef observer<T, this_type> observer_type;
-        dest_type dest;
-        coordinator_type coordinator;
-        rxsc::worker worker;
-        mutable int cursor;
-        mutable int subj_id;
-        mutable rxcpp::subjects::subject<T> subj;
+
+        struct window_with_time_or_count_subscriber_values : public window_with_time_or_count_values
+        {
+            window_with_time_or_count_subscriber_values(dest_type d, window_with_time_or_count_values v, coordinator_type c)
+                : window_with_time_or_count_values(std::move(v))
+                , dest(std::move(d))
+                , coordinator(std::move(c))
+                , worker(std::move(coordinator.get_worker()))
+                , cursor(0)
+                , subj_id(0)
+            {
+            }
+            dest_type dest;
+            coordinator_type coordinator;
+            rxsc::worker worker;
+            mutable int cursor;
+            mutable int subj_id;
+            mutable rxcpp::subjects::subject<T> subj;
+        };
+        typedef std::shared_ptr<window_with_time_or_count_subscriber_values> state_type;
+        state_type state;
 
         window_with_time_or_count_observer(dest_type d, window_with_time_or_count_values v, coordinator_type c)
-            : window_with_time_or_count_values(v)
-            , dest(std::move(d))
-            , coordinator(std::move(c))
-            , worker(std::move(coordinator.get_worker()))
-            , cursor(0)
-            , subj_id(0)
+            : state(std::make_shared<window_with_time_or_count_subscriber_values>(window_with_time_or_count_subscriber_values(std::move(d), std::move(v), std::move(c))))
         {
-            dest.on_next(subj.get_observable().as_dynamic());
-            auto new_id = subj_id;
-            auto produce_time = worker.now() + period;
-            worker.schedule(produce_time, [=](const rxsc::schedulable&){release_window(new_id, produce_time);});
+            state->dest.on_next(state->subj.get_observable().as_dynamic());
+            auto new_id = state->subj_id;
+            auto produce_time = state->worker.now() + state->period;
+            auto localState = state;
+            state->worker.schedule(produce_time, [new_id, produce_time, localState](const rxsc::schedulable&){
+                release_window(new_id, produce_time, localState);
+            });
         }
 
-        void release_window(int id, rxsc::scheduler::clock_type::time_point expected) const {
-            if (id != subj_id)
+        static void release_window(int id, rxsc::scheduler::clock_type::time_point expected, state_type state) {
+            if (id != state->subj_id)
                 return;
 
-            subj.get_subscriber().on_completed();
-            subj = rxcpp::subjects::subject<T>();
-            dest.on_next(subj.get_observable().as_dynamic());
-            cursor = 0;
-            auto new_id = ++subj_id;
-            auto produce_time = expected + period;
-            worker.schedule(produce_time, [=](const rxsc::schedulable&){release_window(new_id, produce_time);});
+            state->subj.get_subscriber().on_completed();
+            state->subj = rxcpp::subjects::subject<T>();
+            state->dest.on_next(state->subj.get_observable().as_dynamic());
+            state->cursor = 0;
+            auto new_id = ++state->subj_id;
+            auto produce_time = expected + state->period;
+            auto localState = state;
+            state->worker.schedule(produce_time, [new_id, produce_time, localState](const rxsc::schedulable&){
+                release_window(new_id, produce_time, localState);
+            });
         }
 
         void on_next(T v) const {
-            subj.get_subscriber().on_next(v);
-            if (++cursor == count) {
-                release_window(subj_id, worker.now());
+            state->subj.get_subscriber().on_next(v);
+            if (++state->cursor == state->count) {
+                release_window(state->subj_id, state->worker.now(), state);
             }
         }
 
         void on_error(std::exception_ptr e) const {
-            subj.get_subscriber().on_error(e);
-            dest.on_error(e);
+            state->subj.get_subscriber().on_error(e);
+            state->dest.on_error(e);
         }
 
         void on_completed() const {
-            subj.get_subscriber().on_completed();
-            dest.on_completed();
+            state->subj.get_subscriber().on_completed();
+            state->dest.on_completed();
         }
 
         static subscriber<T, observer_type> make(dest_type d, window_with_time_or_count_values v) {
