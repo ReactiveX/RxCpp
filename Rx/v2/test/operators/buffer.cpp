@@ -1125,3 +1125,57 @@ SCENARIO("buffer with time or count, dispose", "[buffer_with_time_or_count][oper
         }
     }
 }
+
+SCENARIO("buffer with time or count, only time triggered", "[buffer_with_time_or_count][operators]"){
+    GIVEN("1 hot observable of ints."){
+        auto sc = rxsc::make_test();
+        auto so = rx::synchronize_in_one_worker(sc);
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+        const rxsc::test::messages<std::vector<int>> v_on;
+
+        auto xs = sc.make_hot_observable({
+            on.next(205, 1),
+            on.next(305, 2),
+            on.next(505, 3),
+            on.next(605, 4),
+            on.next(610, 5),
+            on.completed(850)
+        });
+        WHEN("group ints on intervals"){
+            using namespace std::chrono;
+
+            auto res = w.start(
+                [&]() {
+                    return xs
+                        .buffer_with_time_or_count(milliseconds(100), 3, so)
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
+                }
+            );
+
+            THEN("the output contains groups of ints"){
+                auto required = rxu::to_vector({
+                    v_on.next(300, rxu::to_vector({ 1 })),
+                    v_on.next(400, rxu::to_vector({ 2 })),
+                    v_on.next(500, std::vector<int>()),
+                    v_on.next(600, rxu::to_vector({ 3 })),
+                    v_on.next(700, rxu::to_vector({ 4, 5 })),
+                    v_on.next(800, std::vector<int>()),
+                    v_on.next(850, std::vector<int>()),
+                    v_on.completed(850)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription to the xs"){
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 850)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}

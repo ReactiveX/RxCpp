@@ -44,54 +44,69 @@ struct buffer_with_time_or_count
     }
 
     template<class Subscriber>
-    struct buffer_with_time_or_count_observer : public buffer_with_time_or_count_values
+    struct buffer_with_time_or_count_observer
     {
         typedef buffer_with_time_or_count_observer<Subscriber> this_type;
         typedef std::vector<T> value_type;
         typedef typename std::decay<Subscriber>::type dest_type;
         typedef observer<value_type, this_type> observer_type;
 
-        dest_type dest;
-        coordinator_type coordinator;
-        rxsc::worker worker;
-        mutable int chunk_id;
-        mutable value_type chunk;
+        struct buffer_with_time_or_count_subscriber_values : public buffer_with_time_or_count_values
+        {
+            buffer_with_time_or_count_subscriber_values(dest_type d, buffer_with_time_or_count_values v, coordinator_type c)
+                : buffer_with_time_or_count_values(std::move(v))
+                , dest(std::move(d))
+                , coordinator(std::move(c))
+                , worker(std::move(coordinator.get_worker()))
+                , chunk_id(0)
+            {
+            }
+            dest_type dest;
+            coordinator_type coordinator;
+            rxsc::worker worker;
+            mutable int chunk_id;
+            mutable value_type chunk;
+        };
+        typedef std::shared_ptr<buffer_with_time_or_count_subscriber_values> state_type;
+        state_type state;
 
         buffer_with_time_or_count_observer(dest_type d, buffer_with_time_or_count_values v, coordinator_type c)
-            : buffer_with_time_or_count_values(v)
-            , dest(std::move(d))
-            , coordinator(std::move(c))
-            , worker(std::move(coordinator.get_worker()))
-            , chunk_id(0)
+            : state(std::make_shared<buffer_with_time_or_count_subscriber_values>(buffer_with_time_or_count_subscriber_values(std::move(d), std::move(v), std::move(c))))
         {
-            auto new_id = chunk_id;
-            auto produce_time = worker.now() + period;
-            worker.schedule(produce_time, [=](const rxsc::schedulable&){produce_buffer(new_id, produce_time);});
+            auto new_id = state->chunk_id;
+            auto produce_time = state->worker.now() + state->period;
+            auto localState = state;
+            state->worker.schedule(produce_time, [new_id, produce_time, localState](const rxsc::schedulable&){
+                produce_buffer(new_id, produce_time, localState);
+            });
         }
 
-        void produce_buffer(int id, rxsc::scheduler::clock_type::time_point expected) const {
-            if (id != chunk_id)
+        static void produce_buffer(int id, rxsc::scheduler::clock_type::time_point expected, state_type state) {
+            if (id != state->chunk_id)
                 return;
 
-            dest.on_next(chunk);
-            chunk.resize(0);
-            auto new_id = ++chunk_id;
-            auto produce_time = expected + period;
-            worker.schedule(produce_time, [=](const rxsc::schedulable&){produce_buffer(new_id, produce_time);});
+            state->dest.on_next(state->chunk);
+            state->chunk.resize(0);
+            auto new_id = ++state->chunk_id;
+            auto produce_time = expected + state->period;
+            auto localState = state;
+            state->worker.schedule(produce_time, [new_id, produce_time, localState](const rxsc::schedulable&){
+                produce_buffer(new_id, produce_time, localState);
+            });
         }
 
         void on_next(T v) const {
-            chunk.push_back(v);
-            if (int(chunk.size()) == count) {
-                produce_buffer(chunk_id, worker.now());
+            state->chunk.push_back(v);
+            if (int(state->chunk.size()) == state->count) {
+                produce_buffer(state->chunk_id, state->worker.now(), state);
             }
         }
         void on_error(std::exception_ptr e) const {
-            dest.on_error(e);
+            state->dest.on_error(e);
         }
         void on_completed() const {
-            dest.on_next(chunk);
-            dest.on_completed();
+            state->dest.on_next(state->chunk);
+            state->dest.on_completed();
         }
 
         static subscriber<T, observer<T, this_type>> make(dest_type d, buffer_with_time_or_count_values v) {
