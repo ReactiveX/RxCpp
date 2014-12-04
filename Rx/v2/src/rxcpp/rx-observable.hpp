@@ -558,6 +558,24 @@ public:
         return                    lift<observable<T>>(rxo::detail::window_with_time<T, Duration, identity_one_worker>(period, period, identity_current_thread()));
     }
 
+    /// window_with_time_or_count ->
+    /// produce observables every skip time interval and collect items from this observable for period of time into each produced observable.
+    ///
+    template<class Duration, class Coordination>
+    auto window_with_time_or_count(Duration period, int count, Coordination coordination) const
+        -> decltype(EXPLICIT_THIS lift<observable<T>>(rxo::detail::window_with_time_or_count<T, Duration, Coordination>(period, count, coordination))) {
+        return                    lift<observable<T>>(rxo::detail::window_with_time_or_count<T, Duration, Coordination>(period, count, coordination));
+    }
+
+    /// window_with_time_or_count ->
+    /// produce observables every skip time interval and collect items from this observable for period of time into each produced observable.
+    ///
+    template<class Duration>
+    auto window_with_time_or_count(Duration period, int count) const
+        -> decltype(EXPLICIT_THIS lift<observable<T>>(rxo::detail::window_with_time_or_count<T, Duration, identity_one_worker>(period, count, identity_current_thread()))) {
+        return                    lift<observable<T>>(rxo::detail::window_with_time_or_count<T, Duration, identity_one_worker>(period, count, identity_current_thread()));
+    }
+
     /// buffer ->
     /// collect count items from this observable and produce a vector of them to emit from the new observable that is returned.
     ///
@@ -607,6 +625,23 @@ public:
     auto buffer_with_time(rxsc::scheduler::clock_type::duration period) const
         -> decltype(EXPLICIT_THIS lift_if<std::vector<T>>(rxo::detail::buffer_with_time<T, rxsc::scheduler::clock_type::duration, identity_one_worker>(period, period, identity_current_thread()))) {
         return                    lift_if<std::vector<T>>(rxo::detail::buffer_with_time<T, rxsc::scheduler::clock_type::duration, identity_one_worker>(period, period, identity_current_thread()));
+    }
+
+    /// buffer_with_time_or_count ->
+    /// start a new vector every skip time interval and collect items into it from this observable for period of time.
+    ///
+    template<class Coordination>
+    auto buffer_with_time_or_count(rxsc::scheduler::clock_type::duration period, int count, Coordination coordination) const
+        -> decltype(EXPLICIT_THIS lift_if<std::vector<T>>(rxo::detail::buffer_with_time_or_count<T, rxsc::scheduler::clock_type::duration, Coordination>(period, count, coordination))) {
+        return                    lift_if<std::vector<T>>(rxo::detail::buffer_with_time_or_count<T, rxsc::scheduler::clock_type::duration, Coordination>(period, count, coordination));
+    }
+
+    /// buffer_with_time_or_count ->
+    /// start a new vector every skip time interval and collect items into it from this observable for period of time.
+    ///
+    auto buffer_with_time_or_count(rxsc::scheduler::clock_type::duration period, int count) const
+        -> decltype(EXPLICIT_THIS lift_if<std::vector<T>>(rxo::detail::buffer_with_time_or_count<T, rxsc::scheduler::clock_type::duration, identity_one_worker>(period, count, identity_current_thread()))) {
+        return                    lift_if<std::vector<T>>(rxo::detail::buffer_with_time_or_count<T, rxsc::scheduler::clock_type::duration, identity_one_worker>(period, count, identity_current_thread()));
     }
 
     template<class Coordination>
