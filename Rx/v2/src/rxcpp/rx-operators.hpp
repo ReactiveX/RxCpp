@@ -36,6 +36,7 @@ namespace rxo=operators;
 
 #include "operators/rx-buffer_count.hpp"
 #include "operators/rx-buffer_time.hpp"
+#include "operators/rx-buffer_time_count.hpp"
 #include "operators/rx-combine_latest.hpp"
 #include "operators/rx-concat.hpp"
 #include "operators/rx-concat_map.hpp"
@@ -66,5 +67,6 @@ namespace rxo=operators;
 #include "operators/rx-take_until.hpp"
 #include "operators/rx-window.hpp"
 #include "operators/rx-window_time.hpp"
+#include "operators/rx-window_time_count.hpp"
 #include "operators/rx-zip.hpp"
 #endif
