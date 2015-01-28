@@ -1013,7 +1013,7 @@ public:
             return observable_type(operator_type(identity_current_thread(), rxu::pack(), std::make_tuple(src, std::move(on)...)));
         };
     };
-    
+
     /// zip ->
     /// bring by one item from all given observables and use the Selector to select a value to emit from the new observable that is returned.
     ///
@@ -1311,6 +1311,13 @@ public:
         return      rxo::start_with(*this, std::move(v0), std::move(vn)...);
     }
 
+    /// pairwise ->
+    /// take values pairwise from the observable
+    ///
+    auto pairwise() const
+        -> decltype(EXPLICIT_THIS lift<typename rxo::detail::pairwise<T>::value_type>(rxo::detail::pairwise<T>())) {
+        return                    lift<typename rxo::detail::pairwise<T>::value_type>(rxo::detail::pairwise<T>());
+    }
 };
 
 template<class T, class SourceOperator>
