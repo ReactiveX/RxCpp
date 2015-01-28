@@ -118,6 +118,7 @@
 #include <condition_variable>
 #include <initializer_list>
 #include <typeinfo>
+#include <tuple>
 
 #include "rx-util.hpp"
 #include "rx-predef.hpp"
