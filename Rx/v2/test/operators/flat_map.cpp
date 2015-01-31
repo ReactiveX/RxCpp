@@ -2,6 +2,7 @@
 namespace rx=rxcpp;
 namespace rxu=rxcpp::util;
 namespace rxs=rxcpp::sources;
+namespace rxo=rxcpp::operators;
 namespace rxsc=rxcpp::schedulers;
 
 #include "rxcpp/rx-test.hpp"
@@ -269,6 +270,66 @@ SCENARIO("flat_map completes", "[flat_map][map][operators]"){
                                 return s;})
                         // forget type to workaround lambda deduction bug on msvc 2013
                         .as_dynamic();
+                }
+            );
+
+            THEN("the output contains strings repeated for each int"){
+                auto required = rxu::to_vector({
+                    s_on.next(350, "foo"),
+                    s_on.next(400, "bar"),
+                    s_on.next(450, "baz"),
+                    s_on.next(450, "foo"),
+                    s_on.next(500, "qux"),
+                    s_on.next(500, "bar"),
+                    s_on.next(550, "baz"),
+                    s_on.next(550, "foo"),
+                    s_on.next(600, "qux"),
+                    s_on.next(600, "bar"),
+                    s_on.next(650, "baz"),
+                    s_on.next(650, "foo"),
+                    s_on.next(700, "qux"),
+                    s_on.next(700, "bar"),
+                    s_on.next(750, "baz"),
+                    s_on.next(800, "qux"),
+                    s_on.completed(850)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription to the ints"){
+                auto required = rxu::to_vector({
+                    i_on.subscribe(200, 700)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there were four subscription and unsubscription to the strings"){
+                auto required = rxu::to_vector({
+                    s_on.subscribe(300, 550),
+                    s_on.subscribe(400, 650),
+                    s_on.subscribe(500, 750),
+                    s_on.subscribe(600, 850)
+                });
+                auto actual = ys.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+
+        WHEN("streamed, each int is mapped to the strings"){
+
+            auto res = w.start(
+                [&]() {
+                    return xs >>
+                        rxo::flat_map(
+                            [&](int){
+                                return ys;},
+                            [](int, std::string s){
+                                return s;},
+                            rx::identity_current_thread()) >>
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        rxo::as_dynamic();
                 }
             );
 
