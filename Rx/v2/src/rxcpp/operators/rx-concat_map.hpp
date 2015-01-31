@@ -250,8 +250,8 @@ class concat_map_factory
     coordination_type coordination;
 public:
     concat_map_factory(collection_selector_type s, result_selector_type rs, coordination_type sf)
-        : selectorCollection(std::move(rs))
-        , selectorResult(std::move(s))
+        : selectorCollection(std::move(s))
+        , selectorResult(std::move(rs))
         , coordination(std::move(sf))
     {
     }
