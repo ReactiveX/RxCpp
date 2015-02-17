@@ -51,7 +51,7 @@ class dynamic_connectable_observable
 
     template<class SO>
     void construct(SO&& source, rxs::tag_source&&) {
-        auto so = std::make_shared<typename std::decay<SO>::type>(std::forward<SO>(source));
+        auto so = std::make_shared<rxu::decay_t<SO>>(std::forward<SO>(source));
         state->on_connect = [so](composite_subscription cs) mutable {
             so->on_connect(std::move(cs));
         };
@@ -102,7 +102,7 @@ class connectable_observable
 {
     typedef connectable_observable<T, SourceOperator> this_type;
     typedef observable<T, SourceOperator> base_type;
-    typedef typename std::decay<SourceOperator>::type source_operator_type;
+    typedef rxu::decay_t<SourceOperator> source_operator_type;
 
     static_assert(detail::has_on_connect<source_operator_type>::value, "inner must have on_connect method void(composite_subscription)");
 

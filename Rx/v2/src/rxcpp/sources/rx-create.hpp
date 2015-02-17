@@ -18,7 +18,7 @@ struct create : public source_base<T>
 {
     typedef create<T, OnSubscribe> this_type;
 
-    typedef typename std::decay<OnSubscribe>::type on_subscribe_type;
+    typedef rxu::decay_t<OnSubscribe> on_subscribe_type;
 
     on_subscribe_type on_subscribe_function;
 

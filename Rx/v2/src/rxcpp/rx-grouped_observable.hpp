@@ -21,7 +21,7 @@ struct has_on_get_key_for
     static not_void check(...);
 
     typedef decltype(check<Source>(0)) detail_result;
-    static const bool value = std::is_same<detail_result, typename std::decay<K>::type>::value;
+    static const bool value = std::is_same<detail_result, rxu::decay_t<K>>::value;
 };
 
 }
@@ -31,7 +31,7 @@ class dynamic_grouped_observable
     : public dynamic_observable<T>
 {
 public:
-    typedef typename std::decay<K>::type key_type;
+    typedef rxu::decay_t<K> key_type;
     typedef tag_dynamic_grouped_observable dynamic_observable_tag;
 
 private:
@@ -59,7 +59,7 @@ private:
 
     template<class SO>
     void construct(SO&& source, const rxs::tag_source&) {
-        auto so = std::make_shared<typename std::decay<SO>::type>(std::forward<SO>(source));
+        auto so = std::make_shared<rxu::decay_t<SO>>(std::forward<SO>(source));
         state->on_get_key = [so]() mutable {
             return so->on_get_key();
         };
@@ -117,12 +117,12 @@ class grouped_observable
 {
     typedef grouped_observable<K, T, SourceOperator> this_type;
     typedef observable<T, SourceOperator> base_type;
-    typedef typename std::decay<SourceOperator>::type source_operator_type;
+    typedef rxu::decay_t<SourceOperator> source_operator_type;
 
     static_assert(detail::has_on_get_key_for<K, source_operator_type>::value, "inner must have on_get_key method key_type()");
 
 public:
-    typedef typename std::decay<K>::type key_type;
+    typedef rxu::decay_t<K> key_type;
     typedef tag_grouped_observable observable_tag;
 
     grouped_observable()

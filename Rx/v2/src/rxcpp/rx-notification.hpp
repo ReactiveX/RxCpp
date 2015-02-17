@@ -224,7 +224,7 @@ private:
         template<typename Exception>
         type operator()(Exception&& e) const {
             return make_on_error(typename std::conditional<
-                std::is_same<typename std::decay<Exception>::type, std::exception_ptr>::value,
+                std::is_same<rxu::decay_t<Exception>, std::exception_ptr>::value,
                     exception_ptr_tag, exception_tag>::type(),
                 std::forward<Exception>(e));
         }
