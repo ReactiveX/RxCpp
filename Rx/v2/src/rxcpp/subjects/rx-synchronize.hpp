@@ -223,12 +223,12 @@ class synchronize_in_one_worker : public coordination_base
         template<class Subscriber>
         auto out(Subscriber s) const
             -> Subscriber {
-            return std::move(s);
+            return s;
         }
         template<class F>
         auto act(F f) const
             -> F {
-            return std::move(f);
+            return f;
         }
     };
 

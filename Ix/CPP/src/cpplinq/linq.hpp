@@ -526,7 +526,7 @@ template <class TContainer>
 linq_driver<iter_cursor<typename util::container_traits<TContainer>::iterator>> from(TContainer& c)
 { 
     auto cur = iter_cursor<typename util::container_traits<TContainer>::iterator>(begin(c), end(c));
-    return std::move(cur);
+    return cur;
 }
 template <class T>
 const linq_driver<T>& from(const linq_driver<T>& c) 
