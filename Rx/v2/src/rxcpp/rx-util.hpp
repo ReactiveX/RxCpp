@@ -40,6 +40,9 @@ namespace rxcpp {
 
 namespace util {
 
+template<class T> using value_type_t = typename T::value_type;
+template<class T> using decay_t = typename std::decay<T>::type;
+
 template<class T, size_t size>
 std::vector<T> to_vector(const T (&arr) [size]) {
     return std::vector<T>(std::begin(arr), std::end(arr));
@@ -125,8 +128,8 @@ template<class T, class C = types_checked>
 struct value_type_from : public std::false_type {typedef types_checked type;};
 
 template<class T>
-struct value_type_from<T, typename types_checked_from<typename T::value_type>::type>
-    : public std::true_type {typedef typename T::value_type type;};
+struct value_type_from<T, typename types_checked_from<value_type_t<T>>::type>
+    : public std::true_type {typedef value_type_t<T> type;};
 
 
 
@@ -281,7 +284,7 @@ struct defer_value_type
     struct tag_not_valid {typedef void type; static const bool value = false;};
     typedef Deferred<typename resolve_type<AN>::type...> resolved_type;
     template<class... CN>
-    static auto check(int) -> tag_valid<typename resolved_type::value_type>;
+    static auto check(int) -> tag_valid<value_type_t<resolved_type>>;
     template<class... CN>
     static tag_not_valid check(...);
 

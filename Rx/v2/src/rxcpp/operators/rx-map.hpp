@@ -17,8 +17,8 @@ namespace detail {
 template<class T, class Selector>
 struct map
 {
-    typedef typename std::decay<T>::type source_value_type;
-    typedef typename std::decay<Selector>::type select_type;
+    typedef rxu::decay_t<T> source_value_type;
+    typedef rxu::decay_t<Selector> select_type;
     typedef decltype((*(select_type*)nullptr)(*(source_value_type*)nullptr)) value_type;
     select_type selector;
 
@@ -32,7 +32,7 @@ struct map
     {
         typedef map_observer<Subscriber> this_type;
         typedef decltype((*(select_type*)nullptr)(*(source_value_type*)nullptr)) value_type;
-        typedef typename std::decay<Subscriber>::type dest_type;
+        typedef rxu::decay_t<Subscriber> dest_type;
         typedef observer<T, this_type> observer_type;
         dest_type dest;
         select_type selector;
@@ -75,14 +75,14 @@ struct map
 template<class Selector>
 class map_factory
 {
-    typedef typename std::decay<Selector>::type select_type;
+    typedef rxu::decay_t<Selector> select_type;
     select_type selector;
 public:
     map_factory(select_type s) : selector(std::move(s)) {}
     template<class Observable>
     auto operator()(Observable&& source)
-        -> decltype(source.template lift<typename map<typename std::decay<Observable>::type::value_type, select_type>::value_type>(map<typename std::decay<Observable>::type::value_type, select_type>(selector))) {
-        return      source.template lift<typename map<typename std::decay<Observable>::type::value_type, select_type>::value_type>(map<typename std::decay<Observable>::type::value_type, select_type>(selector));
+        -> decltype(source.template lift<rxu::value_type_t<map<rxu::value_type_t<rxu::decay_t<Observable>>, select_type>>>(map<rxu::value_type_t<rxu::decay_t<Observable>>, select_type>(selector))) {
+        return      source.template lift<rxu::value_type_t<map<rxu::value_type_t<rxu::decay_t<Observable>>, select_type>>>(map<rxu::value_type_t<rxu::decay_t<Observable>>, select_type>(selector));
     }
 };
 

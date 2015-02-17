@@ -16,13 +16,13 @@ namespace detail {
 template<class ObservableFactory>
 struct defer_traits
 {
-    typedef typename std::decay<ObservableFactory>::type observable_factory_type;
+    typedef rxu::decay_t<ObservableFactory> observable_factory_type;
     typedef decltype((*(observable_factory_type*)nullptr)()) collection_type;
     typedef typename collection_type::value_type value_type;
 };
 
 template<class ObservableFactory>
-struct defer : public source_base<typename defer_traits<ObservableFactory>::value_type>
+struct defer : public source_base<rxu::value_type_t<defer_traits<ObservableFactory>>>
 {
     typedef defer<ObservableFactory> this_type;
     typedef defer_traits<ObservableFactory> traits;
@@ -54,9 +54,9 @@ struct defer : public source_base<typename defer_traits<ObservableFactory>::valu
 
 template<class ObservableFactory>
 auto defer(ObservableFactory of)
-    ->      observable<typename detail::defer_traits<ObservableFactory>::value_type,    detail::defer<ObservableFactory>> {
-    return  observable<typename detail::defer_traits<ObservableFactory>::value_type,    detail::defer<ObservableFactory>>(
-                                                                                        detail::defer<ObservableFactory>(std::move(of)));
+    ->      observable<rxu::value_type_t<detail::defer_traits<ObservableFactory>>,    detail::defer<ObservableFactory>> {
+    return  observable<rxu::value_type_t<detail::defer_traits<ObservableFactory>>,    detail::defer<ObservableFactory>>(
+                                                                                      detail::defer<ObservableFactory>(std::move(of)));
 }
 
 }
