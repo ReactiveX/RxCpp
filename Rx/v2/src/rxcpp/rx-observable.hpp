@@ -867,7 +867,7 @@ public:
         template<class... ObservableN>
         observable_type operator()(const Source& src, Coordination cn, ObservableN... on) const {
             return observable_type(operator_type(std::move(cn), rxu::pack(), std::make_tuple(src, std::move(on)...)));
-        };
+        }
     };
 
     template<class Source, class Coordination, class T0, class... TN>
@@ -879,7 +879,7 @@ public:
         template<class... ObservableN>
         observable_type operator()(const Source& src, Coordination cn, T0 t0, ObservableN... on) const {
             return observable_type(operator_type(std::move(cn), std::move(t0), std::make_tuple(src, std::move(on)...)));
-        };
+        }
     };
 
     template<class Source, class TS, class C = rxu::types_checked>
@@ -915,7 +915,7 @@ public:
         template<class... ObservableN>
         observable_type operator()(const Source& src, Selector sel, ObservableN... on) const {
             return observable_type(operator_type(identity_current_thread(), std::move(sel), std::make_tuple(src, std::move(on)...)));
-        };
+        }
     };
 
     template<class Source, class T0, class... TN>
@@ -927,7 +927,7 @@ public:
         template<class... ObservableN>
         observable_type operator()(const Source& src, ObservableN... on) const {
             return observable_type(operator_type(identity_current_thread(), rxu::pack(), std::make_tuple(src, std::move(on)...)));
-        };
+        }
     };
 
     /// combine_latest ->
@@ -951,7 +951,7 @@ public:
         template<class... ObservableN>
         observable_type operator()(const Source& src, Coordination cn, ObservableN... on) const {
             return observable_type(operator_type(std::move(cn), rxu::pack(), std::make_tuple(src, std::move(on)...)));
-        };
+        }
     };
 
     template<class Source, class Coordination, class T0, class... TN>
@@ -963,7 +963,7 @@ public:
         template<class... ObservableN>
         observable_type operator()(const Source& src, Coordination cn, T0 t0, ObservableN... on) const {
             return observable_type(operator_type(std::move(cn), std::move(t0), std::make_tuple(src, std::move(on)...)));
-        };
+        }
     };
 
     template<class Source, class TS, class C = rxu::types_checked>
@@ -999,7 +999,7 @@ public:
         template<class... ObservableN>
         observable_type operator()(const Source& src, Selector sel, ObservableN... on) const {
             return observable_type(operator_type(identity_current_thread(), std::move(sel), std::make_tuple(src, std::move(on)...)));
-        };
+        }
     };
 
     template<class Source, class T0, class... TN>
@@ -1011,7 +1011,7 @@ public:
         template<class... ObservableN>
         observable_type operator()(const Source& src, ObservableN... on) const {
             return observable_type(operator_type(identity_current_thread(), rxu::pack(), std::make_tuple(src, std::move(on)...)));
-        };
+        }
     };
 
     /// zip ->
