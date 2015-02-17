@@ -593,24 +593,11 @@ struct list_not_empty {
 };
 
 struct extract_list_front {
-    // Clang optimisation loses moved list.front() value after list.pop_front(), so optimization must be switched off.
     template<class T>
-#if defined(__clang__) && defined(__linux__)
-    // Clang on Linux has an attribute to forbid optimization
-    __attribute__((optnone))
-#endif
-    auto operator()(std::list<T>& list) const
-        -> decltype(std::move(list.front())) {
-#if defined(__clang__) && !defined(__linux__)
-        // Clang on OSX doesn't support the attribute
-        volatile auto val = std::move(list.front());
-        list.pop_front();
-        return std::move(const_cast<T&>(val));
-#else
+    T operator()(std::list<T>& list) const {
         auto val = std::move(list.front());
         list.pop_front();
-        return std::move(val);
-#endif
+        return val;
     }
 };
 
