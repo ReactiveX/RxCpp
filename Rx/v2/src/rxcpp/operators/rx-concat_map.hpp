@@ -185,7 +185,7 @@ struct concat_map
         auto coordinator = initial.coordination.create_coordinator(scbr.get_subscription());
 
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<concat_map_state_type>(new concat_map_state_type(initial, std::move(coordinator), std::move(scbr)));
+        auto state = std::make_shared<concat_map_state_type>(initial, std::move(coordinator), std::move(scbr));
 
         state->sourceLifetime = composite_subscription();
 

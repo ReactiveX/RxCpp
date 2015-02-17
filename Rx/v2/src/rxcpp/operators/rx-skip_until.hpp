@@ -77,7 +77,7 @@ struct skip_until : public operator_base<T>
         auto coordinator = initial.coordination.create_coordinator();
 
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<state_type>(new state_type(initial, std::move(coordinator), std::move(s)));
+        auto state = std::make_shared<state_type>(initial, std::move(coordinator), std::move(s));
 
         auto trigger = on_exception(
             [&](){return state->coordinator.in(state->trigger);},

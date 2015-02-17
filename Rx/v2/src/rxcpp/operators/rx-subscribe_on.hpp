@@ -70,7 +70,7 @@ struct subscribe_on : public operator_base<T>
         auto controller = coordinator.get_worker();
 
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<subscribe_on_state_type>(new subscribe_on_state_type(initial, std::move(coordinator), std::move(s)));
+        auto state = std::make_shared<subscribe_on_state_type>(initial, std::move(coordinator), std::move(s));
 
         auto disposer = [=](const rxsc::schedulable&){
             state->source_lifetime.unsubscribe();

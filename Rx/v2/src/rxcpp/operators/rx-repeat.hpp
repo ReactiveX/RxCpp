@@ -84,7 +84,7 @@ struct repeat : public operator_base<T>
         };
 
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<state_type>(new state_type(initial, s));
+        auto state = std::make_shared<state_type>(initial, s);
 
         // start the first iteration
         state->do_subscribe();

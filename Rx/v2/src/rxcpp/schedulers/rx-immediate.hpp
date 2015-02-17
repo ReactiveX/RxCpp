@@ -56,7 +56,7 @@ private:
 
 public:
     immediate()
-        : wi(new immediate_worker())
+        : wi(std::make_shared<immediate_worker>())
     {
     }
     virtual ~immediate()

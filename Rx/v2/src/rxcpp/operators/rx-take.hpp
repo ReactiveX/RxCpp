@@ -63,7 +63,7 @@ struct take : public operator_base<T>
             output_type out;
         };
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<state_type>(new state_type(initial, s));
+        auto state = std::make_shared<state_type>(initial, s);
 
         composite_subscription source_lifetime;
 

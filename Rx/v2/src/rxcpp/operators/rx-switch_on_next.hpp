@@ -80,7 +80,7 @@ struct switch_on_next
         auto coordinator = initial.coordination.create_coordinator(scbr.get_subscription());
 
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<switch_state_type>(new switch_state_type(initial, std::move(coordinator), std::move(scbr)));
+        auto state = std::make_shared<switch_state_type>(initial, std::move(coordinator), std::move(scbr));
 
         composite_subscription outercs;
 
