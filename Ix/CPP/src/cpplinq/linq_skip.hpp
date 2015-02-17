@@ -22,7 +22,7 @@ namespace cpplinq
                 cur.inc();
             }
             cur.forget();
-            return std::move(cur);
+            return cur;
         }
 
     private:

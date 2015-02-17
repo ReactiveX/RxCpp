@@ -168,7 +168,7 @@ std::string trim(std::string s) {
         s.erase(s.end() - (last-s.rbegin()), s.end());
     }
     s.erase(s.begin(), first);
-    return std::move(s);
+    return s;
 }
 
 bool tolowerLess(char lhs, char rhs) {
