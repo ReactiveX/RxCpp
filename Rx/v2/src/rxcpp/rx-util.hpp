@@ -15,14 +15,6 @@
 #endif
 #endif
 
-#if !defined(RXCPP_SELECT_ANY)
-#if defined(_MSC_VER)
-#define RXCPP_SELECT_ANY __declspec(selectany)
-#else
-#define RXCPP_SELECT_ANY __attribute__((weak))
-#endif
-#endif
-
 #if !defined(RXCPP_DELETE)
 #if defined(_MSC_VER)
 #define RXCPP_DELETE __pragma(warning(disable: 4822)) =delete

@@ -93,14 +93,11 @@ public:
     virtual worker create_worker(composite_subscription cs) const {
         return worker(cs, std::shared_ptr<loop_worker>(new loop_worker(cs, loops[++count % loops.size()])));
     }
-    const static scheduler instance;
 };
 
-//static
-RXCPP_SELECT_ANY const scheduler event_loop::instance = make_scheduler<event_loop>();
-
 inline scheduler make_event_loop() {
-    return event_loop::instance;
+    static scheduler instance = make_scheduler<event_loop>();
+    return instance;
 }
 inline scheduler make_event_loop(thread_factory tf) {
     return make_scheduler<event_loop>(tf);

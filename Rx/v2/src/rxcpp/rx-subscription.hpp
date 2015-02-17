@@ -210,6 +210,8 @@ auto make_subscription(Unsubscribe&& u)
     return  subscription(static_subscription<Unsubscribe>(std::forward<Unsubscribe>(u)));
 }
 
+class composite_subscription;
+
 namespace detail {
 
 struct tag_composite_subscription_empty {};
@@ -348,6 +350,8 @@ public:
     }
 };
 
+inline composite_subscription shared_empty();
+
 }
 
 class composite_subscription
@@ -357,8 +361,6 @@ class composite_subscription
     typedef detail::composite_subscription_inner inner_type;
 public:
     typedef subscription::weak_state_type weak_subscription;
-
-    static composite_subscription shared_empty;
 
     composite_subscription(detail::tag_composite_subscription_empty et)
         : inner_type(et)
@@ -393,7 +395,7 @@ public:
     }
 
     static inline composite_subscription empty() {
-        return shared_empty;
+        return detail::shared_empty();
     }
 
     using subscription::is_subscribed;
@@ -438,9 +440,14 @@ inline bool operator!=(const composite_subscription& lhs, const composite_subscr
     return !(lhs == rhs);
 }
 
-//static
-RXCPP_SELECT_ANY composite_subscription composite_subscription::shared_empty = composite_subscription(detail::tag_composite_subscription_empty());
+namespace detail {
 
+inline composite_subscription shared_empty() {
+    static composite_subscription shared_empty = composite_subscription(tag_composite_subscription_empty());
+    return shared_empty;
+}
+
+}
 
 template<class T>
 class resource : public subscription_base
