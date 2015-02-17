@@ -376,37 +376,23 @@ public:
 
         messages() {}
 
-        struct on_next_factory
-        {
-            recorded_type operator()(long ticks, T value) const {
-                return recorded_type(ticks, notification_type::on_next(value));
-            }
-        };
-        struct on_completed_factory
-        {
-            recorded_type operator()(long ticks) const {
-                return recorded_type(ticks, notification_type::on_completed());
-            }
-        };
-        struct on_error_factory
-        {
-            template<class Exception>
-            recorded_type operator()(long ticks, Exception&& e) const {
-                return recorded_type(ticks, notification_type::on_error(std::forward<Exception>(e)));
-            }
-        };
+        template<typename U>
+        static recorded_type next(long ticks, U value) {
+            return recorded_type(ticks, notification_type::on_next(std::move(value)));
+        }
 
-        static const on_next_factory next;
-        static const on_completed_factory completed;
-        static const on_error_factory error;
+        static recorded_type completed(long ticks) {
+            return recorded_type(ticks, notification_type::on_completed());
+        }
 
-        struct subscribe_factory
-        {
-            rxn::subscription operator()(long subscribeAt, long unsubscribeAt) const {
-                return rxn::subscription(subscribeAt, unsubscribeAt);
-            }
-        };
-        static const subscribe_factory subscribe;
+        template<typename Exception>
+        static recorded_type error(long ticks, Exception&& e) {
+            return recorded_type(ticks, notification_type::on_error(std::forward<Exception>(e)));
+        }
+
+        static rxn::subscription subscribe(long subscribe, long unsubscribe) {
+            return rxn::subscription(subscribe, unsubscribe);
+        }
     };
 
     class test_worker : public worker
@@ -582,23 +568,6 @@ public:
         return      tester->make_cold_observable(std::vector<T>(il));
     }
 };
-
-template<class T>
-//static
-RXCPP_SELECT_ANY const typename test::messages<T>::on_next_factory test::messages<T>::next = test::messages<T>::on_next_factory();
-
-template<class T>
-//static
-RXCPP_SELECT_ANY const typename test::messages<T>::on_completed_factory test::messages<T>::completed = test::messages<T>::on_completed_factory();
-
-template<class T>
-//static
-RXCPP_SELECT_ANY const typename test::messages<T>::on_error_factory test::messages<T>::error = test::messages<T>::on_error_factory();
-
-template<class T>
-//static
-RXCPP_SELECT_ANY const typename test::messages<T>::subscribe_factory test::messages<T>::subscribe = test::messages<T>::subscribe_factory();
-
 
 
 inline test make_test() {
