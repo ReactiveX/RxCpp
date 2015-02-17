@@ -16,8 +16,8 @@ namespace detail {
 template<class T, class Predicate>
 struct filter
 {
-    typedef typename std::decay<T>::type source_value_type;
-    typedef typename std::decay<Predicate>::type test_type;
+    typedef rxu::decay_t<T> source_value_type;
+    typedef rxu::decay_t<Predicate> test_type;
     test_type test;
 
     filter(test_type t)
@@ -30,7 +30,7 @@ struct filter
     {
         typedef filter_observer<Subscriber> this_type;
         typedef source_value_type value_type;
-        typedef typename std::decay<Subscriber>::type dest_type;
+        typedef rxu::decay_t<Subscriber> dest_type;
         typedef observer<value_type, this_type> observer_type;
         dest_type dest;
         test_type test;
@@ -73,14 +73,14 @@ struct filter
 template<class Predicate>
 class filter_factory
 {
-    typedef typename std::decay<Predicate>::type test_type;
+    typedef rxu::decay_t<Predicate> test_type;
     test_type predicate;
 public:
     filter_factory(test_type p) : predicate(std::move(p)) {}
     template<class Observable>
     auto operator()(Observable&& source)
-        -> decltype(source.template lift<typename std::decay<Observable>::type::value_type>(filter<typename std::decay<Observable>::type::value_type, test_type>(predicate))) {
-        return      source.template lift<typename std::decay<Observable>::type::value_type>(filter<typename std::decay<Observable>::type::value_type, test_type>(predicate));
+        -> decltype(source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(filter<rxu::value_type_t<rxu::decay_t<Observable>>, test_type>(predicate))) {
+        return      source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(filter<rxu::value_type_t<rxu::decay_t<Observable>>, test_type>(predicate));
     }
 };
 

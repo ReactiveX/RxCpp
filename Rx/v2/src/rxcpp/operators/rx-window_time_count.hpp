@@ -16,10 +16,10 @@ namespace detail {
 template<class T, class Duration, class Coordination>
 struct window_with_time_or_count
 {
-    typedef typename std::decay<T>::type source_value_type;
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<T> source_value_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
     typedef typename coordination_type::coordinator_type coordinator_type;
-    typedef typename std::decay<Duration>::type duration_type;
+    typedef rxu::decay_t<Duration> duration_type;
 
     struct window_with_time_or_count_values
     {
@@ -46,7 +46,7 @@ struct window_with_time_or_count
         typedef window_with_time_or_count_observer<Subscriber> this_type;
         typedef observer_base<observable<T>> base_type;
         typedef typename base_type::value_type value_type;
-        typedef typename std::decay<Subscriber>::type dest_type;
+        typedef rxu::decay_t<Subscriber> dest_type;
         typedef observer<T, this_type> observer_type;
 
         struct window_with_time_or_count_subscriber_values : public window_with_time_or_count_values
@@ -133,8 +133,8 @@ struct window_with_time_or_count
 template<class Duration, class Coordination>
 class window_with_time_or_count_factory
 {
-    typedef typename std::decay<Duration>::type duration_type;
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<Duration> duration_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
 
     duration_type period;
     int count;
@@ -143,8 +143,8 @@ public:
     window_with_time_or_count_factory(duration_type p, int n, coordination_type c) : period(p), count(n), coordination(c) {}
     template<class Observable>
     auto operator()(Observable&& source)
-        -> decltype(source.template lift<observable<typename std::decay<Observable>::type::value_type>>(window_with_time_or_count<typename std::decay<Observable>::type::value_type, Duration, Coordination>(period, count, coordination))) {
-        return      source.template lift<observable<typename std::decay<Observable>::type::value_type>>(window_with_time_or_count<typename std::decay<Observable>::type::value_type, Duration, Coordination>(period, count, coordination));
+        -> decltype(source.template lift<observable<rxu::value_type_t<rxu::decay_t<Observable>>>>(window_with_time_or_count<rxu::value_type_t<rxu::decay_t<Observable>>, Duration, Coordination>(period, count, coordination))) {
+        return      source.template lift<observable<rxu::value_type_t<rxu::decay_t<Observable>>>>(window_with_time_or_count<rxu::value_type_t<rxu::decay_t<Observable>>, Duration, Coordination>(period, count, coordination));
     }
 };
 

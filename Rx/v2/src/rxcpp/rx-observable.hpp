@@ -26,8 +26,8 @@ struct is_operator_factory_for
     template<class CS, class CF>
     static not_void check(...);
 
-    typedef typename std::decay<Source>::type source_type;
-    typedef typename std::decay<F>::type function_type;
+    typedef rxu::decay_t<Source> source_type;
+    typedef rxu::decay_t<F> function_type;
 
     typedef decltype(check<source_type, function_type>(0)) detail_result;
     static const bool value = !std::is_same<detail_result, not_void>::value && is_observable<source_type>::value;
@@ -42,7 +42,7 @@ struct has_on_subscribe_for
     template<class CS, class CT>
     static not_void check(...);
 
-    typedef decltype(check<typename std::decay<Subscriber>::type, T>(0)) detail_result;
+    typedef decltype(check<rxu::decay_t<Subscriber>, T>(0)) detail_result;
     static const bool value = std::is_same<detail_result, void>::value;
 };
 
@@ -66,7 +66,7 @@ class dynamic_observable
 
     template<class SO>
     void construct(SO&& source, rxs::tag_source&&) {
-        typename std::decay<SO>::type so = std::forward<SO>(source);
+        rxu::decay_t<SO> so = std::forward<SO>(source);
         state->on_subscribe = [so](subscriber<T> o) mutable {
             so.on_subscribe(std::move(o));
         };
@@ -234,7 +234,7 @@ class blocking_observable
     }
 
 public:
-    typedef typename std::decay<Observable>::type observable_type;
+    typedef rxu::decay_t<Observable> observable_type;
     observable_type source;
     ~blocking_observable()
     {
@@ -296,7 +296,7 @@ class observable
     typedef observable<T, SourceOperator> this_type;
 
 public:
-    typedef typename std::decay<SourceOperator>::type source_operator_type;
+    typedef rxu::decay_t<SourceOperator> source_operator_type;
     mutable source_operator_type source_operator;
 
 private:
@@ -311,7 +311,7 @@ private:
     auto detail_subscribe(Subscriber o) const
         -> composite_subscription {
 
-        typedef typename std::decay<Subscriber>::type subscriber_type;
+        typedef rxu::decay_t<Subscriber> subscriber_type;
 
         static_assert(is_subscriber<subscriber_type>::value, "subscribe must be passed a subscriber");
         static_assert(std::is_same<typename source_operator_type::value_type, T>::value && std::is_convertible<T*, typename subscriber_type::value_type*>::value, "the value types in the sequence must match or be convertible");
@@ -426,9 +426,9 @@ public:
     ///
     template<class ResultType, class Operator>
     auto lift(Operator&& op) const
-        ->      observable<typename rxo::detail::lift_operator<ResultType, source_operator_type, Operator>::value_type, rxo::detail::lift_operator<ResultType, source_operator_type, Operator>> {
-        return  observable<typename rxo::detail::lift_operator<ResultType, source_operator_type, Operator>::value_type, rxo::detail::lift_operator<ResultType, source_operator_type, Operator>>(
-                                                                                                                        rxo::detail::lift_operator<ResultType, source_operator_type, Operator>(source_operator, std::forward<Operator>(op)));
+        ->      observable<rxu::value_type_t<rxo::detail::lift_operator<ResultType, source_operator_type, Operator>>, rxo::detail::lift_operator<ResultType, source_operator_type, Operator>> {
+        return  observable<rxu::value_type_t<rxo::detail::lift_operator<ResultType, source_operator_type, Operator>>, rxo::detail::lift_operator<ResultType, source_operator_type, Operator>>(
+                                                                                                                      rxo::detail::lift_operator<ResultType, source_operator_type, Operator>(source_operator, std::forward<Operator>(op)));
         static_assert(detail::is_lift_function_for<T, subscriber<ResultType>, Operator>::value, "Function passed for lift() must have the signature subscriber<...>(subscriber<T, ...>)");
     }
 
@@ -440,9 +440,9 @@ public:
     template<class ResultType, class Operator>
     auto lift_if(Operator&& op) const
         -> typename std::enable_if<detail::is_lift_function_for<T, subscriber<ResultType>, Operator>::value,
-            observable<typename rxo::detail::lift_operator<ResultType, source_operator_type, Operator>::value_type, rxo::detail::lift_operator<ResultType, source_operator_type, Operator>>>::type {
-        return  observable<typename rxo::detail::lift_operator<ResultType, source_operator_type, Operator>::value_type, rxo::detail::lift_operator<ResultType, source_operator_type, Operator>>(
-                                                                                                                        rxo::detail::lift_operator<ResultType, source_operator_type, Operator>(source_operator, std::forward<Operator>(op)));
+            observable<rxu::value_type_t<rxo::detail::lift_operator<ResultType, source_operator_type, Operator>>, rxo::detail::lift_operator<ResultType, source_operator_type, Operator>>>::type {
+        return  observable<rxu::value_type_t<rxo::detail::lift_operator<ResultType, source_operator_type, Operator>>, rxo::detail::lift_operator<ResultType, source_operator_type, Operator>>(
+                                                                                                                      rxo::detail::lift_operator<ResultType, source_operator_type, Operator>(source_operator, std::forward<Operator>(op)));
     }
     ///
     /// takes any function that will take a subscriber for this observable and produce a subscriber.
@@ -494,8 +494,8 @@ public:
     ///
     template<class Selector>
     auto map(Selector s) const
-        -> decltype(EXPLICIT_THIS lift<typename rxo::detail::map<T, Selector>::value_type>(rxo::detail::map<T, Selector>(std::move(s)))) {
-        return                    lift<typename rxo::detail::map<T, Selector>::value_type>(rxo::detail::map<T, Selector>(std::move(s)));
+        -> decltype(EXPLICIT_THIS lift<rxu::value_type_t<rxo::detail::map<T, Selector>>>(rxo::detail::map<T, Selector>(std::move(s)))) {
+        return                    lift<rxu::value_type_t<rxo::detail::map<T, Selector>>>(rxo::detail::map<T, Selector>(std::move(s)));
     }
 
     /// distinct_until_changed ->
@@ -747,9 +747,9 @@ public:
     ///
     template<class CollectionSelector, class ResultSelector>
     auto flat_map(CollectionSelector&& s, ResultSelector&& rs) const
-        ->      observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>::value_type,  rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>> {
-        return  observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>::value_type,  rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>>(
-                                                                                                                                            rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), identity_current_thread()));
+        ->      observable<rxu::value_type_t<rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>>,  rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>> {
+        return  observable<rxu::value_type_t<rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>>,  rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>>(
+                                                                                                                                          rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), identity_current_thread()));
     }
 
     /// flat_map (AKA SelectMany) ->
@@ -759,9 +759,9 @@ public:
     ///
     template<class CollectionSelector, class ResultSelector, class Coordination>
     auto flat_map(CollectionSelector&& s, ResultSelector&& rs, Coordination&& sf) const
-        ->      observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, Coordination>::value_type, rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, Coordination>> {
-        return  observable<typename rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, Coordination>::value_type, rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, Coordination>>(
-                                                                                                                                    rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, Coordination>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<Coordination>(sf)));
+        ->      observable<rxu::value_type_t<rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, Coordination>>, rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, Coordination>> {
+        return  observable<rxu::value_type_t<rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, Coordination>>, rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, Coordination>>(
+                                                                                                                                  rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, Coordination>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<Coordination>(sf)));
     }
 
     template<class Coordination>
@@ -838,9 +838,9 @@ public:
     ///
     template<class CollectionSelector, class ResultSelector>
     auto concat_map(CollectionSelector&& s, ResultSelector&& rs) const
-        ->      observable<typename rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>::value_type,    rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>> {
-        return  observable<typename rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>::value_type,    rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>>(
-                                                                                                                                                rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), identity_current_thread()));
+        ->      observable<rxu::value_type_t<rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>>,    rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>> {
+        return  observable<rxu::value_type_t<rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>>,    rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>>(
+                                                                                                                                              rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), identity_current_thread()));
     }
 
     /// concat_map ->
@@ -850,9 +850,9 @@ public:
     ///
     template<class CollectionSelector, class ResultSelector, class Coordination>
     auto concat_map(CollectionSelector&& s, ResultSelector&& rs, Coordination&& sf) const
-        ->      observable<typename rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, Coordination>::value_type,   rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, Coordination>> {
-        return  observable<typename rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, Coordination>::value_type,   rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, Coordination>>(
-                                                                                                                                        rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, Coordination>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<Coordination>(sf)));
+        ->      observable<rxu::value_type_t<rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, Coordination>>,   rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, Coordination>> {
+        return  observable<rxu::value_type_t<rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, Coordination>>,   rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, Coordination>>(
+                                                                                                                                      rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, Coordination>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<Coordination>(sf)));
     }
 
     template<class Source, class Coordination, class TS, class C = rxu::types_checked>
@@ -1082,9 +1082,9 @@ public:
     ///
     template<class Coordination>
     auto subscribe_on(Coordination cn) const
-        ->      observable<typename rxo::detail::subscribe_on<T, this_type, Coordination>::value_type,  rxo::detail::subscribe_on<T, this_type, Coordination>> {
-        return  observable<typename rxo::detail::subscribe_on<T, this_type, Coordination>::value_type,  rxo::detail::subscribe_on<T, this_type, Coordination>>(
-                                                                                                        rxo::detail::subscribe_on<T, this_type, Coordination>(*this, std::move(cn)));
+        ->      observable<rxu::value_type_t<rxo::detail::subscribe_on<T, this_type, Coordination>>,  rxo::detail::subscribe_on<T, this_type, Coordination>> {
+        return  observable<rxu::value_type_t<rxo::detail::subscribe_on<T, this_type, Coordination>>,  rxo::detail::subscribe_on<T, this_type, Coordination>>(
+                                                                                                      rxo::detail::subscribe_on<T, this_type, Coordination>(*this, std::move(cn)));
     }
 
     /// observe_on ->
@@ -1101,9 +1101,9 @@ public:
     ///
     template<class Seed, class Accumulator, class ResultSelector>
     auto reduce(Seed seed, Accumulator&& a, ResultSelector&& rs) const
-        ->      observable<typename rxo::detail::reduce<T, source_operator_type, Accumulator, ResultSelector, Seed>::value_type,    rxo::detail::reduce<T, source_operator_type, Accumulator, ResultSelector, Seed>> {
-        return  observable<typename rxo::detail::reduce<T, source_operator_type, Accumulator, ResultSelector, Seed>::value_type,    rxo::detail::reduce<T, source_operator_type, Accumulator, ResultSelector, Seed>>(
-                                                                                                                                    rxo::detail::reduce<T, source_operator_type, Accumulator, ResultSelector, Seed>(source_operator, std::forward<Accumulator>(a), std::forward<ResultSelector>(rs), seed));
+        ->      observable<rxu::value_type_t<rxo::detail::reduce<T, source_operator_type, Accumulator, ResultSelector, Seed>>,    rxo::detail::reduce<T, source_operator_type, Accumulator, ResultSelector, Seed>> {
+        return  observable<rxu::value_type_t<rxo::detail::reduce<T, source_operator_type, Accumulator, ResultSelector, Seed>>,    rxo::detail::reduce<T, source_operator_type, Accumulator, ResultSelector, Seed>>(
+                                                                                                                                  rxo::detail::reduce<T, source_operator_type, Accumulator, ResultSelector, Seed>(source_operator, std::forward<Accumulator>(a), std::forward<ResultSelector>(rs), seed));
     }
 
     template<class Seed, class Accumulator, class ResultSelector>
@@ -1315,8 +1315,8 @@ public:
     /// take values pairwise from the observable
     ///
     auto pairwise() const
-        -> decltype(EXPLICIT_THIS lift<typename rxo::detail::pairwise<T>::value_type>(rxo::detail::pairwise<T>())) {
-        return                    lift<typename rxo::detail::pairwise<T>::value_type>(rxo::detail::pairwise<T>());
+        -> decltype(EXPLICIT_THIS lift<rxu::value_type_t<rxo::detail::pairwise<T>>>(rxo::detail::pairwise<T>())) {
+        return                    lift<rxu::value_type_t<rxo::detail::pairwise<T>>>(rxo::detail::pairwise<T>());
     }
 };
 
@@ -1473,8 +1473,8 @@ public:
     }
     template<class Observable, class Value0, class... ValueN>
     static auto start_with(Observable o, Value0 v0, ValueN... vn)
-        -> decltype(rxs::from(typename Observable::value_type(v0), typename Observable::value_type(vn)...).concat(o)) {
-        return      rxs::from(typename Observable::value_type(v0), typename Observable::value_type(vn)...).concat(o);
+        -> decltype(rxs::from(rxu::value_type_t<Observable>(v0), rxu::value_type_t<Observable>(vn)...).concat(o)) {
+        return      rxs::from(rxu::value_type_t<Observable>(v0), rxu::value_type_t<Observable>(vn)...).concat(o);
     }
     template<class ResourceFactory, class ObservableFactory>
     static auto scope(ResourceFactory rf, ObservableFactory of)

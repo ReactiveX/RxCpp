@@ -16,8 +16,8 @@ namespace detail {
 template<class ResourceFactory, class ObservableFactory>
 struct scope_traits
 {
-    typedef typename std::decay<ResourceFactory>::type resource_factory_type;
-    typedef typename std::decay<ObservableFactory>::type observable_factory_type;
+    typedef rxu::decay_t<ResourceFactory> resource_factory_type;
+    typedef rxu::decay_t<ObservableFactory> observable_factory_type;
     typedef decltype((*(resource_factory_type*)nullptr)()) resource_type;
     typedef decltype((*(observable_factory_type*)nullptr)(resource_type())) collection_type;
     typedef typename collection_type::value_type value_type;
@@ -26,7 +26,7 @@ struct scope_traits
 };
 
 template<class ResourceFactory, class ObservableFactory>
-struct scope : public source_base<typename scope_traits<ResourceFactory, ObservableFactory>::value_type>
+struct scope : public source_base<rxu::value_type_t<scope_traits<ResourceFactory, ObservableFactory>>>
 {
     typedef scope_traits<ResourceFactory, ObservableFactory> traits;
     typedef typename traits::resource_factory_type resource_factory_type;
@@ -93,9 +93,9 @@ struct scope : public source_base<typename scope_traits<ResourceFactory, Observa
 
 template<class ResourceFactory, class ObservableFactory>
 auto scope(ResourceFactory rf, ObservableFactory of)
-    ->      observable<typename detail::scope_traits<ResourceFactory, ObservableFactory>::value_type, detail::scope<ResourceFactory, ObservableFactory>> {
-    return  observable<typename detail::scope_traits<ResourceFactory, ObservableFactory>::value_type, detail::scope<ResourceFactory, ObservableFactory>>(
-                                                                                                      detail::scope<ResourceFactory, ObservableFactory>(std::move(rf), std::move(of)));
+    ->      observable<rxu::value_type_t<detail::scope_traits<ResourceFactory, ObservableFactory>>, detail::scope<ResourceFactory, ObservableFactory>> {
+    return  observable<rxu::value_type_t<detail::scope_traits<ResourceFactory, ObservableFactory>>, detail::scope<ResourceFactory, ObservableFactory>>(
+                                                                                                    detail::scope<ResourceFactory, ObservableFactory>(std::move(rf), std::move(of)));
 }
 
 }
