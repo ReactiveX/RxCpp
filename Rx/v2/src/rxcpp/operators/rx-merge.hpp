@@ -77,7 +77,7 @@ struct merge
         auto coordinator = initial.coordination.create_coordinator(scbr.get_subscription());
 
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<merge_state_type>(new merge_state_type(initial, std::move(coordinator), std::move(scbr)));
+        auto state = std::make_shared<merge_state_type>(initial, std::move(coordinator), std::move(scbr));
 
         composite_subscription outercs;
 

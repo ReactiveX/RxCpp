@@ -780,7 +780,7 @@ auto worker::schedule_periodically(clock_type::time_point initial, clock_type::d
 }
 template<class... ArgN>
 void worker::schedule_periodically_rebind(clock_type::time_point initial, clock_type::duration period, const schedulable& scbl, ArgN&&... an) const {
-    std::shared_ptr<clock_type::time_point> target(new clock_type::time_point(initial));
+    auto target = std::make_shared<clock_type::time_point>(initial);
     auto activity = make_schedulable(scbl, *this, std::forward<ArgN>(an)...);
     auto periodic = make_schedulable(
         activity,

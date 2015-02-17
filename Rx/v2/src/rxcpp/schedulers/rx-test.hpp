@@ -124,7 +124,7 @@ public:
 
 public:
     test_type()
-        : state(new test_type_state())
+        : state(std::make_shared<test_type_state>())
     {
     }
 
@@ -133,8 +133,7 @@ public:
     }
 
     virtual worker create_worker(composite_subscription cs) const {
-        std::shared_ptr<test_type_worker> wi(new test_type_worker(state));
-        return worker(cs, wi);
+        return worker(cs, std::make_shared<test_type_worker>(state));
     }
 
     bool is_enabled() const {return state->is_enabled();}
@@ -143,8 +142,7 @@ public:
     }
 
     std::shared_ptr<test_type_worker> create_test_type_worker_interface() const {
-        std::shared_ptr<test_type_worker> wi(new test_type_worker(state));
-        return wi;
+        return std::make_shared<test_type_worker>(state);
     }
 
     template<class T>
@@ -188,7 +186,7 @@ subscriber<T, rxt::testable_observer<T>> test_type::test_type_worker::make_subsc
     typedef typename rxn::notification<T> notification_type;
     typedef rxn::recorded<typename notification_type::type> recorded_type;
 
-    std::shared_ptr<mock_observer<T>> ts(new mock_observer<T>(state));
+    auto ts = std::make_shared<mock_observer<T>>(state);
 
     return rxcpp::make_subscriber<T>(rxt::testable_observer<T>(ts, make_observer_dynamic<T>(
           // on_next
@@ -272,7 +270,7 @@ public:
 template<class T>
 rxt::testable_observable<T> test_type::make_cold_observable(std::vector<rxn::recorded<std::shared_ptr<rxn::detail::notification_base<T>>>> messages) const
 {
-    auto co = std::shared_ptr<cold_observable<T>>(new cold_observable<T>(state, create_worker(composite_subscription()), std::move(messages)));
+    auto co = std::make_shared<cold_observable<T>>(state, create_worker(composite_subscription()), std::move(messages));
     return rxt::testable_observable<T>(co);
 }
 
@@ -469,7 +467,7 @@ public:
                 {
                 }
             };
-            std::shared_ptr<state_type> state(new state_type(this->make_subscriber<T>()));
+            auto state = std::make_shared<state_type>(this->make_subscriber<T>());
 
             schedule_absolute(created, [createSource, state](const schedulable&) {
                 state->source.reset(new typename state_type::source_type(createSource()));

@@ -228,7 +228,7 @@ private:
 
 public:
     current_thread()
-        : wi(new current_worker())
+        : wi(std::make_shared<current_worker>())
     {
     }
     virtual ~current_thread()
