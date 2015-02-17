@@ -91,7 +91,7 @@ public:
     }
 
     virtual worker create_worker(composite_subscription cs) const {
-        return worker(cs, std::shared_ptr<loop_worker>(new loop_worker(cs, loops[++count % loops.size()])));
+        return worker(cs, std::make_shared<loop_worker>(cs, loops[++count % loops.size()]));
     }
     const static scheduler instance;
 };

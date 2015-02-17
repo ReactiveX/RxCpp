@@ -155,7 +155,7 @@ struct zip : public operator_base<rxu::value_type_t<zip_traits<Coordination, Sel
         auto coordinator = initial.coordination.create_coordinator(scbr.get_subscription());
 
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<zip_state_type>(new zip_state_type(initial, std::move(coordinator), std::move(scbr)));
+        auto state = std::make_shared<zip_state_type>(initial, std::move(coordinator), std::move(scbr));
 
         subscribe_all(state, typename rxu::values_from<int, sizeof...(ObservableN)>::type());
     }

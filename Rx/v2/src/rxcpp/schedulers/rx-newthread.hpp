@@ -160,7 +160,7 @@ public:
     }
 
     virtual worker create_worker(composite_subscription cs) const {
-        return worker(cs, std::shared_ptr<new_worker>(new new_worker(cs, factory)));
+        return worker(cs, std::make_shared<new_worker>(cs, factory));
     }
 
     const static scheduler instance;

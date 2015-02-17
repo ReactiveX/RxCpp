@@ -112,7 +112,7 @@ struct flat_map
         auto coordinator = initial.coordination.create_coordinator(scbr.get_subscription());
 
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<state_type>(new state_type(initial, std::move(coordinator), std::move(scbr)));
+        auto state = std::make_shared<state_type>(initial, std::move(coordinator), std::move(scbr));
 
         composite_subscription outercs;
 
