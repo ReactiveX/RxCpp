@@ -16,8 +16,8 @@ namespace detail {
 template<class T, class Seed, class Accumulator>
 struct is_accumulate_function_for {
 
-    typedef typename std::decay<Accumulator>::type accumulator_type;
-    typedef typename std::decay<Seed>::type seed_type;
+    typedef rxu::decay_t<Accumulator> accumulator_type;
+    typedef rxu::decay_t<Seed> seed_type;
     typedef T source_value_type;
 
     struct tag_not_valid {};
@@ -33,8 +33,8 @@ struct is_accumulate_function_for {
 template<class Seed, class ResultSelector>
 struct is_result_function_for {
 
-    typedef typename std::decay<ResultSelector>::type result_selector_type;
-    typedef typename std::decay<Seed>::type seed_type;
+    typedef rxu::decay_t<ResultSelector> result_selector_type;
+    typedef rxu::decay_t<Seed> seed_type;
 
     struct tag_not_valid {};
 
@@ -50,10 +50,10 @@ struct is_result_function_for {
 template<class T, class SourceOperator, class Accumulator, class ResultSelector, class Seed>
 struct reduce_traits
 {
-    typedef typename std::decay<SourceOperator>::type source_type;
-    typedef typename std::decay<Accumulator>::type accumulator_type;
-    typedef typename std::decay<ResultSelector>::type result_selector_type;
-    typedef typename std::decay<Seed>::type seed_type;
+    typedef rxu::decay_t<SourceOperator> source_type;
+    typedef rxu::decay_t<Accumulator> accumulator_type;
+    typedef rxu::decay_t<ResultSelector> result_selector_type;
+    typedef rxu::decay_t<Seed> seed_type;
 
     typedef T source_value_type;
 
@@ -65,7 +65,7 @@ struct reduce_traits
 };
 
 template<class T, class SourceOperator, class Accumulator, class ResultSelector, class Seed>
-struct reduce : public operator_base<typename reduce_traits<T, SourceOperator, Accumulator, ResultSelector, Seed>::value_type>
+struct reduce : public operator_base<rxu::value_type_t<reduce_traits<T, SourceOperator, Accumulator, ResultSelector, Seed>>>
 {
     typedef reduce<T, SourceOperator, Accumulator, ResultSelector, Seed> this_type;
     typedef reduce_traits<T, SourceOperator, Accumulator, ResultSelector, Seed> traits;
@@ -164,9 +164,9 @@ private:
 template<class Accumulator, class ResultSelector, class Seed>
 class reduce_factory
 {
-    typedef typename std::decay<Accumulator>::type accumulator_type;
-    typedef typename std::decay<ResultSelector>::type result_selector_type;
-    typedef typename std::decay<Seed>::type seed_type;
+    typedef rxu::decay_t<Accumulator> accumulator_type;
+    typedef rxu::decay_t<ResultSelector> result_selector_type;
+    typedef rxu::decay_t<Seed> seed_type;
 
     accumulator_type accumulator;
     result_selector_type result_selector;
@@ -180,9 +180,9 @@ public:
     }
     template<class Observable>
     auto operator()(const Observable& source)
-        ->      observable<seed_type,   reduce<typename Observable::value_type, typename Observable::source_operator_type, Accumulator, ResultSelector, Seed>> {
-        return  observable<seed_type,   reduce<typename Observable::value_type, typename Observable::source_operator_type, Accumulator, ResultSelector, Seed>>(
-                                        reduce<typename Observable::value_type, typename Observable::source_operator_type, Accumulator, ResultSelector, Seed>(source.source_operator, accumulator, result_selector, seed));
+        ->      observable<seed_type,   reduce<rxu::value_type_t<Observable>, typename Observable::source_operator_type, Accumulator, ResultSelector, Seed>> {
+        return  observable<seed_type,   reduce<rxu::value_type_t<Observable>, typename Observable::source_operator_type, Accumulator, ResultSelector, Seed>>(
+                                        reduce<rxu::value_type_t<Observable>, typename Observable::source_operator_type, Accumulator, ResultSelector, Seed>(source.source_operator, accumulator, result_selector, seed));
     }
 };
 

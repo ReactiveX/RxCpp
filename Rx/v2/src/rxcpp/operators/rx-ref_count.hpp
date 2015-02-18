@@ -16,7 +16,7 @@ namespace detail {
 template<class T, class ConnectableObservable>
 struct ref_count : public operator_base<T>
 {
-    typedef typename std::decay<ConnectableObservable>::type source_type;
+    typedef rxu::decay_t<ConnectableObservable> source_type;
 
     struct ref_count_state : public std::enable_shared_from_this<ref_count_state>
     {
@@ -65,9 +65,9 @@ public:
     ref_count_factory() {}
     template<class Observable>
     auto operator()(Observable&& source)
-        ->      observable<typename std::decay<Observable>::type::value_type,   ref_count<typename std::decay<Observable>::type::value_type, Observable>> {
-        return  observable<typename std::decay<Observable>::type::value_type,   ref_count<typename std::decay<Observable>::type::value_type, Observable>>(
-                                                                                ref_count<typename std::decay<Observable>::type::value_type, Observable>(std::forward<Observable>(source)));
+        ->      observable<rxu::value_type_t<rxu::decay_t<Observable>>,   ref_count<rxu::value_type_t<rxu::decay_t<Observable>>, Observable>> {
+        return  observable<rxu::value_type_t<rxu::decay_t<Observable>>,   ref_count<rxu::value_type_t<rxu::decay_t<Observable>>, Observable>>(
+                                                                          ref_count<rxu::value_type_t<rxu::decay_t<Observable>>, Observable>(std::forward<Observable>(source)));
     }
 };
 

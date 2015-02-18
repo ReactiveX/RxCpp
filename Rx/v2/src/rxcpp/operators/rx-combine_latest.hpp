@@ -19,8 +19,8 @@ struct combine_latest_traits {
     typedef std::tuple<ObservableN...> tuple_source_type;
     typedef std::tuple<rxu::detail::maybe<typename ObservableN::value_type>...> tuple_source_value_type;
 
-    typedef typename std::decay<Selector>::type selector_type;
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<Selector> selector_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
 
     struct tag_not_valid {};
     template<class CS, class... CVN>
@@ -34,7 +34,7 @@ struct combine_latest_traits {
 };
 
 template<class Coordination, class Selector, class... ObservableN>
-struct combine_latest : public operator_base<typename combine_latest_traits<Coordination, Selector, ObservableN...>::value_type>
+struct combine_latest : public operator_base<rxu::value_type_t<combine_latest_traits<Coordination, Selector, ObservableN...>>>
 {
     typedef combine_latest<Coordination, Selector, ObservableN...> this_type;
 
@@ -179,8 +179,8 @@ struct combine_latest : public operator_base<typename combine_latest_traits<Coor
 template<class Coordination, class Selector, class... ObservableN>
 class combine_latest_factory
 {
-    typedef typename std::decay<Coordination>::type coordination_type;
-    typedef typename std::decay<Selector>::type selector_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
+    typedef rxu::decay_t<Selector> selector_type;
     typedef std::tuple<ObservableN...> tuple_source_type;
 
     coordination_type coordination;
@@ -189,9 +189,9 @@ class combine_latest_factory
 
     template<class... YObservableN>
     auto make(std::tuple<YObservableN...> source)
-        ->      observable<typename combine_latest<Coordination, Selector, YObservableN...>::value_type, combine_latest<Coordination, Selector, YObservableN...>> {
-        return  observable<typename combine_latest<Coordination, Selector, YObservableN...>::value_type, combine_latest<Coordination, Selector, YObservableN...>>(
-                                    combine_latest<Coordination, Selector, YObservableN...>(coordination, selector, std::move(source)));
+        ->      observable<rxu::value_type_t<combine_latest<Coordination, Selector, YObservableN...>>, combine_latest<Coordination, Selector, YObservableN...>> {
+        return  observable<rxu::value_type_t<combine_latest<Coordination, Selector, YObservableN...>>, combine_latest<Coordination, Selector, YObservableN...>>(
+                                             combine_latest<Coordination, Selector, YObservableN...>(coordination, selector, std::move(source)));
     }
 public:
     combine_latest_factory(coordination_type sf, selector_type s, ObservableN... on)
