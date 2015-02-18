@@ -77,8 +77,8 @@ class dynamic_factory
 public:
     template<class Observable>
     auto operator()(Observable&& source)
-        ->      observable<typename std::decay<Observable>::type::value_type> {
-        return  observable<typename std::decay<Observable>::type::value_type>(std::forward<Observable>(source));
+        ->      observable<rxu::value_type_t<rxu::decay_t<Observable>>> {
+        return  observable<rxu::value_type_t<rxu::decay_t<Observable>>>(std::forward<Observable>(source));
     }
 };
 

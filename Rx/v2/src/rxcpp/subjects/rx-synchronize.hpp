@@ -19,7 +19,7 @@ class synchronize_observer : public detail::multicast_observer<T>
     typedef synchronize_observer<T, Coordination> this_type;
     typedef detail::multicast_observer<T> base_type;
 
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
     typedef typename coordination_type::coordinator_type coordinator_type;
     typedef typename coordinator_type::template get<subscriber<T>>::type output_type;
 

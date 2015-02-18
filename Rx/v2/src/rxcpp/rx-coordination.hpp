@@ -193,7 +193,7 @@ class serialize_one_worker : public coordination_base
     struct serialize_observer
     {
         typedef serialize_observer<Observer> this_type;
-        typedef typename std::decay<Observer>::type dest_type;
+        typedef rxu::decay_t<Observer> dest_type;
         typedef typename dest_type::value_type value_type;
         typedef observer<value_type, this_type> observer_type;
         dest_type dest;

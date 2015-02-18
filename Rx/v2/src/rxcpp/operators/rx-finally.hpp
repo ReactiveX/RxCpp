@@ -16,8 +16,8 @@ namespace detail {
 template<class T, class LastCall>
 struct finally
 {
-    typedef typename std::decay<T>::type source_value_type;
-    typedef typename std::decay<LastCall>::type last_call_type;
+    typedef rxu::decay_t<T> source_value_type;
+    typedef rxu::decay_t<LastCall> last_call_type;
     last_call_type last_call;
 
     finally(last_call_type lc)
@@ -30,7 +30,7 @@ struct finally
     {
         typedef finally_observer<Subscriber> this_type;
         typedef source_value_type value_type;
-        typedef typename std::decay<Subscriber>::type dest_type;
+        typedef rxu::decay_t<Subscriber> dest_type;
         typedef observer<value_type, this_type> observer_type;
         dest_type dest;
 
@@ -70,14 +70,14 @@ struct finally
 template<class LastCall>
 class finally_factory
 {
-    typedef typename std::decay<LastCall>::type last_call_type;
+    typedef rxu::decay_t<LastCall> last_call_type;
     last_call_type last_call;
 public:
     finally_factory(last_call_type lc) : last_call(std::move(lc)) {}
     template<class Observable>
     auto operator()(Observable&& source)
-        -> decltype(source.template lift<typename std::decay<Observable>::type::value_type>(filter<typename std::decay<Observable>::type::value_type, last_call_type>(last_call))) {
-        return      source.template lift<typename std::decay<Observable>::type::value_type>(filter<typename std::decay<Observable>::type::value_type, last_call_type>(last_call));
+        -> decltype(source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(filter<rxu::value_type_t<rxu::decay_t<Observable>>, last_call_type>(last_call))) {
+        return      source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(filter<rxu::value_type_t<rxu::decay_t<Observable>>, last_call_type>(last_call));
     }
 };
 
