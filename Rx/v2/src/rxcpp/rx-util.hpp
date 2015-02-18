@@ -352,11 +352,16 @@ struct print_function
     Delimit delimit;
     print_function(OStream& os, Delimit d) : os(os), delimit(std::move(d)) {}
 
-    template<class... TN>
-    void operator()(const TN&... tn) const {
-        bool inserts[] = {(os << tn, true)...};
-        inserts[0] = *(inserts); // silence warning
+    template<class T>
+    void operator()(const T& t) const {
+        os << t;
         delimit();
+    }
+
+    template<class T, class... TN>
+    void operator()(const T& t, const TN&... tn) const {
+        os << t;
+        (*this)(tn...);
     }
 
     template<class... TN>
