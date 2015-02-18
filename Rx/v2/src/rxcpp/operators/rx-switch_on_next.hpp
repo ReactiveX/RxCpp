@@ -15,22 +15,22 @@ namespace detail {
 
 template<class T, class Observable, class Coordination>
 struct switch_on_next
-    : public operator_base<typename std::decay<T>::type::value_type>
+    : public operator_base<rxu::value_type_t<rxu::decay_t<T>>>
 {
     //static_assert(is_observable<Observable>::value, "switch_on_next requires an observable");
     //static_assert(is_observable<T>::value, "switch_on_next requires an observable that contains observables");
 
     typedef switch_on_next<T, Observable, Coordination> this_type;
 
-    typedef typename std::decay<T>::type source_value_type;
-    typedef typename std::decay<Observable>::type source_type;
+    typedef rxu::decay_t<T> source_value_type;
+    typedef rxu::decay_t<Observable> source_type;
 
     typedef typename source_type::source_operator_type source_operator_type;
 
     typedef source_value_type collection_type;
     typedef typename collection_type::value_type collection_value_type;
 
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
     typedef typename coordination_type::coordinator_type coordinator_type;
 
     struct values
@@ -183,7 +183,7 @@ struct switch_on_next
 template<class Coordination>
 class switch_on_next_factory
 {
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
 
     coordination_type coordination;
 public:
@@ -194,9 +194,9 @@ public:
 
     template<class Observable>
     auto operator()(Observable source)
-        ->      observable<typename switch_on_next<typename Observable::value_type, Observable, Coordination>::value_type,  switch_on_next<typename Observable::value_type, Observable, Coordination>> {
-        return  observable<typename switch_on_next<typename Observable::value_type, Observable, Coordination>::value_type,  switch_on_next<typename Observable::value_type, Observable, Coordination>>(
-                                                                                                                            switch_on_next<typename Observable::value_type, Observable, Coordination>(std::move(source), coordination));
+        ->      observable<rxu::value_type_t<switch_on_next<rxu::value_type_t<Observable>, Observable, Coordination>>,  switch_on_next<rxu::value_type_t<Observable>, Observable, Coordination>> {
+        return  observable<rxu::value_type_t<switch_on_next<rxu::value_type_t<Observable>, Observable, Coordination>>,  switch_on_next<rxu::value_type_t<Observable>, Observable, Coordination>>(
+                                                                                                                        switch_on_next<rxu::value_type_t<Observable>, Observable, Coordination>(std::move(source), coordination));
     }
 };
 

@@ -15,10 +15,10 @@ namespace detail {
 
 template<class Observable, class CollectionSelector, class ResultSelector, class Coordination>
 struct concat_traits {
-    typedef typename std::decay<Observable>::type source_type;
-    typedef typename std::decay<CollectionSelector>::type collection_selector_type;
-    typedef typename std::decay<ResultSelector>::type result_selector_type;
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<Observable> source_type;
+    typedef rxu::decay_t<CollectionSelector> collection_selector_type;
+    typedef rxu::decay_t<ResultSelector> result_selector_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
 
     typedef typename source_type::value_type source_value_type;
 
@@ -50,7 +50,7 @@ struct concat_traits {
 
 template<class Observable, class CollectionSelector, class ResultSelector, class Coordination>
 struct concat_map
-    : public operator_base<typename concat_traits<Observable, CollectionSelector, ResultSelector, Coordination>::value_type>
+    : public operator_base<rxu::value_type_t<concat_traits<Observable, CollectionSelector, ResultSelector, Coordination>>>
 {
     typedef concat_map<Observable, CollectionSelector, ResultSelector, Coordination> this_type;
     typedef concat_traits<Observable, CollectionSelector, ResultSelector, Coordination> traits;
@@ -241,9 +241,9 @@ private:
 template<class CollectionSelector, class ResultSelector, class Coordination>
 class concat_map_factory
 {
-    typedef typename std::decay<CollectionSelector>::type collection_selector_type;
-    typedef typename std::decay<ResultSelector>::type result_selector_type;
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<CollectionSelector> collection_selector_type;
+    typedef rxu::decay_t<ResultSelector> result_selector_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
 
     collection_selector_type selectorCollection;
     result_selector_type selectorResult;
@@ -258,9 +258,9 @@ public:
 
     template<class Observable>
     auto operator()(Observable&& source)
-        ->      observable<typename concat_map<Observable, CollectionSelector, ResultSelector, Coordination>::value_type, concat_map<Observable, CollectionSelector, ResultSelector, Coordination>> {
-        return  observable<typename concat_map<Observable, CollectionSelector, ResultSelector, Coordination>::value_type, concat_map<Observable, CollectionSelector, ResultSelector, Coordination>>(
-                                    concat_map<Observable, CollectionSelector, ResultSelector, Coordination>(std::forward<Observable>(source), selectorCollection, selectorResult, coordination));
+        ->      observable<rxu::value_type_t<concat_map<Observable, CollectionSelector, ResultSelector, Coordination>>, concat_map<Observable, CollectionSelector, ResultSelector, Coordination>> {
+        return  observable<rxu::value_type_t<concat_map<Observable, CollectionSelector, ResultSelector, Coordination>>, concat_map<Observable, CollectionSelector, ResultSelector, Coordination>>(
+                                             concat_map<Observable, CollectionSelector, ResultSelector, Coordination>(std::forward<Observable>(source), selectorCollection, selectorResult, coordination));
     }
 };
 

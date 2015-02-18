@@ -18,8 +18,8 @@ struct zip_traits {
     typedef std::tuple<ObservableN...> tuple_source_type;
     typedef std::tuple<std::list<typename ObservableN::value_type>...> tuple_source_values_type;
 
-    typedef typename std::decay<Selector>::type selector_type;
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<Selector> selector_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
 
     struct tag_not_valid {};
     template<class CS, class... CVN>
@@ -33,7 +33,7 @@ struct zip_traits {
 };
 
 template<class Coordination, class Selector, class... ObservableN>
-struct zip : public operator_base<typename zip_traits<Coordination, Selector, ObservableN...>::value_type>
+struct zip : public operator_base<rxu::value_type_t<zip_traits<Coordination, Selector, ObservableN...>>>
 {
     typedef zip<Coordination, Selector, ObservableN...> this_type;
 
@@ -171,8 +171,8 @@ struct zip : public operator_base<typename zip_traits<Coordination, Selector, Ob
 template<class Coordination, class Selector, class... ObservableN>
 class zip_factory
 {
-    typedef typename std::decay<Coordination>::type coordination_type;
-    typedef typename std::decay<Selector>::type selector_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
+    typedef rxu::decay_t<Selector> selector_type;
     typedef std::tuple<ObservableN...> tuple_source_type;
 
     coordination_type coordination;
@@ -181,9 +181,9 @@ class zip_factory
 
     template<class... YObservableN>
     auto make(std::tuple<YObservableN...> source)
-        ->      observable<typename zip<Coordination, Selector, YObservableN...>::value_type, zip<Coordination, Selector, YObservableN...>> {
-        return  observable<typename zip<Coordination, Selector, YObservableN...>::value_type, zip<Coordination, Selector, YObservableN...>>(
-                                    zip<Coordination, Selector, YObservableN...>(coordination, selector, std::move(source)));
+        ->      observable<rxu::value_type_t<zip<Coordination, Selector, YObservableN...>>, zip<Coordination, Selector, YObservableN...>> {
+        return  observable<rxu::value_type_t<zip<Coordination, Selector, YObservableN...>>, zip<Coordination, Selector, YObservableN...>>(
+                                             zip<Coordination, Selector, YObservableN...>(coordination, selector, std::move(source)));
     }
 public:
     zip_factory(coordination_type sf, selector_type s, ObservableN... on)

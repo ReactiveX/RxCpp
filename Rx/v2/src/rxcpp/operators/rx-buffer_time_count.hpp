@@ -19,10 +19,10 @@ struct buffer_with_time_or_count
     static_assert(std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>::value, "Duration parameter must convert to rxsc::scheduler::clock_type::duration");
     static_assert(is_coordination<Coordination>::value, "Coordination parameter must satisfy the requirements for a Coordination");
 
-    typedef typename std::decay<T>::type source_value_type;
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<T> source_value_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
     typedef typename coordination_type::coordinator_type coordinator_type;
-    typedef typename std::decay<Duration>::type duration_type;
+    typedef rxu::decay_t<Duration> duration_type;
 
     struct buffer_with_time_or_count_values
     {
@@ -48,7 +48,7 @@ struct buffer_with_time_or_count
     {
         typedef buffer_with_time_or_count_observer<Subscriber> this_type;
         typedef std::vector<T> value_type;
-        typedef typename std::decay<Subscriber>::type dest_type;
+        typedef rxu::decay_t<Subscriber> dest_type;
         typedef observer<value_type, this_type> observer_type;
 
         struct buffer_with_time_or_count_subscriber_values : public buffer_with_time_or_count_values
@@ -127,8 +127,8 @@ struct buffer_with_time_or_count
 template<class Duration, class Coordination>
 class buffer_with_time_or_count_factory
 {
-    typedef typename std::decay<Duration>::type duration_type;
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<Duration> duration_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
 
     duration_type period;
     duration_type skip;
@@ -137,8 +137,8 @@ public:
     buffer_with_time_or_count_factory(duration_type p, duration_type s, coordination_type c) : period(p), skip(s), coordination(c) {}
     template<class Observable>
     auto operator()(Observable&& source)
-        -> decltype(source.template lift<std::vector<typename std::decay<Observable>::type::value_type>>(buffer_with_time_or_count<typename std::decay<Observable>::type::value_type, Duration, Coordination>(period, skip, coordination))) {
-        return      source.template lift<std::vector<typename std::decay<Observable>::type::value_type>>(buffer_with_time_or_count<typename std::decay<Observable>::type::value_type, Duration, Coordination>(period, skip, coordination));
+        -> decltype(source.template lift<std::vector<rxu::value_type_t<rxu::decay_t<Observable>>>>(buffer_with_time_or_count<rxu::value_type_t<rxu::decay_t<Observable>>, Duration, Coordination>(period, skip, coordination))) {
+        return      source.template lift<std::vector<rxu::value_type_t<rxu::decay_t<Observable>>>>(buffer_with_time_or_count<rxu::value_type_t<rxu::decay_t<Observable>>, Duration, Coordination>(period, skip, coordination));
     }
 };
 
