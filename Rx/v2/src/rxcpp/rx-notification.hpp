@@ -205,47 +205,24 @@ private:
         return std::make_shared<on_error_notification>(ep);
     }
 
-    struct on_next_factory
-    {
-        type operator()(T value) const {
-            return std::make_shared<on_next_notification>(std::move(value));
-        }
-    };
-
-    struct on_completed_factory
-    {
-        type operator()() const {
-            return std::make_shared<on_completed_notification>();
-        }
-    };
-
-    struct on_error_factory
-    {
-        template<typename Exception>
-        type operator()(Exception&& e) const {
-            return make_on_error(typename std::conditional<
-                std::is_same<rxu::decay_t<Exception>, std::exception_ptr>::value,
-                    exception_ptr_tag, exception_tag>::type(),
-                std::forward<Exception>(e));
-        }
-    };
 public:
-    const static on_next_factory on_next;
-    const static on_completed_factory on_completed;
-    const static on_error_factory on_error;
+    template<typename U>
+    static type on_next(U value) {
+        return std::make_shared<on_next_notification>(std::move(value));
+    }
+
+    static type on_completed() {
+        return std::make_shared<on_completed_notification>();
+    }
+
+    template<typename Exception>
+    static type on_error(Exception&& e) {
+        return make_on_error(typename std::conditional<
+            std::is_same<typename std::decay<Exception>::type, std::exception_ptr>::value,
+                exception_ptr_tag, exception_tag>::type(),
+            std::forward<Exception>(e));
+    }
 };
-
-template<class T>
-//static
-RXCPP_SELECT_ANY const typename notification<T>::on_next_factory notification<T>::on_next = notification<T>::on_next_factory();
-
-template<class T>
-//static
-RXCPP_SELECT_ANY const typename notification<T>::on_completed_factory notification<T>::on_completed = notification<T>::on_completed_factory();
-
-template<class T>
-//static
-RXCPP_SELECT_ANY const typename notification<T>::on_error_factory notification<T>::on_error = notification<T>::on_error_factory();
 
 template<class T>
 bool operator == (const std::shared_ptr<detail::notification_base<T>>& lhs, const std::shared_ptr<detail::notification_base<T>>& rhs) {
