@@ -16,7 +16,7 @@ namespace detail {
 template<class T, class Coordination>
 struct range : public source_base<T>
 {
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
     typedef typename coordination_type::coordinator_type coordinator_type;
 
     struct range_state_type

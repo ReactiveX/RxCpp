@@ -21,7 +21,7 @@ class subscriber : public subscriber_base<T>
     static_assert(!is_subscriber<Observer>::value, "not allowed to nest subscribers");
     static_assert(is_observer<Observer>::value, "subscriber must contain an observer<T, ...>");
     typedef subscriber<T, Observer> this_type;
-    typedef typename std::decay<Observer>::type observer_type;
+    typedef rxu::decay_t<Observer> observer_type;
 
     composite_subscription lifetime;
     observer_type destination;

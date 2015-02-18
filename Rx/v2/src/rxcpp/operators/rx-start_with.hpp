@@ -13,8 +13,8 @@ namespace operators {
 
 template<class Observable, class Value0, class... ValueN>
 auto start_with(Observable o, Value0 v0, ValueN... vn)
-    -> decltype(rxs::from(typename Observable::value_type(v0), typename Observable::value_type(vn)...).concat(o)) {
-    return      rxs::from(typename Observable::value_type(v0), typename Observable::value_type(vn)...).concat(o);
+    -> decltype(rxs::from(rxu::value_type_t<Observable>(v0), rxu::value_type_t<Observable>(vn)...).concat(o)) {
+    return      rxs::from(rxu::value_type_t<Observable>(v0), rxu::value_type_t<Observable>(vn)...).concat(o);
 }
 
 }

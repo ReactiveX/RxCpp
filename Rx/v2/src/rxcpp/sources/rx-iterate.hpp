@@ -16,7 +16,7 @@ namespace detail {
 template<class Collection>
 struct is_iterable
 {
-    typedef typename std::decay<Collection>::type collection_type;
+    typedef rxu::decay_t<Collection> collection_type;
 
     struct not_void {};
     template<class CC>
@@ -30,18 +30,18 @@ struct is_iterable
 template<class Collection>
 struct iterate_traits
 {
-    typedef typename std::decay<Collection>::type collection_type;
+    typedef rxu::decay_t<Collection> collection_type;
     typedef decltype(std::begin(*(collection_type*)nullptr)) iterator_type;
-    typedef typename std::iterator_traits<iterator_type>::value_type value_type;
+    typedef rxu::value_type_t<std::iterator_traits<iterator_type>> value_type;
 };
 
 template<class Collection, class Coordination>
-struct iterate : public source_base<typename iterate_traits<Collection>::value_type>
+struct iterate : public source_base<rxu::value_type_t<iterate_traits<Collection>>>
 {
     typedef iterate<Collection, Coordination> this_type;
     typedef iterate_traits<Collection> traits;
 
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
     typedef typename coordination_type::coordinator_type coordinator_type;
 
     typedef typename traits::collection_type collection_type;
@@ -134,15 +134,15 @@ struct iterate : public source_base<typename iterate_traits<Collection>::value_t
 
 template<class Collection>
 auto iterate(Collection c)
-    ->      observable<typename detail::iterate_traits<Collection>::value_type, detail::iterate<Collection, identity_one_worker>> {
-    return  observable<typename detail::iterate_traits<Collection>::value_type, detail::iterate<Collection, identity_one_worker>>(
-                                                                                detail::iterate<Collection, identity_one_worker>(std::move(c), identity_immediate()));
+    ->      observable<rxu::value_type_t<detail::iterate_traits<Collection>>, detail::iterate<Collection, identity_one_worker>> {
+    return  observable<rxu::value_type_t<detail::iterate_traits<Collection>>, detail::iterate<Collection, identity_one_worker>>(
+                                                                              detail::iterate<Collection, identity_one_worker>(std::move(c), identity_immediate()));
 }
 template<class Collection, class Coordination>
 auto iterate(Collection c, Coordination cn)
-    ->      observable<typename detail::iterate_traits<Collection>::value_type, detail::iterate<Collection, Coordination>> {
-    return  observable<typename detail::iterate_traits<Collection>::value_type, detail::iterate<Collection, Coordination>>(
-                                                                                detail::iterate<Collection, Coordination>(std::move(c), std::move(cn)));
+    ->      observable<rxu::value_type_t<detail::iterate_traits<Collection>>, detail::iterate<Collection, Coordination>> {
+    return  observable<rxu::value_type_t<detail::iterate_traits<Collection>>, detail::iterate<Collection, Coordination>>(
+                                                                              detail::iterate<Collection, Coordination>(std::move(c), std::move(cn)));
 }
 
 template<class T>

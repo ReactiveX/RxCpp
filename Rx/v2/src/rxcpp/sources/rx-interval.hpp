@@ -18,7 +18,7 @@ struct interval : public source_base<long>
 {
     typedef interval<Coordination> this_type;
 
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
     typedef typename coordination_type::coordinator_type coordinator_type;
 
     struct interval_initial_type
