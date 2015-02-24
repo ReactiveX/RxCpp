@@ -290,10 +290,10 @@ SCENARIO("zip empty N", "[zip][join][operators]"){
         auto w = sc.create_worker();
         const rxsc::test::messages<int> on;
 
-        const size_t N = 16;
+        const int N = 16;
 
         std::vector<rxcpp::test::testable_observable<int>> e;
-        for (size_t i = 0; i < N; ++i) {
+        for (int i = 0; i < N; ++i) {
             e.push_back(
                 sc.make_hot_observable({
                     on.next(150, 1),
