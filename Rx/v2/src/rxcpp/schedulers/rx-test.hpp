@@ -404,8 +404,8 @@ public:
 
         struct subscribe_factory
         {
-            rxn::subscription operator()(long subscribe, long unsubscribe) const {
-                return rxn::subscription(subscribe, unsubscribe);
+            rxn::subscription operator()(long subscribeAt, long unsubscribeAt) const {
+                return rxn::subscription(subscribeAt, unsubscribeAt);
             }
         };
         static const subscribe_factory subscribe;
