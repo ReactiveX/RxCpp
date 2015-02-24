@@ -132,13 +132,8 @@ struct reduce : public operator_base<rxu::value_type_t<reduce_traits<T, SourceOp
             state->out,
         // on_next
             [state](T t) {
-                auto next = on_exception(
-                    [&](){return state->accumulator(state->current, t);},
-                    state->out);
-                if (next.empty()) {
-                    return;
-                }
-                state->current = next.get();
+                auto next = state->accumulator(state->current, t);
+                state->current = next;
             },
         // on_error
             [state](std::exception_ptr e) {
@@ -146,13 +141,8 @@ struct reduce : public operator_base<rxu::value_type_t<reduce_traits<T, SourceOp
             },
         // on_completed
             [state]() {
-                auto result = on_exception(
-                    [&](){return state->result_selector(state->current);},
-                    state->out);
-                if (result.empty()) {
-                    return;
-                }
-                state->out.on_next(result.get());
+                auto result = state->result_selector(state->current);
+                state->out.on_next(result);
                 state->out.on_completed();
             }
         );
