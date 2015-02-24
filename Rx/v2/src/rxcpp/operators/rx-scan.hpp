@@ -64,13 +64,7 @@ struct scan : public operator_base<rxu::decay_t<Seed>>
             state->out,
         // on_next
             [state](T t) {
-                auto result = on_exception(
-                    [&](){return state->accumulator(state->result, t);},
-                    state->out);
-                if (result.empty()) {
-                    return;
-                }
-                state->result = result.get();
+                state->result = state->accumulator(state->result, t);
                 state->out.on_next(state->result);
             },
         // on_error

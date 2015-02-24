@@ -136,12 +136,6 @@ struct flat_map
             outercs,
         // on_next
             [state](source_value_type st) {
-                auto selectedCollection = on_exception(
-                    [&](){return state->selectCollection(st);},
-                    state->out);
-                if (selectedCollection.empty()) {
-                    return;
-                }
 
                 composite_subscription innercs;
 
@@ -153,12 +147,8 @@ struct flat_map
                     state->out.remove(innercstoken);
                 }));
 
-                auto selectedSource = on_exception(
-                    [&](){return state->coordinator.in(selectedCollection.get());},
-                    state->out);
-                if (selectedSource.empty()) {
-                    return;
-                }
+                auto selectedCollection = state->selectCollection(st);
+                auto selectedSource = state->coordinator.in(selectedCollection);
 
                 ++state->pendingCompletions;
                 // this subscribe does not share the source subscription
@@ -168,13 +158,8 @@ struct flat_map
                     innercs,
                 // on_next
                     [state, st](collection_value_type ct) {
-                        auto selectedResult = on_exception(
-                            [&](){return state->selectResult(st, std::move(ct));},
-                            state->out);
-                        if (selectedResult.empty()) {
-                            return;
-                        }
-                        state->out.on_next(std::move(*selectedResult));
+                        auto selectedResult = state->selectResult(st, std::move(ct));
+                        state->out.on_next(std::move(selectedResult));
                     },
                 // on_error
                     [state](std::exception_ptr e) {
@@ -188,14 +173,8 @@ struct flat_map
                     }
                 );
 
-                auto selectedSinkInner = on_exception(
-                    [&](){return state->coordinator.out(sinkInner);},
-                    state->out);
-                if (selectedSinkInner.empty()) {
-                    return;
-                }
-
-                selectedSource->subscribe(std::move(selectedSinkInner.get()));
+                auto selectedSinkInner = state->coordinator.out(sinkInner);
+                selectedSource.subscribe(std::move(selectedSinkInner));
             },
         // on_error
             [state](std::exception_ptr e) {
