@@ -143,9 +143,9 @@ private:
 
     struct virtual_observer : public std::enable_shared_from_this<virtual_observer>
     {
-        virtual void on_next(T) const =0;
-        virtual void on_error(std::exception_ptr e) const =0;
-        virtual void on_completed() const =0;
+        virtual void on_next(T) const {};
+        virtual void on_error(std::exception_ptr) const {};
+        virtual void on_completed() const {};
     };
 
     template<class Observer>
