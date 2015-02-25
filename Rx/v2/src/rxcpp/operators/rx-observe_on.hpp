@@ -57,7 +57,6 @@ struct observe_on
             mutable queue_type queue;
             mutable queue_type drain_queue;
             composite_subscription lifetime;
-            rxsc::worker processor;
             mutable typename mode::type current;
             coordinator_type coordinator;
             dest_type destination;
@@ -119,7 +118,6 @@ struct observe_on
                         [&](){return coordinator.act(drain);},
                         destination);
                     if (selectedDrain.empty()) {
-                        std::unique_lock<std::mutex> guard(lock);
                         current = mode::Errored;
                         using std::swap;
                         queue_type expired;

@@ -43,7 +43,6 @@ class synchronize_observer : public detail::multicast_observer<T>
         mutable std::condition_variable wake;
         mutable queue_type queue;
         composite_subscription lifetime;
-        rxsc::worker processor;
         mutable typename mode::type current;
         coordinator_type coordinator;
         output_type destination;
