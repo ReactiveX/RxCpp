@@ -112,12 +112,7 @@ struct merge
                     state->out.remove(innercstoken);
                 }));
 
-                auto selectedSource = on_exception(
-                    [&](){return state->coordinator.in(st);},
-                    state->out);
-                if (selectedSource.empty()) {
-                    return;
-                }
+                auto selectedSource = state->coordinator.in(st);
 
                 ++state->pendingCompletions;
                 // this subscribe does not share the source subscription
@@ -140,13 +135,9 @@ struct merge
                         }
                     }
                 );
-                auto selectedSinkInner = on_exception(
-                    [&](){return state->coordinator.out(sinkInner);},
-                    state->out);
-                if (selectedSinkInner.empty()) {
-                    return;
-                }
-                selectedSource->subscribe(std::move(selectedSinkInner.get()));
+
+                auto selectedSinkInner = state->coordinator.out(sinkInner);
+                selectedSource.subscribe(std::move(selectedSinkInner));
             },
         // on_error
             [state](std::exception_ptr e) {

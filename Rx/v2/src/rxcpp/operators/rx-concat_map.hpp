@@ -143,13 +143,8 @@ struct concat_map
                     collectionLifetime,
                 // on_next
                     [state, st](collection_value_type ct) {
-                        auto selectedResult = on_exception(
-                            [&](){return state->selectResult(st, std::move(ct));},
-                            state->out);
-                        if (selectedResult.empty()) {
-                            return;
-                        }
-                        state->out.on_next(std::move(*selectedResult));
+                        auto selectedResult = state->selectResult(st, std::move(ct));
+                        state->out.on_next(std::move(selectedResult));
                     },
                 // on_error
                     [state](std::exception_ptr e) {
