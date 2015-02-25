@@ -343,23 +343,23 @@ SCENARIO("window with time, basic", "[window_with_time][operators]"){
 
             THEN("the output contains merged groups of ints"){
                 auto required = rxu::to_vector({
-                    on.next(210, 2),
-                    on.next(240, 3),
-                    on.next(270, 4),
-                    on.next(270, 4),
-                    on.next(320, 5),
-                    on.next(320, 5),
-                    on.next(360, 6),
-                    on.next(360, 6),
-                    on.next(390, 7),
-                    on.next(390, 7),
-                    on.next(410, 8),
-                    on.next(410, 8),
-                    on.next(460, 9),
-                    on.next(460, 9),
-                    on.next(470, 10),
-                    on.next(470, 10),
-                    on.completed(490)
+                    on.next(211, 2),
+                    on.next(241, 3),
+                    on.next(271, 4),
+                    on.next(271, 4),
+                    on.next(321, 5),
+                    on.next(321, 5),
+                    on.next(361, 6),
+                    on.next(361, 6),
+                    on.next(391, 7),
+                    on.next(391, 7),
+                    on.next(411, 8),
+                    on.next(411, 8),
+                    on.next(461, 9),
+                    on.next(461, 9),
+                    on.next(471, 10),
+                    on.next(471, 10),
+                    on.completed(491)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -413,16 +413,16 @@ SCENARIO("window with time, basic same", "[window_with_time][operators]"){
 
             THEN("the output contains merged groups of ints"){
                 auto required = rxu::to_vector({
-                    on.next(210, 2),
-                    on.next(240, 3),
-                    on.next(270, 4),
-                    on.next(320, 5),
-                    on.next(360, 6),
-                    on.next(390, 7),
-                    on.next(410, 8),
-                    on.next(460, 9),
-                    on.next(470, 10),
-                    on.completed(490)
+                    on.next(211, 2),
+                    on.next(241, 3),
+                    on.next(271, 4),
+                    on.next(321, 5),
+                    on.next(361, 6),
+                    on.next(391, 7),
+                    on.next(411, 8),
+                    on.next(461, 9),
+                    on.next(471, 10),
+                    on.completed(491)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -475,18 +475,18 @@ SCENARIO("window with time, basic 1", "[window_with_time][operators]"){
 
             THEN("the output contains merged groups of ints"){
                 auto required = rxu::to_vector({
-                    on.next(210, 2),
-                    on.next(240, 3),
-                    on.next(280, 4),
-                    on.next(280, 4),
-                    on.next(320, 5),
-                    on.next(350, 6),
-                    on.next(350, 6),
-                    on.next(380, 7),
-                    on.next(420, 8),
-                    on.next(420, 8),
-                    on.next(470, 9),
-                    on.completed(600)
+                    on.next(211, 2),
+                    on.next(241, 3),
+                    on.next(281, 4),
+                    on.next(281, 4),
+                    on.next(321, 5),
+                    on.next(351, 6),
+                    on.next(351, 6),
+                    on.next(381, 7),
+                    on.next(421, 8),
+                    on.next(421, 8),
+                    on.next(471, 9),
+                    on.completed(601)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -539,13 +539,13 @@ SCENARIO("window with time, basic 2", "[window_with_time][operators]"){
 
             THEN("the output contains merged groups of ints"){
                 auto required = rxu::to_vector({
-                    on.next(210, 2),
-                    on.next(240, 3),
-                    on.next(320, 5),
-                    on.next(350, 6),
-                    on.next(420, 8),
-                    on.next(470, 9),
-                    on.completed(600)
+                    on.next(211, 2),
+                    on.next(241, 3),
+                    on.next(321, 5),
+                    on.next(351, 6),
+                    on.next(421, 8),
+                    on.next(471, 9),
+                    on.completed(601)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -600,18 +600,18 @@ SCENARIO("window with time, error", "[window_with_time][operators]"){
 
             THEN("the output contains merged groups of ints"){
                 auto required = rxu::to_vector({
-                    on.next(210, 2),
-                    on.next(240, 3),
-                    on.next(280, 4),
-                    on.next(280, 4),
-                    on.next(320, 5),
-                    on.next(350, 6),
-                    on.next(350, 6),
-                    on.next(380, 7),
-                    on.next(420, 8),
-                    on.next(420, 8),
-                    on.next(470, 9),
-                    on.error(600, ex)
+                    on.next(211, 2),
+                    on.next(241, 3),
+                    on.next(281, 4),
+                    on.next(281, 4),
+                    on.next(321, 5),
+                    on.next(351, 6),
+                    on.next(351, 6),
+                    on.next(381, 7),
+                    on.next(421, 8),
+                    on.next(421, 8),
+                    on.next(471, 9),
+                    on.error(601, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -665,13 +665,13 @@ SCENARIO("window with time, disposed", "[window_with_time][operators]"){
 
             THEN("the output contains merged groups of ints"){
                 auto required = rxu::to_vector({
-                    on.next(210, 2),
-                    on.next(240, 3),
-                    on.next(280, 4),
-                    on.next(280, 4),
-                    on.next(320, 5),
-                    on.next(350, 6),
-                    on.next(350, 6),
+                    on.next(211, 2),
+                    on.next(241, 3),
+                    on.next(281, 4),
+                    on.next(281, 4),
+                    on.next(321, 5),
+                    on.next(351, 6),
+                    on.next(351, 6),
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -679,7 +679,7 @@ SCENARIO("window with time, disposed", "[window_with_time][operators]"){
 
             THEN("there was one subscription and one unsubscription to the observable"){
                 auto required = rxu::to_vector({
-                    o_on.subscribe(200, 370)
+                    o_on.subscribe(200, 371)
                 });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
@@ -724,15 +724,15 @@ SCENARIO("window with time, basic same 1", "[window_with_time][operators]"){
 
             THEN("the output contains merged groups of ints"){
                 auto required = rxu::to_vector({
-                    on.next(210, 2),
-                    on.next(240, 3),
-                    on.next(280, 4),
-                    on.next(320, 5),
-                    on.next(350, 6),
-                    on.next(380, 7),
-                    on.next(420, 8),
-                    on.next(470, 9),
-                    on.completed(600)
+                    on.next(211, 2),
+                    on.next(241, 3),
+                    on.next(281, 4),
+                    on.next(321, 5),
+                    on.next(351, 6),
+                    on.next(381, 7),
+                    on.next(421, 8),
+                    on.next(471, 9),
+                    on.completed(601)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -785,16 +785,16 @@ SCENARIO("window with time or count, basic", "[window_with_time_or_count][operat
 
             THEN("the output contains merged groups of ints"){
                 auto required = rxu::to_vector({
-                    on.next(205, 1),
-                    on.next(210, 2),
-                    on.next(240, 3),
-                    on.next(280, 4),
-                    on.next(320, 5),
-                    on.next(350, 6),
-                    on.next(370, 7),
-                    on.next(420, 8),
-                    on.next(470, 9),
-                    on.completed(600)
+                    on.next(206, 1),
+                    on.next(211, 2),
+                    on.next(241, 3),
+                    on.next(281, 4),
+                    on.next(321, 5),
+                    on.next(351, 6),
+                    on.next(371, 7),
+                    on.next(421, 8),
+                    on.next(471, 9),
+                    on.completed(601)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -849,16 +849,16 @@ SCENARIO("window with time or count, error", "[window_with_time_or_count][operat
 
             THEN("the output contains merged groups of ints"){
                 auto required = rxu::to_vector({
-                    on.next(205, 1),
-                    on.next(210, 2),
-                    on.next(240, 3),
-                    on.next(280, 4),
-                    on.next(320, 5),
-                    on.next(350, 6),
-                    on.next(370, 7),
-                    on.next(420, 8),
-                    on.next(470, 9),
-                    on.error(600, ex)
+                    on.next(206, 1),
+                    on.next(211, 2),
+                    on.next(241, 3),
+                    on.next(281, 4),
+                    on.next(321, 5),
+                    on.next(351, 6),
+                    on.next(371, 7),
+                    on.next(421, 8),
+                    on.next(471, 9),
+                    on.error(601, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -907,18 +907,18 @@ SCENARIO("window with time or count, disposed", "[window_with_time_or_count][ope
                         // forget type to workaround lambda deduction bug on msvc 2013
                         .as_dynamic();
                 },
-                370
+                372
             );
 
             THEN("the output contains merged groups of ints"){
                 auto required = rxu::to_vector({
-                    on.next(205, 1),
-                    on.next(210, 2),
-                    on.next(240, 3),
-                    on.next(280, 4),
-                    on.next(320, 5),
-                    on.next(350, 6),
-                    on.next(370, 7)
+                    on.next(206, 1),
+                    on.next(211, 2),
+                    on.next(241, 3),
+                    on.next(281, 4),
+                    on.next(321, 5),
+                    on.next(351, 6),
+                    on.next(371, 7)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -926,7 +926,7 @@ SCENARIO("window with time or count, disposed", "[window_with_time_or_count][ope
 
             THEN("there was one subscription and one unsubscription to the observable"){
                 auto required = rxu::to_vector({
-                    o_on.subscribe(200, 370)
+                    o_on.subscribe(200, 373)
                 });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
@@ -967,12 +967,12 @@ SCENARIO("window with time or count, only time triggered", "[window_with_time_or
 
             THEN("the output contains merged groups of ints"){
                 auto required = rxu::to_vector({
-                    on.next(205, 1),
-                    on.next(305, 2),
-                    on.next(505, 3),
-                    on.next(605, 4),
-                    on.next(610, 5),
-                    on.completed(850)
+                    on.next(206, 1),
+                    on.next(306, 2),
+                    on.next(506, 3),
+                    on.next(606, 4),
+                    on.next(611, 5),
+                    on.completed(851)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);

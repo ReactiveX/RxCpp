@@ -712,13 +712,13 @@ SCENARIO("buffer with time, overlapping intervals", "[buffer_with_time][operator
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.next(300, rxu::to_vector({ 2, 3, 4 })),
-                    v_on.next(370, rxu::to_vector({ 4, 5, 6 })),
-                    v_on.next(440, rxu::to_vector({ 6, 7, 8 })),
-                    v_on.next(510, rxu::to_vector({ 8, 9 })),
-                    v_on.next(580, std::vector<int>()),
-                    v_on.next(600, std::vector<int>()),
-                    v_on.completed(600)
+                    v_on.next(301, rxu::to_vector({ 2, 3, 4 })),
+                    v_on.next(371, rxu::to_vector({ 4, 5, 6 })),
+                    v_on.next(441, rxu::to_vector({ 6, 7, 8 })),
+                    v_on.next(511, rxu::to_vector({ 8, 9 })),
+                    v_on.next(581, std::vector<int>()),
+                    v_on.next(601, std::vector<int>()),
+                    v_on.completed(601)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -769,11 +769,11 @@ SCENARIO("buffer with time, intervals with skips", "[buffer_with_time][operators
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.next(270, rxu::to_vector({ 2, 3 })),
-                    v_on.next(370, rxu::to_vector({ 5, 6 })),
-                    v_on.next(470, rxu::to_vector({ 8, 9 })),
-                    v_on.next(570, std::vector<int>()),
-                    v_on.completed(600)
+                    v_on.next(271, rxu::to_vector({ 2, 3 })),
+                    v_on.next(371, rxu::to_vector({ 5, 6 })),
+                    v_on.next(471, rxu::to_vector({ 8, 9 })),
+                    v_on.next(571, std::vector<int>()),
+                    v_on.completed(601)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -826,12 +826,12 @@ SCENARIO("buffer with time, error", "[buffer_with_time][operators]"){
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.next(300, rxu::to_vector({ 2, 3, 4 })),
-                    v_on.next(370, rxu::to_vector({ 4, 5, 6 })),
-                    v_on.next(440, rxu::to_vector({ 6, 7, 8 })),
-                    v_on.next(510, rxu::to_vector({ 8, 9 })),
-                    v_on.next(580, std::vector<int>()),
-                    v_on.error(600, ex)
+                    v_on.next(301, rxu::to_vector({ 2, 3, 4 })),
+                    v_on.next(371, rxu::to_vector({ 4, 5, 6 })),
+                    v_on.next(441, rxu::to_vector({ 6, 7, 8 })),
+                    v_on.next(511, rxu::to_vector({ 8, 9 })),
+                    v_on.next(581, std::vector<int>()),
+                    v_on.error(601, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -883,7 +883,7 @@ SCENARIO("buffer with time, disposed", "[buffer_with_time][operators]"){
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.next(300, rxu::to_vector({ 2, 3, 4 })),
+                    v_on.next(301, rxu::to_vector({ 2, 3, 4 })),
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -891,7 +891,7 @@ SCENARIO("buffer with time, disposed", "[buffer_with_time][operators]"){
 
             THEN("there was one subscription and one unsubscription to the xs"){
                 auto required = rxu::to_vector({
-                    on.subscribe(200, 370)
+                    on.subscribe(200, 371)
                 });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
@@ -934,11 +934,11 @@ SCENARIO("buffer with time, same", "[buffer_with_time][operators]"){
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.next(300, rxu::to_vector({ 2, 3, 4 })),
-                    v_on.next(400, rxu::to_vector({ 5, 6, 7 })),
-                    v_on.next(500, rxu::to_vector({ 8, 9 })),
-                    v_on.next(600, std::vector<int>()),
-                    v_on.completed(600)
+                    v_on.next(301, rxu::to_vector({ 2, 3, 4 })),
+                    v_on.next(401, rxu::to_vector({ 5, 6, 7 })),
+                    v_on.next(501, rxu::to_vector({ 8, 9 })),
+                    v_on.next(601, std::vector<int>()),
+                    v_on.completed(601)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -989,14 +989,14 @@ SCENARIO("buffer with time or count, basic", "[buffer_with_time_or_count][operat
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.next(240, rxu::to_vector({ 1, 2, 3 })),
-                    v_on.next(310, rxu::to_vector({ 4 })),
-                    v_on.next(370, rxu::to_vector({ 5, 6, 7 })),
-                    v_on.next(440, rxu::to_vector({ 8 })),
-                    v_on.next(510, rxu::to_vector({ 9 })),
-                    v_on.next(580, std::vector<int>()),
-                    v_on.next(600, std::vector<int>()),
-                    v_on.completed(600)
+                    v_on.next(241, rxu::to_vector({ 1, 2, 3 })),
+                    v_on.next(312, rxu::to_vector({ 4 })),
+                    v_on.next(371, rxu::to_vector({ 5, 6, 7 })),
+                    v_on.next(442, rxu::to_vector({ 8 })),
+                    v_on.next(512, rxu::to_vector({ 9 })),
+                    v_on.next(582, std::vector<int>()),
+                    v_on.next(601, std::vector<int>()),
+                    v_on.completed(601)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -1049,13 +1049,13 @@ SCENARIO("buffer with time or count, error", "[buffer_with_time_or_count][operat
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.next(240, rxu::to_vector({ 1, 2, 3 })),
-                    v_on.next(310, rxu::to_vector({ 4 })),
-                    v_on.next(370, rxu::to_vector({ 5, 6, 7 })),
-                    v_on.next(440, rxu::to_vector({ 8 })),
-                    v_on.next(510, rxu::to_vector({ 9 })),
-                    v_on.next(580, std::vector<int>()),
-                    v_on.error(600, ex)
+                    v_on.next(241, rxu::to_vector({ 1, 2, 3 })),
+                    v_on.next(312, rxu::to_vector({ 4 })),
+                    v_on.next(371, rxu::to_vector({ 5, 6, 7 })),
+                    v_on.next(442, rxu::to_vector({ 8 })),
+                    v_on.next(512, rxu::to_vector({ 9 })),
+                    v_on.next(582, std::vector<int>()),
+                    v_on.error(601, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -1102,14 +1102,14 @@ SCENARIO("buffer with time or count, dispose", "[buffer_with_time_or_count][oper
                         // forget type to workaround lambda deduction bug on msvc 2013
                         .as_dynamic();
                 },
-                370
+                372
             );
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.next(240, rxu::to_vector({ 1, 2, 3 })),
-                    v_on.next(310, rxu::to_vector({ 4 })),
-                    v_on.next(370, rxu::to_vector({ 5, 6, 7 })),
+                    v_on.next(241, rxu::to_vector({ 1, 2, 3 })),
+                    v_on.next(312, rxu::to_vector({ 4 })),
+                    v_on.next(371, rxu::to_vector({ 5, 6, 7 })),
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -1117,7 +1117,7 @@ SCENARIO("buffer with time or count, dispose", "[buffer_with_time_or_count][oper
 
             THEN("there was one subscription and one unsubscription to the xs"){
                 auto required = rxu::to_vector({
-                    on.subscribe(200, 370)
+                    on.subscribe(200, 373)
                 });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
@@ -1156,14 +1156,14 @@ SCENARIO("buffer with time or count, only time triggered", "[buffer_with_time_or
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.next(300, rxu::to_vector({ 1 })),
-                    v_on.next(400, rxu::to_vector({ 2 })),
-                    v_on.next(500, std::vector<int>()),
-                    v_on.next(600, rxu::to_vector({ 3 })),
-                    v_on.next(700, rxu::to_vector({ 4, 5 })),
-                    v_on.next(800, std::vector<int>()),
-                    v_on.next(850, std::vector<int>()),
-                    v_on.completed(850)
+                    v_on.next(301, rxu::to_vector({ 1 })),
+                    v_on.next(401, rxu::to_vector({ 2 })),
+                    v_on.next(501, std::vector<int>()),
+                    v_on.next(601, rxu::to_vector({ 3 })),
+                    v_on.next(701, rxu::to_vector({ 4, 5 })),
+                    v_on.next(801, std::vector<int>()),
+                    v_on.next(851, std::vector<int>()),
+                    v_on.completed(851)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
