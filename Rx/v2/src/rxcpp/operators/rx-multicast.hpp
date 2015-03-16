@@ -16,8 +16,8 @@ namespace detail {
 template<class T, class Observable, class Subject>
 struct multicast : public operator_base<T>
 {
-    typedef typename std::decay<Observable>::type source_type;
-    typedef typename std::decay<Subject>::type subject_type;
+    typedef rxu::decay_t<Observable> source_type;
+    typedef rxu::decay_t<Subject> subject_type;
 
     struct multicast_state : public std::enable_shared_from_this<multicast_state>
     {
@@ -76,9 +76,9 @@ public:
     }
     template<class Observable>
     auto operator()(Observable&& source)
-        ->      connectable_observable<typename std::decay<Observable>::type::value_type,   multicast<typename std::decay<Observable>::type::value_type, Observable, Subject>> {
-        return  connectable_observable<typename std::decay<Observable>::type::value_type,   multicast<typename std::decay<Observable>::type::value_type, Observable, Subject>>(
-                                                                                            multicast<typename std::decay<Observable>::type::value_type, Observable, Subject>(std::forward<Observable>(source), caster));
+        ->      connectable_observable<rxu::value_type_t<rxu::decay_t<Observable>>,   multicast<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, Subject>> {
+        return  connectable_observable<rxu::value_type_t<rxu::decay_t<Observable>>,   multicast<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, Subject>>(
+                                                                                      multicast<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, Subject>(std::forward<Observable>(source), caster));
     }
 };
 

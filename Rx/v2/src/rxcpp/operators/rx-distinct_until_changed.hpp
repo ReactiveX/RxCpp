@@ -16,14 +16,14 @@ namespace detail {
 template<class T>
 struct distinct_until_changed
 {
-    typedef typename std::decay<T>::type source_value_type;
+    typedef rxu::decay_t<T> source_value_type;
 
     template<class Subscriber>
     struct distinct_until_changed_observer
     {
         typedef distinct_until_changed_observer<Subscriber> this_type;
         typedef source_value_type value_type;
-        typedef typename std::decay<Subscriber>::type dest_type;
+        typedef rxu::decay_t<Subscriber> dest_type;
         typedef observer<value_type, this_type> observer_type;
         dest_type dest;
         mutable rxu::detail::maybe<source_value_type> remembered;
@@ -62,8 +62,8 @@ class distinct_until_changed_factory
 public:
     template<class Observable>
     auto operator()(Observable&& source)
-        -> decltype(source.template lift<typename std::decay<Observable>::type::value_type>(distinct_until_changed<typename std::decay<Observable>::type>::value_type)) {
-        return      source.template lift<typename std::decay<Observable>::type::value_type>(distinct_until_changed<typename std::decay<Observable>::type>::value_type);
+        -> decltype(source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(distinct_until_changed<rxu::decay_t<Observable>>::value_type)) {
+        return      source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(distinct_until_changed<rxu::decay_t<Observable>>::value_type);
     }
 };
 

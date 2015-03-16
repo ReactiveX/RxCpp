@@ -15,20 +15,20 @@ namespace detail {
 
 template<class T, class Observable, class Coordination>
 struct merge
-    : public operator_base<typename std::decay<T>::type::value_type>
+    : public operator_base<rxu::value_type_t<rxu::decay_t<T>>>
 {
     //static_assert(is_observable<Observable>::value, "merge requires an observable");
     //static_assert(is_observable<T>::value, "merge requires an observable that contains observables");
 
     typedef merge<T, Observable, Coordination> this_type;
 
-    typedef typename std::decay<T>::type source_value_type;
-    typedef typename std::decay<Observable>::type source_type;
+    typedef rxu::decay_t<T> source_value_type;
+    typedef rxu::decay_t<Observable> source_type;
 
     typedef typename source_type::source_operator_type source_operator_type;
     typedef typename source_value_type::value_type value_type;
 
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
     typedef typename coordination_type::coordinator_type coordinator_type;
 
     struct values
@@ -112,12 +112,7 @@ struct merge
                     state->out.remove(innercstoken);
                 }));
 
-                auto selectedSource = on_exception(
-                    [&](){return state->coordinator.in(st);},
-                    state->out);
-                if (selectedSource.empty()) {
-                    return;
-                }
+                auto selectedSource = state->coordinator.in(st);
 
                 ++state->pendingCompletions;
                 // this subscribe does not share the source subscription
@@ -140,13 +135,9 @@ struct merge
                         }
                     }
                 );
-                auto selectedSinkInner = on_exception(
-                    [&](){return state->coordinator.out(sinkInner);},
-                    state->out);
-                if (selectedSinkInner.empty()) {
-                    return;
-                }
-                selectedSource->subscribe(std::move(selectedSinkInner.get()));
+
+                auto selectedSinkInner = state->coordinator.out(sinkInner);
+                selectedSource.subscribe(std::move(selectedSinkInner));
             },
         // on_error
             [state](std::exception_ptr e) {
@@ -172,7 +163,7 @@ struct merge
 template<class Coordination>
 class merge_factory
 {
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
 
     coordination_type coordination;
 public:
@@ -183,9 +174,9 @@ public:
 
     template<class Observable>
     auto operator()(Observable source)
-        ->      observable<typename merge<typename Observable::value_type, Observable, Coordination>::value_type,   merge<typename Observable::value_type, Observable, Coordination>> {
-        return  observable<typename merge<typename Observable::value_type, Observable, Coordination>::value_type,   merge<typename Observable::value_type, Observable, Coordination>>(
-                                                                                                                    merge<typename Observable::value_type, Observable, Coordination>(std::move(source), coordination));
+        ->      observable<rxu::value_type_t<merge<rxu::value_type_t<Observable>, Observable, Coordination>>,   merge<rxu::value_type_t<Observable>, Observable, Coordination>> {
+        return  observable<rxu::value_type_t<merge<rxu::value_type_t<Observable>, Observable, Coordination>>,   merge<rxu::value_type_t<Observable>, Observable, Coordination>>(
+                                                                                                                merge<rxu::value_type_t<Observable>, Observable, Coordination>(std::move(source), coordination));
     }
 };
 

@@ -17,7 +17,7 @@ namespace detail {
 template<class T>
 struct buffer_count
 {
-    typedef typename std::decay<T>::type source_value_type;
+    typedef rxu::decay_t<T> source_value_type;
     struct buffer_count_values
     {
         buffer_count_values(int c, int s)
@@ -41,7 +41,7 @@ struct buffer_count
     {
         typedef buffer_count_observer<Subscriber> this_type;
         typedef std::vector<T> value_type;
-        typedef typename std::decay<Subscriber>::type dest_type;
+        typedef rxu::decay_t<Subscriber> dest_type;
         typedef observer<value_type, this_type> observer_type;
         dest_type dest;
         mutable int cursor;
@@ -105,8 +105,8 @@ public:
     buffer_count_factory(int c, int s) : count(c), skip(s) {}
     template<class Observable>
     auto operator()(Observable&& source)
-        -> decltype(source.template lift<std::vector<typename std::decay<Observable>::type::value_type>>(buffer_count<typename std::decay<Observable>::type::value_type>(count, skip))) {
-        return      source.template lift<std::vector<typename std::decay<Observable>::type::value_type>>(buffer_count<typename std::decay<Observable>::type::value_type>(count, skip));
+        -> decltype(source.template lift<std::vector<rxu::value_type_t<rxu::decay_t<Observable>>>>(buffer_count<rxu::value_type_t<rxu::decay_t<Observable>>>(count, skip))) {
+        return      source.template lift<std::vector<rxu::value_type_t<rxu::decay_t<Observable>>>>(buffer_count<rxu::value_type_t<rxu::decay_t<Observable>>>(count, skip));
     }
 };
 

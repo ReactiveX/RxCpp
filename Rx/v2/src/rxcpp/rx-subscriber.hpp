@@ -21,7 +21,7 @@ class subscriber : public subscriber_base<T>
     static_assert(!is_subscriber<Observer>::value, "not allowed to nest subscribers");
     static_assert(is_observer<Observer>::value, "subscriber must contain an observer<T, ...>");
     typedef subscriber<T, Observer> this_type;
-    typedef typename std::decay<Observer>::type observer_type;
+    typedef rxu::decay_t<Observer> observer_type;
 
     composite_subscription lifetime;
     observer_type destination;
@@ -44,8 +44,15 @@ class subscriber : public subscriber_base<T>
         template<class U>
         void operator()(U u) {
             trace_activity().on_next_enter(*that, u);
-            that->destination.on_next(std::move(u));
-            do_unsubscribe = false;
+            try {
+                that->destination.on_next(std::move(u));
+                do_unsubscribe = false;
+            } catch(...) {
+                auto ex = std::current_exception();
+                trace_activity().on_error_enter(*that, ex);
+                that->destination.on_error(std::move(ex));
+                trace_activity().on_error_return(*that);
+            }
         }
         const this_type* that;
         bool do_unsubscribe;

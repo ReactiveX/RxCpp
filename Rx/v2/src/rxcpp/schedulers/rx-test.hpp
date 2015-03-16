@@ -347,7 +347,7 @@ struct is_create_source_function
     template<class CF>
     static not_void check(...);
 
-    static const bool value = is_observable<decltype(check<typename std::decay<F>::type>(0))>::value;
+    static const bool value = is_observable<decltype(check<rxu::decay_t<F>>(0))>::value;
 };
 
 }
@@ -404,8 +404,8 @@ public:
 
         struct subscribe_factory
         {
-            rxn::subscription operator()(long subscribe, long unsubscribe) const {
-                return rxn::subscription(subscribe, unsubscribe);
+            rxn::subscription operator()(long subscribeAt, long unsubscribeAt) const {
+                return rxn::subscription(subscribeAt, unsubscribeAt);
             }
         };
         static const subscribe_factory subscribe;
@@ -512,21 +512,21 @@ public:
         auto start(F createSource, long created, long subscribed, long unsubscribed) const
             -> typename std::enable_if<detail::is_create_source_function<F>::value, start_traits<F>>::type::subscriber_type
         {
-            return start<typename start_traits<F>::value_type>(std::move(createSource), created, subscribed, unsubscribed);
+            return start<rxu::value_type_t<start_traits<F>>>(std::move(createSource), created, subscribed, unsubscribed);
         }
 
         template<class F>
         auto start(F createSource, long unsubscribed) const
             -> typename std::enable_if<detail::is_create_source_function<F>::value, start_traits<F>>::type::subscriber_type
         {
-            return start<typename start_traits<F>::value_type>(std::move(createSource), created_time, subscribed_time, unsubscribed);
+            return start<rxu::value_type_t<start_traits<F>>>(std::move(createSource), created_time, subscribed_time, unsubscribed);
         }
 
         template<class F>
         auto start(F createSource) const
             -> typename std::enable_if<detail::is_create_source_function<F>::value, start_traits<F>>::type::subscriber_type
         {
-            return start<typename start_traits<F>::value_type>(std::move(createSource), created_time, subscribed_time, unsubscribed_time);
+            return start<rxu::value_type_t<start_traits<F>>>(std::move(createSource), created_time, subscribed_time, unsubscribed_time);
         }
 
         void start() const {

@@ -16,7 +16,7 @@ namespace detail {
 template<class T, class ConnectableObservable>
 struct connect_forever : public operator_base<T>
 {
-    typedef typename std::decay<ConnectableObservable>::type source_type;
+    typedef rxu::decay_t<ConnectableObservable> source_type;
 
     source_type source;
 
@@ -38,9 +38,9 @@ public:
     connect_forever_factory() {}
     template<class Observable>
     auto operator()(Observable&& source)
-        ->      observable<typename std::decay<Observable>::type::value_type,   connect_forever<typename std::decay<Observable>::type::value_type, Observable>> {
-        return  observable<typename std::decay<Observable>::type::value_type,   connect_forever<typename std::decay<Observable>::type::value_type, Observable>>(
-                                                                                connect_forever<typename std::decay<Observable>::type::value_type, Observable>(std::forward<Observable>(source)));
+        ->      observable<rxu::value_type_t<rxu::decay_t<Observable>>,   connect_forever<rxu::value_type_t<rxu::decay_t<Observable>>, Observable>> {
+        return  observable<rxu::value_type_t<rxu::decay_t<Observable>>,   connect_forever<rxu::value_type_t<rxu::decay_t<Observable>>, Observable>>(
+                                                                          connect_forever<rxu::value_type_t<rxu::decay_t<Observable>>, Observable>(std::forward<Observable>(source)));
     }
 };
 

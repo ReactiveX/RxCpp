@@ -16,9 +16,9 @@ namespace detail {
 template<class T, class Coordination>
 struct observe_on
 {
-    typedef typename std::decay<T>::type source_value_type;
+    typedef rxu::decay_t<T> source_value_type;
 
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
     typedef typename coordination_type::coordinator_type coordinator_type;
 
     coordination_type coordination;
@@ -34,7 +34,7 @@ struct observe_on
         typedef observe_on_observer<Subscriber> this_type;
         typedef observer_base<source_value_type> base_type;
         typedef source_value_type value_type;
-        typedef typename std::decay<Subscriber>::type dest_type;
+        typedef rxu::decay_t<Subscriber> dest_type;
         typedef observer<value_type, this_type> observer_type;
 
         typedef rxn::notification<T> notification_type;
@@ -57,7 +57,6 @@ struct observe_on
             mutable queue_type queue;
             mutable queue_type drain_queue;
             composite_subscription lifetime;
-            rxsc::worker processor;
             mutable typename mode::type current;
             coordinator_type coordinator;
             dest_type destination;
@@ -119,7 +118,6 @@ struct observe_on
                         [&](){return coordinator.act(drain);},
                         destination);
                     if (selectedDrain.empty()) {
-                        std::unique_lock<std::mutex> guard(lock);
                         current = mode::Errored;
                         using std::swap;
                         queue_type expired;
@@ -184,14 +182,14 @@ struct observe_on
 template<class Coordination>
 class observe_on_factory
 {
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
     coordination_type coordination;
 public:
     observe_on_factory(coordination_type cn) : coordination(std::move(cn)) {}
     template<class Observable>
     auto operator()(Observable&& source)
-        -> decltype(source.template lift<typename std::decay<Observable>::type::value_type>(observe_on<typename std::decay<Observable>::type::value_type, coordination_type>(coordination))) {
-        return      source.template lift<typename std::decay<Observable>::type::value_type>(observe_on<typename std::decay<Observable>::type::value_type, coordination_type>(coordination));
+        -> decltype(source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(observe_on<rxu::value_type_t<rxu::decay_t<Observable>>, coordination_type>(coordination))) {
+        return      source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(observe_on<rxu::value_type_t<rxu::decay_t<Observable>>, coordination_type>(coordination));
     }
 };
 

@@ -18,7 +18,7 @@ struct error : public source_base<T>
 {
     typedef error<T, Coordination> this_type;
 
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
 
     typedef typename coordination_type::coordinator_type coordinator_type;
 
@@ -88,13 +88,13 @@ auto make_error(throw_instance_tag&&, E e, Coordination cn)
 
 template<class T, class E>
 auto error(E e)
-    -> decltype(detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, typename std::decay<E>::type>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), identity_immediate())) {
-    return      detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, typename std::decay<E>::type>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), identity_immediate());
+    -> decltype(detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, rxu::decay_t<E>>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), identity_immediate())) {
+    return      detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, rxu::decay_t<E>>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), identity_immediate());
 }
 template<class T, class E, class Coordination>
 auto error(E e, Coordination cn)
-    -> decltype(detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, typename std::decay<E>::type>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), std::move(cn))) {
-    return      detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, typename std::decay<E>::type>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), std::move(cn));
+    -> decltype(detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, rxu::decay_t<E>>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), std::move(cn))) {
+    return      detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, rxu::decay_t<E>>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), std::move(cn));
 }
 
 }
