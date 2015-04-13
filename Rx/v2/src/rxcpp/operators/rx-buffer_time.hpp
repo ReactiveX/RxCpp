@@ -53,14 +53,16 @@ struct buffer_with_time
 
         struct buffer_with_time_subscriber_values : public buffer_with_time_values
         {
-            buffer_with_time_subscriber_values(dest_type d, buffer_with_time_values v, coordinator_type c)
+            buffer_with_time_subscriber_values(composite_subscription cs, dest_type d, buffer_with_time_values v, coordinator_type c)
                 : buffer_with_time_values(v)
+                , cs(std::move(cs))
                 , dest(std::move(d))
                 , coordinator(std::move(c))
                 , worker(std::move(coordinator.get_worker()))
                 , expected(worker.now())
             {
             }
+            composite_subscription cs;
             dest_type dest;
             coordinator_type coordinator;
             rxsc::worker worker;
@@ -69,55 +71,125 @@ struct buffer_with_time
         };
         std::shared_ptr<buffer_with_time_subscriber_values> state;
 
-        buffer_with_time_observer(dest_type d, buffer_with_time_values v, coordinator_type c)
-            : state(std::make_shared<buffer_with_time_subscriber_values>(buffer_with_time_subscriber_values(std::move(d), v, std::move(c))))
+        buffer_with_time_observer(composite_subscription cs, dest_type d, buffer_with_time_values v, coordinator_type c)
+            : state(std::make_shared<buffer_with_time_subscriber_values>(buffer_with_time_subscriber_values(std::move(cs), std::move(d), v, std::move(c))))
         {
             auto localState = state;
+
+            auto disposer = [=](const rxsc::schedulable&){
+                localState->cs.unsubscribe();
+                localState->dest.unsubscribe();
+                localState->worker.unsubscribe();
+            };
+            auto selectedDisposer = on_exception(
+                [&](){return localState->coordinator.act(disposer);},
+                localState->dest);
+            if (selectedDisposer.empty()) {
+                return;
+            }
+
+            localState->dest.add([=](){
+                localState->worker.schedule(selectedDisposer.get());
+            });
+            localState->cs.add([=](){
+                localState->worker.schedule(selectedDisposer.get());
+            });
+
+            //
+            // The scheduler is FIFO for any time T. Since the observer is scheduling
+            // on_next/on_error/oncompleted the timed schedule calls must be resheduled
+            // when they occur to ensure that production happens after on_next/on_error/oncompleted
+            //
+
             auto produce_buffer = [localState](const rxsc::schedulable&) {
                 localState->dest.on_next(std::move(localState->chunks.front()));
                 localState->chunks.pop_front();
             };
-            auto create_buffer = [localState, produce_buffer](const rxsc::schedulable&) {
+            auto selectedProduce = on_exception(
+                [&](){return localState->coordinator.act(produce_buffer);},
+                localState->dest);
+            if (selectedProduce.empty()) {
+                return;
+            }
+
+            auto create_buffer = [localState, selectedProduce](const rxsc::schedulable&) {
                 localState->chunks.emplace_back();
                 auto produce_at = localState->expected + localState->period;
                 localState->expected += localState->skip;
-                localState->worker.schedule(produce_at, produce_buffer);
+                localState->worker.schedule(produce_at, [localState, selectedProduce](const rxsc::schedulable&) {
+                    localState->worker.schedule(selectedProduce.get());
+                });
             };
+            auto selectedCreate = on_exception(
+                [&](){return localState->coordinator.act(create_buffer);},
+                localState->dest);
+            if (selectedCreate.empty()) {
+                return;
+            }
 
             state->worker.schedule_periodically(
                 state->expected,
                 state->skip,
-                create_buffer);
+                [localState, selectedCreate](const rxsc::schedulable&) {
+                    localState->worker.schedule(selectedCreate.get());
+                });
         }
         void on_next(T v) const {
-            for(auto& chunk : state->chunks) {
-                chunk.push_back(v);
-            }
-        }
-        void on_error(std::exception_ptr e) const {
-            state->dest.on_error(e);
-        }
-        void on_completed() const {
-            auto done = on_exception(
-                [&](){
-                    while (!state->chunks.empty()) {
-                        state->dest.on_next(std::move(state->chunks.front()));
-                        state->chunks.pop_front();
-                    }
-                    return true;
-                },
-                state->dest);
-            if (done.empty()) {
+            auto localState = state;
+            auto work = [v, localState](const rxsc::schedulable&){
+                for(auto& chunk : localState->chunks) {
+                    chunk.push_back(v);
+                }
+            };
+            auto selectedWork = on_exception(
+                [&](){return localState->coordinator.act(work);},
+                localState->dest);
+            if (selectedWork.empty()) {
                 return;
             }
-            state->dest.on_completed();
+            localState->worker.schedule(selectedWork.get());
+        }
+        void on_error(std::exception_ptr e) const {
+            auto localState = state;
+            auto work = [e, localState](const rxsc::schedulable&){
+                localState->dest.on_error(e);
+            };
+            auto selectedWork = on_exception(
+                [&](){return localState->coordinator.act(work);},
+                localState->dest);
+            if (selectedWork.empty()) {
+                return;
+            }
+            localState->worker.schedule(selectedWork.get());
+        }
+        void on_completed() const {
+            auto localState = state;
+            auto work = [localState](const rxsc::schedulable&){
+                on_exception(
+                    [&](){
+                        while (!localState->chunks.empty()) {
+                            localState->dest.on_next(std::move(localState->chunks.front()));
+                            localState->chunks.pop_front();
+                        }
+                        return true;
+                    },
+                    localState->dest);
+                localState->dest.on_completed();
+            };
+            auto selectedWork = on_exception(
+                [&](){return localState->coordinator.act(work);},
+                localState->dest);
+            if (selectedWork.empty()) {
+                return;
+            }
+            localState->worker.schedule(selectedWork.get());
         }
 
         static subscriber<T, observer<T, this_type>> make(dest_type d, buffer_with_time_values v) {
-            auto cs = d.get_subscription();
-            auto coordinator = v.coordination.create_coordinator(cs);
+            auto cs = composite_subscription();
+            auto coordinator = v.coordination.create_coordinator();
 
-            return make_subscriber<T>(std::move(cs), this_type(std::move(d), std::move(v), std::move(coordinator)));
+            return make_subscriber<T>(cs, this_type(cs, std::move(d), std::move(v), std::move(coordinator)));
         }
     };
 
