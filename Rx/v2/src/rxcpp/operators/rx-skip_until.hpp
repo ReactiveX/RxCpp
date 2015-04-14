@@ -16,9 +16,9 @@ namespace detail {
 template<class T, class Observable, class TriggerObservable, class Coordination>
 struct skip_until : public operator_base<T>
 {
-    typedef typename std::decay<Observable>::type source_type;
-    typedef typename std::decay<TriggerObservable>::type trigger_source_type;
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<Observable> source_type;
+    typedef rxu::decay_t<TriggerObservable> trigger_source_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
     typedef typename coordination_type::coordinator_type coordinator_type;
     struct values
     {
@@ -77,7 +77,7 @@ struct skip_until : public operator_base<T>
         auto coordinator = initial.coordination.create_coordinator();
 
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<state_type>(new state_type(initial, std::move(coordinator), std::move(s)));
+        auto state = std::make_shared<state_type>(initial, std::move(coordinator), std::move(s));
 
         auto trigger = on_exception(
             [&](){return state->coordinator.in(state->trigger);},
@@ -164,8 +164,8 @@ struct skip_until : public operator_base<T>
 template<class TriggerObservable, class Coordination>
 class skip_until_factory
 {
-    typedef typename std::decay<TriggerObservable>::type trigger_source_type;
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<TriggerObservable> trigger_source_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
 
     trigger_source_type trigger_source;
     coordination_type coordination;
@@ -177,9 +177,9 @@ public:
     }
     template<class Observable>
     auto operator()(Observable&& source)
-        ->      observable<typename std::decay<Observable>::type::value_type, skip_until<typename std::decay<Observable>::type::value_type, Observable, trigger_source_type, Coordination>> {
-        return  observable<typename std::decay<Observable>::type::value_type, skip_until<typename std::decay<Observable>::type::value_type, Observable, trigger_source_type, Coordination>>(
-                                                                              skip_until<typename std::decay<Observable>::type::value_type, Observable, trigger_source_type, Coordination>(std::forward<Observable>(source), trigger_source, coordination));
+        ->      observable<rxu::value_type_t<rxu::decay_t<Observable>>, skip_until<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, trigger_source_type, Coordination>> {
+        return  observable<rxu::value_type_t<rxu::decay_t<Observable>>, skip_until<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, trigger_source_type, Coordination>>(
+                                                                        skip_until<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, trigger_source_type, Coordination>(std::forward<Observable>(source), trigger_source, coordination));
     }
 };
 

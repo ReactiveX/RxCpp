@@ -56,7 +56,7 @@ namespace cpplinq
             if (cur.size() > n) {
                 cur.truncate(n);
             }
-            return std::move(cur);
+            return cur;
         }
     }
 

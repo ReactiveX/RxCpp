@@ -26,7 +26,7 @@ class is_operator
     template<class C>
     static void check(...);
 public:
-    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_operator*>::value;
+    static const bool value = std::is_convertible<decltype(check<rxu::decay_t<T>>(0)), tag_operator*>::value;
 };
 
 }
@@ -36,6 +36,7 @@ namespace rxo=operators;
 
 #include "operators/rx-buffer_count.hpp"
 #include "operators/rx-buffer_time.hpp"
+#include "operators/rx-buffer_time_count.hpp"
 #include "operators/rx-combine_latest.hpp"
 #include "operators/rx-concat.hpp"
 #include "operators/rx-concat_map.hpp"
@@ -50,6 +51,7 @@ namespace rxo=operators;
 #include "operators/rx-merge.hpp"
 #include "operators/rx-multicast.hpp"
 #include "operators/rx-observe_on.hpp"
+#include "operators/rx-pairwise.hpp"
 #include "operators/rx-publish.hpp"
 #include "operators/rx-reduce.hpp"
 #include "operators/rx-ref_count.hpp"
@@ -66,5 +68,6 @@ namespace rxo=operators;
 #include "operators/rx-take_until.hpp"
 #include "operators/rx-window.hpp"
 #include "operators/rx-window_time.hpp"
+#include "operators/rx-window_time_count.hpp"
 #include "operators/rx-zip.hpp"
 #endif

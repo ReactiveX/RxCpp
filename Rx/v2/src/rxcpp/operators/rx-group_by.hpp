@@ -16,7 +16,7 @@ namespace detail {
 template<class T, class Selector>
 struct is_group_by_selector_for {
 
-    typedef typename std::decay<Selector>::type selector_type;
+    typedef rxu::decay_t<Selector> selector_type;
     typedef T source_value_type;
 
     struct tag_not_valid {};
@@ -33,10 +33,10 @@ template<class T, class Observable, class KeySelector, class MarbleSelector, cla
 struct group_by_traits
 {
     typedef T source_value_type;
-    typedef typename std::decay<Observable>::type source_type;
-    typedef typename std::decay<KeySelector>::type key_selector_type;
-    typedef typename std::decay<MarbleSelector>::type marble_selector_type;
-    typedef typename std::decay<BinaryPredicate>::type predicate_type;
+    typedef rxu::decay_t<Observable> source_type;
+    typedef rxu::decay_t<KeySelector> key_selector_type;
+    typedef rxu::decay_t<MarbleSelector> marble_selector_type;
+    typedef rxu::decay_t<BinaryPredicate> predicate_type;
 
     static_assert(is_group_by_selector_for<source_value_type, key_selector_type>::value, "group_by KeySelector must be a function with the signature key_type(source_value_type)");
 
@@ -110,7 +110,7 @@ struct group_by
     {
         typedef group_by_observer<Subscriber> this_type;
         typedef typename traits_type::grouped_observable_type value_type;
-        typedef typename std::decay<Subscriber>::type dest_type;
+        typedef rxu::decay_t<Subscriber> dest_type;
         typedef observer<T, this_type> observer_type;
         dest_type dest;
 
@@ -174,9 +174,9 @@ struct group_by
 template<class KeySelector, class MarbleSelector, class BinaryPredicate>
 class group_by_factory
 {
-    typedef typename std::decay<KeySelector>::type key_selector_type;
-    typedef typename std::decay<MarbleSelector>::type marble_selector_type;
-    typedef typename std::decay<BinaryPredicate>::type predicate_type;
+    typedef rxu::decay_t<KeySelector> key_selector_type;
+    typedef rxu::decay_t<MarbleSelector> marble_selector_type;
+    typedef rxu::decay_t<BinaryPredicate> predicate_type;
     key_selector_type keySelector;
     marble_selector_type marbleSelector;
     predicate_type predicate;
@@ -190,7 +190,7 @@ public:
     template<class Observable>
     struct group_by_factory_traits
     {
-        typedef typename Observable::value_type value_type;
+        typedef rxu::value_type_t<Observable> value_type;
         typedef detail::group_by_traits<value_type, Observable, KeySelector, MarbleSelector, BinaryPredicate> traits_type;
         typedef detail::group_by<value_type, Observable, KeySelector, MarbleSelector, BinaryPredicate> group_by_type;
     };

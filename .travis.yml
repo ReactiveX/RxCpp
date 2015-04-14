@@ -10,9 +10,13 @@ compiler:
   - gcc
 
 env:
-  - BUILD_TYPE=Release
+    - CMAKE_BUILD_TYPE=RelWithDebInfo
+#    - CMAKE_BUILD_TYPE=Debug
 
 matrix:
+  allow_failures:
+    - compiler: clang
+      os: linux
   exclude:
     - compiler: gcc
       os: osx
@@ -21,25 +25,27 @@ before_install:
   - sh projects/scripts/travis-install.sh
 
 install:
-  - export PATH=/usr/bin:$PATH
+  - $CXX --version
+  - /usr/local/bin/cmake --version
   - cd projects
-  - cmake -GUnix\ Makefiles -HCMake -Bbuild -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX
-  - cd build
-  - make -j2
-  - cd ../..
+  - /usr/local/bin/cmake -GUnix\ Makefiles -HCMake -Bbuild -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX
+  - cd ..
 
 script:
   - cd projects/build
-  - ./rxcppv2_test --success -r compact
+  - make -j2
   - cd ../..
+
+#after_success:
+#  - projects/build/rxcppv2_test
 
 branches:
   only:
     - master
 
 notifications:
-  recipients:
-    - kirk.shoop@microsoft.com
   email:
+    recipients:
+      - kirk.shoop@microsoft.com
     on_success: always
     on_failure: always

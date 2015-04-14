@@ -712,13 +712,13 @@ SCENARIO("buffer with time, overlapping intervals", "[buffer_with_time][operator
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.next(300, rxu::to_vector({ 2, 3, 4 })),
-                    v_on.next(370, rxu::to_vector({ 4, 5, 6 })),
-                    v_on.next(440, rxu::to_vector({ 6, 7, 8 })),
-                    v_on.next(510, rxu::to_vector({ 8, 9 })),
-                    v_on.next(580, std::vector<int>()),
-                    v_on.next(600, std::vector<int>()),
-                    v_on.completed(600)
+                    v_on.next(301, rxu::to_vector({ 2, 3, 4 })),
+                    v_on.next(371, rxu::to_vector({ 4, 5, 6 })),
+                    v_on.next(441, rxu::to_vector({ 6, 7, 8 })),
+                    v_on.next(511, rxu::to_vector({ 8, 9 })),
+                    v_on.next(581, std::vector<int>()),
+                    v_on.next(601, std::vector<int>()),
+                    v_on.completed(601)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -769,11 +769,11 @@ SCENARIO("buffer with time, intervals with skips", "[buffer_with_time][operators
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.next(270, rxu::to_vector({ 2, 3 })),
-                    v_on.next(370, rxu::to_vector({ 5, 6 })),
-                    v_on.next(470, rxu::to_vector({ 8, 9 })),
-                    v_on.next(570, std::vector<int>()),
-                    v_on.completed(600)
+                    v_on.next(271, rxu::to_vector({ 2, 3 })),
+                    v_on.next(371, rxu::to_vector({ 5, 6 })),
+                    v_on.next(471, rxu::to_vector({ 8, 9 })),
+                    v_on.next(571, std::vector<int>()),
+                    v_on.completed(601)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -826,12 +826,12 @@ SCENARIO("buffer with time, error", "[buffer_with_time][operators]"){
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.next(300, rxu::to_vector({ 2, 3, 4 })),
-                    v_on.next(370, rxu::to_vector({ 4, 5, 6 })),
-                    v_on.next(440, rxu::to_vector({ 6, 7, 8 })),
-                    v_on.next(510, rxu::to_vector({ 8, 9 })),
-                    v_on.next(580, std::vector<int>()),
-                    v_on.error(600, ex)
+                    v_on.next(301, rxu::to_vector({ 2, 3, 4 })),
+                    v_on.next(371, rxu::to_vector({ 4, 5, 6 })),
+                    v_on.next(441, rxu::to_vector({ 6, 7, 8 })),
+                    v_on.next(511, rxu::to_vector({ 8, 9 })),
+                    v_on.next(581, std::vector<int>()),
+                    v_on.error(601, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -883,7 +883,7 @@ SCENARIO("buffer with time, disposed", "[buffer_with_time][operators]"){
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.next(300, rxu::to_vector({ 2, 3, 4 })),
+                    v_on.next(301, rxu::to_vector({ 2, 3, 4 })),
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -891,7 +891,7 @@ SCENARIO("buffer with time, disposed", "[buffer_with_time][operators]"){
 
             THEN("there was one subscription and one unsubscription to the xs"){
                 auto required = rxu::to_vector({
-                    on.subscribe(200, 370)
+                    on.subscribe(200, 371)
                 });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
@@ -934,11 +934,11 @@ SCENARIO("buffer with time, same", "[buffer_with_time][operators]"){
 
             THEN("the output contains groups of ints"){
                 auto required = rxu::to_vector({
-                    v_on.next(300, rxu::to_vector({ 2, 3, 4 })),
-                    v_on.next(400, rxu::to_vector({ 5, 6, 7 })),
-                    v_on.next(500, rxu::to_vector({ 8, 9 })),
-                    v_on.next(600, std::vector<int>()),
-                    v_on.completed(600)
+                    v_on.next(301, rxu::to_vector({ 2, 3, 4 })),
+                    v_on.next(401, rxu::to_vector({ 5, 6, 7 })),
+                    v_on.next(501, rxu::to_vector({ 8, 9 })),
+                    v_on.next(601, std::vector<int>()),
+                    v_on.completed(601)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -947,6 +947,231 @@ SCENARIO("buffer with time, same", "[buffer_with_time][operators]"){
             THEN("there was one subscription and one unsubscription to the xs"){
                 auto required = rxu::to_vector({
                     on.subscribe(200, 600)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("buffer with time or count, basic", "[buffer_with_time_or_count][operators]"){
+    GIVEN("1 hot observable of ints."){
+        auto sc = rxsc::make_test();
+        auto so = rx::synchronize_in_one_worker(sc);
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+        const rxsc::test::messages<std::vector<int>> v_on;
+
+        auto xs = sc.make_hot_observable({
+            on.next(205, 1),
+            on.next(210, 2),
+            on.next(240, 3),
+            on.next(280, 4),
+            on.next(320, 5),
+            on.next(350, 6),
+            on.next(370, 7),
+            on.next(420, 8),
+            on.next(470, 9),
+            on.completed(600)
+        });
+        WHEN("group ints on intervals"){
+            using namespace std::chrono;
+
+            auto res = w.start(
+                [&]() {
+                    return xs
+                        .buffer_with_time_or_count(milliseconds(70), 3, so)
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
+                }
+            );
+
+            THEN("the output contains groups of ints"){
+                auto required = rxu::to_vector({
+                    v_on.next(241, rxu::to_vector({ 1, 2, 3 })),
+                    v_on.next(312, rxu::to_vector({ 4 })),
+                    v_on.next(371, rxu::to_vector({ 5, 6, 7 })),
+                    v_on.next(442, rxu::to_vector({ 8 })),
+                    v_on.next(512, rxu::to_vector({ 9 })),
+                    v_on.next(582, std::vector<int>()),
+                    v_on.next(601, std::vector<int>()),
+                    v_on.completed(601)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription to the xs"){
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 600)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("buffer with time or count, error", "[buffer_with_time_or_count][operators]"){
+    GIVEN("1 hot observable of ints."){
+        auto sc = rxsc::make_test();
+        auto so = rx::synchronize_in_one_worker(sc);
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+        const rxsc::test::messages<std::vector<int>> v_on;
+
+        std::runtime_error ex("buffer_with_time on_error from source");
+
+        auto xs = sc.make_hot_observable({
+            on.next(205, 1),
+            on.next(210, 2),
+            on.next(240, 3),
+            on.next(280, 4),
+            on.next(320, 5),
+            on.next(350, 6),
+            on.next(370, 7),
+            on.next(420, 8),
+            on.next(470, 9),
+            on.error(600, ex)
+        });
+        WHEN("group ints on intervals"){
+            using namespace std::chrono;
+
+            auto res = w.start(
+                [&]() {
+                    return xs
+                        .buffer_with_time_or_count(milliseconds(70), 3, so)
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
+                }
+            );
+
+            THEN("the output contains groups of ints"){
+                auto required = rxu::to_vector({
+                    v_on.next(241, rxu::to_vector({ 1, 2, 3 })),
+                    v_on.next(312, rxu::to_vector({ 4 })),
+                    v_on.next(371, rxu::to_vector({ 5, 6, 7 })),
+                    v_on.next(442, rxu::to_vector({ 8 })),
+                    v_on.next(512, rxu::to_vector({ 9 })),
+                    v_on.next(582, std::vector<int>()),
+                    v_on.error(601, ex)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription to the xs"){
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 600)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("buffer with time or count, dispose", "[buffer_with_time_or_count][operators]"){
+    GIVEN("1 hot observable of ints."){
+        auto sc = rxsc::make_test();
+        auto so = rx::synchronize_in_one_worker(sc);
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+        const rxsc::test::messages<std::vector<int>> v_on;
+
+        auto xs = sc.make_hot_observable({
+            on.next(205, 1),
+            on.next(210, 2),
+            on.next(240, 3),
+            on.next(280, 4),
+            on.next(320, 5),
+            on.next(350, 6),
+            on.next(370, 7),
+            on.next(420, 8),
+            on.next(470, 9),
+            on.completed(600)
+        });
+        WHEN("group ints on intervals"){
+            using namespace std::chrono;
+
+            auto res = w.start(
+                [&]() {
+                    return xs
+                        .buffer_with_time_or_count(milliseconds(70), 3, so)
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
+                },
+                372
+            );
+
+            THEN("the output contains groups of ints"){
+                auto required = rxu::to_vector({
+                    v_on.next(241, rxu::to_vector({ 1, 2, 3 })),
+                    v_on.next(312, rxu::to_vector({ 4 })),
+                    v_on.next(371, rxu::to_vector({ 5, 6, 7 })),
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription to the xs"){
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 373)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("buffer with time or count, only time triggered", "[buffer_with_time_or_count][operators]"){
+    GIVEN("1 hot observable of ints."){
+        auto sc = rxsc::make_test();
+        auto so = rx::synchronize_in_one_worker(sc);
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+        const rxsc::test::messages<std::vector<int>> v_on;
+
+        auto xs = sc.make_hot_observable({
+            on.next(205, 1),
+            on.next(305, 2),
+            on.next(505, 3),
+            on.next(605, 4),
+            on.next(610, 5),
+            on.completed(850)
+        });
+        WHEN("group ints on intervals"){
+            using namespace std::chrono;
+
+            auto res = w.start(
+                [&]() {
+                    return xs
+                        .buffer_with_time_or_count(milliseconds(100), 3, so)
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
+                }
+            );
+
+            THEN("the output contains groups of ints"){
+                auto required = rxu::to_vector({
+                    v_on.next(301, rxu::to_vector({ 1 })),
+                    v_on.next(401, rxu::to_vector({ 2 })),
+                    v_on.next(501, std::vector<int>()),
+                    v_on.next(601, rxu::to_vector({ 3 })),
+                    v_on.next(701, rxu::to_vector({ 4, 5 })),
+                    v_on.next(801, std::vector<int>()),
+                    v_on.next(851, std::vector<int>()),
+                    v_on.completed(851)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription to the xs"){
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 850)
                 });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);

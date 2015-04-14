@@ -125,17 +125,17 @@ class identity_one_worker : public coordination_base
         template<class Observable>
         auto in(Observable o) const
             -> Observable {
-            return std::move(o);
+            return o;
         }
         template<class Subscriber>
         auto out(Subscriber s) const
             -> Subscriber {
-            return std::move(s);
+            return s;
         }
         template<class F>
         auto act(F f) const
             -> F {
-            return std::move(f);
+            return f;
         }
     };
 
@@ -193,7 +193,7 @@ class serialize_one_worker : public coordination_base
     struct serialize_observer
     {
         typedef serialize_observer<Observer> this_type;
-        typedef typename std::decay<Observer>::type dest_type;
+        typedef rxu::decay_t<Observer> dest_type;
         typedef typename dest_type::value_type value_type;
         typedef observer<value_type, this_type> observer_type;
         dest_type dest;
@@ -250,7 +250,7 @@ class serialize_one_worker : public coordination_base
         template<class Observable>
         auto in(Observable o) const
             -> Observable {
-            return std::move(o);
+            return o;
         }
         template<class Subscriber>
         auto out(const Subscriber& s) const

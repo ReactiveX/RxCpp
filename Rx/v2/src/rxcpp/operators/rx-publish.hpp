@@ -20,10 +20,10 @@ public:
     publish_factory() {}
     template<class Observable>
     auto operator()(Observable&& source)
-        ->      connectable_observable<typename std::decay<Observable>::type::value_type,   multicast<typename std::decay<Observable>::type::value_type, Observable,    Subject<typename std::decay<Observable>::type::value_type>>> {
-        return  connectable_observable<typename std::decay<Observable>::type::value_type,   multicast<typename std::decay<Observable>::type::value_type, Observable,    Subject<typename std::decay<Observable>::type::value_type>>>(
-                                                                                            multicast<typename std::decay<Observable>::type::value_type, Observable,    Subject<typename std::decay<Observable>::type::value_type>>(
-                                                                                                std::forward<Observable>(source),                                       Subject<typename std::decay<Observable>::type::value_type>()));
+        ->      connectable_observable<rxu::value_type_t<rxu::decay_t<Observable>>,   multicast<rxu::value_type_t<rxu::decay_t<Observable>>, Observable,    Subject<rxu::value_type_t<rxu::decay_t<Observable>>>>> {
+        return  connectable_observable<rxu::value_type_t<rxu::decay_t<Observable>>,   multicast<rxu::value_type_t<rxu::decay_t<Observable>>, Observable,    Subject<rxu::value_type_t<rxu::decay_t<Observable>>>>>(
+                                                                                      multicast<rxu::value_type_t<rxu::decay_t<Observable>>, Observable,    Subject<rxu::value_type_t<rxu::decay_t<Observable>>>>(
+                                                                                          std::forward<Observable>(source),                                 Subject<rxu::value_type_t<rxu::decay_t<Observable>>>()));
     }
 };
 

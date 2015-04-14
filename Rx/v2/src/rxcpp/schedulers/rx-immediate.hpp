@@ -56,7 +56,7 @@ private:
 
 public:
     immediate()
-        : wi(new immediate_worker())
+        : wi(std::make_shared<immediate_worker>())
     {
     }
     virtual ~immediate()
@@ -70,14 +70,11 @@ public:
     virtual worker create_worker(composite_subscription cs) const {
         return worker(std::move(cs), wi);
     }
-    const static scheduler instance;
 };
 
-//static
-RXCPP_SELECT_ANY const scheduler immediate::instance = make_scheduler<immediate>();
-
 inline const scheduler& make_immediate() {
-    return immediate::instance;
+    static scheduler instance = make_scheduler<immediate>();
+    return instance;
 }
 
 }

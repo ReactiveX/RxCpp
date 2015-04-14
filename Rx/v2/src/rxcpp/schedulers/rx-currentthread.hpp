@@ -238,7 +238,7 @@ private:
 
 public:
     current_thread()
-        : wi(new current_worker())
+        : wi(std::make_shared<current_worker>())
     {
     }
     virtual ~current_thread()
@@ -258,14 +258,11 @@ public:
     virtual worker create_worker(composite_subscription cs) const {
         return worker(std::move(cs), wi);
     }
-    const static scheduler instance;
 };
 
-//static
-RXCPP_SELECT_ANY const scheduler current_thread::instance = make_scheduler<current_thread>();
-
 inline const scheduler& make_current_thread() {
-    return current_thread::instance;
+    static scheduler instance = make_scheduler<current_thread>();
+    return instance;
 }
 
 }

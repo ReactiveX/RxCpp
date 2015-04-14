@@ -125,6 +125,7 @@
 #include <condition_variable>
 #include <initializer_list>
 #include <typeinfo>
+#include <tuple>
 
 #if defined(RXCPP_ON_IOS)
 #include <pthread.h>

@@ -2,20 +2,24 @@ cmake_minimum_required(VERSION 2.8)
 
 project(rxcpp)
 
-MESSAGE( STATUS "CMAKE_CXX_COMPILER_ID: " ${CMAKE_CXX_COMPILER_ID} )
-
 FIND_PACKAGE(Threads)
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+MESSAGE( STATUS "CMAKE_CXX_COMPILER_ID: " ${CMAKE_CXX_COMPILER_ID} )
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    MESSAGE( STATUS "using clang settings" )
     add_compile_options( -Wall -Wextra -Werror )
-    add_compile_options( -std=c++11 )
+    add_compile_options( -std=c++11 -stdlib=libc++ )
     add_compile_options( -ftemplate-depth=1024 ) # sometimes you just do what the compiler tells you
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    MESSAGE( STATUS "using gnu settings" )
     add_compile_options( -Wall -Wextra -Werror )
     add_compile_options( -std=c++11 )
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    MESSAGE( STATUS "using msvc settings" )
     add_compile_options( /W4 /WX )
     add_compile_options( /wd4503 ) # truncated symbol
+    add_compile_options( /wd4702 ) # unreachable code
+    add_compile_options( /bigobj )
     add_definitions( /DUNICODE /D_UNICODE ) # it is a new millenium
 endif()
 
@@ -54,6 +58,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/map.cpp
     ${TEST_DIR}/operators/merge.cpp
     ${TEST_DIR}/operators/observe_on.cpp
+    ${TEST_DIR}/operators/pairwise.cpp
     ${TEST_DIR}/operators/publish.cpp
     ${TEST_DIR}/operators/reduce.cpp
     ${TEST_DIR}/operators/repeat.cpp

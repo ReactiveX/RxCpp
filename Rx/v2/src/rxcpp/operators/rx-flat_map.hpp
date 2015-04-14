@@ -15,10 +15,10 @@ namespace detail {
 
 template<class Observable, class CollectionSelector, class ResultSelector, class Coordination>
 struct flat_map_traits {
-    typedef typename std::decay<Observable>::type source_type;
-    typedef typename std::decay<CollectionSelector>::type collection_selector_type;
-    typedef typename std::decay<ResultSelector>::type result_selector_type;
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<Observable> source_type;
+    typedef rxu::decay_t<CollectionSelector> collection_selector_type;
+    typedef rxu::decay_t<ResultSelector> result_selector_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
 
     typedef typename source_type::value_type source_value_type;
 
@@ -48,7 +48,7 @@ struct flat_map_traits {
 
 template<class Observable, class CollectionSelector, class ResultSelector, class Coordination>
 struct flat_map
-    : public operator_base<typename flat_map_traits<Observable, CollectionSelector, ResultSelector, Coordination>::value_type>
+    : public operator_base<rxu::value_type_t<flat_map_traits<Observable, CollectionSelector, ResultSelector, Coordination>>>
 {
     typedef flat_map<Observable, CollectionSelector, ResultSelector, Coordination> this_type;
     typedef flat_map_traits<Observable, CollectionSelector, ResultSelector, Coordination> traits;
@@ -112,7 +112,7 @@ struct flat_map
         auto coordinator = initial.coordination.create_coordinator(scbr.get_subscription());
 
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<state_type>(new state_type(initial, std::move(coordinator), std::move(scbr)));
+        auto state = std::make_shared<state_type>(initial, std::move(coordinator), std::move(scbr));
 
         composite_subscription outercs;
 
@@ -136,12 +136,6 @@ struct flat_map
             outercs,
         // on_next
             [state](source_value_type st) {
-                auto selectedCollection = on_exception(
-                    [&](){return state->selectCollection(st);},
-                    state->out);
-                if (selectedCollection.empty()) {
-                    return;
-                }
 
                 composite_subscription innercs;
 
@@ -153,12 +147,8 @@ struct flat_map
                     state->out.remove(innercstoken);
                 }));
 
-                auto selectedSource = on_exception(
-                    [&](){return state->coordinator.in(selectedCollection.get());},
-                    state->out);
-                if (selectedSource.empty()) {
-                    return;
-                }
+                auto selectedCollection = state->selectCollection(st);
+                auto selectedSource = state->coordinator.in(selectedCollection);
 
                 ++state->pendingCompletions;
                 // this subscribe does not share the source subscription
@@ -168,13 +158,8 @@ struct flat_map
                     innercs,
                 // on_next
                     [state, st](collection_value_type ct) {
-                        auto selectedResult = on_exception(
-                            [&](){return state->selectResult(st, std::move(ct));},
-                            state->out);
-                        if (selectedResult.empty()) {
-                            return;
-                        }
-                        state->out.on_next(std::move(*selectedResult));
+                        auto selectedResult = state->selectResult(st, std::move(ct));
+                        state->out.on_next(std::move(selectedResult));
                     },
                 // on_error
                     [state](std::exception_ptr e) {
@@ -188,14 +173,8 @@ struct flat_map
                     }
                 );
 
-                auto selectedSinkInner = on_exception(
-                    [&](){return state->coordinator.out(sinkInner);},
-                    state->out);
-                if (selectedSinkInner.empty()) {
-                    return;
-                }
-
-                selectedSource->subscribe(std::move(selectedSinkInner.get()));
+                auto selectedSinkInner = state->coordinator.out(sinkInner);
+                selectedSource.subscribe(std::move(selectedSinkInner));
             },
         // on_error
             [state](std::exception_ptr e) {
@@ -224,26 +203,26 @@ struct flat_map
 template<class CollectionSelector, class ResultSelector, class Coordination>
 class flat_map_factory
 {
-    typedef typename std::decay<CollectionSelector>::type collection_selector_type;
-    typedef typename std::decay<ResultSelector>::type result_selector_type;
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<CollectionSelector> collection_selector_type;
+    typedef rxu::decay_t<ResultSelector> result_selector_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
 
     collection_selector_type selectorCollection;
     result_selector_type selectorResult;
     coordination_type coordination;
 public:
     flat_map_factory(collection_selector_type s, result_selector_type rs, coordination_type sf)
-        : selectorCollection(std::move(rs))
-        , selectorResult(std::move(s))
+        : selectorCollection(std::move(s))
+        , selectorResult(std::move(rs))
         , coordination(std::move(sf))
     {
     }
 
     template<class Observable>
     auto operator()(Observable&& source)
-        ->      observable<typename flat_map<Observable, CollectionSelector, ResultSelector, Coordination>::value_type, flat_map<Observable, CollectionSelector, ResultSelector, Coordination>> {
-        return  observable<typename flat_map<Observable, CollectionSelector, ResultSelector, Coordination>::value_type, flat_map<Observable, CollectionSelector, ResultSelector, Coordination>>(
-                                    flat_map<Observable, CollectionSelector, ResultSelector, Coordination>(std::forward<Observable>(source), selectorCollection, selectorResult, coordination));
+        ->      observable<rxu::value_type_t<flat_map<Observable, CollectionSelector, ResultSelector, Coordination>>, flat_map<Observable, CollectionSelector, ResultSelector, Coordination>> {
+        return  observable<rxu::value_type_t<flat_map<Observable, CollectionSelector, ResultSelector, Coordination>>, flat_map<Observable, CollectionSelector, ResultSelector, Coordination>>(
+                                             flat_map<Observable, CollectionSelector, ResultSelector, Coordination>(std::forward<Observable>(source), selectorCollection, selectorResult, coordination));
     }
 };
 
