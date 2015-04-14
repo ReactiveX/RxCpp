@@ -86,6 +86,13 @@
 #define _VARIADIC_MAX 10
 #endif
 
+#if defined(__APPLE__) && defined(__MACH__)
+#include <TargetConditionals.h>
+#if (TARGET_OS_IPHONE == 1) || (TARGET_IPHONE_SIMULATOR == 1)
+#define RXCPP_ON_IOS
+#endif
+#endif
+
 #pragma push_macro("min")
 #pragma push_macro("max")
 #undef min
@@ -119,6 +126,10 @@
 #include <initializer_list>
 #include <typeinfo>
 #include <tuple>
+
+#if defined(RXCPP_ON_IOS)
+#include <pthread.h>
+#endif
 
 #include "rx-util.hpp"
 #include "rx-predef.hpp"
