@@ -44,7 +44,7 @@ struct is_on_next_of
     template<class CT, class CF>
     static not_void check(...);
 
-    typedef decltype(check<T, typename std::decay<F>::type>(0)) detail_result;
+    typedef decltype(check<T, rxu::decay_t<F>>(0)) detail_result;
     static const bool value = std::is_same<detail_result, void>::value;
 };
 
@@ -57,7 +57,7 @@ struct is_on_error
     template<class CF>
     static not_void check(...);
 
-    static const bool value = std::is_same<decltype(check<typename std::decay<F>::type>(0)), void>::value;
+    static const bool value = std::is_same<decltype(check<rxu::decay_t<F>>(0)), void>::value;
 };
 
 template<class F>
@@ -69,7 +69,7 @@ struct is_on_completed
     template<class CF>
     static not_void check(...);
 
-    static const bool value = std::is_same<decltype(check<typename std::decay<F>::type>(0)), void>::value;
+    static const bool value = std::is_same<decltype(check<rxu::decay_t<F>>(0)), void>::value;
 };
 
 }
@@ -79,9 +79,9 @@ class static_observer
 {
 public:
     typedef static_observer<T, OnNext, OnError, OnCompleted> this_type;
-    typedef typename std::decay<OnNext>::type on_next_t;
-    typedef typename std::decay<OnError>::type on_error_t;
-    typedef typename std::decay<OnCompleted>::type on_completed_t;
+    typedef rxu::decay_t<OnNext> on_next_t;
+    typedef rxu::decay_t<OnError> on_error_t;
+    typedef rxu::decay_t<OnCompleted> on_completed_t;
 
 private:
     on_next_t onnext;
@@ -143,9 +143,9 @@ private:
 
     struct virtual_observer : public std::enable_shared_from_this<virtual_observer>
     {
-        virtual void on_next(T) const =0;
-        virtual void on_error(std::exception_ptr e) const =0;
-        virtual void on_completed() const =0;
+        virtual void on_next(T) const {};
+        virtual void on_error(std::exception_ptr) const {};
+        virtual void on_completed() const {};
     };
 
     template<class Observer>
@@ -224,7 +224,7 @@ template<class T, class I>
 class observer : public observer_base<T>
 {
     typedef observer<T, I> this_type;
-    typedef typename std::decay<I>::type inner_t;
+    typedef rxu::decay_t<I> inner_t;
 
     inner_t inner;
 
@@ -387,7 +387,7 @@ template<class F>
 struct maybe_from_result
 {
     typedef decltype((*(F*)nullptr)()) decl_result_type;
-    typedef typename std::decay<decl_result_type>::type result_type;
+    typedef rxu::decay_t<decl_result_type> result_type;
     typedef rxu::maybe<result_type> type;
 };
 

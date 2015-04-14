@@ -17,7 +17,7 @@ namespace cpplinq {
             if (c.empty()) break;
             elem = c.get();
         }
-        return std::move(elem);
+        return elem;
     }
 
     // TODO: bidirectional iterator in constant time
@@ -54,7 +54,7 @@ namespace cpplinq {
             elem = c.get();
             c.inc();
         }
-        return std::move(elem);
+        return elem;
     }
 
     template <class Cursor>

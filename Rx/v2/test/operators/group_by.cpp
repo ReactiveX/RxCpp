@@ -25,25 +25,37 @@ SCENARIO("range partitioned by group_by across hardware threads to derive pi", "
             // share an output thread across all the producer threads
             auto outputthread = rxcpp::observe_on_one_worker(rxcpp::observe_on_new_thread().create_coordinator().get_scheduler());
 
+            struct work
+            {
+                int index;
+                int first;
+                int last;
+            };
+
             // use all available hardware threads
-            auto total = rxcpp::observable<>::range(0, 19).
-                group_by(
-                    [](int i) -> int {return i % std::thread::hardware_concurrency();},
-                    [](int i){return i;}).
+            auto total = rxcpp::observable<>::range(0, (2 * std::thread::hardware_concurrency()) - 1).
                 map(
-                    [=, &c](rxcpp::grouped_observable<int, int> onproc) {
+                    [](int index){
+                        static const int chunk = 100000000 / (2 * std::thread::hardware_concurrency());
+                        int first = (chunk * index) + 1;
+                        int last =   chunk * (index + 1);
+                        return work{index, first, last};}
+                    ).
+                group_by(
+                    [](work w) -> int {return w.index % std::thread::hardware_concurrency();},
+                    [](work w){return w;}).
+                map(
+                    [=, &c](rxcpp::grouped_observable<int, work> onproc) {
                         auto key = onproc.get_key();
-                        // share a producer thread across all the ranges in this group
+                        // share a producer thread across all the ranges in this group of chunks
                         auto producerthread = rxcpp::observe_on_one_worker(rxcpp::observe_on_new_thread().create_coordinator().get_scheduler());
                         return onproc.
                             map(
-                                [=, &c](int index){
-                                    static const int chunk = 1000000;
-                                    auto first = (chunk * index) + 1;
-                                    auto last =   chunk * (index + 1);
-                                    std::cout << std::setw(3) << index << ": range - " << first << "-" << last << std::endl;
+                                [=, &c](work w){
+                                    std::stringstream message;
+                                    message << std::setw(3) << w.index << ": range - " << w.first << "-" << w.last;
 
-                                    return rxcpp::observable<>::range(first, last, producerthread).
+                                    return rxcpp::observable<>::range(w.first, w.last, producerthread).
                                         map(pi).
                                         sum(). // each thread maps and reduces its contribution to the answer
                                         map(
@@ -52,6 +64,7 @@ SCENARIO("range partitioned by group_by across hardware threads to derive pi", "
                                                 message << key << " on " << std::this_thread::get_id() << " - value: " << std::setprecision(16) << v;
                                                 return std::make_tuple(message.str(), v);
                                             }).
+                                        start_with(std::make_tuple(message.str(), 0)).
                                         as_dynamic();
                                 }).
                             concat(). // only subscribe to one range at a time in this group.
@@ -91,32 +104,41 @@ SCENARIO("range partitioned by dividing work across hardware threads to derive p
             using namespace std::chrono;
             auto start = steady_clock::now();
 
-            // share an output thread across all the producer threads
-            auto outputthread = rxcpp::observe_on_one_worker(rxcpp::observe_on_new_thread().create_coordinator().get_scheduler());
+            struct work
+            {
+                int index;
+                int first;
+                int last;
+            };
 
             // use all available hardware threads
-            auto total = rxcpp::observable<>::range(0, std::thread::hardware_concurrency() - 1).
+            auto total = rxcpp::observable<>::range(0, (2 * std::thread::hardware_concurrency()) - 1).
                 map(
-                    [=, &c](int index){
-                        // partition equally across threads
-                        static const int chunk = 20000000 / std::thread::hardware_concurrency();
-                        auto first = (chunk * index) + 1;
-                        auto last =   chunk * (index + 1);
-                        std::cout << std::setw(3) << index << ": range - " << first << "-" << last << std::endl;
+                    [](int index){
+                        static const int chunk = 100000000 / (2 * std::thread::hardware_concurrency());
+                        int first = (chunk * index) + 1;
+                        int last =   chunk * (index + 1);
+                        return work{index, first, last};
+                    }).
+                map(
+                    [=, &c](work w){
+                        std::stringstream message;
+                        message << std::setw(3) << w.index << ": range - " << w.first << "-" << w.last;
 
-                        return rxcpp::observable<>::range(first, last, rxcpp::observe_on_new_thread()).
+                        // create a new thread for every chunk
+                        return rxcpp::observable<>::range(w.first, w.last, rxcpp::observe_on_new_thread()).
                             map(pi).
                             sum(). // each thread maps and reduces its contribution to the answer
                             map(
                                 [=](long double v){
                                     std::stringstream message;
-                                    message << std::this_thread::get_id() << " - value: " << std::setprecision(16) << v;
+                                    message << w.index << " on " << std::this_thread::get_id() << " - value: " << std::setprecision(16) << v;
                                     return std::make_tuple(message.str(), v);
                                 }).
+                            start_with(std::make_tuple(message.str(), 0)).
                             as_dynamic();
                     }).
-                observe_on(outputthread).
-                merge().
+                merge(rxcpp::observe_on_new_thread()).
                 map(rxcpp::util::apply_to(
                     [](std::string message, long double v){
                         std::cout << message << std::endl;
@@ -146,7 +168,7 @@ std::string trim(std::string s) {
         s.erase(s.end() - (last-s.rbegin()), s.end());
     }
     s.erase(s.begin(), first);
-    return std::move(s);
+    return s;
 }
 
 bool tolowerLess(char lhs, char rhs) {

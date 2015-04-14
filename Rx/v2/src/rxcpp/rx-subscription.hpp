@@ -20,7 +20,7 @@ struct is_unsubscribe_function
     template<class CF>
     static not_void check(...);
 
-    static const bool value = std::is_same<decltype(check<typename std::decay<F>::type>(0)), void>::value;
+    static const bool value = std::is_same<decltype(check<rxu::decay_t<F>>(0)), void>::value;
 };
 
 }
@@ -35,13 +35,13 @@ class is_subscription
     template<class C>
     static void check(...);
 public:
-    static const bool value = std::is_convertible<decltype(check<typename std::decay<T>::type>(0)), tag_subscription*>::value;
+    static const bool value = std::is_convertible<decltype(check<rxu::decay_t<T>>(0)), tag_subscription*>::value;
 };
 
 template<class Unsubscribe>
 class static_subscription
 {
-    typedef typename std::decay<Unsubscribe>::type unsubscribe_call_type;
+    typedef rxu::decay_t<Unsubscribe> unsubscribe_call_type;
     unsubscribe_call_type unsubscribe_call;
     static_subscription()
     {
@@ -86,7 +86,7 @@ private:
     template<class I>
     struct subscription_state : public base_subscription_state
     {
-        typedef typename std::decay<I>::type inner_t;
+        typedef rxu::decay_t<I> inner_t;
         subscription_state(inner_t i)
             : base_subscription_state(true)
             , inner(std::move(i))
@@ -209,6 +209,8 @@ auto make_subscription(Unsubscribe&& u)
             subscription>::type {
     return  subscription(static_subscription<Unsubscribe>(std::forward<Unsubscribe>(u)));
 }
+
+class composite_subscription;
 
 namespace detail {
 
@@ -348,6 +350,8 @@ public:
     }
 };
 
+inline composite_subscription shared_empty();
+
 }
 
 class composite_subscription
@@ -357,8 +361,6 @@ class composite_subscription
     typedef detail::composite_subscription_inner inner_type;
 public:
     typedef subscription::weak_state_type weak_subscription;
-
-    static composite_subscription shared_empty;
 
     composite_subscription(detail::tag_composite_subscription_empty et)
         : inner_type(et)
@@ -393,7 +395,7 @@ public:
     }
 
     static inline composite_subscription empty() {
-        return shared_empty;
+        return detail::shared_empty();
     }
 
     using subscription::is_subscribed;
@@ -438,9 +440,14 @@ inline bool operator!=(const composite_subscription& lhs, const composite_subscr
     return !(lhs == rhs);
 }
 
-//static
-RXCPP_SELECT_ANY composite_subscription composite_subscription::shared_empty = composite_subscription(detail::tag_composite_subscription_empty());
+namespace detail {
 
+inline composite_subscription shared_empty() {
+    static composite_subscription shared_empty = composite_subscription(tag_composite_subscription_empty());
+    return shared_empty;
+}
+
+}
 
 template<class T>
 class resource : public subscription_base

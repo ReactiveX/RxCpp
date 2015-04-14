@@ -15,13 +15,13 @@ namespace detail {
 
 template<class T, class Observable, class Coordination>
 struct concat
-    : public operator_base<typename std::decay<T>::type::value_type>
+    : public operator_base<rxu::value_type_t<rxu::decay_t<T>>>
 {
     typedef concat<T, Observable, Coordination> this_type;
 
-    typedef typename std::decay<T>::type source_value_type;
-    typedef typename std::decay<Observable>::type source_type;
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<T> source_value_type;
+    typedef rxu::decay_t<Observable> source_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
 
     typedef typename coordination_type::coordinator_type coordinator_type;
 
@@ -131,7 +131,7 @@ struct concat
         auto coordinator = initial.coordination.create_coordinator(scbr.get_subscription());
 
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<concat_state_type>(new concat_state_type(initial, std::move(coordinator), std::move(scbr)));
+        auto state = std::make_shared<concat_state_type>(initial, std::move(coordinator), std::move(scbr));
 
         state->sourceLifetime = composite_subscription();
 
@@ -184,7 +184,7 @@ struct concat
 template<class Coordination>
 class concat_factory
 {
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
 
     coordination_type coordination;
 public:
@@ -195,9 +195,9 @@ public:
 
     template<class Observable>
     auto operator()(Observable source)
-        ->      observable<typename concat<typename Observable::value_type, Observable, Coordination>::value_type,  concat<typename Observable::value_type, Observable, Coordination>> {
-        return  observable<typename concat<typename Observable::value_type, Observable, Coordination>::value_type,  concat<typename Observable::value_type, Observable, Coordination>>(
-                                                                                                                    concat<typename Observable::value_type, Observable, Coordination>(std::move(source), coordination));
+        ->      observable<rxu::value_type_t<concat<rxu::value_type_t<Observable>, Observable, Coordination>>,  concat<rxu::value_type_t<Observable>, Observable, Coordination>> {
+        return  observable<rxu::value_type_t<concat<rxu::value_type_t<Observable>, Observable, Coordination>>,  concat<rxu::value_type_t<Observable>, Observable, Coordination>>(
+                                                                                                                concat<rxu::value_type_t<Observable>, Observable, Coordination>(std::move(source), coordination));
     }
 };
 

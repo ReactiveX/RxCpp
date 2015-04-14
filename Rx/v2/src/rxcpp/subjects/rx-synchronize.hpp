@@ -19,7 +19,7 @@ class synchronize_observer : public detail::multicast_observer<T>
     typedef synchronize_observer<T, Coordination> this_type;
     typedef detail::multicast_observer<T> base_type;
 
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
     typedef typename coordination_type::coordinator_type coordinator_type;
     typedef typename coordinator_type::template get<subscriber<T>>::type output_type;
 
@@ -43,7 +43,6 @@ class synchronize_observer : public detail::multicast_observer<T>
         mutable std::condition_variable wake;
         mutable queue_type queue;
         composite_subscription lifetime;
-        rxsc::worker processor;
         mutable typename mode::type current;
         coordinator_type coordinator;
         output_type destination;
@@ -223,12 +222,12 @@ class synchronize_in_one_worker : public coordination_base
         template<class Subscriber>
         auto out(Subscriber s) const
             -> Subscriber {
-            return std::move(s);
+            return s;
         }
         template<class F>
         auto act(F f) const
             -> F {
-            return std::move(f);
+            return f;
         }
     };
 

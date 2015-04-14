@@ -322,12 +322,12 @@ SCENARIO("zip selector throws N", "[zip][join][operators]"){
         auto w = sc.create_worker();
         const rxsc::test::messages<int> on;
 
-        const size_t N = 16;
+        const int N = 16;
 
         std::runtime_error ex("zip on_error from source");
 
         std::vector<rxcpp::test::testable_observable<int>> e;
-        for (size_t i = 0; i < N; ++i) {
+        for (int i = 0; i < N; ++i) {
             e.push_back(
                 sc.make_hot_observable({
                     on.next(210 + 10 * i, 1),
@@ -380,10 +380,10 @@ SCENARIO("zip typical N", "[zip][join][operators]"){
         auto w = sc.create_worker();
         const rxsc::test::messages<int> on;
 
-        const size_t N = 16;
+        const int N = 16;
 
         std::vector<rxcpp::test::testable_observable<int>> o;
-        for (size_t i = 0; i < N; ++i) {
+        for (int i = 0; i < N; ++i) {
             o.push_back(
                 sc.make_hot_observable({
                     on.next(150, 1),

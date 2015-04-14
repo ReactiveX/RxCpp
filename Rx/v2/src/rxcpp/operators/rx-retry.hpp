@@ -15,8 +15,8 @@ namespace rxcpp {
 
             template<class T, class Observable, class Count>
             struct retry : public operator_base<T> {
-                typedef typename std::decay<Observable>::type source_type;
-                typedef typename std::decay<Count>::type count_type;
+                typedef rxu::decay_t<Observable> source_type;
+                typedef rxu::decay_t<Count> count_type;
                 struct values {
                     values(source_type s, count_type t)
                     : source(std::move(s))
@@ -81,7 +81,7 @@ namespace rxcpp {
                     };
 
                     // take a copy of the values for each subscription
-                    auto state = std::shared_ptr<state_type>(new state_type(initial, s));
+                    auto state = std::make_shared<state_type>(initial, s);
 
                     // start the first iteration
                     state->do_subscribe();
@@ -90,16 +90,16 @@ namespace rxcpp {
 
             template<class T>
             class retry_factory {
-                typedef typename std::decay<T>::type count_type;
+                typedef rxu::decay_t<T> count_type;
                 count_type count;
             public:
                 retry_factory(count_type t) : count(std::move(t)) {}
 
                 template<class Observable>
                 auto operator()(Observable&& source)
-                    ->      observable<typename std::decay<Observable>::type::value_type, retry<typename std::decay<Observable>::type::value_type, Observable, count_type>> {
-                    return  observable<typename std::decay<Observable>::type::value_type, retry<typename std::decay<Observable>::type::value_type, Observable, count_type>>(
-                        retry<typename std::decay<Observable>::type::value_type, Observable, count_type>(std::forward<Observable>(source), count));
+                    ->      observable<rxu::value_type_t<rxu::decay_t<Observable>>, retry<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, count_type>> {
+                    return  observable<rxu::value_type_t<rxu::decay_t<Observable>>, retry<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, count_type>>(
+                        retry<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, count_type>(std::forward<Observable>(source), count));
                 }
             };
 

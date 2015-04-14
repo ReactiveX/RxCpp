@@ -16,8 +16,8 @@ namespace detail {
 template<class T, class Observable, class Coordination>
 struct subscribe_on : public operator_base<T>
 {
-    typedef typename std::decay<Observable>::type source_type;
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<Observable> source_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
     typedef typename coordination_type::coordinator_type coordinator_type;
     struct subscribe_on_values
     {
@@ -70,7 +70,7 @@ struct subscribe_on : public operator_base<T>
         auto controller = coordinator.get_worker();
 
         // take a copy of the values for each subscription
-        auto state = std::shared_ptr<subscribe_on_state_type>(new subscribe_on_state_type(initial, std::move(coordinator), std::move(s)));
+        auto state = std::make_shared<subscribe_on_state_type>(initial, std::move(coordinator), std::move(s));
 
         auto disposer = [=](const rxsc::schedulable&){
             state->source_lifetime.unsubscribe();
@@ -110,7 +110,7 @@ private:
 template<class Coordination>
 class subscribe_on_factory
 {
-    typedef typename std::decay<Coordination>::type coordination_type;
+    typedef rxu::decay_t<Coordination> coordination_type;
 
     coordination_type coordination;
 public:
@@ -120,9 +120,9 @@ public:
     }
     template<class Observable>
     auto operator()(Observable&& source)
-        ->      observable<typename std::decay<Observable>::type::value_type,   subscribe_on<typename std::decay<Observable>::type::value_type, Observable, Coordination>> {
-        return  observable<typename std::decay<Observable>::type::value_type,   subscribe_on<typename std::decay<Observable>::type::value_type, Observable, Coordination>>(
-                                                                                subscribe_on<typename std::decay<Observable>::type::value_type, Observable, Coordination>(std::forward<Observable>(source), coordination));
+        ->      observable<rxu::value_type_t<rxu::decay_t<Observable>>,   subscribe_on<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, Coordination>> {
+        return  observable<rxu::value_type_t<rxu::decay_t<Observable>>,   subscribe_on<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, Coordination>>(
+                                                                          subscribe_on<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, Coordination>(std::forward<Observable>(source), coordination));
     }
 };
 

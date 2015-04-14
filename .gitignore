@@ -109,6 +109,14 @@ projects/*
 !projects/CMake/CMakeLists.txt
 !projects/nuget/rxcpp.autopackage
 
+CMakeCache.txt
+CMakeFiles
+*.cmake
+*.log
+*.vcxproj*
+*.sln
+Makefile
+
 ############
 ## Sublime
 ############

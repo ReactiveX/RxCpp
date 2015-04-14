@@ -14,11 +14,11 @@ namespace operators {
 namespace detail {
 
 template<class T, class Observable, class Accumulator, class Seed>
-struct scan : public operator_base<typename std::decay<Seed>::type>
+struct scan : public operator_base<rxu::decay_t<Seed>>
 {
-    typedef typename std::decay<Observable>::type source_type;
-    typedef typename std::decay<Accumulator>::type accumulator_type;
-    typedef typename std::decay<Seed>::type seed_type;
+    typedef rxu::decay_t<Observable> source_type;
+    typedef rxu::decay_t<Accumulator> accumulator_type;
+    typedef rxu::decay_t<Seed> seed_type;
 
     struct scan_initial_type
     {
@@ -64,13 +64,7 @@ struct scan : public operator_base<typename std::decay<Seed>::type>
             state->out,
         // on_next
             [state](T t) {
-                auto result = on_exception(
-                    [&](){return state->accumulator(state->result, t);},
-                    state->out);
-                if (result.empty()) {
-                    return;
-                }
-                state->result = result.get();
+                state->result = state->accumulator(state->result, t);
                 state->out.on_next(state->result);
             },
         // on_error
@@ -88,8 +82,8 @@ struct scan : public operator_base<typename std::decay<Seed>::type>
 template<class Accumulator, class Seed>
 class scan_factory
 {
-    typedef typename std::decay<Accumulator>::type accumulator_type;
-    typedef typename std::decay<Seed>::type seed_type;
+    typedef rxu::decay_t<Accumulator> accumulator_type;
+    typedef rxu::decay_t<Seed> seed_type;
 
     accumulator_type accumulator;
     seed_type seed;
@@ -101,9 +95,9 @@ public:
     }
     template<class Observable>
     auto operator()(Observable&& source)
-        ->      observable<typename std::decay<Seed>::type, scan<typename std::decay<Observable>::type::value_type, Observable, Accumulator, Seed>> {
-        return  observable<typename std::decay<Seed>::type, scan<typename std::decay<Observable>::type::value_type, Observable, Accumulator, Seed>>(
-                                                            scan<typename std::decay<Observable>::type::value_type, Observable, Accumulator, Seed>(std::forward<Observable>(source), accumulator, seed));
+        ->      observable<rxu::decay_t<Seed>, scan<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, Accumulator, Seed>> {
+        return  observable<rxu::decay_t<Seed>, scan<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, Accumulator, Seed>>(
+                                               scan<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, Accumulator, Seed>(std::forward<Observable>(source), accumulator, seed));
     }
 };
 

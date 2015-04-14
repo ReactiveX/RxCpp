@@ -25,6 +25,11 @@ typedef std::shared_ptr<const worker_interface> const_worker_interface_ptr;
 typedef std::shared_ptr<scheduler_interface> scheduler_interface_ptr;
 typedef std::shared_ptr<const scheduler_interface> const_scheduler_interface_ptr;
 
+inline action_ptr shared_empty() {
+    static action_ptr shared_empty = std::make_shared<detail::action_type>();
+    return shared_empty;
+}
+
 }
 
 // It is essential to keep virtual function calls out of an inner loop.
@@ -123,7 +128,6 @@ class action : public action_base
 {
     typedef action this_type;
     detail::action_ptr inner;
-    static detail::action_ptr shared_empty;
 public:
     action()
     {
@@ -135,7 +139,7 @@ public:
 
     /// return the empty action
     inline static action empty() {
-        return action(shared_empty);
+        return action(detail::shared_empty());
     }
 
     /// call the function
@@ -180,7 +184,7 @@ struct is_action_function
     template<class CF>
     static not_void check(...);
 
-    static const bool value = std::is_same<decltype(check<typename std::decay<F>::type>(0)), void>::value;
+    static const bool value = std::is_same<decltype(check<rxu::decay_t<F>>(0)), void>::value;
 };
 
 }
@@ -640,10 +644,6 @@ inline void action::operator()(const schedulable& s, const recurse& r) const {
     (*inner)(s, r);
 }
 
-//static
-RXCPP_SELECT_ANY detail::action_ptr action::shared_empty = detail::action_ptr(new detail::action_type());
-
-
 inline action make_action_empty() {
     return action::empty();
 }
@@ -780,7 +780,7 @@ auto worker::schedule_periodically(clock_type::time_point initial, clock_type::d
 }
 template<class... ArgN>
 void worker::schedule_periodically_rebind(clock_type::time_point initial, clock_type::duration period, const schedulable& scbl, ArgN&&... an) const {
-    std::shared_ptr<clock_type::time_point> target(new clock_type::time_point(initial));
+    auto target = std::make_shared<clock_type::time_point>(initial);
     auto activity = make_schedulable(scbl, *this, std::forward<ArgN>(an)...);
     auto periodic = make_schedulable(
         activity,
