@@ -7,7 +7,7 @@
 
 #include "rx-includes.hpp"
 
-#if !defined(RXCPP_THREAD_LOCAL)
+#if !defined(RXCPP_ON_IOS) && !defined(RXCPP_THREAD_LOCAL)
 #if defined(_MSC_VER)
 #define RXCPP_THREAD_LOCAL __declspec(thread)
 #else
@@ -633,6 +633,47 @@ private:
 };
 
 }
+
+#if !defined(RXCPP_THREAD_LOCAL)
+template<typename T>
+class thread_local_storage
+{
+private:
+    pthread_key_t key;
+
+public:
+    thread_local_storage()
+    {
+        pthread_key_create(&key, NULL);
+    }
+
+    ~thread_local_storage()
+    {
+        pthread_key_delete(key);
+    }
+
+    thread_local_storage& operator =(T* p)
+    {
+        pthread_setspecific(key, p);
+        return *this;
+    }
+
+    bool operator !()
+    {
+        return pthread_getspecific(key) == NULL;
+    }
+
+    T* operator ->()
+    {
+        return static_cast<T*>(pthread_getspecific(key));
+    }
+
+    T* get()
+    {
+        return static_cast<T*>(pthread_getspecific(key));
+    }
+};
+#endif
 
 }
 namespace rxu=util;
