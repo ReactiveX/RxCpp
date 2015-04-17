@@ -30,8 +30,11 @@ get_filename_component(RXCPP_DIR "${RXCPP_DIR}" PATH)
 
 MESSAGE( STATUS "RXCPP_DIR: " ${RXCPP_DIR} )
 
+set(IX_SRC_DIR ${RXCPP_DIR}/Ix/CPP/src)
+set(RX_SRC_DIR ${RXCPP_DIR}/Rx/v2/src)
+
 include_directories(SYSTEM ${RXCPP_DIR}/ext/catch/include)
-include_directories(${RXCPP_DIR}/Ix/CPP/src ${RXCPP_DIR}/Rx/v2/src)
+include_directories(IX_SRC_DIR RX_SRC_DIR)
 
 set(TEST_DIR ${RXCPP_DIR}/Rx/v2/test)
 
@@ -120,3 +123,19 @@ set_tests_properties(ListTests PROPERTIES PASS_REGULAR_EXPRESSION "[0-9]+ test c
 
 add_test(NAME ListTags COMMAND rxcppv2_test --list-tags)
 set_tests_properties(ListTags PROPERTIES PASS_REGULAR_EXPRESSION "[0-9]+ tags")
+
+# target to generate documentation with Doxygen
+find_package(Doxygen)
+if(DOXYGEN_FOUND)
+    set(DOXY_CONF ${RXCPP_DIR}/projects/doxygen/doxygen.conf)
+    set(DOXY_OUTPUT_DIR ${RXCPP_DIR}/projects/doxygen)
+    set(DOXY_INPUT_DIR "${IX_SRC_DIR} ${RX_SRC_DIR}")
+
+    configure_file(${DOXY_CONF}.in ${DOXY_CONF})
+
+    add_custom_target(doc
+        COMMAND ${DOXYGEN_EXECUTABLE} ${DOXY_CONF}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Generating documentation with Doxygen"
+        VERBATIM)
+endif()
