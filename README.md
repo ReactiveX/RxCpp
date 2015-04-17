@@ -146,6 +146,10 @@ int main(int argc, char** argv)
 }
 ```
 
+#Documentation
+
+RxCpp uses Doxygen to generate project documentation. Having Doxygen+Graphviz installed, CMake creates a special build task named ```doc```. It creates actual documentation and puts it to ```projects/doxygen/html/``` folder.
+
 #Contributing Code
 
 Before submitting a feature or substantial code contribution please  discuss it with the team and ensure it follows the product roadmap. Note that all code submissions will be rigorously reviewed and tested by the Rx Team, and only those that meet an extremely high bar for both quality and design/roadmap appropriateness will be merged into the source.
