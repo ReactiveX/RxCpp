@@ -34,7 +34,7 @@ set(IX_SRC_DIR ${RXCPP_DIR}/Ix/CPP/src)
 set(RX_SRC_DIR ${RXCPP_DIR}/Rx/v2/src)
 
 include_directories(SYSTEM ${RXCPP_DIR}/ext/catch/include)
-include_directories(IX_SRC_DIR RX_SRC_DIR)
+include_directories(${IX_SRC_DIR} ${RX_SRC_DIR})
 
 set(TEST_DIR ${RXCPP_DIR}/Rx/v2/test)
 
