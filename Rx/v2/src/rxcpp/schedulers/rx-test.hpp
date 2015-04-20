@@ -309,6 +309,8 @@ public:
         }
     }
 
+    virtual ~hot_observable() {}
+
     virtual void on_subscribe(observer_type o) const {
         observers.push_back(o);
         sv.push_back(rxn::subscription(sc->clock()));

@@ -75,6 +75,7 @@ class subscription : public subscription_base
             : issubscribed(initial)
         {
         }
+        virtual ~base_subscription_state() {}
         virtual void unsubscribe() {
         }
         std::atomic<bool> issubscribed;
