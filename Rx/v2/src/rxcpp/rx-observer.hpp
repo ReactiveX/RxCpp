@@ -143,6 +143,7 @@ private:
 
     struct virtual_observer : public std::enable_shared_from_this<virtual_observer>
     {
+        virtual ~virtual_observer() {}
         virtual void on_next(T) const {};
         virtual void on_error(std::exception_ptr) const {};
         virtual void on_completed() const {};

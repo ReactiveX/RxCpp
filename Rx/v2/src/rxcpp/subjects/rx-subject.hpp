@@ -155,10 +155,12 @@ public:
             b->current_generation = b->state->generation;
             b->current_completer = b->completer;
         }
-        if (!b->current_completer || b->current_completer->observers.empty()) {
+
+        auto current_completer = b->current_completer;
+        if (!current_completer || current_completer->observers.empty()) {
             return;
         }
-        for (auto& o : b->current_completer->observers) {
+        for (auto& o : current_completer->observers) {
             if (o.is_subscribed()) {
                 o.on_next(v);
             }
@@ -236,7 +238,7 @@ public:
     observable<T> get_observable() const {
         auto keepAlive = s;
         return make_observable_dynamic<T>([=](subscriber<T> o){
-            keepAlive.add(s.get_subscriber(), std::move(o));
+            keepAlive.add(keepAlive.get_subscriber(), std::move(o));
         });
     }
 };

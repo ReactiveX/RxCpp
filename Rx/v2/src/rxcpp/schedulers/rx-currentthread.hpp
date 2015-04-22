@@ -31,10 +31,17 @@ public:
     };
 
 private:
-    static current_thread_queue_type*& current_thread_queue() {
-        static RXCPP_THREAD_LOCAL current_thread_queue_type* queue;
+#if defined(RXCPP_THREAD_LOCAL)
+     static current_thread_queue_type*& current_thread_queue() {
+         static RXCPP_THREAD_LOCAL current_thread_queue_type* queue;
+         return queue;
+     }
+#else
+    static rxu::thread_local_storage<current_thread_queue_type>& current_thread_queue() {
+        static rxu::thread_local_storage<current_thread_queue_type> queue;
         return queue;
     }
+#endif
 
 public:
 
@@ -60,7 +67,7 @@ public:
         return current_thread_queue()->queue.top();
     }
     static void pop() {
-        auto state = current_thread_queue();
+        auto& state = current_thread_queue();
         if (!state) {
             abort();
         }
@@ -71,7 +78,7 @@ public:
         }
     }
     static void push(item_type item) {
-        auto state = current_thread_queue();
+        auto& state = current_thread_queue();
         if (!state) {
             abort();
         }
@@ -110,11 +117,14 @@ public:
         if (!current_thread_queue()) {
             abort();
         }
-        destroy(current_thread_queue());
+#if defined(RXCPP_THREAD_LOCAL)
+         destroy(current_thread_queue());
+#else
+        destroy(current_thread_queue().get());
+#endif
         current_thread_queue() = nullptr;
     }
 };
-
 
 }
 
