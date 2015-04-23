@@ -127,14 +127,17 @@ set_tests_properties(ListTags PROPERTIES PASS_REGULAR_EXPRESSION "[0-9]+ tags")
 # target to generate documentation with Doxygen
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
-    set(DOXY_CONF ${RXCPP_DIR}/projects/doxygen/doxygen.conf)
+    set(DOXY_CONF_DIR ${RXCPP_DIR}/projects/doxygen)
+    set(DOXY_CONF_FILE ${DOXY_CONF_DIR}/doxygen.conf)
+    set(DOXY_MAIN_FILE ${DOXY_CONF_DIR}/mainpage.dox)
     set(DOXY_OUTPUT_DIR ${RXCPP_DIR}/projects/doxygen)
-    set(DOXY_INPUT_DIR "${IX_SRC_DIR} ${RX_SRC_DIR}")
+    set(DOXY_INPUT_DIR "${IX_SRC_DIR} ${RX_SRC_DIR} ${DOXY_MAIN_FILE}")
+    set(DOXY_INCLUDE_DIR ${RXCPP_DIR})
 
-    configure_file(${DOXY_CONF}.in ${DOXY_CONF})
+    configure_file(${DOXY_CONF_FILE}.in ${DOXY_CONF_FILE})
 
     add_custom_target(doc
-        COMMAND ${DOXYGEN_EXECUTABLE} ${DOXY_CONF}
+        COMMAND ${DOXYGEN_EXECUTABLE} ${DOXY_CONF_FILE}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating documentation with Doxygen"
         VERBATIM)

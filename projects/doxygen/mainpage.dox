@@ -1,0 +1,13 @@
+/*!
+    \mainpage 
+    
+    \htmlinclude Readme.html
+    
+    \par See also
+    
+    RxCpp sources --- https://github.com/Reactive-Extensions/RxCpp
+    
+    Introduction to Rx --- http://www.introtorx.com
+
+    Reactive Extensions portal --- http://reactivex.io
+*/

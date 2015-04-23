@@ -109,6 +109,7 @@ projects/*
 !projects/CMake/CMakeLists.txt
 !projects/nuget/rxcpp.autopackage
 !projects/doxygen/doxygen.conf.in
+!projects/doxygen/mainpage.dox
 
 CMakeCache.txt
 CMakeFiles
