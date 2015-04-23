@@ -5,6 +5,8 @@ Linux & OSX: [![Linux & Osx Status](http://img.shields.io/travis/Reactive-Extens
 [![NuGet version](http://img.shields.io/nuget/v/RxCpp.svg?style=flat-square)](http://www.nuget.org/packages/RxCpp/)
 [![NuGet downloads](http://img.shields.io/nuget/dt/RxCpp.svg?style=flat-square)](http://www.nuget.org/packages/RxCpp/)
 
+[doxygen documentation](http://reactive-extensions.github.io/RxCpp)
+
 # Reactive Extensions:
 
 * Rx.NET: The Reactive Extensions (Rx) is a library for composing asynchronous and event-based programs using observable sequences and LINQ-style query operators.
@@ -148,7 +150,9 @@ int main(int argc, char** argv)
 
 #Documentation
 
-RxCpp uses Doxygen to generate project documentation. Having Doxygen+Graphviz installed, CMake creates a special build task named ```doc```. It creates actual documentation and puts it to ```projects/doxygen/html/``` folder.
+RxCpp uses Doxygen to generate project [documentation](http://reactive-extensions.github.io/RxCpp). 
+
+When Doxygen+Graphviz is installed, CMake creates a special build task named ```doc```. It creates actual documentation and puts it to ```projects/doxygen/html/``` folder, which can be published to the `gh-pages` branch.
 
 #Contributing Code
 
