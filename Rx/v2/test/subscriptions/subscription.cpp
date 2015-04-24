@@ -5,6 +5,22 @@ namespace rxsc=rx::rxsc;
 
 #include "catch.hpp"
 
+SCENARIO("observe subscription", "[hide]"){
+    GIVEN("observable of ints"){
+        WHEN("subscribe"){
+            std::shared_ptr<std::list<rxcpp::subscriber<int>>> observers(new std::list<rxcpp::subscriber<int>>());
+
+            auto observable = rxcpp::observable<>::create<int>([=](rxcpp::subscriber<int> out){
+                auto it = observers->insert(observers->end(), out);
+                it->add([=](){
+                    observers->erase(it);
+                });
+            });
+
+        }
+    }
+}
+
 static const int static_subscriptions = 100000;
 
 SCENARIO("for loop subscribes to map", "[hide][for][just][subscribe][long][perf]"){

@@ -1,13 +1,25 @@
 /*!
-    \mainpage 
-    
-    \htmlinclude Readme.html
-    
-    \par See also
-    
-    RxCpp sources --- https://github.com/Reactive-Extensions/RxCpp
-    
+    \mainpage
+
+    RxCpp is an implementation of the Observable/Observer pattern and a set of operations. It is an async equivalent of the container/iterator pattern and the set of algorithms found in the STL.
+
+    \par Resources for Learning about Reactive Extentions
+
     Introduction to Rx --- http://www.introtorx.com
 
+    Interactive diagrams of Rx Observables --- http://rxmarbles.io
+
     Reactive Extensions portal --- http://reactivex.io
+
+    Reactive Extensions tutorial --- http://reactive-extensions.github.io/learnrx/
+
+    \par RxCpp specific
+
+    Start here --- \ref group-core
+
+    Github --- https://github.com/Reactive-Extensions/RxCpp
+
+    \par readme.html
+
+    \htmlinclude Readme.html
 */

@@ -73,6 +73,12 @@ public:
 
 //struct tag_test_observable : public tag_observable {};
 
+/*!
+    \brief a source of values that records the time of each subscription/unsubscription and all the values and the time they were emitted.
+
+    \ingroup group-observable
+
+*/
 template<class T>
 class testable_observable
     : public observable<T, typename detail::test_source<T>>

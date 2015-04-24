@@ -95,7 +95,12 @@ connectable_observable<T> make_dynamic_connectable_observable(Source&& s) {
 }
 
 
+/*!
+    \brief a source of values that is shared across all subscribers and does not start until connectable_observable::connect() is called.
 
+    \ingroup group-observable
+
+*/
 template<class T, class SourceOperator>
 class connectable_observable
     : public observable<T, SourceOperator>

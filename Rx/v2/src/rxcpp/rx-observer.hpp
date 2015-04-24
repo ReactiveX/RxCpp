@@ -220,7 +220,12 @@ public:
     }
 };
 
+/*!
+    \brief consumes values from an observable.
 
+    \ingroup group-core
+
+*/
 template<class T, class I>
 class observer : public observer_base<T>
 {

@@ -175,6 +175,12 @@ struct defer_observable
 {
 };
 
+/*!
+    \brief a source of values whose methods block until all values have been emitted. subscribe or use one of the operator methods that reduce the values emitted to a single value.
+
+    \ingroup group-observable
+
+*/
 template<class T, class Observable>
 class blocking_observable
 {
@@ -286,7 +292,25 @@ public:
 template<>
 class observable<void, void>;
 
+/*!
+    \defgroup group-observable Observables
 
+    \brief These are the set of observable classes in rxcpp.
+
+    \class rxcpp::observable
+
+    \ingroup group-observable group-core
+
+    \brief a source of values. subscribe or use one of the operator methods that return a new observable, which uses this observable as a source.
+
+    \par Some code
+    This sample will observable::subscribe() to values from a observable<void, void>::range().
+
+    \sample
+    \snippet range.cpp range sample
+    \snippet output.txt range sample
+
+*/
 template<class T, class SourceOperator>
 class observable
     : public observable_base<T>
@@ -1348,8 +1372,30 @@ inline bool operator!=(const observable<T, SourceOperator>& lhs, const observabl
     return !(lhs == rhs);
 }
 
-// observable<> has static methods to construct observable sources and adaptors.
-// observable<> is not constructable
+/*!
+    \defgroup group-core Basics
+
+    \brief These are the core classes that combine to represent a set of values emitted over time that can be cancelled.
+
+    \class rxcpp::observable<void, void>
+
+    \brief typed as rxcpp::observable<>, this is a collection of factory methods that return an observable.
+
+    \ingroup group-core
+
+    \par Create a new type of observable
+
+    \sample
+    \snippet create.cpp Create sample
+    \snippet output.txt Create sample
+
+    \par Create an observable that emits a range of values
+
+    \sample
+    \snippet range.cpp range sample
+    \snippet output.txt range sample
+
+*/
 template<>
 class observable<void, void>
 {
@@ -1359,7 +1405,7 @@ public:
 
         \tparam T  the type of the items that this observable emits
         \tparam OnSubscribe  the type of OnSubscribe handler function
-        
+
         \param  os  OnSubscribe event handler
 
         \return  Observable that executes the specified function when a Subscriber subscribes to it.
@@ -1379,12 +1425,33 @@ public:
         \goodcode
         \snippet create.cpp Create good code
         \snippet output.txt Create good code
+
+        \warning
+        It is good practice to use operators like observable::take to control lifetime rather than use the subscription explicitly.
+
+        \goodcode
+        \snippet create.cpp Create great code
+        \snippet output.txt Create great code
     */
     template<class T, class OnSubscribe>
     static auto create(OnSubscribe os)
         -> decltype(rxs::create<T>(std::move(os))) {
         return      rxs::create<T>(std::move(os));
     }
+    /*! Returns an observable that sends values in the range first-last by adding step to the previous value.
+
+        \tparam T  the type of the values that this observable emits
+
+        \param  first  first value to send
+        \param  last   last value to send
+        \param  step   value to add to the previous value to get the next value
+
+        \return  Observable that sends values in the range first-last by adding step to the previous value.
+
+        \sample
+        \snippet range.cpp range sample
+        \snippet output.txt range sample
+    */
     template<class T>
     static auto range(T first = 0, T last = std::numeric_limits<T>::max(), ptrdiff_t step = 1)
         -> decltype(rxs::range<T>(first, last, step, identity_current_thread())) {
@@ -1433,6 +1500,18 @@ public:
         -> decltype(rxs::interval(initial, period, std::move(cn))) {
         return      rxs::interval(initial, period, std::move(cn));
     }
+    /*! Returns an observable that sends each value in the collection.
+
+        \tparam Collection  the type of the collection of values that this observable emits
+
+        \param  c  collection containing values to send
+
+        \return  Observable that sends each value in the collection.
+
+        \sample
+        \snippet iterate.cpp iterate sample
+        \snippet output.txt iterate sample
+    */
     template<class Collection>
     static auto iterate(Collection c)
         -> decltype(rxs::iterate(std::move(c), identity_current_thread())) {
@@ -1530,5 +1609,6 @@ auto operator | (const rxcpp::observable<T, SourceOperator>& source, OperatorFac
     -> decltype(source.op(std::forward<OperatorFactory>(of))) {
     return      source.op(std::forward<OperatorFactory>(of));
 }
+
 
 #endif

@@ -348,6 +348,12 @@ struct schedulable_base :
     typedef tag_schedulable schedulable_tag;
 };
 
+/*!
+    \brief allows functions to be called at specified times and possibly in other contexts.
+
+    \ingroup group-core
+
+*/
 class scheduler : public scheduler_base
 {
     typedef scheduler this_type;

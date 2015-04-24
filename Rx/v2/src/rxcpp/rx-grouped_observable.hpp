@@ -111,6 +111,12 @@ grouped_observable<K, T> make_dynamic_grouped_observable(Source&& s) {
 
 
 
+/*!
+    \brief a source of observables which each emit values from one category specified by the key selector.
+
+    \ingroup group-observable
+
+*/
 template<class K, class T, class SourceOperator>
 class grouped_observable
     : public observable<T, SourceOperator>

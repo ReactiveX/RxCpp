@@ -15,6 +15,12 @@ struct subscriber_base : public observer_base<T>, public subscription_base
     typedef tag_subscriber subscriber_tag;
 };
 
+/*!
+    \brief binds an observer that consumes values with a composite_subscription that controls lifetime.
+
+    \ingroup group-core
+
+*/
 template<class T, class Observer = observer<T>>
 class subscriber : public subscriber_base<T>
 {

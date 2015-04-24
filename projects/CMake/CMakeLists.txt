@@ -130,10 +130,10 @@ if(DOXYGEN_FOUND)
     # Doxygen configuration
     set(DOXY_CONF_DIR ${RXCPP_DIR}/projects/doxygen)
     set(DOXY_CONF_FILE ${DOXY_CONF_DIR}/doxygen.conf)
-    
+
     # File with main page (index.html) content
     set(DOXY_MAIN_PAGE ${DOXY_CONF_DIR}/mainpage.dox)
-    
+
     # Sources for processing location
     set(DOXY_INPUT_DIR "${IX_SRC_DIR} ${RX_SRC_DIR} ${DOXY_MAIN_PAGE}")
 
@@ -154,6 +154,8 @@ if(DOXYGEN_FOUND)
     set(DOXY_EXAMPLE_SRC_LIST
         ${DOXY_EXAMPLES_SRC_DIR}/main.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/create.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/iterate.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/range.cpp
     )
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${DOXY_EXAMPLES_BIN_DIR})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${DOXY_EXAMPLES_BIN_DIR})

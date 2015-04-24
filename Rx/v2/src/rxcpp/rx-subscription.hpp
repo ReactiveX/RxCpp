@@ -355,6 +355,12 @@ inline composite_subscription shared_empty();
 
 }
 
+/*!
+    \brief controls lifetime for scheduler::schedule and observable<T, SourceOperator>::subscribe.
+
+    \ingroup group-core
+
+*/
 class composite_subscription
     : protected detail::composite_subscription_inner
     , public subscription
