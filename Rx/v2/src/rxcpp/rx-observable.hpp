@@ -1355,6 +1355,31 @@ class observable<void, void>
 {
     ~observable();
 public:
+    /*! Returns an observable that executes the specified function when a subscriber subscribes to it.
+
+        \tparam T  the type of the items that this observable emits
+        \tparam OnSubscribe  the type of OnSubscribe handler function
+        
+        \param  os  OnSubscribe event handler
+
+        \return  Observable that executes the specified function when a Subscriber subscribes to it.
+
+        \sample
+        \snippet create.cpp Create sample
+        \snippet output.txt Create sample
+
+        \warning
+        It is good practice to check the observer's is_subscribed state from within the function you pass to create
+        so that your observable can stop emitting items or doing expensive calculations when there is no longer an interested observer.
+
+        \badcode
+        \snippet create.cpp Create bad code
+        \snippet output.txt Create bad code
+
+        \goodcode
+        \snippet create.cpp Create good code
+        \snippet output.txt Create good code
+    */
     template<class T, class OnSubscribe>
     static auto create(OnSubscribe os)
         -> decltype(rxs::create<T>(std::move(os))) {

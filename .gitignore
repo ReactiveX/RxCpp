@@ -108,8 +108,7 @@ Desktop.ini
 projects/*
 !projects/CMake/CMakeLists.txt
 !projects/nuget/rxcpp.autopackage
-!projects/doxygen/doxygen.conf.in
-!projects/doxygen/mainpage.dox
+!projects/doxygen
 
 CMakeCache.txt
 CMakeFiles
@@ -124,3 +123,11 @@ Makefile
 ############
 
 *.sublime-*
+
+############
+## Doxygen
+############
+
+projects/doxygen/*.conf
+projects/doxygen/html
+Rx/v2/examples/doxygen/output.txt

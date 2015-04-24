@@ -127,18 +127,50 @@ set_tests_properties(ListTags PROPERTIES PASS_REGULAR_EXPRESSION "[0-9]+ tags")
 # target to generate documentation with Doxygen
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
+    # Doxygen configuration
     set(DOXY_CONF_DIR ${RXCPP_DIR}/projects/doxygen)
     set(DOXY_CONF_FILE ${DOXY_CONF_DIR}/doxygen.conf)
-    set(DOXY_MAIN_FILE ${DOXY_CONF_DIR}/mainpage.dox)
-    set(DOXY_OUTPUT_DIR ${RXCPP_DIR}/projects/doxygen)
-    set(DOXY_INPUT_DIR "${IX_SRC_DIR} ${RX_SRC_DIR} ${DOXY_MAIN_FILE}")
-    set(DOXY_INCLUDE_DIR ${RXCPP_DIR})
+    
+    # File with main page (index.html) content
+    set(DOXY_MAIN_PAGE ${DOXY_CONF_DIR}/mainpage.dox)
+    
+    # Sources for processing location
+    set(DOXY_INPUT_DIR "${IX_SRC_DIR} ${RX_SRC_DIR} ${DOXY_MAIN_PAGE}")
 
+    # C++ examples location
+    set(DOXY_EXAMPLES_SRC_DIR ${EXAMPLES_DIR}/doxygen)
+    set(DOXY_EXAMPLES_BIN_DIR doxy_examples)
+
+    # Directories and files allowed for include-type command (\include, \example, \snippet etc)
+    set(DOXY_INCLUDE_DIR "${RXCPP_DIR} ${DOXY_EXAMPLES_SRC_DIR}")
+
+    # Resulting documentation to be placed here
+    set(DOXY_OUTPUT_DIR ${RXCPP_DIR}/projects/doxygen)
+
+    # Make Doxygen configuration from template with placeholders
     configure_file(${DOXY_CONF_FILE}.in ${DOXY_CONF_FILE})
 
+    # Target to build examples
+    set(DOXY_EXAMPLE_SRC_LIST
+        ${DOXY_EXAMPLES_SRC_DIR}/main.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/create.cpp
+    )
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${DOXY_EXAMPLES_BIN_DIR})
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${DOXY_EXAMPLES_BIN_DIR})
+    add_executable(doxy_examples EXCLUDE_FROM_ALL ${DOXY_EXAMPLE_SRC_LIST})
+    TARGET_LINK_LIBRARIES(doxy_examples ${CMAKE_THREAD_LIBS_INIT})
+
+    # Target to execute examples and save their output
+    add_custom_command(
+        OUTPUT doxy_examples_output
+        COMMAND ${DOXY_EXAMPLES_BIN_DIR}/doxy_examples > ${DOXY_EXAMPLES_SRC_DIR}/output.txt
+        COMMENT "Execute examples for Doxygen documentation")
+
+    # Target to generate docs
     add_custom_target(doc
         COMMAND ${DOXYGEN_EXECUTABLE} ${DOXY_CONF_FILE}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        DEPENDS doxy_examples doxy_examples_output
         COMMENT "Generating documentation with Doxygen"
         VERBATIM)
 endif()
