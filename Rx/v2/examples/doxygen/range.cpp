@@ -13,6 +13,53 @@ SCENARIO("range sample"){
     printf("//! [range sample]\n");
 }
 
+#include <iostream>
+int get_pid() {
+    std::stringstream s;
+    int id;
+    s << std::this_thread::get_id();
+    s >> id;
+    return id;
+}
+
+SCENARIO("threaded range sample"){
+    printf("//! [threaded range sample]\n");
+    printf("[thread %d] Start task\n", get_pid());
+    auto values = rxcpp::observable<>::range(1, 3, rxcpp::observe_on_new_thread());
+    auto s = values.
+        map([](int prime) { return std::make_tuple(get_pid(), prime);});
+    s.
+        as_blocking().
+        subscribe(
+            rxcpp::util::apply_to(
+                [](const int pid, int v) {
+                    printf("[thread %d] OnNext: %d\n", pid, v);
+                }),
+            [](){printf("[thread %d] OnCompleted\n", get_pid());});
+    printf("[thread %d] Finish task\n", get_pid());
+    printf("//! [threaded range sample]\n");
+}
+
+SCENARIO("subscribe_on range sample"){
+    printf("//! [subscribe_on range sample]\n");
+    printf("[thread %d] Start task\n", get_pid());
+    auto values = rxcpp::observable<>::range(1, 3);
+    auto s = values.
+        subscribe_on(rxcpp::observe_on_new_thread()).
+        map([](int prime) { return std::make_tuple(get_pid(), prime);});
+    s.
+        as_blocking().
+        subscribe(
+            rxcpp::util::apply_to(
+                [](const int pid, int v) {
+                    printf("[thread %d] OnNext: %d\n", pid, v);
+                }),
+            [](){printf("[thread %d] OnCompleted\n", get_pid());});
+    printf("[thread %d] Finish task\n", get_pid());
+    printf("//! [subscribe_on range sample]\n");
+}
+
+
 SCENARIO("range concat sample"){
     printf("//! [range concat sample]\n");
 

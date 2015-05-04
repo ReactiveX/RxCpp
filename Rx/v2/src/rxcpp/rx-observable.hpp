@@ -1379,7 +1379,7 @@ inline bool operator!=(const observable<T, SourceOperator>& lhs, const observabl
 
     \class rxcpp::observable<void, void>
 
-    \brief typed as rxcpp::observable<>, this is a collection of factory methods that return an observable.
+    \brief typed as ```rxcpp::observable<>```, this is a collection of factory methods that return an observable.
 
     \ingroup group-core
 
@@ -1394,6 +1394,58 @@ inline bool operator!=(const observable<T, SourceOperator>& lhs, const observabl
     \sample
     \snippet range.cpp range sample
     \snippet output.txt range sample
+
+    \par Create an observable that emits nothing / generates an error / immediately completes
+
+    \sample
+    \snippet never.cpp never sample
+    \snippet output.txt never sample
+    \snippet error.cpp error sample
+    \snippet output.txt error sample
+    \snippet empty.cpp empty sample
+    \snippet output.txt empty sample
+
+    \par Create an observable that generates new observable for each subscriber
+
+    \sample
+    \snippet defer.cpp defer sample
+    \snippet output.txt defer sample
+
+    \par Create an observable that emits items every specified interval of time
+
+    \sample
+    \snippet interval.cpp interval sample
+    \snippet output.txt interval sample
+
+    \par Create an observable that emits all items from a collection
+
+    \sample
+    \snippet iterate.cpp iterate sample
+    \snippet output.txt iterate sample
+
+    \par Create an observable that emits a set of specified items
+
+    \sample
+    \snippet from.cpp from sample
+    \snippet output.txt from sample
+
+    \par Create an observable that emits a single item
+
+    \sample
+    \snippet just.cpp just sample
+    \snippet output.txt just sample
+
+    \par Create an observable that emits a set of items and then subscribes to another observable
+
+    \sample
+    \snippet start_with.cpp full start_with sample
+    \snippet output.txt full start_with sample
+
+    \par Create an observable that generates a new observable based on a generated resource for each subscriber
+
+    \sample
+    \snippet scope.cpp scope sample
+    \snippet output.txt scope sample
 
 */
 template<>
@@ -1457,26 +1509,76 @@ public:
         -> decltype(rxs::range<T>(first, last, step, identity_current_thread())) {
         return      rxs::range<T>(first, last, step, identity_current_thread());
     }
+    /*! Returns an observable that sends values in the range ```first```-```last``` by adding ```step``` to the previous value. The values are sent on the specified scheduler.
+
+        \tparam T             the type of the values that this observable emits
+        \tparam Coordination  the type of the scheduler
+
+        \param  first  first value to send
+        \param  last   last value to send
+        \param  step   value to add to the previous value to get the next value
+        \param  cn     the scheduler to run the generator loop on
+
+        \return  Observable that sends values in the range first-last by adding step to the previous value using the specified scheduler.
+
+        \note  `step` or both `step` & `last` may be omitted.
+
+        \sample
+        \snippet range.cpp threaded range sample
+        \snippet output.txt threaded range sample
+
+        An alternative way to specify the scheduler for emitted values is to use observable::subscribe_on operator
+        \snippet range.cpp subscribe_on range sample
+        \snippet output.txt subscribe_on range sample
+    */
     template<class T, class Coordination>
     static auto range(T first, T last, ptrdiff_t step, Coordination cn)
         -> decltype(rxs::range<T>(first, last, step, std::move(cn))) {
         return      rxs::range<T>(first, last, step, std::move(cn));
     }
+    /// Returns an observable that sends values in the range ```first```-```last``` by adding 1 to the previous value. The values are sent on the specified scheduler.
+    ///
+    /// \see       rxcpp::observable<void,void>#range(T first, T last, ptrdiff_t step, Coordination cn)
     template<class T, class Coordination>
     static auto range(T first, T last, Coordination cn)
         -> decltype(rxs::range<T>(first, last, std::move(cn))) {
         return      rxs::range<T>(first, last, std::move(cn));
     }
+    /// Returns an observable that infinitely (until overflow) sends values starting from ```first```. The values are sent on the specified scheduler.
+    ///
+    /// \see       rxcpp::observable<void,void>#range(T first, T last, ptrdiff_t step, Coordination cn)
     template<class T, class Coordination>
     static auto range(T first, Coordination cn)
         -> decltype(rxs::range<T>(first, std::move(cn))) {
         return      rxs::range<T>(first, std::move(cn));
     }
+    /*! Returns an observable that never sends any items or notifications to observer.
+
+        \tparam T  the type of (not) emitted items
+
+        \return  Observable that never sends any items or notifications to observer.
+
+        \sample
+        \snippet never.cpp never sample
+        \snippet output.txt never sample
+    */
     template<class T>
     static auto never()
         -> decltype(rxs::never<T>()) {
         return      rxs::never<T>();
     }
+    /*! Returns an observable that calls the specified observable factory to create an observable for each new observer that subscribes.
+
+        \tparam ObservableFactory  the type of the observable factory
+
+        \param  of  the observable factory function to invoke for each observer that subscribes to the resulting observable
+
+        \return  observable whose observers' subscriptions trigger an invocation of the given observable factory function
+
+        \sample
+        \snippet defer.cpp defer sample
+        \snippet output.txt defer sample
+    */
     template<class ObservableFactory>
     static auto defer(ObservableFactory of)
         -> decltype(rxs::defer(std::move(of))) {
@@ -1486,15 +1588,53 @@ public:
         -> decltype(rxs::interval(when)) {
         return      rxs::interval(when);
     }
+    /*! Returns an observable that infinitely emits sequential integers at specified time, on a specified scheduler.
+
+        \tparam Coordination  the type of the scheduler
+
+        \param  when  time when the integers are sent
+        \param  cn    the scheduler to use for scheduling the items
+
+        \return  Observable that infinitely emits sequential integers at specified time
+
+        \sample
+        \snippet interval.cpp threaded empty interval sample
+        \snippet output.txt threaded empty interval sample
+    */
     template<class Coordination>
     static auto interval(rxsc::scheduler::clock_type::time_point when, Coordination cn)
         -> decltype(rxs::interval(when, std::move(cn))) {
         return      rxs::interval(when, std::move(cn));
     }
+    /*! Returns an observable that emits a sequential integer every specified interval of time.
+
+        \param  initial  time when the first value is sent
+        \param  period   period between emitted values
+
+        \return  Observable that sends a sequential integer each time interval
+
+        \sample
+        \snippet interval.cpp interval sample
+        \snippet output.txt interval sample
+    */
     static auto interval(rxsc::scheduler::clock_type::time_point initial, rxsc::scheduler::clock_type::duration period)
         -> decltype(rxs::interval(initial, period)) {
         return      rxs::interval(initial, period);
     }
+    /*! Returns an observable that emits a sequential integer every specified interval of time, on the specified scheduler.
+
+        \tparam Coordination  the type of the scheduler
+
+        \param  initial  time when the first value is sent
+        \param  period   period between emitted values
+        \param  cn       the scheduler to use for scheduling the items
+
+        \return  Observable that sends a sequential integer each time interval
+
+        \sample
+        \snippet interval.cpp threaded interval sample
+        \snippet output.txt threaded interval sample
+    */
     template<class Coordination>
     static auto interval(rxsc::scheduler::clock_type::time_point initial, rxsc::scheduler::clock_type::duration period, Coordination cn)
         -> decltype(rxs::interval(initial, period, std::move(cn))) {
@@ -1517,69 +1657,249 @@ public:
         -> decltype(rxs::iterate(std::move(c), identity_current_thread())) {
         return      rxs::iterate(std::move(c), identity_current_thread());
     }
+    /*! Returns an observable that sends each value in the collection, on the specified scheduler.
+
+        \tparam Collection    the type of the collection of values that this observable emits
+        \tparam Coordination  the type of the scheduler
+
+        \param  c   collection containing values to send
+        \param  cn  the scheduler to use for scheduling the items
+
+        \return  Observable that sends each value in the collection.
+
+        \sample
+        \snippet iterate.cpp threaded iterate sample
+        \snippet output.txt threaded iterate sample
+    */
     template<class Collection, class Coordination>
     static auto iterate(Collection c, Coordination cn)
         -> decltype(rxs::iterate(std::move(c), std::move(cn))) {
         return      rxs::iterate(std::move(c), std::move(cn));
     }
+    /*! Returns an observable that sends an empty set of values and then completes.
+
+        \tparam T  the type of elements (not) to be sent
+
+        \return  Observable that sends an empty set of values and then completes.
+
+        This is a degenerate case of rxcpp::observable<void,void>#from(Value0,ValueN...) operator.
+
+        \note This is a degenerate case of ```observable<void,void>::from(Value0 v0, ValueN... vn)``` operator.
+    */
     template<class T>
     static auto from()
         -> decltype(    rxs::from<T>()) {
         return          rxs::from<T>();
     }
+    /*! Returns an observable that sends an empty set of values and then completes, on the specified scheduler.
+
+        \tparam T  the type of elements (not) to be sent
+        \tparam Coordination  the type of the scheduler
+
+        \return  Observable that sends an empty set of values and then completes.
+
+        \note This is a degenerate case of ```observable<void,void>::from(Coordination cn, Value0 v0, ValueN... vn)``` operator.
+    */
     template<class T, class Coordination>
     static auto from(Coordination cn)
         -> typename std::enable_if<is_coordination<Coordination>::value,
             decltype(   rxs::from<T>(std::move(cn)))>::type {
         return          rxs::from<T>(std::move(cn));
     }
+    /*! Returns an observable that sends each value from its arguments list.
+
+        \tparam Value0  ...
+        \tparam ValueN  the type of sending values
+
+        \param  v0  ...
+        \param  vn  values to send
+
+        \return  Observable that sends each value from its arguments list.
+
+        \sample
+        \snippet from.cpp from sample
+        \snippet output.txt from sample
+
+        \note This operator is useful to send separated values. If they are stored as a collection, use observable<void,void>::iterate instead.
+    */
     template<class Value0, class... ValueN>
     static auto from(Value0 v0, ValueN... vn)
         -> typename std::enable_if<!is_coordination<Value0>::value,
             decltype(   rxs::from(v0, vn...))>::type {
         return          rxs::from(v0, vn...);
     }
+    /*! Returns an observable that sends each value from its arguments list, on the specified scheduler.
+
+        \tparam Coordination  the type of the scheduler
+        \tparam Value0  ...
+        \tparam ValueN  the type of sending values
+
+        \param  cn  the scheduler to use for scheduling the items
+        \param  v0  ...
+        \param  vn  values to send
+
+        \return  Observable that sends each value from its arguments list.
+
+        \sample
+        \snippet from.cpp threaded from sample
+        \snippet output.txt threaded from sample
+
+        \note This operator is useful to send separated values. If they are stored as a collection, use observable<void,void>::iterate instead.
+    */
     template<class Coordination, class Value0, class... ValueN>
     static auto from(Coordination cn, Value0 v0, ValueN... vn)
         -> typename std::enable_if<is_coordination<Coordination>::value,
             decltype(   rxs::from(std::move(cn), v0, vn...))>::type {
         return          rxs::from(std::move(cn), v0, vn...);
     }
+    /*! Returns an observable that sends no items to observer and immediately completes.
+
+        \tparam T             the type of (not) emitted items
+
+        \return  Observable that sends no items to observer and immediately completes.
+
+        \sample
+        \snippet empty.cpp empty sample
+        \snippet output.txt empty sample
+    */
     template<class T>
     static auto empty()
         -> decltype(from<T>()) {
         return      from<T>();
     }
+    /*! Returns an observable that sends no items to observer and immediately completes, on the specified scheduler.
+
+        \tparam T             the type of (not) emitted items
+        \tparam Coordination  the type of the scheduler
+
+        \param  cn  the scheduler to use for scheduling the items
+
+        \return  Observable that sends no items to observer and immediately completes.
+
+        \sample
+        \snippet empty.cpp threaded empty sample
+        \snippet output.txt threaded empty sample
+    */
     template<class T, class Coordination>
     static auto empty(Coordination cn)
-        -> decltype(from(std::move(cn), std::array<T, 0>())) {
-        return      from(std::move(cn), std::array<T, 0>());
+        -> decltype(from<T>(std::move(cn))) {
+        return      from<T>(std::move(cn));
     }
+    /*! Returns an observable that sends the specified item to observer and then completes.
+
+        \tparam T  the type of the emitted item
+
+        \param v  the value to send
+
+        \return  Observable that sends the specified item to observer and then completes.
+
+        \sample
+        \snippet just.cpp just sample
+        \snippet output.txt just sample
+    */
     template<class T>
     static auto just(T v)
         -> decltype(from(std::move(v))) {
         return      from(std::move(v));
     }
+    /*! Returns an observable that sends the specified item to observer and then completes, on the specified scheduler.
+
+        \tparam T             the type of the emitted item
+        \tparam Coordination  the type of the scheduler
+
+        \param v   the value to send
+        \param cn  the scheduler to use for scheduling the items
+
+        \return  Observable that sends the specified item to observer and then completes.
+
+        \sample
+        \snippet just.cpp threaded just sample
+        \snippet output.txt threaded just sample
+    */
     template<class T, class Coordination>
     static auto just(T v, Coordination cn)
         -> decltype(from(std::move(cn), std::move(v))) {
         return      from(std::move(cn), std::move(v));
     }
+    /*! Returns an observable that sends no items to observer and immediately generates an error.
+
+        \tparam T          the type of (not) emitted items
+        \tparam Exception  the type of the error
+
+        \param  e  the error to be passed to observers
+
+        \return  Observable that sends no items to observer and immediately generates an error.
+
+        \sample
+        \snippet error.cpp error sample
+        \snippet output.txt error sample
+    */
     template<class T, class Exception>
     static auto error(Exception&& e)
         -> decltype(rxs::error<T>(std::forward<Exception>(e))) {
         return      rxs::error<T>(std::forward<Exception>(e));
     }
+    /*! Returns an observable that sends no items to observer and immediately generates an error, on the specified scheduler.
+
+        \tparam T             the type of (not) emitted items
+        \tparam Exception     the type of the error
+        \tparam Coordination  the type of the scheduler
+
+        \param  e   the error to be passed to observers
+        \param  cn  the scheduler to use for scheduling the items
+
+        \return  Observable that sends no items to observer and immediately generates an error.
+
+        \sample
+        \snippet error.cpp threaded error sample
+        \snippet output.txt threaded error sample
+    */
     template<class T, class Exception, class Coordination>
     static auto error(Exception&& e, Coordination cn)
         -> decltype(rxs::error<T>(std::forward<Exception>(e), std::move(cn))) {
         return      rxs::error<T>(std::forward<Exception>(e), std::move(cn));
     }
+    /*! Returns an observable that sends the specified values before it begins to send items emitted by the given observable.
+
+        \tparam Observable  the type of the observable that emits values for resending
+        \tparam Value0      ...
+        \tparam ValueN      the type of sending values
+
+        \param  o   the observable that emits values for resending
+        \param  v0  ...
+        \param  vn  values to send
+
+        \return  Observable that sends the specified values before it begins to send items emitted by the given observable.
+
+        \sample
+        \snippet start_with.cpp full start_with sample
+        \snippet output.txt full start_with sample
+
+        Instead of passing the observable as a parameter, you can use  rxcpp::observable<T, SourceOperator>::start_with method of the existing observable:
+        \snippet start_with.cpp short start_with sample
+        \snippet output.txt short start_with sample
+    */
     template<class Observable, class Value0, class... ValueN>
     static auto start_with(Observable o, Value0 v0, ValueN... vn)
         -> decltype(rxs::from(rxu::value_type_t<Observable>(v0), rxu::value_type_t<Observable>(vn)...).concat(o)) {
         return      rxs::from(rxu::value_type_t<Observable>(v0), rxu::value_type_t<Observable>(vn)...).concat(o);
     }
+    /*! Returns an observable that makes an observable by the specified observable factory 
+        using the resource provided by the specified resource factory for each new observer that subscribes.
+
+        \tparam ResourceFactory    the type of the resource factory
+        \tparam ObservableFactory  the type of the observable factory
+
+        \param  rf  the resource factory function that resturn the rxcpp::resource that is used as a resource by the observable factory
+        \param  of  the observable factory function to invoke for each observer that subscribes to the resulting observable
+
+        \return  observable that makes an observable by the specified observable factory 
+                 using the resource provided by the specified resource factory for each new observer that subscribes.
+
+        \sample
+        \snippet scope.cpp scope sample
+        \snippet output.txt scope sample
+    */
     template<class ResourceFactory, class ObservableFactory>
     static auto scope(ResourceFactory rf, ObservableFactory of)
         -> decltype(rxs::scope(std::move(rf), std::move(of))) {
