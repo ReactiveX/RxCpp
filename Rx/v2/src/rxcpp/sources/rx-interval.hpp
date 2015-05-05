@@ -66,10 +66,10 @@ struct interval : public source_base<long>
     }
 };
 
-template<class TimePoint, class Coordination>
+template<class Duration, class Coordination>
 struct defer_interval : public defer_observable<
     rxu::all_true<
-        std::is_convertible<TimePoint, rxsc::scheduler::clock_type::time_point>::value,
+        std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>::value,
         is_coordination<Coordination>::value>,
     void,
     interval, Coordination>
@@ -78,36 +78,36 @@ struct defer_interval : public defer_observable<
 
 }
 
-template<class TimePoint>
-auto interval(TimePoint when)
+template<class Duration>
+auto interval(Duration period)
     ->  typename std::enable_if<
-                    detail::defer_interval<TimePoint, identity_one_worker>::value,
-        typename    detail::defer_interval<TimePoint, identity_one_worker>::observable_type>::type {
-    return          detail::defer_interval<TimePoint, identity_one_worker>::make(when, rxsc::scheduler::clock_type::duration::max(), identity_current_thread());
+                    detail::defer_interval<Duration, identity_one_worker>::value,
+        typename    detail::defer_interval<Duration, identity_one_worker>::observable_type>::type {
+    return          detail::defer_interval<Duration, identity_one_worker>::make(identity_current_thread().now(), period, identity_current_thread());
 }
 
 template<class Coordination>
-auto interval(rxsc::scheduler::clock_type::time_point when, Coordination cn)
+auto interval(rxsc::scheduler::clock_type::duration period, Coordination cn)
     ->  typename std::enable_if<
-                    detail::defer_interval<rxsc::scheduler::clock_type::time_point, Coordination>::value,
-        typename    detail::defer_interval<rxsc::scheduler::clock_type::time_point, Coordination>::observable_type>::type {
-    return          detail::defer_interval<rxsc::scheduler::clock_type::time_point, Coordination>::make(when, rxsc::scheduler::clock_type::duration::max(), std::move(cn));
+                    detail::defer_interval<rxsc::scheduler::clock_type::duration, Coordination>::value,
+        typename    detail::defer_interval<rxsc::scheduler::clock_type::duration, Coordination>::observable_type>::type {
+    return          detail::defer_interval<rxsc::scheduler::clock_type::duration, Coordination>::make(cn.now(), period, std::move(cn));
 }
 
-template<class TimePoint>
-auto interval(TimePoint when, rxsc::scheduler::clock_type::duration period)
+template<class Duration>
+auto interval(rxsc::scheduler::clock_type::time_point when, Duration period)
     ->  typename std::enable_if<
-                    detail::defer_interval<TimePoint, identity_one_worker>::value,
-        typename    detail::defer_interval<TimePoint, identity_one_worker>::observable_type>::type {
-    return          detail::defer_interval<TimePoint, identity_one_worker>::make(when, period, identity_current_thread());
+                    detail::defer_interval<Duration, identity_one_worker>::value,
+        typename    detail::defer_interval<Duration, identity_one_worker>::observable_type>::type {
+    return          detail::defer_interval<Duration, identity_one_worker>::make(when, period, identity_current_thread());
 }
 
 template<class Coordination>
 auto interval(rxsc::scheduler::clock_type::time_point when, rxsc::scheduler::clock_type::duration period, Coordination cn)
     ->  typename std::enable_if<
-                    detail::defer_interval<rxsc::scheduler::clock_type::time_point, Coordination>::value,
-        typename    detail::defer_interval<rxsc::scheduler::clock_type::time_point, Coordination>::observable_type>::type {
-    return          detail::defer_interval<rxsc::scheduler::clock_type::time_point, Coordination>::make(when, period, std::move(cn));
+                    detail::defer_interval<rxsc::scheduler::clock_type::duration, Coordination>::value,
+        typename    detail::defer_interval<rxsc::scheduler::clock_type::duration, Coordination>::observable_type>::type {
+    return          detail::defer_interval<rxsc::scheduler::clock_type::duration, Coordination>::make(when, period, std::move(cn));
 }
 
 }

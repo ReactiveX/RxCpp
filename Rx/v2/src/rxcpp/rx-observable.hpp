@@ -1266,9 +1266,9 @@ public:
     template<class TimePoint>
     auto take_until(TimePoint when) const
         -> typename std::enable_if<std::is_convertible<TimePoint, rxsc::scheduler::clock_type::time_point>::value,
-                observable<T,   rxo::detail::take_until<T, this_type, decltype(rxs::interval(when, identity_current_thread())), identity_one_worker>>>::type {
+                observable<T,   rxo::detail::take_until<T, this_type, decltype(rxs::timer(when, identity_current_thread())), identity_one_worker>>>::type {
         auto cn = identity_current_thread();
-        return  take_until(rxs::interval(when, cn), cn);
+        return  take_until(rxs::timer(when, cn), cn);
     }
 
     /// take_until ->
@@ -1416,6 +1416,12 @@ inline bool operator!=(const observable<T, SourceOperator>& lhs, const observabl
     \sample
     \snippet interval.cpp interval sample
     \snippet output.txt interval sample
+
+    \par Create an observable that emits items in the specified interval of time
+
+    \sample
+    \snippet timer.cpp duration timer sample
+    \snippet output.txt duration timer sample
 
     \par Create an observable that emits all items from a collection
 
@@ -1584,29 +1590,39 @@ public:
         -> decltype(rxs::defer(std::move(of))) {
         return      rxs::defer(std::move(of));
     }
-    static auto interval(rxsc::scheduler::clock_type::time_point when)
-        -> decltype(rxs::interval(when)) {
-        return      rxs::interval(when);
+    /*! Returns an observable that emits a sequential integer every specified time interval.
+
+        \param  period   period between emitted values
+        
+        \return  Observable that sends a sequential integer each time interval
+
+        \sample
+        \snippet interval.cpp immediate interval sample
+        \snippet output.txt immediate interval sample
+    */
+    static auto interval(rxsc::scheduler::clock_type::duration period)
+        -> decltype(rxs::interval(period)) {
+        return      rxs::interval(period);
     }
-    /*! Returns an observable that infinitely emits sequential integers at specified time, on a specified scheduler.
+    /*! Returns an observable that emits a sequential integer every specified time interval, on the specified scheduler.
 
         \tparam Coordination  the type of the scheduler
 
-        \param  when  time when the integers are sent
-        \param  cn    the scheduler to use for scheduling the items
+        \param  period   period between emitted values
+        \param  cn       the scheduler to use for scheduling the items
 
-        \return  Observable that infinitely emits sequential integers at specified time
+        \return  Observable that sends a sequential integer each time interval
 
         \sample
-        \snippet interval.cpp threaded empty interval sample
-        \snippet output.txt threaded empty interval sample
+        \snippet interval.cpp threaded immediate interval sample
+        \snippet output.txt threaded immediate interval sample
     */
     template<class Coordination>
-    static auto interval(rxsc::scheduler::clock_type::time_point when, Coordination cn)
-        -> decltype(rxs::interval(when, std::move(cn))) {
-        return      rxs::interval(when, std::move(cn));
+    static auto interval(rxsc::scheduler::clock_type::duration period, Coordination cn)
+        -> decltype(rxs::interval(period, std::move(cn))) {
+        return      rxs::interval(period, std::move(cn));
     }
-    /*! Returns an observable that emits a sequential integer every specified interval of time.
+    /*! Returns an observable that emits a sequential integer every specified time interval starting from the specified time point.
 
         \param  initial  time when the first value is sent
         \param  period   period between emitted values
@@ -1621,7 +1637,7 @@ public:
         -> decltype(rxs::interval(initial, period)) {
         return      rxs::interval(initial, period);
     }
-    /*! Returns an observable that emits a sequential integer every specified interval of time, on the specified scheduler.
+    /*! Returns an observable that emits a sequential integer every specified time interval starting from the specified time point, on the specified scheduler.
 
         \tparam Coordination  the type of the scheduler
 
@@ -1639,6 +1655,70 @@ public:
     static auto interval(rxsc::scheduler::clock_type::time_point initial, rxsc::scheduler::clock_type::duration period, Coordination cn)
         -> decltype(rxs::interval(initial, period, std::move(cn))) {
         return      rxs::interval(initial, period, std::move(cn));
+    }
+    /*! Returns an observable that emits an integer at the specified time point.
+
+        \param  when  time point when the value is emitted
+        
+        \return  Observable that emits an integer at the specified time point
+
+        \sample
+        \snippet timer.cpp timepoint timer sample
+        \snippet output.txt timepoint timer sample
+    */
+    static auto timer(rxsc::scheduler::clock_type::time_point when)
+        -> decltype(rxs::timer(when)) {
+        return      rxs::timer(when);
+    }
+    /*! Returns an observable that emits an integer in the specified time interval.
+
+        \param  when  interval when the value is emitted
+        
+        \return  Observable that emits an integer in the specified time interval
+
+        \sample
+        \snippet timer.cpp duration timer sample
+        \snippet output.txt duration timer sample
+    */
+    static auto timer(rxsc::scheduler::clock_type::duration when)
+        -> decltype(rxs::timer(when)) {
+        return      rxs::timer(when);
+    }
+    /*! Returns an observable that emits an integer at the specified time point, on the specified scheduler.
+
+        \tparam Coordination  the type of the scheduler
+
+        \param  when  time point when the value is emitted
+        \param  cn    the scheduler to use for scheduling the items
+
+        \return  Observable that emits an integer at the specified time point
+
+        \sample
+        \snippet timer.cpp threaded timepoint timer sample
+        \snippet output.txt threaded timepoint timer sample
+    */
+    template<class Coordination>
+    static auto timer(rxsc::scheduler::clock_type::time_point when, Coordination cn)
+        -> decltype(rxs::timer(when, std::move(cn))) {
+        return      rxs::timer(when, std::move(cn));
+    }
+    /*! Returns an observable that emits an integer in the specified time interval, on the specified scheduler.
+
+        \tparam Coordination  the type of the scheduler
+
+        \param  when  interval when the value is emitted
+        \param  cn    the scheduler to use for scheduling the items
+
+        \return  Observable that emits an integer in the specified time interval
+
+        \sample
+        \snippet timer.cpp threaded duration timer sample
+        \snippet output.txt threaded duration timer sample
+    */
+    template<class Coordination>
+    static auto timer(rxsc::scheduler::clock_type::duration when, Coordination cn)
+        -> decltype(rxs::timer(when, std::move(cn))) {
+        return      rxs::timer(when, std::move(cn));
     }
     /*! Returns an observable that sends each value in the collection.
 
