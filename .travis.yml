@@ -36,8 +36,9 @@ script:
   - make -j2
   - cd ../..
 
-#after_success:
+after_success:
 #  - projects/build/rxcppv2_test
+  - sh projects/scripts/travis-doxygen.sh
 
 branches:
   only:
