@@ -30,6 +30,11 @@ if [ "$TRAVIS_OS_NAME" = linux -o -z "$TRAVIS_OS_NAME" ]; then
         sudo update-alternatives --config g++
 
         g++ --version
+        
+        sudo apt-get install --allow-unauthenticated --force-yes --fix-missing doxygen
+        sudo apt-get install --allow-unauthenticated --force-yes --fix-missing graphviz
+        doxygen --version
+        dot -V
     fi
 
 elif [ "$TRAVIS_OS_NAME" = osx ]; then
