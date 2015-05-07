@@ -38,8 +38,9 @@ struct timer : public source_base<long>
     {
     }
     timer(rxsc::scheduler::clock_type::duration p, coordination_type cn)
-        : initial(cn.now() + p, std::move(cn))
+        : initial(rxsc::scheduler::clock_type::time_point(), std::move(cn))
     {
+        initial.when = initial.coordination.now() + p;
     }
     template<class Subscriber>
     void on_subscribe(Subscriber o) const {
