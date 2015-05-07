@@ -14,48 +14,47 @@ SCENARIO("range sample"){
 }
 
 #include <iostream>
-int get_pid() {
+std::string get_pid() {
     std::stringstream s;
     int id;
     s << std::this_thread::get_id();
-    s >> id;
-    return id;
+    return s.str();
 }
 
 SCENARIO("threaded range sample"){
     printf("//! [threaded range sample]\n");
-    printf("[thread %d] Start task\n", get_pid());
+    printf("[thread %s] Start task\n", get_pid().c_str());
     auto values = rxcpp::observable<>::range(1, 3, rxcpp::observe_on_new_thread());
     auto s = values.
-        map([](int prime) { return std::make_tuple(get_pid(), prime);});
+        map([](int v) { return std::make_tuple(get_pid(), v);});
     s.
         as_blocking().
         subscribe(
             rxcpp::util::apply_to(
-                [](const int pid, int v) {
-                    printf("[thread %d] OnNext: %d\n", pid, v);
+                [](const std::string pid, int v) {
+                    printf("[thread %s] OnNext: %d\n", pid.c_str(), v);
                 }),
-            [](){printf("[thread %d] OnCompleted\n", get_pid());});
-    printf("[thread %d] Finish task\n", get_pid());
+            [](){printf("[thread %s] OnCompleted\n", get_pid().c_str());});
+    printf("[thread %s] Finish task\n", get_pid().c_str());
     printf("//! [threaded range sample]\n");
 }
 
 SCENARIO("subscribe_on range sample"){
     printf("//! [subscribe_on range sample]\n");
-    printf("[thread %d] Start task\n", get_pid());
+    printf("[thread %s] Start task\n", get_pid().c_str());
     auto values = rxcpp::observable<>::range(1, 3);
     auto s = values.
         subscribe_on(rxcpp::observe_on_new_thread()).
-        map([](int prime) { return std::make_tuple(get_pid(), prime);});
+        map([](int v) { return std::make_tuple(get_pid(), v);});
     s.
         as_blocking().
         subscribe(
             rxcpp::util::apply_to(
-                [](const int pid, int v) {
-                    printf("[thread %d] OnNext: %d\n", pid, v);
+                [](const std::string pid, int v) {
+                    printf("[thread %s] OnNext: %d\n", pid.c_str(), v);
                 }),
-            [](){printf("[thread %d] OnCompleted\n", get_pid());});
-    printf("[thread %d] Finish task\n", get_pid());
+            [](){printf("[thread %s] OnCompleted\n", get_pid().c_str());});
+    printf("[thread %s] Finish task\n", get_pid().c_str());
     printf("//! [subscribe_on range sample]\n");
 }
 
@@ -67,11 +66,11 @@ SCENARIO("range concat sample"){
 
     auto s1 = values.
         take(3).
-        map([](int prime) { return std::make_tuple("1:", prime);});
+        map([](int v) { return std::make_tuple("1:", v);});
 
     auto s2 = values.
         take(3).
-        map([](int prime) { return std::make_tuple("2:", prime);});
+        map([](int v) { return std::make_tuple("2:", v);});
 
     s1.
         concat(s2).
@@ -88,10 +87,10 @@ SCENARIO("range merge sample"){
     auto values = rxcpp::observable<>::range(1); // infinite (until overflow) stream of integers
 
     auto s1 = values.
-        map([](int prime) { return std::make_tuple("1:", prime);});
+        map([](int v) { return std::make_tuple("1:", v);});
 
     auto s2 = values.
-        map([](int prime) { return std::make_tuple("2:", prime);});
+        map([](int v) { return std::make_tuple("2:", v);});
 
     s1.
         merge(s2).
@@ -113,12 +112,12 @@ SCENARIO("threaded range concat sample"){
     auto s1 = values.
         subscribe_on(threads).
         take(3).
-        map([](int prime) { std::this_thread::yield(); return std::make_tuple("1:", prime);});
+        map([](int v) { std::this_thread::yield(); return std::make_tuple("1:", v);});
 
     auto s2 = values.
         subscribe_on(threads).
         take(3).
-        map([](int prime) { std::this_thread::yield(); return std::make_tuple("2:", prime);});
+        map([](int v) { std::this_thread::yield(); return std::make_tuple("2:", v);});
 
     s1.
         concat(s2).
@@ -139,11 +138,11 @@ SCENARIO("threaded range merge sample"){
 
     auto s1 = values.
         subscribe_on(threads).
-        map([](int prime) { std::this_thread::yield(); return std::make_tuple("1:", prime);});
+        map([](int v) { std::this_thread::yield(); return std::make_tuple("1:", v);});
 
     auto s2 = values.
         subscribe_on(threads).
-        map([](int prime) { std::this_thread::yield(); return std::make_tuple("2:", prime);});
+        map([](int v) { std::this_thread::yield(); return std::make_tuple("2:", v);});
 
     s1.
         merge(s2).

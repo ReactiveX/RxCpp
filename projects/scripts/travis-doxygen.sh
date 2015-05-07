@@ -12,8 +12,8 @@ if [ "$TRAVIS_OS_NAME" = linux -o -z "$TRAVIS_OS_NAME" ]; then
         make doc -j1
         cd ../doxygen/html
         git init
-        git config user.name "KirkShoop"
-        git config user.email "kirkshoop@microsoft.com"
+        git config user.name "Kirk Shoop"
+        git config user.email "kirk.shoop@microsoft.com"
         git add *
         git commit -m "doxygen generated site"
         git push --force "https://${GH_TOKEN}@github.com/Reactive-Extensions/RxCpp.git" master:gh-pages
