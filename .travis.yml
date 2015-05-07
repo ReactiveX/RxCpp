@@ -33,7 +33,7 @@ install:
 
 script:
   - cd projects/build
-  - make -j2
+  - make -j1
   - cd ../..
 
 after_success:

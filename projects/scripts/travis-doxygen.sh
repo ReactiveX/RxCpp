@@ -9,7 +9,7 @@ if [ "$TRAVIS_OS_NAME" = linux -o -z "$TRAVIS_OS_NAME" ]; then
         dot -V
 
         cd projects/build
-        make doc -j2
+        make doc -j1
         cd ../doxygen/html
         git init
         git config user.name "KirkShoop"
