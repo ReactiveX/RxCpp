@@ -65,7 +65,9 @@ struct subscribe_on : public operator_base<T>
             subscribe_on_state_type& operator=(subscribe_on_state_type o) RXCPP_DELETE;
         };
 
-        auto coordinator = initial.coordination.create_coordinator(s.get_subscription());
+        composite_subscription coordinator_lifetime;
+
+        auto coordinator = initial.coordination.create_coordinator(coordinator_lifetime);
 
         auto controller = coordinator.get_worker();
 
@@ -75,6 +77,7 @@ struct subscribe_on : public operator_base<T>
         auto disposer = [=](const rxsc::schedulable&){
             state->source_lifetime.unsubscribe();
             state->out.unsubscribe();
+            coordinator_lifetime.unsubscribe();
         };
         auto selectedDisposer = on_exception(
             [&](){return state->coordinator.act(disposer);},
