@@ -764,6 +764,73 @@ public:
         return          defer_merge_from<Coordination, Value0>::make(*this, rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), std::move(cn));
     }
 
+    template<class Coordination>
+    struct defer_amb : public defer_observable<
+        is_observable<value_type>,
+        this_type,
+        rxo::detail::amb, value_type, observable<value_type>, Coordination>
+    {
+    };
+
+    /// amb ->
+    /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
+    /// for each item from this observable subscribe.
+    /// for each item from only the first of the nested observables deliver from the new observable that is returned.
+    ///
+    auto amb() const
+        -> typename defer_amb<identity_one_worker>::observable_type {
+        return      defer_amb<identity_one_worker>::make(*this, *this, identity_current_thread());
+    }
+
+    /// amb ->
+    /// The coordination is used to synchronize sources from different contexts.
+    /// for each item from this observable subscribe.
+    /// for each item from only the first of the nested observables deliver from the new observable that is returned.
+    ///
+    template<class Coordination>
+    auto amb(Coordination cn) const
+        ->  typename std::enable_if<
+                        defer_amb<Coordination>::value,
+            typename    defer_amb<Coordination>::observable_type>::type {
+        return          defer_amb<Coordination>::make(*this, *this, std::move(cn));
+    }
+
+    template<class Coordination, class Value0>
+    struct defer_amb_from : public defer_observable<
+        rxu::all_true<
+            is_coordination<Coordination>::value,
+            is_observable<Value0>::value>,
+        this_type,
+        rxo::detail::amb, observable<value_type>, observable<observable<value_type>>, Coordination>
+    {
+    };
+
+    /// amb ->
+    /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
+    /// for each item from this observable subscribe.
+    /// for each item from only the first of the nested observables deliver from the new observable that is returned.
+    ///
+    template<class Value0, class... ValueN>
+    auto amb(Value0 v0, ValueN... vn) const
+        ->  typename std::enable_if<
+                        defer_amb_from<identity_one_worker, Value0>::value,
+            typename    defer_amb_from<identity_one_worker, Value0>::observable_type>::type {
+        return          defer_amb_from<identity_one_worker, Value0>::make(*this, rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), identity_current_thread());
+    }
+
+    /// amb ->
+    /// The coordination is used to synchronize sources from different contexts.
+    /// for each item from this observable subscribe.
+    /// for each item from only the first of the nested observables deliver from the new observable that is returned.
+    ///
+    template<class Coordination, class Value0, class... ValueN>
+    auto amb(Coordination cn, Value0 v0, ValueN... vn) const
+        ->  typename std::enable_if<
+                        defer_amb_from<Coordination, Value0>::value,
+            typename    defer_amb_from<Coordination, Value0>::observable_type>::type {
+        return          defer_amb_from<Coordination, Value0>::make(*this, rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), std::move(cn));
+    }
+
     /// flat_map (AKA SelectMany) ->
     /// All sources must be synchronized! This means that calls across all the subscribers must be serial.
     /// for each item from this observable use the CollectionSelector to select an observable and subscribe to that observable.
