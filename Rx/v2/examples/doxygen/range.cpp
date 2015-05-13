@@ -16,7 +16,6 @@ SCENARIO("range sample"){
 #include <iostream>
 std::string get_pid() {
     std::stringstream s;
-    int id;
     s << std::this_thread::get_id();
     return s.str();
 }

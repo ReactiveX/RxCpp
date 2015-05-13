@@ -49,6 +49,8 @@ set(TEST_SOURCES
     ${TEST_DIR}/sources/interval.cpp
     ${TEST_DIR}/sources/scope.cpp
     ${TEST_DIR}/sources/timer.cpp
+    ${TEST_DIR}/operators/amb.cpp
+    ${TEST_DIR}/operators/amb_variadic.cpp
     ${TEST_DIR}/operators/buffer.cpp
     ${TEST_DIR}/operators/combine_latest.1.cpp
     ${TEST_DIR}/operators/combine_latest.2.cpp
