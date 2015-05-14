@@ -48,6 +48,9 @@ set(TEST_SOURCES
     ${TEST_DIR}/sources/defer.cpp
     ${TEST_DIR}/sources/interval.cpp
     ${TEST_DIR}/sources/scope.cpp
+    ${TEST_DIR}/sources/timer.cpp
+    ${TEST_DIR}/operators/amb.cpp
+    ${TEST_DIR}/operators/amb_variadic.cpp
     ${TEST_DIR}/operators/buffer.cpp
     ${TEST_DIR}/operators/combine_latest.1.cpp
     ${TEST_DIR}/operators/combine_latest.2.cpp
@@ -154,8 +157,18 @@ if(DOXYGEN_FOUND)
     set(DOXY_EXAMPLE_SRC_LIST
         ${DOXY_EXAMPLES_SRC_DIR}/main.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/create.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/defer.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/empty.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/error.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/from.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/interval.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/iterate.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/just.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/never.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/range.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/scope.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/start_with.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/timer.cpp
     )
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${DOXY_EXAMPLES_BIN_DIR})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${DOXY_EXAMPLES_BIN_DIR})

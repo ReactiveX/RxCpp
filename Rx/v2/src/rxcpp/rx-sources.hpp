@@ -43,5 +43,6 @@ namespace rxs=sources;
 #include "sources/rx-never.hpp"
 #include "sources/rx-error.hpp"
 #include "sources/rx-scope.hpp"
+#include "sources/rx-timer.hpp"
 
 #endif
