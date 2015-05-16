@@ -41,3 +41,4 @@ notifications:
     - kirk.shoop@microsoft.com
     on_success: always
     on_failure: always
+  slack: reactivex:eq4FFCchRIzufO2ZmpuuiJ9E
