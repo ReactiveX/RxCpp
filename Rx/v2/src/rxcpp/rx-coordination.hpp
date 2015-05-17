@@ -165,6 +165,11 @@ inline identity_one_worker identity_current_thread() {
     return r;
 }
 
+inline identity_one_worker identity_same_worker(rxsc::worker w) {
+    static identity_one_worker r(rxsc::make_same_worker(w));
+    return r;
+}
+
 class serialize_one_worker : public coordination_base
 {
     rxsc::scheduler factory;
@@ -291,6 +296,10 @@ inline serialize_one_worker serialize_new_thread() {
     return r;
 }
 
+inline serialize_one_worker serialize_same_worker(rxsc::worker w) {
+    static serialize_one_worker r(rxsc::make_same_worker(w));
+    return r;
+}
 
 }
 
