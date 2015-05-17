@@ -82,10 +82,8 @@ public:
                     }
                     next.what(r.get_recurse());
                 }
-                else {
-                    isenabled = false;
-                }
             }
+            isenabled = false;
         }
     }
 
@@ -109,18 +107,21 @@ public:
             rxsc::recursion r;
             while (!empty() && isenabled) {
                 auto next = top();
-                pop();
-                if (next.what.is_subscribed() && next.when <= time) {
+                if (next.when <= time) {
+                    pop();
+                    if (!next.what.is_subscribed()) {
+                        continue;
+                    }
                     if (next.when > clock_now) {
                         clock_now = next.when;
                     }
                     next.what(r.get_recurse());
                 }
                 else {
-                    isenabled = false;
+                    break;
                 }
             }
-
+            isenabled = false;
             clock_now = time;
         }
         else {
