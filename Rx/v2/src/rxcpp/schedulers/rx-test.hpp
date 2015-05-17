@@ -437,6 +437,21 @@ public:
             tester->schedule_relative(when, make_schedulable(*this, std::forward<Arg0>(a0), std::forward<ArgN>(an)...));
         }
 
+        void advance_to(long time) const
+        {
+            tester->advance_to(time);
+        }
+
+        void advance_by(long time) const
+        {
+            tester->advance_by(time);
+        }
+
+        void sleep(long time) const
+        {
+            tester->sleep(time);
+        }
+
         template<class T, class F>
         auto start(F createSource, long created, long subscribed, long unsubscribed) const
             -> subscriber<T, rxt::testable_observer<T>>
@@ -576,6 +591,11 @@ inline test make_test() {
     return test(std::make_shared<detail::test_type>());
 }
 
+}
+
+inline identity_one_worker identity_test() {
+    static identity_one_worker r(rxsc::make_test());
+    return r;
 }
 
 }
