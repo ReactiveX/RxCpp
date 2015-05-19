@@ -992,7 +992,7 @@ public:
     };
 
     template<class Source, class T0, class T1, class... TN>
-    struct select_combine_latest<Source, rxu::types<T0, T1, TN...>, typename rxu::types_checked_from<typename T0::coordination_tag, typename T1::observable_tag, typename TN::observable_tag...>::type>
+    struct select_combine_latest<Source, rxu::types<T0, T1, TN...>, typename rxu::types_checked_from<typename T0::coordination_tag, typename TN::observable_tag...>::type>
         : public select_combine_latest_cn<Source, T0, rxu::types<T1, TN...>>
     {
     };
