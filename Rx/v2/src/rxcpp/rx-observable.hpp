@@ -1046,7 +1046,7 @@ public:
     };
 
     template<class Source, class Coordination, class T0, class... TN>
-    struct select_zip_cn<Source, Coordination, rxu::types<T0, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::result_of<T0(typename Source::value_type, typename TN::value_type...)>::type, typename Coordination::coordination_tag, typename TN::observable_tag...>::type>
+    struct select_zip_cn<Source, Coordination, rxu::types<T0, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::enable_if<!is_observable<T0>::value>::type, typename std::result_of<T0(typename Source::value_type, typename TN::value_type...)>::type, typename Coordination::coordination_tag, typename TN::observable_tag...>::type>
         : public std::true_type
     {
         typedef rxo::detail::zip<Coordination, T0, Source, TN...> operator_type;
@@ -1076,13 +1076,13 @@ public:
     };
 
     template<class Source, class T0, class T1, class... TN>
-    struct select_zip<Source, rxu::types<T0, T1, TN...>, typename rxu::types_checked_from<typename T0::coordination_tag, typename T1::observable_tag, typename TN::observable_tag...>::type>
+    struct select_zip<Source, rxu::types<T0, T1, TN...>, typename rxu::types_checked_from<typename T0::coordination_tag, typename TN::observable_tag...>::type>
         : public select_zip_cn<Source, T0, rxu::types<T1, TN...>>
     {
     };
 
     template<class Source, class Selector, class... TN>
-    struct select_zip<Source, rxu::types<Selector, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::result_of<Selector(typename Source::value_type, typename TN::value_type...)>::type, typename TN::observable_tag...>::type>
+    struct select_zip<Source, rxu::types<Selector, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::enable_if<!is_coordination<Selector>::value>::type, typename std::result_of<Selector(typename Source::value_type, typename TN::value_type...)>::type, typename TN::observable_tag...>::type>
         : public std::true_type
     {
         typedef rxo::detail::zip<identity_one_worker, Selector, Source, TN...> operator_type;
