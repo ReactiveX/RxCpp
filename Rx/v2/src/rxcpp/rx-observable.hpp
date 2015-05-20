@@ -998,7 +998,7 @@ public:
     };
 
     template<class Source, class Selector, class... TN>
-    struct select_combine_latest<Source, rxu::types<Selector, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::enable_if<!is_coordination<Selector>::value>::type, typename std::result_of<Selector(typename Source::value_type, typename TN::value_type...)>::type, typename TN::observable_tag...>::type>
+    struct select_combine_latest<Source, rxu::types<Selector, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::enable_if<!is_coordination<Selector>::value>::type, typename std::enable_if<!is_observable<Selector>::value>::type, typename std::result_of<Selector(typename Source::value_type, typename TN::value_type...)>::type, typename TN::observable_tag...>::type>
         : public std::true_type
     {
         typedef rxo::detail::combine_latest<identity_one_worker, Selector, Source, TN...> operator_type;
@@ -1082,7 +1082,7 @@ public:
     };
 
     template<class Source, class Selector, class... TN>
-    struct select_zip<Source, rxu::types<Selector, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::enable_if<!is_coordination<Selector>::value>::type, typename std::result_of<Selector(typename Source::value_type, typename TN::value_type...)>::type, typename TN::observable_tag...>::type>
+    struct select_zip<Source, rxu::types<Selector, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::enable_if<!is_coordination<Selector>::value>::type, typename std::enable_if<!is_observable<Selector>::value>::type, typename std::result_of<Selector(typename Source::value_type, typename TN::value_type...)>::type, typename TN::observable_tag...>::type>
         : public std::true_type
     {
         typedef rxo::detail::zip<identity_one_worker, Selector, Source, TN...> operator_type;
@@ -2022,7 +2022,7 @@ public:
         \snippet start_with.cpp full start_with sample
         \snippet output.txt full start_with sample
 
-        Instead of passing the observable as a parameter, you can use  rxcpp::observable<T, SourceOperator>::start_with method of the existing observable:
+        Instead of passing the observable as a parameter, you can use rxcpp::observable<T, SourceOperator>::start_with method of the existing observable:
         \snippet start_with.cpp short start_with sample
         \snippet output.txt short start_with sample
     */
