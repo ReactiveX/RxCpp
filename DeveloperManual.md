@@ -2,11 +2,62 @@
 
 ##Overview
 
-This repository consists of two main parts:
-* `Ix`, a library modeled after the [C# implementation of System.Linq for the .NET framework](https://msdn.microsoft.com/en-us/library/bb397926.aspx)
-* `Rx`, a library modeled after the [C# implementation of Reactive Extensions](https://msdn.microsoft.com/en-us/data/gg577609.aspx)
+###What this repository provides
 
-The C++ implementation of the Reactive Extensions started as a direct port of the famous and successfull [C# implementation](https://github.com/Reactive-Extensions/Rx.NET). A very clear and concise introduction to C# Rx written by Lee Campbell is available at http://introtorx.com. The major concepts are similar in both versions of the language, but as the library evolves, the difference in language features between
+This repository consists of two main parts:
+* `Ix`, a library modeled after the C# implementation of  [System.Linq for the .NET framework](https://msdn.microsoft.com/en-us/library/bb397926.aspx). It provides powerful database queries for any enumerable collection, which in C++ means any container that adheres to the concept of ```Iterable```
+* `Rx`, a library modeled after the C# implementation of [Reactive Extensions](https://msdn.microsoft.com/en-us/data/gg577609.aspx)
+
+The C++ implementation of the Reactive Extensions started as a direct port of the famous and successfull [C# implementation](https://github.com/Reactive-Extensions/Rx.NET). A very clear and concise introduction to C# Rx written by Lee Campbell is available at http://introtorx.com. We recommend to take at least a short glance at it because of its didactic setup and its clear and concise explanations. The major concepts are similar in the C# and the C++ versions of the libaries, but as the C++ version evolves, the difference in language features between C# and modern C++ tend to surface and therefore the architecture will differ in many aspects.
+
+###Unit Tests
+
+This project relies on the [Catch](https://github.com/philsquared/Catch) framework for unit tests, a lightweight, yet powerful, header-only library.
+
+###Continious Integration
+
+This repository is set up such that any pull request will automatically have all unit tests performed via web hooks on a build server and the results posted in the GitHub pull request issue. See e.g. the MSOTBOT entry for [this pull request](https://github.com/Reactive-Extensions/RxCpp/pull/134).
+
+###Code Examples
+
+[TODO: add an overview of code examples for Ix and Rx]
+
+##The most important classes
+
+
+###observable
+
+```observable``` is the central concept of this libary. It is something you can subscribe on using an observer.
+
+As of this writing (May 2015) this library is designed in such a way that all sequence operators are member function of the [```template<class T, class SourceOperator>
+class observable```](RxCpp/blob/master/Rx/v2/src/rxcpp/rx-observable.hpp). There was some [unfinished discussion](https://twitter.com/MarkusWerle/status/599330785544577025) whether operator chaining could be done using the ```|``` operator like e.g. in the [range library](https://github.com/ericniebler/range-v3), but the current library is not designed that way. The main reason is ease of use, since member functions show up in intellisense. Once intellisense has evolved further and also displays available free functions that fit, the design might probably be changed - not now.
+
+
+
+
+###observer
+
+[TODO: describe ```observer```]
+
+
+###subject
+[TODO: describe ```subject```]
+
+
+###schedulers
+
+[TODO: describe ```schedulers```]
+
+###subscriber
+
+[TODO: describe ```subscriber```]
+
+
+###composite_subscription
+
+[TODO: describe ```composite_subscription```]
+
+
 
 
 
