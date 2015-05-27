@@ -1,5 +1,15 @@
 #Developer Manual
 
+##Overview
+
+This repository consists of two main parts:
+* `Ix`, a library modeled after the [C# implementation of System.Linq for the .NET framework](https://msdn.microsoft.com/en-us/library/bb397926.aspx)
+* `Rx`, a library modeled after the [C# implementation of Reactive Extensions](https://msdn.microsoft.com/en-us/data/gg577609.aspx)
+
+The C++ implementation of the Reactive Extensions started as a direct port of the famous and successfull [C# implementation](https://github.com/Reactive-Extensions/Rx.NET). A very clear and concise introduction to C# Rx written by Lee Campbell is available at http://introtorx.com. The major concepts are similar in both versions of the language, but as the library evolves, the difference in language features between
+
+
+
 ##Some comments on the scheduler system
 
 The scheduler in rxcpp v2 is based on the scheduler and worker constructs that *RxJava* uses (Eric Meijer was involved) The docs for *RxJava* will have an explanation for ```scheduler``` and ```worker```. RxCpp adds ```schedulable```, ```coordination``` and ```coordinator```.
