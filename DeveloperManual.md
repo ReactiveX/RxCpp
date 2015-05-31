@@ -5,8 +5,26 @@
 ###What this repository provides
 
 This repository consists of two main parts:
-* `Ix`, a library modeled after the C# implementation of  [System.Linq for the .NET framework](https://msdn.microsoft.com/en-us/library/bb397926.aspx). It provides powerful database queries for any enumerable collection, which in C++ means any container that adheres to the concept of ```Iterable```
+* `Ix`, a library modeled after the C# implementation of  [System.Linq for the .NET framework](https://msdn.microsoft.com/en-us/library/bb397926.aspx).
 * `Rx`, a library modeled after the C# implementation of [Reactive Extensions](https://msdn.microsoft.com/en-us/data/gg577609.aspx)
+
+####About ```Ix```
+
+```Ix``` provides powerful database queries for any enumerable collection, which in C++ means any container that adheres to the concept of ```Iterable```.
+
+This library is not complete yet, but since ```selectmany``` is available [all other important operators could be added](http://igoro.com/archive/one-linq-operator-to-rule-them-all/). This library is about the pull model. A query is performed over a container, e.g.:
+
+```c++
+vector<int> xs = vector_range(0, 100); auto ys =
+from(xs).where(is_prime);
+```
+
+This library has some overlap with the [Range library](https://github.com/ericniebler/range-v3) proposed by [Eric Niebler](https://github.com/ericniebler).
+
+
+####About ```Rx```
+
+This library models the push model. All queries are performed over an observable sequence.
 
 The C++ implementation of the Reactive Extensions started as a direct port of the famous and successfull [C# implementation](https://github.com/Reactive-Extensions/Rx.NET). A very clear and concise introduction to C# Rx written by Lee Campbell is available at http://introtorx.com. We recommend to take at least a short glance at it because of its didactic setup and its clear and concise explanations. The major concepts are similar in the C# and the C++ versions of the libaries, but as the C++ version evolves, the difference in language features between C# and modern C++ tend to surface and therefore the architecture will differ in many aspects.
 
@@ -24,7 +42,6 @@ This repository is set up such that any pull request will automatically have all
 
 ##The most important classes
 
-
 ###observable
 
 ```observable``` is the central concept of this libary. It is something you can subscribe on using an observer.
@@ -33,15 +50,28 @@ As of this writing (May 2015) this library is designed in such a way that all se
 class observable```](RxCpp/blob/master/Rx/v2/src/rxcpp/rx-observable.hpp). There was some [unfinished discussion](https://twitter.com/MarkusWerle/status/599330785544577025) whether operator chaining could be done using the ```|``` operator like e.g. in the [range library](https://github.com/ericniebler/range-v3), but the current library is not designed that way. The main reason is ease of use, since member functions show up in intellisense. Once intellisense has evolved further and also displays available free functions that fit, the design might probably be changed - not now.
 
 
-
-
 ###observer
 
-[TODO: describe ```observer```]
+An ```observer<T>``` is any object that can be used as argument to a subscription to an ```observable<T>```. It is parametrized with the object type ```T``` which can be observed and provides three callback methods that might be called by the ```observable<T>``` to which an instance of ```observer<T>```is subscribed:
+
+- onnext(T t)
+- onerror(std::exception_ptr e)
+- oncompleted()
+
+There are two helper classes available in [rx-observer.hpp](Rx/v2/src/rxcpp/rx-observer.hpp):
+
+[TODO: Kirk Shoop: check if the explanations below are correct]
+
+- ```static_observer``` is optimized for performance, but needs its arguments for the callback methods at compile time. Every ```observer<T, I>``` composes an object of that type and delegates all calls to the callback methods (```onnext```, ```onerror```, ```oncompleted```) to it.
+- ```dynamic_observer``` stores an observer within a ```shared_ptr``` and delegates all calls to the callback methods to the shared_ptr. ```observer<T, I>``` has a method ```as_dynamic()``` which returns a ```dynamic_observer``` initialized with the composed ```static_observer``` object.
+
+[I YET DO NOT KNOW WHY WE NEED SUCH A BEAST]  
+[TODO: further describe ```observer```]
 
 
 ###subject
 [TODO: describe ```subject```]
+
 
 
 ###schedulers
