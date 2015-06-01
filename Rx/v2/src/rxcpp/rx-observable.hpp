@@ -424,8 +424,8 @@ public:
         \note This operator could be useful to workaround lambda deduction bug on msvc 2013.
 
         \sample
-        \snippet concat.cpp concat sample
-        \snippet output.txt concat sample
+        \snippet as_dynamic.cpp as_dynamic sample
+        \snippet output.txt as_dynamic sample
     */
     observable<T> as_dynamic() const {
         return *this;
@@ -1883,10 +1883,10 @@ public:
 
         \sample
         \snippet observe_on.cpp observe_on sample
-        \snippet output.txt subscribe_on sample
+        \snippet output.txt observe_on sample
 
         Invoking rxcpp::observable::subscribe_on operator, instead of observe_on, gives following results:
-        \snippet output.txt observe_on sample
+        \snippet output.txt subscribe_on sample
     */
     template<class Coordination>
     auto observe_on(Coordination cn) const
