@@ -50,7 +50,7 @@ SCENARIO("window period+skip+coordination sample"){
                 int id = counter++;
                 printf("[window %d] Create window\n", id);
                 v.subscribe(
-                    [id](long v){printf("[window %d] OnNext: %d\n", id, v);},
+                    [id](long v){printf("[window %d] OnNext: %ld\n", id, v);},
                     [id](){printf("[window %d] OnCompleted\n", id);});
             });
     printf("//! [window period+skip+coordination sample]\n");
@@ -70,7 +70,7 @@ SCENARIO("window period+skip sample"){
                 int id = counter++;
                 printf("[window %d] Create window\n", id);
                 v.subscribe(
-                    [id](long v){printf("[window %d] OnNext: %d\n", id, v);},
+                    [id](long v){printf("[window %d] OnNext: %ld\n", id, v);},
                     [id](){printf("[window %d] OnCompleted\n", id);});
             });
     printf("//! [window period+skip sample]\n");
@@ -90,7 +90,7 @@ SCENARIO("window period+skip overlapping sample"){
                 int id = counter++;
                 printf("[window %d] Create window\n", id);
                 v.subscribe(
-                    [id](long v){printf("[window %d] OnNext: %d\n", id, v);},
+                    [id](long v){printf("[window %d] OnNext: %ld\n", id, v);},
                     [id](){printf("[window %d] OnCompleted\n", id);});
             });
     printf("//! [window period+skip overlapping sample]\n");
@@ -109,7 +109,7 @@ SCENARIO("window period+skip empty sample"){
                 int id = counter++;
                 printf("[window %d] Create window\n", id);
                 v.subscribe(
-                    [id](long v){printf("[window %d] OnNext: %d\n", id, v);},
+                    [id](long v){printf("[window %d] OnNext: %ld\n", id, v);},
                     [id](){printf("[window %d] OnCompleted\n", id);});
             });
     printf("//! [window period+skip empty sample]\n");
@@ -128,7 +128,7 @@ SCENARIO("window period+coordination sample"){
                 int id = counter++;
                 printf("[window %d] Create window\n", id);
                 v.subscribe(
-                    [id](long v){printf("[window %d] OnNext: %d\n", id, v);},
+                    [id](long v){printf("[window %d] OnNext: %ld\n", id, v);},
                     [id](){printf("[window %d] OnCompleted\n", id);});
             });
     printf("//! [window period+coordination sample]\n");
@@ -146,7 +146,7 @@ SCENARIO("window period sample"){
                 int id = counter++;
                 printf("[window %d] Create window\n", id);
                 v.subscribe(
-                    [id](long v){printf("[window %d] OnNext: %d\n", id, v);},
+                    [id](long v){printf("[window %d] OnNext: %ld\n", id, v);},
                     [id](){printf("[window %d] OnCompleted\n", id);});
             });
     printf("//! [window period sample]\n");
@@ -168,7 +168,7 @@ SCENARIO("window period+count+coordination sample"){
                 int id = counter++;
                 printf("[window %d] Create window\n", id);
                 v.subscribe(
-                    [id](long v){printf("[window %d] OnNext: %d\n", id, v);},
+                    [id](long v){printf("[window %d] OnNext: %ld\n", id, v);},
                     [id](){printf("[window %d] OnCompleted\n", id);});
             });
     printf("//! [window period+count+coordination sample]\n");
@@ -189,7 +189,7 @@ SCENARIO("window period+count sample"){
                 int id = counter++;
                 printf("[window %d] Create window\n", id);
                 v.subscribe(
-                    [id](long v){printf("[window %d] OnNext: %d\n", id, v);},
+                    [id](long v){printf("[window %d] OnNext: %ld\n", id, v);},
                     [id](){printf("[window %d] OnCompleted\n", id);});
             });
     printf("//! [window period+count sample]\n");

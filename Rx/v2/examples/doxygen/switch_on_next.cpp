@@ -13,7 +13,7 @@ SCENARIO("switch_on_next sample"){
     auto values = base.switch_on_next().take(10);
     values.
         subscribe(
-            [](long v){printf("OnNext: %d\n", v);},
+            [](long v){printf("OnNext: %ld\n", v);},
             [](){printf("OnCompleted\n");});
     printf("//! [switch_on_next sample]\n");
 }
@@ -29,7 +29,7 @@ SCENARIO("threaded switch_on_next sample"){
     values.
         as_blocking().
         subscribe(
-            [](long v){printf("OnNext: %d\n", v);},
+            [](long v){printf("OnNext: %ld\n", v);},
             [](){printf("OnCompleted\n");});
     printf("//! [threaded switch_on_next sample]\n");
 }

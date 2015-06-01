@@ -17,7 +17,7 @@ SCENARIO("flat_map sample"){
             });
     values.
         subscribe(
-            [](std::tuple<int, long> v){printf("OnNext: %d - %d\n", std::get<0>(v), std::get<1>(v));},
+            [](std::tuple<int, long> v){printf("OnNext: %d - %ld\n", std::get<0>(v), std::get<1>(v));},
             [](){printf("OnCompleted\n");});
     printf("//! [flat_map sample]\n");
 }
@@ -43,7 +43,7 @@ SCENARIO("threaded flat_map sample"){
     values.
         as_blocking().
         subscribe(
-            [](std::tuple<int, long> v){printf("[thread %s] OnNext: %d - %d\n", get_pid().c_str(), std::get<0>(v), std::get<1>(v));},
+            [](std::tuple<int, long> v){printf("[thread %s] OnNext: %d - %ld\n", get_pid().c_str(), std::get<0>(v), std::get<1>(v));},
             [](){printf("[thread %s] OnCompleted\n", get_pid().c_str());});
     printf("[thread %s] Finish task\n", get_pid().c_str());
     printf("//! [threaded flat_map sample]\n");

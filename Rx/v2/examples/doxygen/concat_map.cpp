@@ -17,7 +17,7 @@ SCENARIO("concat_map sample"){
             });
     values.
         subscribe(
-            [](std::tuple<int, long> v){printf("OnNext: %d - %d\n", std::get<0>(v), std::get<1>(v));},
+            [](std::tuple<int, long> v){printf("OnNext: %d - %ld\n", std::get<0>(v), std::get<1>(v));},
             [](){printf("OnCompleted\n");});
     printf("//! [concat_map sample]\n");
 }
@@ -36,14 +36,14 @@ SCENARIO("threaded concat_map sample"){
                     take(3);
             },
             [](int v_main, long v_sub){
-                printf("[thread %s] Call ResultSelector(v_main = %d, v_sub = %d)\n", get_pid().c_str(), v_main, v_sub);
+                printf("[thread %s] Call ResultSelector(v_main = %d, v_sub = %ld)\n", get_pid().c_str(), v_main, v_sub);
                 return std::make_tuple(v_main, v_sub);
             },
             rxcpp::observe_on_new_thread());
     values.
         as_blocking().
         subscribe(
-            [](std::tuple<int, long> v){printf("[thread %s] OnNext: %d - %d\n", get_pid().c_str(), std::get<0>(v), std::get<1>(v));},
+            [](std::tuple<int, long> v){printf("[thread %s] OnNext: %d - %ld\n", get_pid().c_str(), std::get<0>(v), std::get<1>(v));},
             [](){printf("[thread %s] OnCompleted\n", get_pid().c_str());});
     printf("[thread %s] Finish task\n", get_pid().c_str());
     printf("//! [threaded concat_map sample]\n");

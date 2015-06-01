@@ -44,7 +44,7 @@ SCENARIO("buffer period+skip+coordination sample"){
     auto skip = std::chrono::milliseconds(6);
     auto values = rxcpp::observable<>::interval(std::chrono::steady_clock::now() + std::chrono::milliseconds(1), std::chrono::milliseconds(2)).
         map([](long v){
-            printf("[thread %s] Interval OnNext: %d\n", get_pid().c_str(), v);
+            printf("[thread %s] Interval OnNext: %ld\n", get_pid().c_str(), v);
             return v;
         }).
         take(7).
@@ -55,7 +55,7 @@ SCENARIO("buffer period+skip+coordination sample"){
             [](std::vector<long> v){
                 printf("[thread %s] OnNext:", get_pid().c_str());
                 std::for_each(v.begin(), v.end(), [](long a){
-                    printf(" %d", a);
+                    printf(" %ld", a);
                 });
                 printf("\n");
             },
@@ -76,7 +76,7 @@ SCENARIO("buffer period+skip sample"){
             [](std::vector<long> v){
                 printf("OnNext:");
                 std::for_each(v.begin(), v.end(), [](long a){
-                    printf(" %d", a);
+                    printf(" %ld", a);
                 });
                 printf("\n");
             },
@@ -96,7 +96,7 @@ SCENARIO("buffer period+skip overlapping sample"){
             [](std::vector<long> v){
                 printf("OnNext:");
                 std::for_each(v.begin(), v.end(), [](long a){
-                    printf(" %d", a);
+                    printf(" %ld", a);
                 });
                 printf("\n");
             },
@@ -115,7 +115,7 @@ SCENARIO("buffer period+skip empty sample"){
             [](std::vector<long> v){
                 printf("OnNext:");
                 std::for_each(v.begin(), v.end(), [](long a){
-                    printf(" %d", a);
+                    printf(" %ld", a);
                 });
                 printf("\n");
             },
@@ -134,7 +134,7 @@ SCENARIO("buffer period+coordination sample"){
             [](std::vector<long> v){
                 printf("OnNext:");
                 std::for_each(v.begin(), v.end(), [](long a){
-                    printf(" %d", a);
+                    printf(" %ld", a);
                 });
                 printf("\n");
             },
@@ -152,7 +152,7 @@ SCENARIO("buffer period sample"){
             [](std::vector<long> v){
                 printf("OnNext:");
                 std::for_each(v.begin(), v.end(), [](long a){
-                    printf(" %d", a);
+                    printf(" %ld", a);
                 });
                 printf("\n");
             },
@@ -174,7 +174,7 @@ SCENARIO("buffer period+count+coordination sample"){
             [start](std::vector<long> v){
                 printf("OnNext:");
                 std::for_each(v.begin(), v.end(), [](long a){
-                    printf(" %d", a);
+                    printf(" %ld", a);
                 });
                 printf("\n");
             },
@@ -195,7 +195,7 @@ SCENARIO("buffer period+count sample"){
             [start](std::vector<long> v){
                 printf("OnNext:");
                 std::for_each(v.begin(), v.end(), [](long a){
-                    printf(" %d", a);
+                    printf(" %ld", a);
                 });
                 printf("\n");
             },
