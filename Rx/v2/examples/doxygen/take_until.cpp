@@ -55,7 +55,7 @@ SCENARIO("threaded take_until time sample"){
     auto source = rxcpp::observable<>::interval(std::chrono::milliseconds(10)).take(7).map([](long v){
         printf("[thread %s] Source emits, value = %d\n", get_pid().c_str(), v);
         return v;
-    }).as_dynamic();
+    });
     auto scheduler = rxcpp::observe_on_new_thread();
     auto values = source.take_until(scheduler.now() + std::chrono::milliseconds(25), scheduler);
     values.

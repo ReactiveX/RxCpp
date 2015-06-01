@@ -7,13 +7,13 @@ SCENARIO("switch_on_next sample"){
     printf("//! [switch_on_next sample]\n");
     auto base = rxcpp::observable<>::interval(std::chrono::milliseconds(30)).
         take(3).
-        map([](int){
+        map([](long){
             return rxcpp::observable<>::interval(std::chrono::milliseconds(10)).as_dynamic();
         });
     auto values = base.switch_on_next().take(10);
     values.
         subscribe(
-            [](int v){printf("OnNext: %d\n", v);},
+            [](long v){printf("OnNext: %d\n", v);},
             [](){printf("OnCompleted\n");});
     printf("//! [switch_on_next sample]\n");
 }

@@ -8,7 +8,7 @@ SCENARIO("concat sample"){
     auto o1 = rxcpp::observable<>::range(1, 3);
     auto o2 = rxcpp::observable<>::just(4);
     auto o3 = rxcpp::observable<>::from(5, 6);
-    auto values = o1.concat(o2.as_dynamic(), o3.as_dynamic());
+    auto values = o1.concat(o2, o3);
     values.
         subscribe(
             [](int v){printf("OnNext: %d\n", v);},
@@ -21,7 +21,7 @@ SCENARIO("implicit concat sample"){
     auto o1 = rxcpp::observable<>::range(1, 3);
     auto o2 = rxcpp::observable<>::just(4);
     auto o3 = rxcpp::observable<>::from(5, 6);
-    auto base = rxcpp::observable<>::from(o1.as_dynamic(), o2.as_dynamic(), o3.as_dynamic());
+    auto base = rxcpp::observable<>::from(o1.as_dynamic(), o2, o3);
     auto values = base.concat();
     values.
         subscribe(
@@ -35,7 +35,7 @@ SCENARIO("threaded concat sample"){
     auto o1 = rxcpp::observable<>::range(1, 3);
     auto o2 = rxcpp::observable<>::just(4);
     auto o3 = rxcpp::observable<>::from(5, 6);
-    auto values = o1.concat(rxcpp::observe_on_new_thread(), o2.as_dynamic(), o3.as_dynamic());
+    auto values = o1.concat(rxcpp::observe_on_new_thread(), o2, o3);
     values.
         as_blocking().
         subscribe(
@@ -49,7 +49,7 @@ SCENARIO("threaded implicit concat sample"){
     auto o1 = rxcpp::observable<>::range(1, 3);
     auto o2 = rxcpp::observable<>::just(4);
     auto o3 = rxcpp::observable<>::from(5, 6);
-    auto base = rxcpp::observable<>::from(o1.as_dynamic(), o2.as_dynamic(), o3.as_dynamic());
+    auto base = rxcpp::observable<>::from(o1.as_dynamic(), o2, o3);
     auto values = base.concat(rxcpp::observe_on_new_thread());
     values.
         as_blocking().

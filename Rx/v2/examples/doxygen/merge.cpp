@@ -18,10 +18,10 @@ SCENARIO("merge sample"){
 
 SCENARIO("implicit merge sample"){
     printf("//! [implicit merge sample]\n");
-    auto o1 = rxcpp::observable<>::timer(std::chrono::milliseconds(15)).map([](int) {return 1;}).as_dynamic();
-    auto o2 = rxcpp::observable<>::timer(std::chrono::milliseconds(10)).map([](int) {return 2;}).as_dynamic();
-    auto o3 = rxcpp::observable<>::timer(std::chrono::milliseconds(5)).map([](int) {return 3;}).as_dynamic();
-    auto base = rxcpp::observable<>::from(o1, o2, o3);
+    auto o1 = rxcpp::observable<>::timer(std::chrono::milliseconds(15)).map([](int) {return 1;});
+    auto o2 = rxcpp::observable<>::timer(std::chrono::milliseconds(10)).map([](int) {return 2;});
+    auto o3 = rxcpp::observable<>::timer(std::chrono::milliseconds(5)).map([](int) {return 3;});
+    auto base = rxcpp::observable<>::from(o1.as_dynamic(), o2, o3);
     auto values = base.merge();
     values.
         subscribe(
@@ -63,16 +63,16 @@ SCENARIO("threaded implicit merge sample"){
     auto o1 = rxcpp::observable<>::timer(std::chrono::milliseconds(10)).map([](int) {
         printf("[thread %s] Timer1 fired\n", get_pid().c_str());
         return 1;
-    }).as_dynamic();
+    });
     auto o2 = rxcpp::observable<>::timer(std::chrono::milliseconds(20)).map([](int) {
         printf("[thread %s] Timer2 fired\n", get_pid().c_str());
         return 2;
-    }).as_dynamic();
+    });
     auto o3 = rxcpp::observable<>::timer(std::chrono::milliseconds(30)).map([](int) {
         printf("[thread %s] Timer3 fired\n", get_pid().c_str());
         return 3;
-    }).as_dynamic();
-    auto base = rxcpp::observable<>::from(o1, o2, o3);
+    });
+    auto base = rxcpp::observable<>::from(o1.as_dynamic(), o2, o3);
     auto values = base.merge(rxcpp::observe_on_new_thread());
     values.
         as_blocking().
