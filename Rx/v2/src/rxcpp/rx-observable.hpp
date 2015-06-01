@@ -726,7 +726,7 @@ public:
         \snippet window.cpp window period+coordination sample
         \snippet output.txt window period+coordination sample
     */
-    template<class Duration, class Coordination>
+    template<class Duration, class Coordination, class Reqiures = typename rxu::types_checked_from<typename Coordination::coordination_tag>::type>
     auto window_with_time(Duration period, Coordination coordination) const
         /// \cond SHOW_SERVICE_MEMBERS
         -> decltype(EXPLICIT_THIS lift<observable<T>>(rxo::detail::window_with_time<T, Duration, Coordination>(period, period, coordination)))
@@ -957,7 +957,7 @@ public:
 
         \param period        the period of time each buffer collects items before it is emitted and replaced with a new buffer
         \param count         the maximum size of each buffer before it is emitted and new buffer is created
-    
+
         \return  Observable that emits connected, non-overlapping buffers of items from the source observable that were emitted during a fixed duration of time or when the buffer has reached maximum capacity (whichever occurs first).
 
         \sample
@@ -983,7 +983,7 @@ public:
     /// \endcond
 
     /*! Return observable that emits the items emitted by the observable most recently emitted by the source observable.
-    
+
         \return  Observable that emits the items emitted by the observable most recently emitted by the source observable.
 
         \note All sources must be synchronized! This means that calls across all the subscribers must be serial.
@@ -1001,7 +1001,7 @@ public:
     }
 
     /*! Return observable that emits the items emitted by the observable most recently emitted by the source observable, on the specified scheduler.
-    
+
         \tparam Coordination  the type of the scheduler
 
         \param cn  the scheduler to synchronize sources from different contexts
@@ -1572,7 +1572,7 @@ public:
     /// \endcond
 
     /*! For each item from all of the observables select a value to emit from the new observable that is returned.
-        
+
         \tparam AN  types of scheduler (optional), aggregate function (optional), and source observables
 
         \param  an  scheduler (optional), aggregation function (optional), and source observables
@@ -2131,7 +2131,7 @@ public:
         \param  t  an observable whose first emitted item will stop emitting items from the source observable
 
         \return  An observable that emits the items emitted by the source observable until such time as other emits its first item.
-    
+
         \note All sources must be synchronized! This means that calls across all the subscribers must be serial.
 
         \sample
@@ -2181,7 +2181,7 @@ public:
         \param  when  an observable whose first emitted item will stop emitting items from the source observable
 
         \return  An observable that emits those items emitted by the source observable before the time runs out.
-    
+
         \note All sources must be synchronized! This means that calls across all the subscribers must be serial.
 
         \sample
@@ -2335,7 +2335,7 @@ public:
     {
         return      rxo::start_with(*this, std::move(v0), std::move(vn)...);
     }
-     
+
     /*! Take values pairwise from this observable.
 
         \return  Observable that emits tuples of two the most recent items emitted by the source observable.
@@ -2606,7 +2606,7 @@ public:
     /*! Returns an observable that emits a sequential integer every specified time interval.
 
         \param  period   period between emitted values
-        
+
         \return  Observable that sends a sequential integer each time interval
 
         \sample
@@ -2672,7 +2672,7 @@ public:
     /*! Returns an observable that emits an integer at the specified time point.
 
         \param  when  time point when the value is emitted
-        
+
         \return  Observable that emits an integer at the specified time point
 
         \sample
@@ -2686,7 +2686,7 @@ public:
     /*! Returns an observable that emits an integer in the specified time interval.
 
         \param  when  interval when the value is emitted
-        
+
         \return  Observable that emits an integer in the specified time interval
 
         \sample
@@ -2977,7 +2977,7 @@ public:
         -> decltype(rxs::from(rxu::value_type_t<Observable>(v0), rxu::value_type_t<Observable>(vn)...).concat(o)) {
         return      rxs::from(rxu::value_type_t<Observable>(v0), rxu::value_type_t<Observable>(vn)...).concat(o);
     }
-    /*! Returns an observable that makes an observable by the specified observable factory 
+    /*! Returns an observable that makes an observable by the specified observable factory
         using the resource provided by the specified resource factory for each new observer that subscribes.
 
         \tparam ResourceFactory    the type of the resource factory
@@ -2986,7 +2986,7 @@ public:
         \param  rf  the resource factory function that resturn the rxcpp::resource that is used as a resource by the observable factory
         \param  of  the observable factory function to invoke for each observer that subscribes to the resulting observable
 
-        \return  observable that makes an observable by the specified observable factory 
+        \return  observable that makes an observable by the specified observable factory
                  using the resource provided by the specified resource factory for each new observer that subscribes.
 
         \sample
