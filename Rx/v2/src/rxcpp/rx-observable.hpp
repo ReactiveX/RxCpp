@@ -277,27 +277,108 @@ public:
         return blocking_subscribe(source, std::forward<ArgN>(an)...);
     }
 
+    /*! Return the first item emitted by this blocking_observable, or throw an std::runtime_error exception if it emits no items.
+
+        \return  The first item emitted by this blocking_observable.
+
+        \note  If the source observable calls on_error, the raised exception is rethrown by this method.
+
+        \sample
+        When the source observable emits at least one item:
+        \snippet blocking_observable.cpp blocking first sample
+        \snippet output.txt blocking first sample
+
+        When the source observable is empty:
+        \snippet blocking_observable.cpp blocking first empty sample
+        \snippet output.txt blocking first empty sample
+    */
     T first() {
         return source.first().as_blocking().last();
     }
 
+    /*! Return the last item emitted by this blocking_observable, or throw an std::runtime_error exception if it emits no items.
+
+        \return  The last item emitted by this blocking_observable.
+
+        \note  If the source observable calls on_error, the raised exception is rethrown by this method.
+
+        \sample
+        When the source observable emits at least one item:
+        \snippet blocking_observable.cpp blocking last sample
+        \snippet output.txt blocking last sample
+
+        When the source observable is empty:
+        \snippet blocking_observable.cpp blocking last empty sample
+        \snippet output.txt blocking last empty sample
+    */
     T last() const {
         rxu::maybe<T> result;
-        subscribe([&](T v){result.reset(v);});
-        if (result.empty()) throw std::runtime_error("No elements");
+        rxu::maybe<std::exception_ptr> error;
+        subscribe(
+            [&](T v){result.reset(v);},
+            [&](std::exception_ptr ep){error.reset(ep);});
+        if (!error.empty())
+            std::rethrow_exception(error.get());
+        if (result.empty())
+            throw std::runtime_error("No elements");
         return result.get();
     }
 
+    /*! Return the total number of items emitted by this blocking_observable.
+
+        \return  The total number of items emitted by this blocking_observable.
+
+        \note  If the source observable calls on_error, the raised exception is rethrown by this method.
+
+        \sample
+        \snippet blocking_observable.cpp blocking count sample
+        \snippet output.txt blocking count sample
+    */
     int count() const {
         rxu::maybe<T> result;
+        rxu::maybe<std::exception_ptr> error;
         source.count().as_blocking().subscribe(
             [&](T v){result.reset(v);},
-            [](std::exception_ptr){result.reset(0);});
+            [&](std::exception_ptr ep){error.reset(ep);});
+        if (!error.empty())
+            std::rethrow_exception(error.get());
         return result.get();
     }
+
+    /*! Return the sum of all items emitted by this blocking_observable, or throw an std::runtime_error exception if it emits no items.
+
+        \return  The sum of all items emitted by this blocking_observable.
+
+        \note  If the source observable calls on_error, the raised exception is rethrown by this method.
+
+        \sample
+        When the source observable emits at least one item:
+        \snippet blocking_observable.cpp blocking sum sample
+        \snippet output.txt blocking sum sample
+
+        When the source observable is empty:
+        \snippet blocking_observable.cpp blocking sum empty sample
+        \snippet output.txt blocking sum empty sample
+    */
     T sum() const {
         return source.sum().as_blocking().last();
     }
+
+    /*! Return the average value of all items emitted by this blocking_observable, or throw an std::runtime_error exception if it emits no items.
+
+        \return  The average value of all items emitted by this blocking_observable.
+
+        \note  If the source observable calls on_error, the raised exception is rethrown by this method.
+
+        \sample
+        When the source observable emits at least one item:
+        \snippet blocking_observable.cpp blocking average sample
+        \snippet output.txt blocking average sample
+
+        When the source observable is empty:
+        \snippet blocking_observable.cpp blocking average empty sample
+        \snippet output.txt blocking average empty sample
+    */
     double average() const {
         return source.average().as_blocking().last();
     }

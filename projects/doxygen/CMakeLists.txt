@@ -44,6 +44,7 @@ if(DOXYGEN_FOUND)
         ${DOXY_EXAMPLES_SRC_DIR}/main.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/amb.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/as_dynamic.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/blocking_observable.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/buffer.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/combine_latest.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/concat.cpp
