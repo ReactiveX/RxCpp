@@ -88,12 +88,14 @@ struct reduce : public operator_base<rxu::value_type_t<reduce_traits<T, SourceOp
             , accumulator(std::move(a))
             , result_selector(std::move(rs))
             , seed(std::move(s))
+            , has_accumulation(false)
         {
         }
         source_type source;
         accumulator_type accumulator;
         result_selector_type result_selector;
         seed_type seed;
+        bool has_accumulation;
 
     private:
         reduce_initial_type& operator=(reduce_initial_type o) RXCPP_DELETE;
@@ -134,6 +136,7 @@ struct reduce : public operator_base<rxu::value_type_t<reduce_traits<T, SourceOp
             [state](T t) {
                 auto next = state->accumulator(state->current, t);
                 state->current = next;
+                state->has_accumulation = true;
             },
         // on_error
             [state](std::exception_ptr e) {
@@ -141,9 +144,14 @@ struct reduce : public operator_base<rxu::value_type_t<reduce_traits<T, SourceOp
             },
         // on_completed
             [state]() {
-                auto result = state->result_selector(state->current);
-                state->out.on_next(result);
-                state->out.on_completed();
+                if (state->has_accumulation) {
+                    auto result = state->result_selector(state->current);
+                    state->out.on_next(result);
+                    state->out.on_completed();
+                }
+                else {
+                    state->out.on_error(std::make_exception_ptr(std::runtime_error("No elements")));
+                }
             }
         );
     }
