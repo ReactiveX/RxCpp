@@ -267,19 +267,23 @@ public:
         rxu::maybe<T> result;
         composite_subscription cs;
         subscribe(cs, [&](T v){result.reset(v); cs.unsubscribe();});
-        if (result.empty()) abort();
+        if (result.empty()) throw std::runtime_error("No elements");
         return result.get();
     }
 
     T last() const {
         rxu::maybe<T> result;
         subscribe([&](T v){result.reset(v);});
-        if (result.empty()) abort();
+        if (result.empty()) throw std::runtime_error("No elements");
         return result.get();
     }
 
     int count() const {
-        return source.count().as_blocking().last();
+        rxu::maybe<T> result;
+        source.count().as_blocking().subscribe(
+            [&](T v){result.reset(v);},
+            [](std::exception_ptr){result.reset(0);});
+        return result.get();
     }
     T sum() const {
         return source.sum().as_blocking().last();
