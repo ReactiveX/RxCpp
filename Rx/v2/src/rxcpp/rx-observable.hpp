@@ -1918,6 +1918,10 @@ public:
         Geometric mean of source values:
         \snippet reduce.cpp reduce sample
         \snippet output.txt reduce sample
+
+        If the source observable completes without emitting any items, the resulting observable calls on_error method of its observers.
+        \snippet reduce.cpp reduce empty sample
+        \snippet output.txt reduce empty sample
     */
     template<class Seed, class Accumulator, class ResultSelector>
     auto reduce(Seed seed, Accumulator&& a, ResultSelector&& rs) const
@@ -1948,6 +1952,10 @@ public:
         \sample
         \snippet math.cpp first sample
         \snippet output.txt first sample
+
+        If the source observable completes without emitting any items, the resulting observable calls on_error method of its observers.
+        \snippet math.cpp first empty sample
+        \snippet output.txt first empty sample
     */
     auto first() const
         -> observable<T>;
@@ -1959,6 +1967,10 @@ public:
         \sample
         \snippet math.cpp last sample
         \snippet output.txt last sample
+
+        If the source observable completes without emitting any items, the resulting observable calls on_error method of its observers.
+        \snippet math.cpp last empty sample
+        \snippet output.txt last empty sample
     */
     auto last() const
         -> observable<T>;
@@ -1981,6 +1993,10 @@ public:
         \sample
         \snippet math.cpp sum sample
         \snippet output.txt sum sample
+
+        If the source observable completes without emitting any items, the resulting observable calls on_error method of its observers.
+        \snippet math.cpp sum empty sample
+        \snippet output.txt sum empty sample
     */
     auto sum() const
         /// \cond SHOW_SERVICE_MEMBERS
@@ -1997,6 +2013,10 @@ public:
         \sample
         \snippet math.cpp average sample
         \snippet output.txt average sample
+
+        If the source observable completes without emitting any items, the resulting observable calls on_error method of its observers.
+        \snippet math.cpp average empty sample
+        \snippet output.txt average empty sample
     */
     auto average() const
         /// \cond SHOW_SERVICE_MEMBERS

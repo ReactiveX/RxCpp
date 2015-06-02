@@ -22,3 +22,23 @@ SCENARIO("reduce sample"){
             [](){printf("OnCompleted\n");});
     printf("//! [reduce sample]\n");
 }
+
+SCENARIO("reduce empty sample"){
+    printf("//! [reduce empty sample]\n");
+    auto values = rxcpp::observable<>::empty<int>().
+        reduce(
+            1,
+            [](int seed, int){return seed;},
+            [](int res){return res;});
+    values.
+        subscribe(
+            [](int v){printf("OnNext: %d\n", v);},
+            [](std::exception_ptr ep){
+                try {std::rethrow_exception(ep);}
+                catch (const std::exception& ex) {
+                    printf("OnError: %s\n", ex.what());
+                }
+            },
+            [](){printf("OnCompleted\n");});
+    printf("//! [reduce empty sample]\n");
+}
