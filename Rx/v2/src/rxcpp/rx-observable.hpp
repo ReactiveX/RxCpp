@@ -264,11 +264,7 @@ public:
     }
 
     T first() {
-        rxu::maybe<T> result;
-        composite_subscription cs;
-        subscribe(cs, [&](T v){result.reset(v); cs.unsubscribe();});
-        if (result.empty()) throw std::runtime_error("No elements");
-        return result.get();
+        return source.first().as_blocking().last();
     }
 
     T last() const {
