@@ -83,19 +83,19 @@ struct reduce : public operator_base<rxu::value_type_t<reduce_traits<T, SourceOp
         ~reduce_initial_type()
         {
         }
-        reduce_initial_type(source_type o, accumulator_type a, result_selector_type rs, seed_type s)
+        reduce_initial_type(source_type o, accumulator_type a, result_selector_type rs, seed_type s, bool _abort_on_error)
             : source(std::move(o))
             , accumulator(std::move(a))
             , result_selector(std::move(rs))
             , seed(std::move(s))
-            , has_accumulation(false)
+            , abort_on_error(_abort_on_error)
         {
         }
         source_type source;
         accumulator_type accumulator;
         result_selector_type result_selector;
         seed_type seed;
-        bool has_accumulation;
+        bool abort_on_error;
 
     private:
         reduce_initial_type& operator=(reduce_initial_type o) RXCPP_DELETE;
@@ -105,8 +105,8 @@ struct reduce : public operator_base<rxu::value_type_t<reduce_traits<T, SourceOp
     ~reduce()
     {
     }
-    reduce(source_type o, accumulator_type a, result_selector_type rs, seed_type s)
-        : initial(std::move(o), std::move(a), std::move(rs), std::move(s))
+    reduce(source_type o, accumulator_type a, result_selector_type rs, seed_type s, bool abort_on_error = true)
+        : initial(std::move(o), std::move(a), std::move(rs), std::move(s), abort_on_error)
     {
     }
     template<class Subscriber>
@@ -130,29 +130,39 @@ struct reduce : public operator_base<rxu::value_type_t<reduce_traits<T, SourceOp
             reduce_state_type& operator=(reduce_state_type o) RXCPP_DELETE;
         };
         auto state = std::make_shared<reduce_state_type>(initial, std::move(o));
+        auto on_completed = [state]() {
+            rxu::maybe<value_type> result;
+            try {
+                result.reset(state->result_selector(state->current));
+            } catch (const std::exception&) {
+                state->out.on_error(std::current_exception());
+                return;
+            }
+            state->out.on_next(result.get());
+            state->out.on_completed();
+        };
         state->source.subscribe(
             state->out,
         // on_next
             [state](T t) {
-                auto next = state->accumulator(state->current, t);
-                state->current = next;
-                state->has_accumulation = true;
+                try {
+                    auto next = state->accumulator(state->current, t);
+                    state->current = next;
+                } catch (const std::exception&) {
+                    state->out.on_error(std::current_exception());
+                }
             },
         // on_error
-            [state](std::exception_ptr e) {
-                state->out.on_error(e);
-            },
-        // on_completed
-            [state]() {
-                if (state->has_accumulation) {
-                    auto result = state->result_selector(state->current);
-                    state->out.on_next(result);
-                    state->out.on_completed();
+            [state, on_completed](std::exception_ptr e) {
+                if (state->abort_on_error) {
+                    state->out.on_error(e);
                 }
                 else {
-                    state->out.on_error(std::make_exception_ptr(std::runtime_error("No elements")));
+                    on_completed();
                 }
-            }
+            },
+        // on_completed
+            on_completed
         );
     }
 private:
@@ -238,7 +248,35 @@ struct average {
             }
             return avg;
         }
-        return a.value;
+        throw rxcpp::empty_error("No elements");
+    }
+};
+
+template<class T>
+struct sum {
+    struct seed_type
+    {
+        seed_type()
+            : value()
+            , has_accumulation(false)
+        {
+        }
+        T value;
+        bool has_accumulation;
+    };
+    seed_type seed() {
+        return seed_type{};
+    }
+    seed_type operator()(seed_type a, T v) {
+        a.value += v;
+        a.has_accumulation = true;
+        return a;
+    }
+    T operator()(seed_type a) {
+        if (a.has_accumulation) {
+            return a.value;
+        }
+        throw rxcpp::empty_error("No elements");
     }
 };
 
@@ -250,8 +288,15 @@ auto reduce(Seed s, Accumulator a, ResultSelector rs)
     return  detail::reduce_factory<Accumulator, ResultSelector, Seed>(std::move(a), std::move(rs), std::move(s));
 }
 
-
 }
+
+class empty_error: public std::runtime_error
+{
+    public:
+        empty_error(const std::string& msg):
+            std::runtime_error(msg)
+        {}
+};
 
 }
 

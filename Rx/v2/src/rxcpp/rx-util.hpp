@@ -114,16 +114,12 @@ template<class... TN> struct types_checked_from {typedef types_checked type;};
 template<class... TN>
 struct types_checked_from {typedef typename detail::types_checked_from<TN...>::type type;};
 
-
-
 template<class T, class C = types_checked>
 struct value_type_from : public std::false_type {typedef types_checked type;};
 
 template<class T>
 struct value_type_from<T, typename types_checked_from<value_type_t<T>>::type>
     : public std::true_type {typedef value_type_t<T> type;};
-
-
 
 namespace detail {
 
@@ -329,6 +325,13 @@ struct plus
     auto operator()(LHS&& lhs, RHS&& rhs) const
         -> decltype(std::forward<LHS>(lhs) + std::forward<RHS>(rhs))
         { return std::forward<LHS>(lhs) + std::forward<RHS>(rhs); }
+};
+
+struct count
+{
+    template <class T>
+    int operator()(int cnt, T&&) const
+    { return cnt + 1; }
 };
 
 struct less

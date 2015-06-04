@@ -17,7 +17,7 @@ SCENARIO("blocking first empty sample"){
     try {
         auto first = values.first();
         printf("first = %d\n", first);
-    } catch (const std::exception& ex) {
+    } catch (const rxcpp::empty_error& ex) {
         printf("Exception: %s\n", ex.what());
     }
     printf("//! [blocking first empty sample]\n");
@@ -37,7 +37,7 @@ SCENARIO("blocking last empty sample"){
     try {
         auto last = values.last();
         printf("last = %d\n", last);
-    } catch (const std::exception& ex) {
+    } catch (const rxcpp::empty_error& ex) {
         printf("Exception: %s\n", ex.what());
     }
     printf("//! [blocking last empty sample]\n");
@@ -49,6 +49,16 @@ SCENARIO("blocking count sample"){
     auto count = values.count();
     printf("count = %d\n", count);
     printf("//! [blocking count sample]\n");
+}
+
+SCENARIO("blocking count error sample"){
+    printf("//! [blocking count error sample]\n");
+    auto values = rxcpp::observable<>::range(1, 3).
+        concat(rxcpp::observable<>::error<int>(std::runtime_error("Error from source"))).
+        as_blocking();
+    auto count = values.count();
+    printf("count = %d\n", count);
+    printf("//! [blocking count error sample]\n");
 }
 
 SCENARIO("blocking sum sample"){
@@ -65,17 +75,27 @@ SCENARIO("blocking sum empty sample"){
     try {
         auto sum = values.sum();
         printf("sum = %d\n", sum);
-    } catch (const std::exception& ex) {
+    } catch (const rxcpp::empty_error& ex) {
         printf("Exception: %s\n", ex.what());
     }
     printf("//! [blocking sum empty sample]\n");
 }
 
+SCENARIO("blocking sum error sample"){
+    printf("//! [blocking sum error sample]\n");
+    auto values = rxcpp::observable<>::range(1, 3).
+        concat(rxcpp::observable<>::error<int>(std::runtime_error("Error from source"))).
+        as_blocking();
+    auto sum = values.sum();
+    printf("sum = %d\n", sum);
+    printf("//! [blocking sum error sample]\n");
+}
+
 SCENARIO("blocking average sample"){
     printf("//! [blocking average sample]\n");
-    auto values = rxcpp::observable<>::range(1, 3).as_blocking();
+    auto values = rxcpp::observable<>::range(1, 4).as_blocking();
     auto average = values.average();
-    printf("average = %d\n", average);
+    printf("average = %lf\n", average);
     printf("//! [blocking average sample]\n");
 }
 
@@ -84,9 +104,19 @@ SCENARIO("blocking average empty sample"){
     auto values = rxcpp::observable<>::empty<int>().as_blocking();
     try {
         auto average = values.average();
-        printf("average = %d\n", average);
-    } catch (const std::exception& ex) {
+        printf("average = %lf\n", average);
+    } catch (const rxcpp::empty_error& ex) {
         printf("Exception: %s\n", ex.what());
     }
     printf("//! [blocking average empty sample]\n");
+}
+
+SCENARIO("blocking average error sample"){
+    printf("//! [blocking average error sample]\n");
+    auto values = rxcpp::observable<>::range(1, 4).
+        concat(rxcpp::observable<>::error<int>(std::runtime_error("Error from source"))).
+        as_blocking();
+    auto average = values.average();
+    printf("average = %lf\n", average);
+    printf("//! [blocking average error sample]\n");
 }

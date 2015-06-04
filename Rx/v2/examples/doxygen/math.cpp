@@ -21,7 +21,7 @@ SCENARIO("first empty sample"){
             [](int v){printf("OnNext: %d\n", v);},
             [](std::exception_ptr ep){
                 try {std::rethrow_exception(ep);}
-                catch (const std::exception& ex) {
+                catch (const rxcpp::empty_error& ex) {
                     printf("OnError: %s\n", ex.what());
                 }
             },
@@ -47,7 +47,7 @@ SCENARIO("last empty sample"){
             [](int v){printf("OnNext: %d\n", v);},
             [](std::exception_ptr ep){
                 try {std::rethrow_exception(ep);}
-                catch (const std::exception& ex) {
+                catch (const rxcpp::empty_error& ex) {
                     printf("OnError: %s\n", ex.what());
                 }
             },
@@ -63,6 +63,18 @@ SCENARIO("count sample"){
             [](int v){printf("OnNext: %d\n", v);},
             [](){printf("OnCompleted\n");});
     printf("//! [count sample]\n");
+}
+
+SCENARIO("count error sample"){
+    printf("//! [count error sample]\n");
+    auto values = rxcpp::observable<>::range(1, 3).
+        concat(rxcpp::observable<>::error<int>(std::runtime_error("Error from source"))).
+        count();
+    values.
+        subscribe(
+            [](int v){printf("OnNext: %d\n", v);},
+            [](){printf("OnCompleted\n");});
+    printf("//! [count error sample]\n");
 }
 
 SCENARIO("sum sample"){
@@ -83,12 +95,24 @@ SCENARIO("sum empty sample"){
             [](int v){printf("OnNext: %d\n", v);},
             [](std::exception_ptr ep){
                 try {std::rethrow_exception(ep);}
-                catch (const std::exception& ex) {
+                catch (const rxcpp::empty_error& ex) {
                     printf("OnError: %s\n", ex.what());
                 }
             },
             [](){printf("OnCompleted\n");});
     printf("//! [sum empty sample]\n");
+}
+
+SCENARIO("sum error sample"){
+    printf("//! [sum error sample]\n");
+    auto values = rxcpp::observable<>::range(1, 3).
+        concat(rxcpp::observable<>::error<int>(std::runtime_error("Error from source"))).
+        sum();
+    values.
+        subscribe(
+            [](int v){printf("OnNext: %d\n", v);},
+            [](){printf("OnCompleted\n");});
+    printf("//! [sum error sample]\n");
 }
 
 SCENARIO("average sample"){
@@ -109,10 +133,22 @@ SCENARIO("average empty sample"){
             [](double v){printf("OnNext: %lf\n", v);},
             [](std::exception_ptr ep){
                 try {std::rethrow_exception(ep);}
-                catch (const std::exception& ex) {
+                catch (const rxcpp::empty_error& ex) {
                     printf("OnError: %s\n", ex.what());
                 }
             },
             [](){printf("OnCompleted\n");});
     printf("//! [average empty sample]\n");
+}
+
+SCENARIO("average error sample"){
+    printf("//! [average error sample]\n");
+    auto values = rxcpp::observable<>::range(1, 4).
+        concat(rxcpp::observable<>::error<int>(std::runtime_error("Error from source"))).
+        average();
+    values.
+        subscribe(
+            [](double v){printf("OnNext: %lf\n", v);},
+            [](){printf("OnCompleted\n");});
+    printf("//! [average error sample]\n");
 }
