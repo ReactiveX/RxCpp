@@ -306,7 +306,7 @@ public:
         if (!error.empty())
             std::rethrow_exception(error.get());
         if (result.empty())
-            throw std::runtime_error("No elements");
+            throw rxcpp::empty_error("No elements");
         return result.get();
     }
 
@@ -314,11 +314,13 @@ public:
 
         \return  The total number of items emitted by this blocking_observable.
 
-        \note  If the source observable calls on_error, the raised exception is rethrown by this method.
-
         \sample
         \snippet blocking_observable.cpp blocking count sample
         \snippet output.txt blocking count sample
+
+        If the source observable calls on_error, the resulting observable behaves like it was on_completed: it emits the number of elements:
+        \snippet blocking_observable.cpp blocking count error sample
+        \snippet output.txt blocking count error sample
     */
     int count() const {
         rxu::maybe<T> result;
@@ -335,8 +337,6 @@ public:
 
         \return  The sum of all items emitted by this blocking_observable.
 
-        \note  If the source observable calls on_error, the raised exception is rethrown by this method.
-
         \sample
         When the source observable emits at least one item:
         \snippet blocking_observable.cpp blocking sum sample
@@ -345,6 +345,10 @@ public:
         When the source observable is empty:
         \snippet blocking_observable.cpp blocking sum empty sample
         \snippet output.txt blocking sum empty sample
+
+        If the source observable calls on_error, the resulting observable behaves like it was on_completed: it emits the average value of elements:
+        \snippet blocking_observable.cpp blocking sum error sample
+        \snippet output.txt blocking sum error sample
     */
     T sum() const {
         return source.sum().as_blocking().last();
@@ -354,8 +358,6 @@ public:
 
         \return  The average value of all items emitted by this blocking_observable.
 
-        \note  If the source observable calls on_error, the raised exception is rethrown by this method.
-
         \sample
         When the source observable emits at least one item:
         \snippet blocking_observable.cpp blocking average sample
@@ -364,6 +366,10 @@ public:
         When the source observable is empty:
         \snippet blocking_observable.cpp blocking average empty sample
         \snippet output.txt blocking average empty sample
+
+        If the source observable calls on_error, the resulting observable behaves like it was on_completed: it emits the average value of elements:
+        \snippet blocking_observable.cpp blocking average error sample
+        \snippet output.txt blocking average error sample
     */
     double average() const {
         return source.average().as_blocking().last();
@@ -2000,9 +2006,17 @@ public:
         \snippet reduce.cpp reduce sample
         \snippet output.txt reduce sample
 
-        If the source observable completes without emitting any items, the resulting observable calls on_error method of its observers.
+        If the source observable completes without emitting any items, the resulting observable emits the result of passing the initial seed to the result selector:
         \snippet reduce.cpp reduce empty sample
         \snippet output.txt reduce empty sample
+
+        If the accumulator raises an exception, it is returned by the resulting observable in on_error:
+        \snippet reduce.cpp reduce exception from accumulator sample
+        \snippet output.txt reduce exception from accumulator sample
+
+        The same for exceptions raised by the result selector:
+        \snippet reduce.cpp reduce exception from result selector sample
+        \snippet output.txt reduce exception from result selector sample
     */
     template<class Seed, class Accumulator, class ResultSelector>
     auto reduce(Seed seed, Accumulator&& a, ResultSelector&& rs) const
@@ -2063,9 +2077,18 @@ public:
         \sample
         \snippet math.cpp count sample
         \snippet output.txt count sample
+
+        If the source observable calls on_error, the resulting observable behaves like it was on_completed: it emits the number of elements:
+        \snippet math.cpp count error sample
+        \snippet output.txt count error sample
     */
     auto count() const
-        -> observable<int>;
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> typename defer_reduce<int, rxu::count, rxu::defer_type<identity_for, int>>::observable_type
+        /// \endcond
+    {
+        return      defer_reduce<int, rxu::count, rxu::defer_type<identity_for, int>>::make(source_operator, rxu::count(), identity_for<int>(), 0, false);
+    }
 
     /*! For each item from this observable reduce it by adding to the previous items.
 
@@ -2075,16 +2098,20 @@ public:
         \snippet math.cpp sum sample
         \snippet output.txt sum sample
 
-        If the source observable completes without emitting any items, the resulting observable calls on_error method of its observers.
+        If the source observable completes without emitting any items, the resulting observable calls on_error method of its observers:
         \snippet math.cpp sum empty sample
         \snippet output.txt sum empty sample
+
+        If the source observable calls on_error, the resulting observable behaves like it was on_completed: it emits the sum of elements:
+        \snippet math.cpp sum error sample
+        \snippet output.txt sum error sample
     */
     auto sum() const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> typename defer_reduce<rxu::defer_seed_type<rxo::detail::initialize_seeder, T>, rxu::plus, rxu::defer_type<identity_for, T>>::observable_type
+        -> typename defer_reduce<rxu::defer_seed_type<rxo::detail::sum, T>, rxu::defer_type<rxo::detail::sum, T>, rxu::defer_type<rxo::detail::sum, T>>::observable_type
         /// \endcond
     {
-        return      defer_reduce<rxu::defer_seed_type<rxo::detail::initialize_seeder, T>, rxu::plus, rxu::defer_type<identity_for, T>>::make(source_operator, rxu::plus(), identity_for<T>(), rxo::detail::initialize_seeder<T>().seed());
+        return      defer_reduce<rxu::defer_seed_type<rxo::detail::sum, T>, rxu::defer_type<rxo::detail::sum, T>, rxu::defer_type<rxo::detail::sum, T>>::make(source_operator, rxo::detail::sum<T>(), rxo::detail::sum<T>(), rxo::detail::sum<T>().seed(), false);
     }
 
     /*! For each item from this observable reduce it by adding to the previous values and then dividing by the number of items at the end.
@@ -2095,16 +2122,20 @@ public:
         \snippet math.cpp average sample
         \snippet output.txt average sample
 
-        If the source observable completes without emitting any items, the resulting observable calls on_error method of its observers.
+        If the source observable completes without emitting any items, the resulting observable calls on_error method of its observers:
         \snippet math.cpp average empty sample
         \snippet output.txt average empty sample
+
+        If the source observable calls on_error, the resulting observable behaves like it was on_completed: it emits the average value of elements:
+        \snippet math.cpp average error sample
+        \snippet output.txt average error sample
     */
     auto average() const
         /// \cond SHOW_SERVICE_MEMBERS
         -> typename defer_reduce<rxu::defer_seed_type<rxo::detail::average, T>, rxu::defer_type<rxo::detail::average, T>, rxu::defer_type<rxo::detail::average, T>>::observable_type
         /// \endcond
     {
-        return      defer_reduce<rxu::defer_seed_type<rxo::detail::average, T>, rxu::defer_type<rxo::detail::average, T>, rxu::defer_type<rxo::detail::average, T>>::make(source_operator, rxo::detail::average<T>(), rxo::detail::average<T>(), rxo::detail::average<T>().seed());
+        return      defer_reduce<rxu::defer_seed_type<rxo::detail::average, T>, rxu::defer_type<rxo::detail::average, T>, rxu::defer_type<rxo::detail::average, T>>::make(source_operator, rxo::detail::average<T>(), rxo::detail::average<T>(), rxo::detail::average<T>().seed(), false);
     }
 
     /*! For each item from this observable use Accumulator to combine items into a value that will be emitted from the new observable that is returned.
@@ -2462,19 +2493,16 @@ template<class T, class SourceOperator>
 auto observable<T, SourceOperator>::last() const
     -> observable<T> {
     rxu::maybe<T> seed;
-    return this->reduce(seed, [](rxu::maybe<T>, T t){return rxu::maybe<T>(std::move(t));}, [](rxu::maybe<T> result){return result.get();});
+    return this->reduce(
+        seed,
+        [](rxu::maybe<T>, T t){return rxu::maybe<T>(std::move(t));},
+        [](rxu::maybe<T> result){return result.empty() ? throw rxcpp::empty_error("No elements") : result.get();});
 }
 
 template<class T, class SourceOperator>
 auto observable<T, SourceOperator>::first() const
     -> observable<T> {
     return this->take(1).last();
-}
-
-template<class T, class SourceOperator>
-auto observable<T, SourceOperator>::count() const
-    -> observable<int> {
-    return this->reduce(0, [](int current, const T&){return ++current;}, [](int result){return result;});
 }
 
 template<class T, class SourceOperator>
@@ -3101,7 +3129,6 @@ public:
     }
 };
 
-
 }
 
 //
@@ -3123,6 +3150,5 @@ auto operator | (const rxcpp::observable<T, SourceOperator>& source, OperatorFac
     -> decltype(source.op(std::forward<OperatorFactory>(of))) {
     return      source.op(std::forward<OperatorFactory>(of));
 }
-
 
 #endif
