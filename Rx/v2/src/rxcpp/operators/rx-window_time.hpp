@@ -56,7 +56,7 @@ struct window_with_time
                 , cs(std::move(cs))
                 , dest(std::move(d))
                 , coordinator(std::move(c))
-                , worker(std::move(coordinator.get_worker()))
+                , worker(coordinator.get_worker())
                 , expected(worker.now())
             {
             }

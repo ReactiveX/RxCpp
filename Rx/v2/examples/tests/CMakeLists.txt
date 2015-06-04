@@ -17,14 +17,13 @@ include(${RXCPP_DIR}/projects/CMake/shared.cmake)
 # define the sources
 set(SAMPLE_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/take.cpp
 )
 add_executable(${SAMPLE_PROJECT} ${SAMPLE_SOURCES})
 add_executable(rxcpp::examples::${SAMPLE_PROJECT} ALIAS ${SAMPLE_PROJECT})
 target_compile_options(${SAMPLE_PROJECT} PUBLIC ${RX_COMPILE_OPTIONS})
 target_compile_features(${SAMPLE_PROJECT} PUBLIC ${RX_COMPILE_FEATURES})
-target_include_directories(${SAMPLE_PROJECT}
-    PUBLIC ${RX_SRC_DIR} ${RX_CATCH_DIR}
-    )
+target_include_directories(${SAMPLE_PROJECT} PUBLIC ${RX_SRC_DIR} ${RX_CATCH_DIR})
 target_link_libraries(${SAMPLE_PROJECT} ${CMAKE_THREAD_LIBS_INIT})
 
 # configure unit tests via CTest

@@ -105,11 +105,14 @@ Desktop.ini
 ## CMake
 ############
 
+build/*
 projects/*
 !projects/CMake/CMakeLists.txt
+!projects/CMake/shared.cmake
 !projects/nuget/rxcpp.autopackage
 !projects/doxygen
 !projects/scripts
+Testing/*
 
 CMakeCache.txt
 CMakeFiles
