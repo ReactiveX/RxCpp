@@ -337,14 +337,7 @@ public:
         \snippet output.txt blocking count error sample
     */
     int count() const {
-        rxu::maybe<T> result;
-        rxu::maybe<std::exception_ptr> error;
-        source.count().as_blocking().subscribe(
-            [&](T v){result.reset(v);},
-            [&](std::exception_ptr ep){error.reset(ep);});
-        if (!error.empty())
-            std::rethrow_exception(error.get());
-        return result.get();
+        return source.count().as_blocking().last();
     }
 
     /*! Return the sum of all items emitted by this blocking_observable, or throw an std::runtime_error exception if it emits no items.
