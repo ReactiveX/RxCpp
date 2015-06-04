@@ -9,6 +9,14 @@
 
 namespace rxcpp {
 
+class empty_error: public std::runtime_error
+{
+    public:
+        empty_error(const std::string& msg):
+            std::runtime_error(msg)
+        {}
+};
+
 namespace operators {
 
 namespace detail {
@@ -289,14 +297,6 @@ auto reduce(Seed s, Accumulator a, ResultSelector rs)
 }
 
 }
-
-class empty_error: public std::runtime_error
-{
-    public:
-        empty_error(const std::string& msg):
-            std::runtime_error(msg)
-        {}
-};
 
 }
 
