@@ -42,7 +42,7 @@ matrix:
     #         - ubuntu-toolchain-r-test
     #         - llvm-toolchain-precise
 
-    - env: BUILD_TYPE=Release CPP=11 ASAN=On LIBCXX=On
+    - env: BUILD_TYPE=Release CPP=11 ASAN=On LIBCXX=On RUN_TEST=On
       os: osx
       compiler: clang
 
@@ -92,10 +92,22 @@ matrix:
     #       sources:
     #         - ubuntu-toolchain-r-test
 
-    - env: GCC_VERSION=4.9 BUILD_TYPE=Release CPP=11 ASAN=Off LIBCXX=Off
+    - env: GCC_VERSION=4.9 BUILD_TYPE=Release CPP=11 ASAN=Off LIBCXX=Off RUN_TEST=On
       os: linux
       compiler: gcc
       addons: &gcc49
+        apt:
+          packages:
+            - g++-4.9
+            - cmake
+          sources:
+            - ubuntu-toolchain-r-test
+            - kubuntu-backports
+
+    - env: GCC_VERSION=4.9 BUILD_TYPE=Release CPP=11 ASAN=Off LIBCXX=Off PROJECT=doc PUBLISH_DOCS=On
+      os: linux
+      compiler: gcc
+      addons: &gcc49docs
         apt:
           packages:
             - g++-4.9
@@ -145,10 +157,10 @@ install:
 - if [ "$LIBCXX" == "On" ]; then CXX_LINKER_FLAGS="${CXX_FLAGS} -L/usr/lib/ -lc++"; fi
 - cmake . -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_CXX_FLAGS="${CXX_FLAGS}" -DCMAKE_EXE_LINKER_FLAGS="${CXX_LINKER_FLAGS}"
 script:
-- make VERBOSE=1
-- if [ -n "$GCC_VERSION" ]; then build/test/rxcppv2_test; fi
+- make VERBOSE=1 $PROJECT
+- if [ "$RUN_TEST" == "On" ]; then build/test/rxcppv2_test; fi
 after_success:
-- sh projects/scripts/travis-doxygen.sh
+- if [ "$PUBLISH_DOCS" == "On" ]; then sh projects/scripts/travis-doxygen.sh; fi
 branches:
   only:
   - master
