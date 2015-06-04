@@ -1,4 +1,4 @@
-version: 2.1.{build}
+version: 2.2.{build}
 
 branches:
 # whitelist
@@ -6,20 +6,26 @@ branches:
         - master
         - appveyor
 
+environment:
+  matrix:
+    - VSVER: Visual Studio 12 2013 Win64
+#    - VSVER: Visual Studio 14 2015 Win64
+
 install:
+    - choco install cmake
+    - choco upgrade cmake
+    - cmake --version
     - git submodule -q update --init
 
 before_build:
-    - mkdir projects\build
-    - cd projects\build
-    - cmake -G"Visual Studio 12" -T"v120" -B. ..\CMake\
-    - cd ..\..
+    - cmake -G"%VSVER%" .
 
 build:
-    project: projects\build\rxcpp.sln
+    project: build\rxcpp.sln
+
+test_script:
+  - build\test\Debug\rxcppv2_test.exe
 
 notifications:
-    - provider: Slack
-      auth_token:
-          secure: qaGjbI98VXZa7Zd2s3RmMzfA+ymrfWUDuzevdtOcHssEGBXbcoOJzLHNOmG+Y1nX
-      channel: rxcpp
+  slack:
+    secure: qaGjbI98VXZa7Zd2s3RmMzfA+ymrfWUDuzevdtOcHssEGBXbcoOJzLHNOmG+Y1nX

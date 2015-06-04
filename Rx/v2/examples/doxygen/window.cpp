@@ -155,7 +155,6 @@ SCENARIO("window period sample"){
 SCENARIO("window period+count+coordination sample"){
     printf("//! [window period+count+coordination sample]\n");
     int counter = 0;
-    auto start = std::chrono::steady_clock::now();
     auto int1 = rxcpp::observable<>::range(1L, 3L);
     auto int2 = rxcpp::observable<>::timer(std::chrono::milliseconds(50));
     auto values = int1.
@@ -177,7 +176,6 @@ SCENARIO("window period+count+coordination sample"){
 SCENARIO("window period+count sample"){
     printf("//! [window period+count sample]\n");
     int counter = 0;
-    auto start = std::chrono::steady_clock::now();
     auto int1 = rxcpp::observable<>::range(1L, 3L);
     auto int2 = rxcpp::observable<>::timer(std::chrono::milliseconds(50));
     auto values = int1.
