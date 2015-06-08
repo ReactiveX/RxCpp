@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
 
 project(rxcpp VERSION 2.2.4 LANGUAGES C CXX)
 
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
 # define some folders
 
 get_filename_component(RXCPP_DIR "${CMAKE_CURRENT_SOURCE_DIR}" PATH)
