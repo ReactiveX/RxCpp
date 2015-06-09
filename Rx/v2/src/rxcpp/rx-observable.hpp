@@ -355,7 +355,11 @@ public:
         \snippet output.txt blocking count error sample
     */
     int count() const {
-        return source.count().as_blocking().last();
+        int result;
+        on_exception(
+            [&](){result = source.count().as_blocking().last(); return true;},
+            [&](std::exception_ptr){result = 0;});
+        return result;
     }
 
     /*! Return the sum of all items emitted by this blocking_observable, or throw an std::runtime_error exception if it emits no items.
