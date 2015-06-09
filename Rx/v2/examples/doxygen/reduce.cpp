@@ -38,7 +38,7 @@ SCENARIO("reduce empty sample"){
 }
 
 SCENARIO("reduce exception from accumulator sample"){
-    printf("//! [reduce exception from accumulator sample] <<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
+    printf("//! [reduce exception from accumulator sample]\n");
     auto values = rxcpp::observable<>::range(1, 3).
         reduce(
             0,
