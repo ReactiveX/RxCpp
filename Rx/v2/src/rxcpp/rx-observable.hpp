@@ -185,7 +185,7 @@ template<class T, class Observable>
 class blocking_observable
 {
     template<class Obsvbl, class... ArgN>
-    static auto blocking_subscribe(const Obsvbl& source, ArgN&&... an)
+    static auto blocking_subscribe(const Obsvbl& source, bool do_rethrow, ArgN&&... an)
         -> composite_subscription {
         std::mutex lock;
         std::condition_variable wake;
@@ -217,7 +217,12 @@ class blocking_observable
         auto scbr = make_subscriber<T>(
             dest,
             [&](T t){dest.on_next(t);},
-            [&](std::exception_ptr e){dest.on_error(e); error = e;},
+            [&](std::exception_ptr e){
+                dest.on_error(e);
+                if (do_rethrow) {
+                    error = e;
+                }
+            },
             [&](){dest.on_completed();}
             );
 
@@ -274,7 +279,13 @@ public:
     template<class... ArgN>
     auto subscribe(ArgN&&... an) const
         -> composite_subscription {
-        return blocking_subscribe(source, std::forward<ArgN>(an)...);
+        return blocking_subscribe(source, false, std::forward<ArgN>(an)...);
+    }
+
+    template<class... ArgN>
+    auto subscribe_with_rethrow(ArgN&&... an) const
+        -> composite_subscription {
+        return blocking_subscribe(source, true, std::forward<ArgN>(an)...);
     }
 
     /*! Return the first item emitted by this blocking_observable, or throw an std::runtime_error exception if it emits no items.
@@ -295,7 +306,7 @@ public:
     T first() {
         rxu::maybe<T> result;
         composite_subscription cs;
-        subscribe(cs, [&](T v){result.reset(v); cs.unsubscribe();});
+        subscribe_with_rethrow(cs, [&](T v){result.reset(v); cs.unsubscribe();});
         if (result.empty())
             throw rxcpp::empty_error("first() requires a stream with at least one value");
         return result.get();
@@ -319,7 +330,7 @@ public:
     T last() const {
         rxu::maybe<T> result;
         rxu::maybe<std::exception_ptr> error;
-        subscribe(
+        subscribe_with_rethrow(
             [&](T v){result.reset(v);},
             [&](std::exception_ptr ep){error.reset(ep);});
         if (!error.empty())
