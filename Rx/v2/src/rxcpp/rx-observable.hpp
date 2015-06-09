@@ -293,7 +293,12 @@ public:
         \snippet output.txt blocking first empty sample
     */
     T first() {
-        return source.first().as_blocking().last();
+        rxu::maybe<T> result;
+        composite_subscription cs;
+        subscribe(cs, [&](T v){result.reset(v); cs.unsubscribe();});
+        if (result.empty())
+            throw rxcpp::empty_error("first() requires a stream with at least one value");
+        return result.get();
     }
 
     /*! Return the last item emitted by this blocking_observable, or throw an std::runtime_error exception if it emits no items.
@@ -320,7 +325,7 @@ public:
         if (!error.empty())
             std::rethrow_exception(error.get());
         if (result.empty())
-            throw rxcpp::empty_error("No elements");
+            throw rxcpp::empty_error("last() requires a stream with at least one value");
         return result.get();
     }
 
@@ -2094,7 +2099,7 @@ public:
         -> typename defer_reduce<int, rxu::count, rxu::defer_type<identity_for, int>>::observable_type
         /// \endcond
     {
-        return      defer_reduce<int, rxu::count, rxu::defer_type<identity_for, int>>::make(source_operator, rxu::count(), identity_for<int>(), 0, false);
+        return      defer_reduce<int, rxu::count, rxu::defer_type<identity_for, int>>::make(source_operator, rxu::count(), identity_for<int>(), 0);
     }
 
     /*! For each item from this observable reduce it by adding to the previous items.
@@ -2118,7 +2123,7 @@ public:
         -> typename defer_reduce<rxu::defer_seed_type<rxo::detail::sum, T>, rxu::defer_type<rxo::detail::sum, T>, rxu::defer_type<rxo::detail::sum, T>>::observable_type
         /// \endcond
     {
-        return      defer_reduce<rxu::defer_seed_type<rxo::detail::sum, T>, rxu::defer_type<rxo::detail::sum, T>, rxu::defer_type<rxo::detail::sum, T>>::make(source_operator, rxo::detail::sum<T>(), rxo::detail::sum<T>(), rxo::detail::sum<T>().seed(), false);
+        return      defer_reduce<rxu::defer_seed_type<rxo::detail::sum, T>, rxu::defer_type<rxo::detail::sum, T>, rxu::defer_type<rxo::detail::sum, T>>::make(source_operator, rxo::detail::sum<T>(), rxo::detail::sum<T>(), rxo::detail::sum<T>().seed());
     }
 
     /*! For each item from this observable reduce it by adding to the previous values and then dividing by the number of items at the end.
@@ -2142,7 +2147,7 @@ public:
         -> typename defer_reduce<rxu::defer_seed_type<rxo::detail::average, T>, rxu::defer_type<rxo::detail::average, T>, rxu::defer_type<rxo::detail::average, T>>::observable_type
         /// \endcond
     {
-        return      defer_reduce<rxu::defer_seed_type<rxo::detail::average, T>, rxu::defer_type<rxo::detail::average, T>, rxu::defer_type<rxo::detail::average, T>>::make(source_operator, rxo::detail::average<T>(), rxo::detail::average<T>(), rxo::detail::average<T>().seed(), false);
+        return      defer_reduce<rxu::defer_seed_type<rxo::detail::average, T>, rxu::defer_type<rxo::detail::average, T>, rxu::defer_type<rxo::detail::average, T>>::make(source_operator, rxo::detail::average<T>(), rxo::detail::average<T>(), rxo::detail::average<T>().seed());
     }
 
     /*! For each item from this observable use Accumulator to combine items into a value that will be emitted from the new observable that is returned.
@@ -2503,7 +2508,7 @@ auto observable<T, SourceOperator>::last() const
     return this->reduce(
         seed,
         [](rxu::maybe<T>, T t){return rxu::maybe<T>(std::move(t));},
-        [](rxu::maybe<T> result){return result.empty() ? throw rxcpp::empty_error("No elements") : result.get();});
+        [](rxu::maybe<T> result){return result.empty() ? throw rxcpp::empty_error("last() requires a stream with at least one value") : result.get();});
 }
 
 template<class T, class SourceOperator>

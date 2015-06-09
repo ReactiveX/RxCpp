@@ -73,6 +73,12 @@ SCENARIO("count error sample"){
     values.
         subscribe(
             [](int v){printf("OnNext: %d\n", v);},
+            [](std::exception_ptr ep){
+                try {std::rethrow_exception(ep);}
+                catch (const std::runtime_error& ex) {
+                    printf("OnError: %s\n", ex.what());
+                }
+            },
             [](){printf("OnCompleted\n");});
     printf("//! [count error sample]\n");
 }
@@ -111,6 +117,12 @@ SCENARIO("sum error sample"){
     values.
         subscribe(
             [](int v){printf("OnNext: %d\n", v);},
+            [](std::exception_ptr ep){
+                try {std::rethrow_exception(ep);}
+                catch (const std::runtime_error& ex) {
+                    printf("OnError: %s\n", ex.what());
+                }
+            },
             [](){printf("OnCompleted\n");});
     printf("//! [sum error sample]\n");
 }
@@ -149,6 +161,12 @@ SCENARIO("average error sample"){
     values.
         subscribe(
             [](double v){printf("OnNext: %lf\n", v);},
+            [](std::exception_ptr ep){
+                try {std::rethrow_exception(ep);}
+                catch (const std::runtime_error& ex) {
+                    printf("OnError: %s\n", ex.what());
+                }
+            },
             [](){printf("OnCompleted\n");});
     printf("//! [average error sample]\n");
 }
