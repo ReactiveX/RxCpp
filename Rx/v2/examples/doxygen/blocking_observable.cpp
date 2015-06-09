@@ -25,8 +25,7 @@ SCENARIO("blocking first empty sample"){
 
 SCENARIO("blocking first error sample"){
     printf("//! [blocking first error sample]\n");
-    auto values = rxcpp::observable<>::range(1, 3).
-        concat(rxcpp::observable<>::error<int>(std::runtime_error("Error from source"))).
+    auto values = rxcpp::observable<>::error<int>(std::runtime_error("Error from source")).
         as_blocking();
     try {
         auto first = values.first();

@@ -305,8 +305,12 @@ public:
     */
     T first() {
         rxu::maybe<T> result;
+        rxu::maybe<std::exception_ptr> error;
         composite_subscription cs;
-        subscribe_with_rethrow(cs, [&](T v){result.reset(v); cs.unsubscribe();});
+        subscribe_with_rethrow(
+            cs,
+            [&](T v){result.reset(v); cs.unsubscribe();},
+            [&](std::exception_ptr){});
         if (result.empty())
             throw rxcpp::empty_error("first() requires a stream with at least one value");
         return result.get();
@@ -332,9 +336,7 @@ public:
         rxu::maybe<std::exception_ptr> error;
         subscribe_with_rethrow(
             [&](T v){result.reset(v);},
-            [&](std::exception_ptr ep){error.reset(ep);});
-        if (!error.empty())
-            std::rethrow_exception(error.get());
+            [&](std::exception_ptr){});
         if (result.empty())
             throw rxcpp::empty_error("last() requires a stream with at least one value");
         return result.get();
