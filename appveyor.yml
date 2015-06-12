@@ -26,6 +26,16 @@ build:
 test_script:
   - build\test\Debug\rxcppv2_test.exe
 
+artifacts:
+  - path: Rx\v2\src\
+    name: rxcpp source
+    type: zip
+  - path: Rx\v2\examples\
+    name: rxcpp examples
+    type: zip
+
 notifications:
-  slack:
-    secure: qaGjbI98VXZa7Zd2s3RmMzfA+ymrfWUDuzevdtOcHssEGBXbcoOJzLHNOmG+Y1nX
+  - provider: Slack
+    auth_token: 
+      secure: qaGjbI98VXZa7Zd2s3RmMzfA+ymrfWUDuzevdtOcHssEGBXbcoOJzLHNOmG+Y1nX
+    channel: rxcpp

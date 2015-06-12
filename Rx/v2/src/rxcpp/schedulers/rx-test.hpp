@@ -284,7 +284,7 @@ class hot_observable
     typedef subscriber<T> observer_type;
     mutable std::vector<recorded_type> mv;
     mutable std::vector<rxn::subscription> sv;
-    mutable std::vector<observer_type> observers;
+    mutable std::list<observer_type> observers;
     mutable worker controller;
 
 public:
@@ -312,13 +312,15 @@ public:
     virtual ~hot_observable() {}
 
     virtual void on_subscribe(observer_type o) const {
-        observers.push_back(o);
+        auto olocation = observers.insert(observers.end(), o);
+
         sv.push_back(rxn::subscription(sc->clock()));
         auto index = sv.size() - 1;
 
         auto sharedThis = std::static_pointer_cast<const this_type>(this->shared_from_this());
-        o.add([sharedThis, index]() {
+        o.add([sharedThis, index, olocation]() {
             sharedThis->sv[index] = rxn::subscription(sharedThis->sv[index].subscribe(), sharedThis->sc->clock());
+            sharedThis->observers.erase(olocation);
         });
     }
 
@@ -401,6 +403,9 @@ public:
     {
         std::shared_ptr<detail::test_type::test_type_worker> tester;
     public:
+        
+        ~test_worker() {
+        }
 
         explicit test_worker(composite_subscription cs, std::shared_ptr<detail::test_type::test_type_worker> t)
             : worker(cs, std::static_pointer_cast<worker_interface>(t))
