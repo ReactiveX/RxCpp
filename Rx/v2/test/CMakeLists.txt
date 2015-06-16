@@ -44,6 +44,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/publish.cpp
     ${TEST_DIR}/operators/reduce.cpp
     ${TEST_DIR}/operators/repeat.cpp
+    ${TEST_DIR}/operators/replay.cpp
     ${TEST_DIR}/operators/retry.cpp
     ${TEST_DIR}/operators/scan.cpp
     ${TEST_DIR}/operators/skip.cpp
