@@ -48,6 +48,7 @@ set(RX_SOURCES
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-reduce.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-ref_count.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-repeat.hpp
+   ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-replay.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-retry.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-scan.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-skip.hpp
@@ -97,6 +98,7 @@ set(RX_SOURCES
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/sources/rx-scope.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/sources/rx-timer.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/subjects/rx-behavior.hpp
+   ${RXCPP_DIR}/Rx/v2/src/rxcpp/subjects/rx-replaysubject.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/subjects/rx-subject.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/subjects/rx-synchronize.hpp
 )

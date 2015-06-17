@@ -1983,6 +1983,178 @@ public:
         return      multicast(rxsub::behavior<T>(first, cs));
     }
 
+    /*! Turn a cold observable hot, send all earlier emitted values to any new subscriber, and allow connections to the source to be independent of subscriptions.
+
+        \param  cs  the subscription to control lifetime
+
+        \return  rxcpp::connectable_observable that shares a single subscription to the underlying observable that will replay all of its items and notifications to any future observer.
+
+        \sample
+        \snippet replay.cpp replay sample
+        \snippet output.txt replay sample
+    */
+    auto replay(composite_subscription cs = composite_subscription()) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(EXPLICIT_THIS multicast(rxsub::replay<T, identity_one_worker>(identity_current_thread(), cs)))
+        /// \endcond
+    {
+        return      multicast(rxsub::replay<T, identity_one_worker>(identity_current_thread(), cs));
+    }
+
+    /*! Turn a cold observable hot, send all earlier emitted values to any new subscriber, and allow connections to the source to be independent of subscriptions.
+
+        \tparam  Coordination  the type of the scheduler
+
+        \param  cn  a scheduler all values are queued and delivered on
+        \param  cs  the subscription to control lifetime
+
+        \return  rxcpp::connectable_observable that shares a single subscription to the underlying observable that will replay all of its items and notifications to any future observer.
+
+        \sample
+        \snippet replay.cpp threaded replay sample
+        \snippet output.txt threaded replay sample
+    */
+    template<class Coordination,
+        class Requires = typename std::enable_if<is_coordination<Coordination>::value, rxu::types_checked>::type>
+    auto replay(Coordination cn, composite_subscription cs = composite_subscription()) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(EXPLICIT_THIS multicast(rxsub::replay<T, Coordination>(std::move(cn), cs)))
+        /// \endcond
+    {
+        return      multicast(rxsub::replay<T, Coordination>(std::move(cn), cs));
+    }
+
+    /*! Turn a cold observable hot, send at most count of earlier emitted values to any new subscriber, and allow connections to the source to be independent of subscriptions.
+
+        \param  count  the maximum number of the most recent items sent to new observers
+        \param  cs     the subscription to control lifetime
+
+        \return  rxcpp::connectable_observable that shares a single subscription to the underlying observable that will replay at most count items to any future observer.
+
+        \sample
+        \snippet replay.cpp replay count sample
+        \snippet output.txt replay count sample
+    */
+    auto replay(size_t count, composite_subscription cs = composite_subscription()) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(EXPLICIT_THIS multicast(rxsub::replay<T, identity_one_worker>(count, identity_current_thread(), cs)))
+        /// \endcond
+    {
+        return      multicast(rxsub::replay<T, identity_one_worker>(count, identity_current_thread(), cs));
+    }
+
+    /*! Turn a cold observable hot, send at most count of earlier emitted values to any new subscriber, and allow connections to the source to be independent of subscriptions.
+
+        \tparam  Coordination  the type of the scheduler
+
+        \param  count  the maximum number of the most recent items sent to new observers
+        \param  cn     a scheduler all values are queued and delivered on
+        \param  cs     the subscription to control lifetime
+
+        \return  rxcpp::connectable_observable that shares a single subscription to the underlying observable that will replay at most count items to any future observer.
+
+        \sample
+        \snippet replay.cpp threaded replay count sample
+        \snippet output.txt threaded replay count sample
+    */
+    template<class Coordination,
+        class Requires = typename std::enable_if<is_coordination<Coordination>::value, rxu::types_checked>::type>
+    auto replay(size_t count, Coordination cn, composite_subscription cs = composite_subscription()) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(EXPLICIT_THIS multicast(rxsub::replay<T, Coordination>(count, std::move(cn), cs)))
+        /// \endcond
+    {
+        return      multicast(rxsub::replay<T, Coordination>(count, std::move(cn), cs));
+    }
+
+    /*! Turn a cold observable hot, send values emitted within a specified time window to any new subscriber, and allow connections to the source to be independent of subscriptions.
+
+        \param  period  the duration of the window in which the replayed items must be emitted
+        \param  cs      the subscription to control lifetime
+
+        \return  rxcpp::connectable_observable that shares a single subscription to the underlying observable that will replay items emitted within a specified time window to any future observer.
+
+        \sample
+        \snippet replay.cpp replay period sample
+        \snippet output.txt replay period sample
+    */
+    auto replay(rxsc::scheduler::clock_type::duration period, composite_subscription cs = composite_subscription()) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(EXPLICIT_THIS multicast(rxsub::replay<T, identity_one_worker>(period, identity_current_thread(), cs)))
+        /// \endcond
+    {
+        return      multicast(rxsub::replay<T, identity_one_worker>(period, identity_current_thread(), cs));
+    }
+
+    /*! Turn a cold observable hot, send values emitted within a specified time window to any new subscriber, and allow connections to the source to be independent of subscriptions.
+
+        \tparam  Coordination  the type of the scheduler
+
+        \param  period  the duration of the window in which the replayed items must be emitted
+        \param  cn      a scheduler all values are queued and delivered on
+        \param  cs      the subscription to control lifetime
+
+        \return  rxcpp::connectable_observable that shares a single subscription to the underlying observable that will replay items emitted within a specified time window to any future observer.
+
+        \sample
+        \snippet replay.cpp threaded replay period sample
+        \snippet output.txt threaded replay period sample
+    */
+    template<class Coordination,
+        class Requires = typename std::enable_if<is_coordination<Coordination>::value, rxu::types_checked>::type>
+    auto replay(rxsc::scheduler::clock_type::duration period, Coordination cn, composite_subscription cs = composite_subscription()) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(EXPLICIT_THIS multicast(rxsub::replay<T, Coordination>(period, std::move(cn), cs)))
+        /// \endcond
+    {
+        return      multicast(rxsub::replay<T, Coordination>(period, std::move(cn), cs));
+    }
+
+    /*! Turn a cold observable hot, send at most count of values emitted within a specified time window to any new subscriber, and allow connections to the source to be independent of subscriptions.
+
+        \param  count   the maximum number of the most recent items sent to new observers
+        \param  period  the duration of the window in which the replayed items must be emitted
+        \param  cs      the subscription to control lifetime
+
+        \return  rxcpp::connectable_observable that shares a single subscription to the underlying observable that will replay at most count of items emitted within a specified time window to any future observer.
+
+        \sample
+        \snippet replay.cpp replay count+period sample
+        \snippet output.txt replay count+period sample
+    */
+    auto replay(size_t count, rxsc::scheduler::clock_type::duration period, composite_subscription cs = composite_subscription()) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(EXPLICIT_THIS multicast(rxsub::replay<T, identity_one_worker>(count, period, identity_current_thread(), cs)))
+        /// \endcond
+    {
+        return      multicast(rxsub::replay<T, identity_one_worker>(count, period, identity_current_thread(), cs));
+    }
+
+    /*! Turn a cold observable hot, send at most count of values emitted within a specified time window to any new subscriber, and allow connections to the source to be independent of subscriptions.
+
+        \tparam  Coordination  the type of the scheduler
+
+        \param  count   the maximum number of the most recent items sent to new observers
+        \param  period  the duration of the window in which the replayed items must be emitted
+        \param  cn      a scheduler all values are queued and delivered on
+        \param  cs      the subscription to control lifetime
+
+        \return  rxcpp::connectable_observable that shares a single subscription to the underlying observable that will replay at most count of items emitted within a specified time window to any future observer.
+
+        \sample
+        \snippet replay.cpp threaded replay count+period sample
+        \snippet output.txt threaded replay count+period sample
+    */
+    template<class Coordination,
+        class Requires = typename std::enable_if<is_coordination<Coordination>::value, rxu::types_checked>::type>
+    auto replay(size_t count, rxsc::scheduler::clock_type::duration period, Coordination cn, composite_subscription cs = composite_subscription()) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(EXPLICIT_THIS multicast(rxsub::replay<T, Coordination>(count, period, std::move(cn), cs)))
+        /// \endcond
+    {
+        return      multicast(rxsub::replay<T, Coordination>(count, period, std::move(cn), cs));
+    }
+
     /*! Subscription and unsubscription are queued and delivered using the scheduler from the supplied coordination.
 
         \tparam Coordination  the type of the scheduler
