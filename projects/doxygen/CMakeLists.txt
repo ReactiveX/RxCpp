@@ -72,6 +72,7 @@ if(DOXYGEN_FOUND)
         ${DOXY_EXAMPLES_SRC_DIR}/range.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/reduce.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/repeat.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/replay.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/retry.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/scan.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/scope.cpp
