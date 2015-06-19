@@ -22,6 +22,9 @@ typedef std::shared_ptr<action_type> action_ptr;
 typedef std::shared_ptr<worker_interface> worker_interface_ptr;
 typedef std::shared_ptr<const worker_interface> const_worker_interface_ptr;
 
+typedef std::weak_ptr<worker_interface> worker_interface_weak_ptr;
+typedef std::weak_ptr<const worker_interface> const_worker_interface_weak_ptr;
+
 typedef std::shared_ptr<scheduler_interface> scheduler_interface_ptr;
 typedef std::shared_ptr<const scheduler_interface> const_scheduler_interface_ptr;
 
@@ -189,6 +192,8 @@ struct is_action_function
 
 }
 
+class weak_worker;
+
 /// a worker ensures that all scheduled actions on the same instance are executed in-order with no overlap
 /// a worker ensures that all scheduled actions are unsubscribed when it is unsubscribed
 /// some inner implementations will impose additional constraints on the execution of items.
@@ -198,6 +203,7 @@ class worker : public worker_base
     detail::worker_interface_ptr inner;
     composite_subscription lifetime;
     friend bool operator==(const worker&, const worker&);
+    friend class weak_worker;
 public:
     typedef scheduler_base::clock_type clock_type;
     typedef composite_subscription::weak_subscription weak_subscription;
@@ -323,6 +329,26 @@ inline bool operator==(const worker& lhs, const worker& rhs) {
 inline bool operator!=(const worker& lhs, const worker& rhs) {
     return !(lhs == rhs);
 }
+    
+class weak_worker
+{
+    detail::worker_interface_weak_ptr inner;
+    composite_subscription lifetime;
+
+public:
+    weak_worker()
+    {
+    }
+    explicit weak_worker(worker& owner)
+        : inner(owner.inner)
+        , lifetime(owner.lifetime)
+    {
+    }
+    
+    worker lock() const {
+        return worker(lifetime, inner.lock());
+    }
+};
 
 class scheduler_interface
     : public std::enable_shared_from_this<scheduler_interface>
@@ -399,7 +425,7 @@ class schedulable : public schedulable_base
     typedef schedulable this_type;
 
     composite_subscription lifetime;
-    worker controller;
+    weak_worker controller;
     action activity;
     bool scoped;
     composite_subscription::weak_subscription action_scope;
@@ -471,7 +497,7 @@ public:
     ~schedulable()
     {
         if (scoped) {
-            controller.remove(action_scope);
+            controller.lock().remove(action_scope);
         }
     }
     schedulable()
@@ -482,7 +508,7 @@ public:
     /// action and worker share lifetime
     schedulable(worker q, action a)
         : lifetime(q.get_subscription())
-        , controller(std::move(q))
+        , controller(q)
         , activity(std::move(a))
         , scoped(false)
     {
@@ -490,19 +516,19 @@ public:
     /// action and worker have independent lifetimes
     schedulable(composite_subscription cs, worker q, action a)
         : lifetime(std::move(cs))
-        , controller(std::move(q))
+        , controller(q)
         , activity(std::move(a))
         , scoped(true)
-        , action_scope(controller.add(lifetime))
+        , action_scope(controller.lock().add(lifetime))
     {
     }
     /// inherit lifetimes
     schedulable(schedulable scbl, worker q, action a)
         : lifetime(scbl.get_subscription())
-        , controller(std::move(q))
+        , controller(q)
         , activity(std::move(a))
         , scoped(scbl.scoped)
-        , action_scope(scbl.scoped ? controller.add(lifetime) : weak_subscription())
+        , action_scope(scbl.scoped ? controller.lock().add(lifetime) : weak_subscription())
     {
     }
 
@@ -512,11 +538,11 @@ public:
     inline composite_subscription& get_subscription() {
         return lifetime;
     }
-    inline const worker& get_worker() const {
-        return controller;
+    inline const worker get_worker() const {
+        return controller.lock();
     }
-    inline worker& get_worker() {
-        return controller;
+    inline worker get_worker() {
+        return controller.lock();
     }
     inline const action& get_action() const {
         return activity;
@@ -577,24 +603,24 @@ public:
     // scheduler
     //
     inline clock_type::time_point now() const {
-        return controller.now();
+        return controller.lock().now();
     }
     /// put this on the queue of the stored scheduler to run asap
     inline void schedule() const {
         if (is_subscribed()) {
-            controller.schedule(*this);
+            get_worker().schedule(*this);
         }
     }
     /// put this on the queue of the stored scheduler to run at the specified time
     inline void schedule(clock_type::time_point when) const {
         if (is_subscribed()) {
-            controller.schedule(when, *this);
+            get_worker().schedule(when, *this);
         }
     }
     /// put this on the queue of the stored scheduler to run after a delay from now
     inline void schedule(clock_type::duration when) const {
         if (is_subscribed()) {
-            controller.schedule(when, *this);
+            get_worker().schedule(when, *this);
         }
     }
 
@@ -786,11 +812,12 @@ auto worker::schedule_periodically(clock_type::time_point initial, clock_type::d
 }
 template<class... ArgN>
 void worker::schedule_periodically_rebind(clock_type::time_point initial, clock_type::duration period, const schedulable& scbl, ArgN&&... an) const {
+    auto keepAlive = *this;
     auto target = std::make_shared<clock_type::time_point>(initial);
-    auto activity = make_schedulable(scbl, *this, std::forward<ArgN>(an)...);
+    auto activity = make_schedulable(scbl, keepAlive, std::forward<ArgN>(an)...);
     auto periodic = make_schedulable(
         activity,
-        [target, period, activity](schedulable self) {
+        [keepAlive, target, period, activity](schedulable self) {
             // any recursion requests will be pushed to the scheduler queue
             recursion r(false);
             // call action
@@ -852,28 +879,28 @@ private:
         compare_elem
     > queue_type;
 
-    queue_type queue;
+    queue_type q;
 
     int64_t ordinal;
 public:
     const_reference top() const {
-        return queue.top().first;
+        return q.top().first;
     }
 
     void pop() {
-        queue.pop();
+        q.pop();
     }
 
     bool empty() const {
-        return queue.empty();
+        return q.empty();
     }
 
     void push(const item_type& value) {
-        queue.push(elem_type(value, ordinal++));
+        q.push(elem_type(value, ordinal++));
     }
 
     void push(item_type&& value) {
-        queue.push(elem_type(std::move(value), ordinal++));
+        q.push(elem_type(std::move(value), ordinal++));
     }
 };
 

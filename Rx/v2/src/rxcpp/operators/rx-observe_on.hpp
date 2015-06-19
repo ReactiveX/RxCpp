@@ -39,7 +39,7 @@ struct observe_on
 
         typedef rxn::notification<T> notification_type;
         typedef typename notification_type::type base_notification_type;
-        typedef std::queue<base_notification_type> queue_type;
+        typedef std::deque<base_notification_type> queue_type;
 
         struct mode
         {
@@ -54,7 +54,7 @@ struct observe_on
         struct observe_on_state : std::enable_shared_from_this<observe_on_state>
         {
             mutable std::mutex lock;
-            mutable queue_type queue;
+            mutable queue_type fill_queue;
             mutable queue_type drain_queue;
             composite_subscription lifetime;
             mutable typename mode::type current;
@@ -84,25 +84,25 @@ struct observe_on
                             if (drain_queue.empty() || !destination.is_subscribed()) {
                                 std::unique_lock<std::mutex> guard(lock);
                                 if (!destination.is_subscribed() ||
-                                    (!lifetime.is_subscribed() && queue.empty() && drain_queue.empty())) {
+                                    (!lifetime.is_subscribed() && fill_queue.empty() && drain_queue.empty())) {
                                     current = mode::Disposed;
                                     queue_type expired;
-                                    swap(expired, queue);
+                                    swap(expired, fill_queue);
                                     guard.unlock();
                                     lifetime.unsubscribe();
                                     destination.unsubscribe();
                                     return;
                                 }
                                 if (drain_queue.empty()) {
-                                    if (queue.empty()) {
+                                    if (fill_queue.empty()) {
                                         current = mode::Empty;
                                         return;
                                     }
-                                    swap(queue, drain_queue);
+                                    swap(fill_queue, drain_queue);
                                 }
                             }
                             auto notification = std::move(drain_queue.front());
-                            drain_queue.pop();
+                            drain_queue.pop_front();
                             notification->accept(destination);
                             self();
                         } catch(...) {
@@ -110,7 +110,7 @@ struct observe_on
                             std::unique_lock<std::mutex> guard(lock);
                             current = mode::Errored;
                             queue_type expired;
-                            swap(expired, queue);
+                            swap(expired, fill_queue);
                         }
                     };
 
@@ -121,7 +121,7 @@ struct observe_on
                         current = mode::Errored;
                         using std::swap;
                         queue_type expired;
-                        swap(expired, queue);
+                        swap(expired, fill_queue);
                         return;
                     }
 
@@ -143,17 +143,17 @@ struct observe_on
 
         void on_next(source_value_type v) const {
             std::unique_lock<std::mutex> guard(state->lock);
-            state->queue.push(notification_type::on_next(std::move(v)));
+            state->fill_queue.push_back(notification_type::on_next(std::move(v)));
             state->ensure_processing(guard);
         }
         void on_error(std::exception_ptr e) const {
             std::unique_lock<std::mutex> guard(state->lock);
-            state->queue.push(notification_type::on_error(e));
+            state->fill_queue.push_back(notification_type::on_error(e));
             state->ensure_processing(guard);
         }
         void on_completed() const {
             std::unique_lock<std::mutex> guard(state->lock);
-            state->queue.push(notification_type::on_completed());
+            state->fill_queue.push_back(notification_type::on_completed());
             state->ensure_processing(guard);
         }
 
