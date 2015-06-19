@@ -50,7 +50,7 @@ struct group_by_traits
 
     typedef std::map<key_type, typename subject_type::subscriber_type, predicate_type> key_subscriber_map_type;
 
-    typedef grouped_observable<key_type, source_value_type> grouped_observable_type;
+    typedef grouped_observable<key_type, marble_type> grouped_observable_type;
 };
 
 template<class T, class Observable, class KeySelector, class MarbleSelector, class BinaryPredicate>

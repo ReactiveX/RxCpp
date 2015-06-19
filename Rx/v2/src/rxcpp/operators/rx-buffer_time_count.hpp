@@ -58,7 +58,7 @@ struct buffer_with_time_or_count
                 , cs(std::move(cs))
                 , dest(std::move(d))
                 , coordinator(std::move(c))
-                , worker(std::move(coordinator.get_worker()))
+                , worker(coordinator.get_worker())
                 , chunk_id(0)
             {
             }

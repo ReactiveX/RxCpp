@@ -34,6 +34,7 @@ namespace rxo=operators;
 
 }
 
+#include "operators/rx-amb.hpp"
 #include "operators/rx-buffer_count.hpp"
 #include "operators/rx-buffer_time.hpp"
 #include "operators/rx-buffer_time_count.hpp"
@@ -56,6 +57,7 @@ namespace rxo=operators;
 #include "operators/rx-reduce.hpp"
 #include "operators/rx-ref_count.hpp"
 #include "operators/rx-repeat.hpp"
+#include "operators/rx-replay.hpp"
 #include "operators/rx-retry.hpp"
 #include "operators/rx-scan.hpp"
 #include "operators/rx-skip.hpp"

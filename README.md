@@ -150,9 +150,11 @@ int main(int argc, char** argv)
 
 #Documentation
 
-RxCpp uses Doxygen to generate project [documentation](http://reactive-extensions.github.io/RxCpp). 
+RxCpp uses Doxygen to generate project [documentation](http://reactive-extensions.github.io/RxCpp).
 
 When Doxygen+Graphviz is installed, CMake creates a special build task named ```doc```. It creates actual documentation and puts it to ```projects/doxygen/html/``` folder, which can be published to the `gh-pages` branch.
+
+[Developers Material](DeveloperManual.md)
 
 #Contributing Code
 

@@ -9,6 +9,14 @@
 
 namespace rxcpp {
 
+class empty_error: public std::runtime_error
+{
+    public:
+        explicit empty_error(const std::string& msg):
+            std::runtime_error(msg)
+        {}
+};
+
 namespace operators {
 
 namespace detail {
@@ -141,8 +149,13 @@ struct reduce : public operator_base<rxu::value_type_t<reduce_traits<T, SourceOp
             },
         // on_completed
             [state]() {
-                auto result = state->result_selector(state->current);
-                state->out.on_next(result);
+                auto result = on_exception(
+                    [&](){return state->result_selector(state->current);},
+                    state->out);
+                if (result.empty()) {
+                    return;
+                }
+                state->out.on_next(result.get());
                 state->out.on_completed();
             }
         );
@@ -230,7 +243,27 @@ struct average {
             }
             return avg;
         }
-        return a.value;
+        throw rxcpp::empty_error("average() requires a stream with at least one value");
+    }
+};
+
+template<class T>
+struct sum {
+    typedef rxu::maybe<T> seed_type;
+    seed_type seed() {
+        return seed_type();
+    }
+    seed_type operator()(seed_type a, T v) {
+        if (a.empty())
+            a.reset(v);
+        else
+            *a = *a + v;
+        return a;
+    }
+    T operator()(seed_type a) {
+        if (a.empty())
+            throw rxcpp::empty_error("sum() requires a stream with at least one value");
+        return *a;
     }
 };
 
@@ -241,7 +274,6 @@ auto reduce(Seed s, Accumulator a, ResultSelector rs)
     ->      detail::reduce_factory<Accumulator, ResultSelector, Seed> {
     return  detail::reduce_factory<Accumulator, ResultSelector, Seed>(std::move(a), std::move(rs), std::move(s));
 }
-
 
 }
 
