@@ -249,7 +249,8 @@ auto make_subscriber(
 template<class T, class Observer>
 auto make_subscriber(const Observer& o)
     -> typename std::enable_if<
-        is_observer<Observer>::value,
+    is_observer<Observer>::value &&
+    !is_subscriber<Observer>::value,
             subscriber<T,   Observer>>::type {
     return  subscriber<T,   Observer>(trace_id::make_next_id_subscriber(), composite_subscription(), o);
 }

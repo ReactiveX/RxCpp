@@ -82,10 +82,8 @@ public:
                     }
                     next.what(r.get_recurse());
                 }
-                else {
-                    isenabled = false;
-                }
             }
+            isenabled = false;
         }
     }
 
@@ -109,18 +107,21 @@ public:
             rxsc::recursion r;
             while (!empty() && isenabled) {
                 auto next = top();
-                pop();
-                if (next.what.is_subscribed() && next.when <= time) {
+                if (next.when <= time) {
+                    pop();
+                    if (!next.what.is_subscribed()) {
+                        continue;
+                    }
                     if (next.when > clock_now) {
                         clock_now = next.when;
                     }
                     next.what(r.get_recurse());
                 }
                 else {
-                    isenabled = false;
+                    break;
                 }
             }
-
+            isenabled = false;
             clock_now = time;
         }
         else {
@@ -173,7 +174,7 @@ struct virtual_time : public detail::virtual_time_base<Absolute, Relative>
     typedef detail::schedulable_queue<
         typename item_type::time_point_type> queue_item_time;
 
-    mutable queue_item_time queue;
+    mutable queue_item_time q;
 
 public:
     virtual ~virtual_time()
@@ -190,13 +191,13 @@ protected:
     }
 
     virtual item_type top() const {
-        return queue.top();
+        return q.top();
     }
     virtual void pop() const {
-        queue.pop();
+        q.pop();
     }
     virtual bool empty() const {
-        return queue.empty();
+        return q.empty();
     }
 
     using base::schedule_absolute;
@@ -216,7 +217,7 @@ protected:
                     a(r.get_recurse());
                 }
             });
-        queue.push(item_type(when, run));
+        q.push(item_type(when, run));
     }
 };
 
