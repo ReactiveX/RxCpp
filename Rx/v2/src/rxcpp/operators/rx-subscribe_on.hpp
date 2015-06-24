@@ -52,14 +52,12 @@ struct subscribe_on : public operator_base<T>
             : public std::enable_shared_from_this<subscribe_on_state_type>
             , public subscribe_on_values
         {
-            subscribe_on_state_type(const subscribe_on_values& i, coordinator_type coor, const output_type& oarg)
+            subscribe_on_state_type(const subscribe_on_values& i, const output_type& oarg)
                 : subscribe_on_values(i)
-                , coordinator(std::move(coor))
                 , out(oarg)
             {
             }
             composite_subscription source_lifetime;
-            coordinator_type coordinator;
             output_type out;
         private:
             subscribe_on_state_type& operator=(subscribe_on_state_type o) RXCPP_DELETE;
@@ -72,25 +70,31 @@ struct subscribe_on : public operator_base<T>
         auto controller = coordinator.get_worker();
 
         // take a copy of the values for each subscription
-        auto state = std::make_shared<subscribe_on_state_type>(initial, std::move(coordinator), std::move(s));
+        auto state = std::make_shared<subscribe_on_state_type>(initial, std::move(s));
+
+        auto sl = state->source_lifetime;
+        auto ol = state->out.get_subscription();
 
         auto disposer = [=](const rxsc::schedulable&){
-            state->source_lifetime.unsubscribe();
-            state->out.unsubscribe();
+            sl.unsubscribe();
+            ol.unsubscribe();
             coordinator_lifetime.unsubscribe();
         };
         auto selectedDisposer = on_exception(
-            [&](){return state->coordinator.act(disposer);},
+            [&](){return coordinator.act(disposer);},
             state->out);
         if (selectedDisposer.empty()) {
             return;
         }
-
-        state->out.add([=](){
-            controller.schedule(selectedDisposer.get());
-        });
+        
         state->source_lifetime.add([=](){
             controller.schedule(selectedDisposer.get());
+        });
+
+        state->out.add([=](){
+            sl.unsubscribe();
+            ol.unsubscribe();
+            coordinator_lifetime.unsubscribe();
         });
 
         auto producer = [=](const rxsc::schedulable&){
@@ -98,7 +102,7 @@ struct subscribe_on : public operator_base<T>
         };
 
         auto selectedProducer = on_exception(
-            [&](){return state->coordinator.act(producer);},
+            [&](){return coordinator.act(producer);},
             state->out);
         if (selectedProducer.empty()) {
             return;

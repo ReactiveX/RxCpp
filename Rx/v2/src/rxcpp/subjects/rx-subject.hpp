@@ -26,6 +26,7 @@ class multicast_observer
         enum type {
             Invalid = 0,
             Casting,
+            Disposed,
             Completed,
             Errored
         };
@@ -102,6 +103,15 @@ public:
     explicit multicast_observer(composite_subscription cs)
         : b(std::make_shared<binder_type>(cs))
     {
+        auto keepAlive = b;
+        b->state->lifetime.add([keepAlive](){
+            if (keepAlive->state->current == mode::Casting){
+                keepAlive->state->current = mode::Disposed;
+                keepAlive->current_completer.reset();
+                keepAlive->completer.reset();
+                ++keepAlive->state->generation;
+            }
+        });
     }
     trace_id get_id() const {
         return b->id;
@@ -141,6 +151,13 @@ public:
                 auto e = b->state->error;
                 guard.unlock();
                 o.on_error(e);
+                return;
+            }
+            break;
+        case mode::Disposed:
+            {
+                guard.unlock();
+                o.unsubscribe();
                 return;
             }
             break;
