@@ -53,12 +53,16 @@ struct repeat : public operator_base<T>
             }
             composite_subscription source_lifetime;
             output_type out;
+            composite_subscription::weak_subscription lifetime_token;
 
             void do_subscribe() {
                 auto state = this->shared_from_this();
+                
+                state->out.remove(state->lifetime_token);
+                state->source_lifetime.unsubscribe();
 
                 state->source_lifetime = composite_subscription();
-                state->out.add(state->source_lifetime);
+                state->lifetime_token = state->out.add(state->source_lifetime);
 
                 state->source.subscribe(
                     state->out,
