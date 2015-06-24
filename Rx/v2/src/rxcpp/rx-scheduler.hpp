@@ -329,7 +329,7 @@ inline bool operator==(const worker& lhs, const worker& rhs) {
 inline bool operator!=(const worker& lhs, const worker& rhs) {
     return !(lhs == rhs);
 }
-    
+
 class weak_worker
 {
     detail::worker_interface_weak_ptr inner;
@@ -344,7 +344,7 @@ public:
         , lifetime(owner.lifetime)
     {
     }
-    
+
     worker lock() const {
         return worker(lifetime, inner.lock());
     }
@@ -419,6 +419,9 @@ inline scheduler make_scheduler(ArgN&&... an) {
     return scheduler(std::static_pointer_cast<scheduler_interface>(std::make_shared<Scheduler>(std::forward<ArgN>(an)...)));
 }
 
+inline scheduler make_scheduler(std::shared_ptr<scheduler_interface> si) {
+    return scheduler(si);
+}
 
 class schedulable : public schedulable_base
 {
@@ -912,6 +915,7 @@ namespace rxsc=schedulers;
 }
 
 #include "schedulers/rx-currentthread.hpp"
+#include "schedulers/rx-runloop.hpp"
 #include "schedulers/rx-newthread.hpp"
 #include "schedulers/rx-eventloop.hpp"
 #include "schedulers/rx-immediate.hpp"
