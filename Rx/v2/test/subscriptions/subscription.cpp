@@ -21,7 +21,7 @@ SCENARIO("observe subscription", "[hide]"){
     }
 }
 
-static const int static_subscriptions = 100000;
+static const int static_subscriptions = 10000;
 
 SCENARIO("for loop subscribes to map", "[hide][for][just][subscribe][long][perf]"){
     const int& subscriptions = static_subscriptions;

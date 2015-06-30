@@ -13,7 +13,7 @@ namespace rxsub=rxcpp::subjects;
 #include <future>
 
 
-const int static_onnextcalls = 100000000;
+const int static_onnextcalls = 10000000;
 static int aliased = 0;
 
 SCENARIO("for loop locks mutex", "[hide][for][mutex][long][perf]"){
@@ -33,7 +33,7 @@ SCENARIO("for loop locks mutex", "[hide][for][mutex][long][perf]"){
             }
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish-start);
-            std::cout << "loop mutex          : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+            std::cout << "loop mutex          : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed " << c / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
 
         }
     }
@@ -76,7 +76,7 @@ SCENARIO("for loop calls void on_next(int)", "[hide][for][asyncobserver][baselin
             }
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish-start);
-            std::cout << "loop void           : " << n << " subscribed, " << *c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+            std::cout << "loop void           : " << n << " subscribed, " << *c << " on_next calls, " << msElapsed.count() << "ms elapsed " << *c / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
 
         }
     }
@@ -170,7 +170,7 @@ SCENARIO("for loop calls ready on_next(int)", "[hide][for][asyncobserver][ready]
             chunk();
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish-start);
-            std::cout << "loop ready          : " << n << " subscribed, " << *c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+            std::cout << "loop ready          : " << n << " subscribed, " << *c << " on_next calls, " << msElapsed.count() << "ms elapsed " << *c / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
 
         }
     }
@@ -218,7 +218,7 @@ SCENARIO("for loop calls std::future<unit> on_next(int)", "[hide][for][asyncobse
             }
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish-start);
-            std::cout << "loop future<unit>   : " << n << " subscribed, " << *c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+            std::cout << "loop future<unit>   : " << n << " subscribed, " << *c << " on_next calls, " << msElapsed.count() << "ms elapsed " << *c / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
 
         }
     }
@@ -245,7 +245,7 @@ SCENARIO("for loop calls observer", "[hide][for][observer][perf]"){
             o.on_completed();
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish-start);
-            std::cout << "loop -> observer    : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+            std::cout << "loop -> observer    : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed " << c / (msElapsed.count() / 1000.0) << " ops/sec"<< std::endl;
         }
     }
 }
@@ -271,7 +271,7 @@ SCENARIO("for loop calls subscriber", "[hide][for][subscriber][perf]"){
             o.on_completed();
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish-start);
-            std::cout << "loop -> subscriber  : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+            std::cout << "loop -> subscriber  : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed " << c / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
         }
     }
 }
@@ -297,7 +297,7 @@ SCENARIO("range calls subscriber", "[hide][range][subscriber][perf]"){
 
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish-start);
-            std::cout << "range -> subscriber : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+            std::cout << "range -> subscriber : " << n << " subscribed, " << c << " on_next calls, " << msElapsed.count() << "ms elapsed " << c / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
         }
     }
 }
@@ -362,7 +362,7 @@ SCENARIO("for loop calls subject", "[hide][for][subject][subjects][long][perf]")
                 o.on_completed();
                 auto finish = clock::now();
                 auto msElapsed = duration_cast<milliseconds>(finish-start);
-                std::cout << "loop -> subject     : " << n << " subscribed, " << (*c) << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+                std::cout << "loop -> subject     : " << n << " subscribed, " << (*c) << " on_next calls, " << msElapsed.count() << "ms elapsed " << *c / (msElapsed.count() / 1000.0) << " ops/sec" << std::endl;
             }
         }
     }
@@ -426,7 +426,7 @@ SCENARIO("range calls subject", "[hide][range][subject][subjects][long][perf]"){
                     .subscribe(o);
                 auto finish = clock::now();
                 auto msElapsed = duration_cast<milliseconds>(finish-start);
-                std::cout << "range -> subject    : " << n << " subscribed, " << (*c) << " on_next calls, " << msElapsed.count() << "ms elapsed " << std::endl;
+                std::cout << "range -> subject    : " << n << " subscribed, " << (*c) << " on_next calls, " << msElapsed.count() << "ms elapsed " << *c / (msElapsed.count() / 1000.0) << " ops/sec"<< std::endl;
             }
         }
     }

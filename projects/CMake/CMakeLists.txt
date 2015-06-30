@@ -85,6 +85,7 @@ set(RX_SOURCES
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/schedulers/rx-eventloop.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/schedulers/rx-immediate.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/schedulers/rx-newthread.hpp
+   ${RXCPP_DIR}/Rx/v2/src/rxcpp/schedulers/rx-runloop.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/schedulers/rx-sameworker.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/schedulers/rx-test.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/schedulers/rx-virtualtime.hpp
