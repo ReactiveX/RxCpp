@@ -68,6 +68,22 @@ struct observe_on
                 , destination(std::move(d))
             {
             }
+            
+            void finish(std::unique_lock<std::mutex>& guard, typename mode::type end) const {
+                if (!guard.owns_lock()) {
+                    abort();
+                }
+                if (current == mode::Errored || current == mode::Disposed) {return;}
+                current = end;
+                queue_type fill_expired;
+                swap(fill_expired, fill_queue);
+                queue_type drain_expired;
+                swap(drain_expired, drain_queue);
+                RXCPP_UNWIND_AUTO([&](){guard.lock();});
+                guard.unlock();
+                lifetime.unsubscribe();
+                destination.unsubscribe();
+            }
 
             void ensure_processing(std::unique_lock<std::mutex>& guard) const {
                 if (!guard.owns_lock()) {
@@ -75,42 +91,43 @@ struct observe_on
                 }
                 if (current == mode::Empty) {
                     current = mode::Processing;
+                    
+                    if (!lifetime.is_subscribed() && fill_queue.empty() && drain_queue.empty()) {
+                        finish(guard, mode::Disposed);
+                    }
 
                     auto keepAlive = this->shared_from_this();
-
+                    
                     auto drain = [keepAlive, this](const rxsc::schedulable& self){
                         using std::swap;
                         try {
-                            if (drain_queue.empty() || !destination.is_subscribed()) {
-                                std::unique_lock<std::mutex> guard(lock);
-                                if (!destination.is_subscribed() ||
-                                    (!lifetime.is_subscribed() && fill_queue.empty() && drain_queue.empty())) {
-                                    current = mode::Disposed;
-                                    queue_type expired;
-                                    swap(expired, fill_queue);
-                                    guard.unlock();
-                                    lifetime.unsubscribe();
-                                    destination.unsubscribe();
-                                    return;
-                                }
-                                if (drain_queue.empty()) {
-                                    if (fill_queue.empty()) {
-                                        current = mode::Empty;
+                            for (;;) {
+                                if (drain_queue.empty() || !destination.is_subscribed()) {
+                                    std::unique_lock<std::mutex> guard(lock);
+                                    if (!destination.is_subscribed() ||
+                                        (!lifetime.is_subscribed() && fill_queue.empty() && drain_queue.empty())) {
+                                        finish(guard, mode::Disposed);
                                         return;
                                     }
-                                    swap(fill_queue, drain_queue);
+                                    if (drain_queue.empty()) {
+                                        if (fill_queue.empty()) {
+                                            current = mode::Empty;
+                                            return;
+                                        }
+                                        swap(fill_queue, drain_queue);
+                                    }
                                 }
+                                auto notification = std::move(drain_queue.front());
+                                drain_queue.pop_front();
+                                notification->accept(destination);
+                                std::unique_lock<std::mutex> guard(lock);
+                                self();
+                                if (lifetime.is_subscribed()) break;
                             }
-                            auto notification = std::move(drain_queue.front());
-                            drain_queue.pop_front();
-                            notification->accept(destination);
-                            self();
                         } catch(...) {
                             destination.on_error(std::current_exception());
                             std::unique_lock<std::mutex> guard(lock);
-                            current = mode::Errored;
-                            queue_type expired;
-                            swap(expired, fill_queue);
+                            finish(guard, mode::Errored);
                         }
                     };
 
@@ -118,15 +135,12 @@ struct observe_on
                         [&](){return coordinator.act(drain);},
                         destination);
                     if (selectedDrain.empty()) {
-                        current = mode::Errored;
-                        using std::swap;
-                        queue_type expired;
-                        swap(expired, fill_queue);
+                        finish(guard, mode::Errored);
                         return;
                     }
 
                     auto processor = coordinator.get_worker();
-
+                    
                     RXCPP_UNWIND_AUTO([&](){guard.lock();});
                     guard.unlock();
 
@@ -143,16 +157,19 @@ struct observe_on
 
         void on_next(source_value_type v) const {
             std::unique_lock<std::mutex> guard(state->lock);
+            if (state->current == mode::Errored || state->current == mode::Disposed) { return; }
             state->fill_queue.push_back(notification_type::on_next(std::move(v)));
             state->ensure_processing(guard);
         }
         void on_error(std::exception_ptr e) const {
             std::unique_lock<std::mutex> guard(state->lock);
+            if (state->current == mode::Errored || state->current == mode::Disposed) { return; }
             state->fill_queue.push_back(notification_type::on_error(e));
             state->ensure_processing(guard);
         }
         void on_completed() const {
             std::unique_lock<std::mutex> guard(state->lock);
+            if (state->current == mode::Errored || state->current == mode::Disposed) { return; }
             state->fill_queue.push_back(notification_type::on_completed());
             state->ensure_processing(guard);
         }
@@ -163,7 +180,7 @@ struct observe_on
 
             this_type o(d, std::move(coor), cs);
             auto keepAlive = o.state;
-            cs.add([keepAlive](){
+            cs.add([=](){
                 std::unique_lock<std::mutex> guard(keepAlive->lock);
                 keepAlive->ensure_processing(guard);
             });
@@ -261,6 +278,11 @@ public:
         return coordinator_type(input_type(std::move(w)));
     }
 };
+
+inline observe_on_one_worker observe_on_run_loop(const rxsc::run_loop& rl) {
+    static observe_on_one_worker r(rxsc::make_run_loop(rl));
+    return r;
+}
 
 inline observe_on_one_worker observe_on_event_loop() {
     static observe_on_one_worker r(rxsc::make_event_loop());

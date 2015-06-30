@@ -6,7 +6,6 @@ echo "TRAVIS_OS_NAME=$TRAVIS_OS_NAME"
 
 #if OS is linux or is not set
 if [ "$TRAVIS_OS_NAME" = linux -o -z "$TRAVIS_OS_NAME" ]; then
-    echo "installing for linux..."
 
     wget http://www.cmake.org/files/v3.2/cmake-3.2.3-Linux-x86_64.sh
     chmod a+x cmake-3.2.3-Linux-x86_64.sh
@@ -16,7 +15,6 @@ if [ "$TRAVIS_OS_NAME" = linux -o -z "$TRAVIS_OS_NAME" ]; then
     cmake --version
 
 elif [ "$TRAVIS_OS_NAME" = osx ]; then
-    echo "installing for osx..."
 
     xcode-select --install
     brew update || echo "suppress failures in order to ignore warnings"

@@ -10,7 +10,7 @@ namespace rxsub=rxcpp::subjects;
 
 const int static_onnextcalls = 100000;
 
-SCENARIO("range observed on current_thread", "[hide][range][observe_on_debug][observe_on][long][perf]"){
+SCENARIO("range observed on new_thread", "[hide][range][observe_on_debug][observe_on][long][perf]"){
     const int& onnextcalls = static_onnextcalls;
     GIVEN("a range"){
         WHEN("multicasting a million ints"){
@@ -35,6 +35,7 @@ SCENARIO("range observed on current_thread", "[hide][range][observe_on_debug][ob
                 rxs::range<int>(1)
                     .take(onnextcalls)
                     .observe_on(el)
+                    .as_blocking()
                     .subscribe(
                         cs,
                         [c](int){
@@ -43,12 +44,11 @@ SCENARIO("range observed on current_thread", "[hide][range][observe_on_debug][ob
                         [&](){
                             done = true;
                         });
-                while(!done || !disposed);
                 auto expected = onnextcalls;
                 REQUIRE(*c == expected);
                 auto finish = clock::now();
                 auto msElapsed = duration_cast<milliseconds>(finish-start);
-                std::cout << "range -> observe_on current_thread : " << (*c) << " on_next calls, " << msElapsed.count() << "ms elapsed, int-per-second " << *c / (msElapsed.count() / 1000.0) << std::endl;
+                std::cout << "range -> observe_on new_thread : " << (*c) << " on_next calls, " << msElapsed.count() << "ms elapsed, int-per-second " << *c / (msElapsed.count() / 1000.0) << std::endl;
             }
         }
     }
