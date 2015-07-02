@@ -2275,6 +2275,12 @@ public:
     auto first() const
         -> observable<T>;
 
+	/// first_or_default ->
+	/// for each item from this observable reduce it by sending only the first item or if there were no items, sending a default constructed instance of the type.
+	///
+	auto first_or_default() const
+		->observable<T>;
+
     /*! For each item from this observable reduce it by sending only the last item.
 
         \return  An observable that emits only the very last item emitted by the source observable.
@@ -2289,6 +2295,12 @@ public:
     */
     auto last() const
         -> observable<T>;
+
+	/// last_or_default ->
+	/// for each item from this observable reduce it by sending only the last item or if there were no items, sending a default constructed instance of the type.
+	///
+	auto last_or_default() const
+		->observable<T>;
 
     /*! For each item from this observable reduce it by incrementing a count.
 
@@ -2720,6 +2732,14 @@ auto observable<T, SourceOperator>::last() const
 }
 
 template<class T, class SourceOperator>
+auto observable<T, SourceOperator>::last_or_default() const
+-> observable<T> {
+	rxu::maybe<T> seed;
+	return this->reduce(seed, [](rxu::maybe<T>, T t){return rxu::maybe<T>(std::move(t)); }, [](rxu::maybe<T> result){return result.empty() ? T() : result.get(); });
+}
+
+
+template<class T, class SourceOperator>
 auto observable<T, SourceOperator>::first() const
     -> observable<T> {
     rxu::maybe<T> seed;
@@ -2728,6 +2748,13 @@ auto observable<T, SourceOperator>::first() const
         [](rxu::maybe<T>, T t){return rxu::maybe<T>(std::move(t));},
         [](rxu::maybe<T> result){return result.empty() ? throw rxcpp::empty_error("first() requires a stream with at least one value") : result.get();});
 }
+
+template<class T, class SourceOperator>
+auto observable<T, SourceOperator>::first_or_default() const
+-> observable<T> {
+	return this->take(1).last_or_default();
+}
+
 
 template<class T, class SourceOperator>
 inline bool operator==(const observable<T, SourceOperator>& lhs, const observable<T, SourceOperator>& rhs) {

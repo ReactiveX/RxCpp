@@ -229,8 +229,10 @@ private:
 
         ~composite_subscription_state()
         {
-            std::unique_lock<decltype(lock)> guard(lock);
-            subscriptions.clear();
+            if (issubscribed) {
+                std::unique_lock<decltype(lock)> guard(lock); // dangerous, search the web for "dllmain restrictions"
+                subscriptions.clear();
+            }
         }
 
         composite_subscription_state()
@@ -450,8 +452,8 @@ inline bool operator!=(const composite_subscription& lhs, const composite_subscr
 namespace detail {
 
 inline composite_subscription shared_empty() {
-    static composite_subscription shared_empty = composite_subscription(tag_composite_subscription_empty());
-    return shared_empty;
+    static composite_subscription* shared_empty = new composite_subscription(tag_composite_subscription_empty());
+    return *shared_empty; // don't clean up the empty composite_subscription during shut-down
 }
 
 }
