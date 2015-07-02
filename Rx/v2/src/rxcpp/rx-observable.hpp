@@ -2739,6 +2739,7 @@ auto observable<T, SourceOperator>::last_or_default() const
 }
 
 
+template<class T, class SourceOperator>
 auto observable<T, SourceOperator>::first() const
     -> observable<T> {
     rxu::maybe<T> seed;
