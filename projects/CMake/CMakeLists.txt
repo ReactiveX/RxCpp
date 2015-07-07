@@ -19,6 +19,7 @@ set(EXAMPLES_DIR ${RXCPP_DIR}/Rx/v2/examples)
 
 add_subdirectory(${EXAMPLES_DIR}/cep ${CMAKE_CURRENT_BINARY_DIR}/examples/cep)
 add_subdirectory(${EXAMPLES_DIR}/stop ${CMAKE_CURRENT_BINARY_DIR}/examples/stop)
+add_subdirectory(${EXAMPLES_DIR}/linesfrombytes ${CMAKE_CURRENT_BINARY_DIR}/examples/linesfrombytes)
 add_subdirectory(${EXAMPLES_DIR}/println ${CMAKE_CURRENT_BINARY_DIR}/examples/println)
 add_subdirectory(${EXAMPLES_DIR}/pythagorian ${CMAKE_CURRENT_BINARY_DIR}/examples/pythagorian)
 add_subdirectory(${EXAMPLES_DIR}/tests ${CMAKE_CURRENT_BINARY_DIR}/examples/tests)
