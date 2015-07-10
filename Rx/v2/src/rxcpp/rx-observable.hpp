@@ -702,6 +702,33 @@ public:
         return                    lift<T>(rxo::detail::filter<T, Predicate>(std::move(p)));
     }
 
+    /*! inspect calls to on_next, on_error and on_completed.
+
+        \tparam MakeObserverArgN...  these args are passed to make_observer
+
+        \param an  these args are passed to make_observer.
+
+        \return  Observable that emits the same items as the source observable to both the subscriber and the observer. 
+
+        \note If an on_error method is not supplied the observer will ignore errors rather than call std::abort()
+
+        \sample
+        \snippet tap.cpp tap sample
+        \snippet output.txt tap sample
+
+        If the source observable generates an error, the observer passed to tap is called:
+        \snippet tap.cpp error tap sample
+        \snippet output.txt error tap sample
+    */
+    template<class... MakeObserverArgN>
+    auto tap(MakeObserverArgN&&... an) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::tap<T, std::tuple<MakeObserverArgN...>>(std::make_tuple(std::forward<MakeObserverArgN>(an)...))))
+        /// \endcond
+    {
+        return                    lift<T>(rxo::detail::tap<T, std::tuple<MakeObserverArgN...>>(std::make_tuple(std::forward<MakeObserverArgN>(an)...)));
+    }
+
     /*! Add a new action at the end of the new observable that is returned.
 
         \tparam LastCall  the type of the action function

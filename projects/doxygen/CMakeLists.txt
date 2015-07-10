@@ -84,6 +84,7 @@ if(DOXYGEN_FOUND)
         ${DOXY_EXAMPLES_SRC_DIR}/switch_on_next.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/take.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/take_until.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/tap.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/timer.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/window.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/zip.cpp

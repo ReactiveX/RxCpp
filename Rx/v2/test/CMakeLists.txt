@@ -53,6 +53,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/switch_on_next.cpp
     ${TEST_DIR}/operators/take.cpp
     ${TEST_DIR}/operators/take_until.cpp
+    ${TEST_DIR}/operators/tap.cpp
     ${TEST_DIR}/operators/window.cpp
     ${TEST_DIR}/operators/zip.1.cpp
     ${TEST_DIR}/operators/zip.2.cpp
@@ -69,8 +70,7 @@ target_link_libraries(rxcppv2_test ${CMAKE_THREAD_LIBS_INIT})
 # define the sources of the self test
 set(ONE_SOURCES
     ${TEST_DIR}/test.cpp
-    #${TEST_DIR}/operators/combine_latest.1.cpp
-    #${TEST_DIR}/operators/combine_latest.2.cpp
+    #${TEST_DIR}/operators/tap.cpp
 )
 add_executable(one_test ${ONE_SOURCES})
 add_executable(rxcpp::one_test ALIAS one_test)
