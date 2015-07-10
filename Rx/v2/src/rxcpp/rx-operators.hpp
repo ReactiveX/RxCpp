@@ -52,6 +52,7 @@ namespace rxo=operators;
 #include "operators/rx-merge.hpp"
 #include "operators/rx-multicast.hpp"
 #include "operators/rx-observe_on.hpp"
+#include "operators/rx-on_error_resume_next.hpp"
 #include "operators/rx-pairwise.hpp"
 #include "operators/rx-publish.hpp"
 #include "operators/rx-reduce.hpp"

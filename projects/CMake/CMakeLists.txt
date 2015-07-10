@@ -44,6 +44,7 @@ set(RX_SOURCES
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-merge.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-multicast.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-observe_on.hpp
+   ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-on_error_resume_next.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-pairwise.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-publish.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-reduce.hpp

@@ -754,6 +754,27 @@ public:
         return                    lift<T>(rxo::detail::finally<T, LastCall>(std::move(lc)));
     }
 
+    /*! If an error occurs, take the result from the Selector and subscribe to that instead.
+
+        \tparam Selector  the actual type of a function of the form `observable<T>(std::exception_ptr)`
+
+        \param s  the function of the form `observable<T>(std::exception_ptr)`
+
+        \return  Observable that emits the items from the source observable and switches to a new observable on error.
+
+        \sample
+        \snippet on_error_resume_next.cpp on_error_resume_next sample
+        \snippet output.txt on_error_resume_next sample
+    */
+    template<class Selector>
+    auto on_error_resume_next(Selector s) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(EXPLICIT_THIS lift<rxu::value_type_t<rxo::detail::on_error_resume_next<T, Selector>>>(rxo::detail::on_error_resume_next<T, Selector>(std::move(s))))
+        /// \endcond
+    {
+        return                    lift<rxu::value_type_t<rxo::detail::on_error_resume_next<T, Selector>>>(rxo::detail::on_error_resume_next<T, Selector>(std::move(s)));
+    }
+
     /*! For each item from this observable use Selector to produce an item to emit from the new observable that is returned.
 
         \tparam Selector  the type of the transforming function
