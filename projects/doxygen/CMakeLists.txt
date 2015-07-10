@@ -67,6 +67,7 @@ if(DOXYGEN_FOUND)
         ${DOXY_EXAMPLES_SRC_DIR}/merge.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/never.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/observe_on.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/on_error_resume_next.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/pairwise.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/publish.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/range.cpp
@@ -84,6 +85,7 @@ if(DOXYGEN_FOUND)
         ${DOXY_EXAMPLES_SRC_DIR}/switch_on_next.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/take.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/take_until.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/tap.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/timer.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/window.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/zip.cpp

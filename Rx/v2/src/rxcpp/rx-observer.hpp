@@ -30,6 +30,11 @@ struct OnErrorEmpty
         abort();
     }
 };
+struct OnErrorIgnore
+{
+    void operator()(std::exception_ptr) const {
+    }
+};
 struct OnCompletedEmpty
 {
     void operator()() const {}
@@ -286,34 +291,43 @@ public:
     }
 };
 
-template<class T>
+template<class T, class DefaultOnError = detail::OnErrorEmpty>
 auto make_observer()
     ->     observer<T, void> {
     return observer<T, void>();
 }
 
-template<class T, class U, class I>
+template<class T, class DefaultOnError = detail::OnErrorEmpty, class U, class I>
 auto make_observer(observer<U, I> o)
     ->      observer<T, I> {
     return  observer<T, I>(std::move(o));
 }
-template<class T, class Observer>
+template<class T, class DefaultOnError = detail::OnErrorEmpty, class Observer>
 auto make_observer(Observer ob)
     -> typename std::enable_if<
         !detail::is_on_next_of<T, Observer>::value &&
+        !detail::is_on_error<Observer>::value &&
         !is_observer<Observer>::value,
             observer<T, Observer>>::type {
     return  observer<T, Observer>(std::move(ob));
 }
-template<class T, class OnNext>
+template<class T, class DefaultOnError = detail::OnErrorEmpty, class OnNext>
 auto make_observer(OnNext on)
     -> typename std::enable_if<
         detail::is_on_next_of<T, OnNext>::value,
-            observer<T, static_observer<T, OnNext>>>::type {
-    return  observer<T, static_observer<T, OnNext>>(
-                        static_observer<T, OnNext>(std::move(on)));
+            observer<T, static_observer<T, OnNext, DefaultOnError>>>::type {
+    return  observer<T, static_observer<T, OnNext, DefaultOnError>>(
+                        static_observer<T, OnNext, DefaultOnError>(std::move(on)));
 }
-template<class T, class OnNext, class OnError>
+template<class T, class DefaultOnError = detail::OnErrorEmpty, class OnError>
+auto make_observer(OnError oe)
+    -> typename std::enable_if<
+        detail::is_on_error<OnError>::value,
+            observer<T, static_observer<T, detail::OnNextEmpty<T>, OnError>>>::type {
+    return  observer<T, static_observer<T, detail::OnNextEmpty<T>, OnError>>(
+                        static_observer<T, detail::OnNextEmpty<T>, OnError>(detail::OnNextEmpty<T>(), std::move(oe)));
+}
+template<class T, class DefaultOnError = detail::OnErrorEmpty, class OnNext, class OnError>
 auto make_observer(OnNext on, OnError oe)
     -> typename std::enable_if<
         detail::is_on_next_of<T, OnNext>::value &&
@@ -322,16 +336,16 @@ auto make_observer(OnNext on, OnError oe)
     return  observer<T, static_observer<T, OnNext, OnError>>(
                         static_observer<T, OnNext, OnError>(std::move(on), std::move(oe)));
 }
-template<class T, class OnNext, class OnCompleted>
+template<class T, class DefaultOnError = detail::OnErrorEmpty, class OnNext, class OnCompleted>
 auto make_observer(OnNext on, OnCompleted oc)
     -> typename std::enable_if<
         detail::is_on_next_of<T, OnNext>::value &&
         detail::is_on_completed<OnCompleted>::value,
-            observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>>::type {
-    return  observer<T, static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>>(
-                        static_observer<T, OnNext, detail::OnErrorEmpty, OnCompleted>(std::move(on), detail::OnErrorEmpty(), std::move(oc)));
+            observer<T, static_observer<T, OnNext, DefaultOnError, OnCompleted>>>::type {
+    return  observer<T, static_observer<T, OnNext, DefaultOnError, OnCompleted>>(
+                        static_observer<T, OnNext, DefaultOnError, OnCompleted>(std::move(on), DefaultOnError(), std::move(oc)));
 }
-template<class T, class OnNext, class OnError, class OnCompleted>
+template<class T, class DefaultOnError = detail::OnErrorEmpty, class OnNext, class OnError, class OnCompleted>
 auto make_observer(OnNext on, OnError oe, OnCompleted oc)
     -> typename std::enable_if<
         detail::is_on_next_of<T, OnNext>::value &&
@@ -341,7 +355,6 @@ auto make_observer(OnNext on, OnError oe, OnCompleted oc)
     return  observer<T, static_observer<T, OnNext, OnError, OnCompleted>>(
                         static_observer<T, OnNext, OnError, OnCompleted>(std::move(on), std::move(oe), std::move(oc)));
 }
-
 
 template<class T, class Observer>
 auto make_observer_dynamic(Observer o)

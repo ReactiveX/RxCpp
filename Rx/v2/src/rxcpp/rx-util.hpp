@@ -122,14 +122,8 @@ struct value_type_from<T, typename types_checked_from<value_type_t<T>>::type>
     : public std::true_type {typedef value_type_t<T> type;};
 
 namespace detail {
-
 template<class F, class... ParamN, int... IndexN>
-auto apply(std::tuple<ParamN...> p, values<int, IndexN...>, F& f)
-    -> decltype(f(std::forward<ParamN>(std::get<IndexN>(p))...)) {
-    return      f(std::forward<ParamN>(std::get<IndexN>(p))...);
-}
-template<class F, class... ParamN, int... IndexN>
-auto apply(std::tuple<ParamN...> p, values<int, IndexN...>, const F& f)
+auto apply(std::tuple<ParamN...> p, values<int, IndexN...>, F&& f)
     -> decltype(f(std::forward<ParamN>(std::get<IndexN>(p))...)) {
     return      f(std::forward<ParamN>(std::get<IndexN>(p))...);
 }
@@ -147,16 +141,10 @@ auto apply_to_each(std::tuple<ParamN...>& p, values<int, IndexN...>, const F_inn
 }
 
 }
-
 template<class F, class... ParamN>
-auto apply(std::tuple<ParamN...> p, F& f)
-    -> decltype(detail::apply(std::move(p), typename values_from<int, sizeof...(ParamN)>::type(), f)) {
-    return      detail::apply(std::move(p), typename values_from<int, sizeof...(ParamN)>::type(), f);
-}
-template<class F, class... ParamN>
-auto apply(std::tuple<ParamN...> p, const F& f)
-    -> decltype(detail::apply(std::move(p), typename values_from<int, sizeof...(ParamN)>::type(), f)) {
-    return      detail::apply(std::move(p), typename values_from<int, sizeof...(ParamN)>::type(), f);
+auto apply(std::tuple<ParamN...> p, F&& f)
+    -> decltype(detail::apply(std::move(p), typename values_from<int, sizeof...(ParamN)>::type(), std::forward<F>(f))) {
+    return      detail::apply(std::move(p), typename values_from<int, sizeof...(ParamN)>::type(), std::forward<F>(f));
 }
 
 template<class F_inner, class F_outer, class... ParamN>
@@ -431,6 +419,14 @@ auto print_followed_by(OStream& os, DelimitValue dv)
     return      detail::print_followed_with(os, detail::insert_value<OStream, DelimitValue>(os, std::move(dv)));
 }
 
+inline std::string what(std::exception_ptr ep) {
+    try {std::rethrow_exception(ep);}
+    catch (const std::exception& ex) {
+        return ex.what();
+    }
+    return std::string();
+}
+                
 namespace detail {
 
 template <class T>

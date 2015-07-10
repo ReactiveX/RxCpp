@@ -44,6 +44,7 @@ set(RX_SOURCES
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-merge.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-multicast.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-observe_on.hpp
+   ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-on_error_resume_next.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-pairwise.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-publish.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-reduce.hpp
@@ -60,6 +61,7 @@ set(RX_SOURCES
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-switch_on_next.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-take.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-take_until.hpp
+   ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-tap.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-window.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-window_time.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-window_time_count.hpp
