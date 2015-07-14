@@ -66,12 +66,24 @@ public:
     static const bool value = std::is_convertible<decltype(check<rxu::decay_t<T>>(0)), tag_schedulable*>::value;
 };
 
+namespace detail
+{
 
-template<class T>
-class dynamic_observer;
+struct stateless_observer_tag {};
 
-template<class T, class I = dynamic_observer<T>>
+}
+
+// state with optional overrides
+template<class T, class State = void, class OnNext = void, class OnError = void, class OnCompleted = void>
 class observer;
+
+// no state with optional overrides
+template<class T, class OnNext, class OnError, class OnCompleted>
+class observer<T, detail::stateless_observer_tag, OnNext, OnError, OnCompleted>;
+
+// virtual functions forward to dynamically allocated shared observer instance.
+template<class T>
+class observer<T, void, void, void, void>;
 
 struct tag_observer {};
 template<class T>

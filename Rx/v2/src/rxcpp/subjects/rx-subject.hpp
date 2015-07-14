@@ -15,9 +15,7 @@ namespace detail {
 
 template<class T>
 class multicast_observer
-    : public observer_base<T>
 {
-    typedef observer_base<T> base;
     typedef subscriber<T> observer_type;
     typedef std::vector<observer_type> list_type;
 

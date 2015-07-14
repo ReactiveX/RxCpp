@@ -32,7 +32,6 @@ struct observe_on
     struct observe_on_observer
     {
         typedef observe_on_observer<Subscriber> this_type;
-        typedef observer_base<source_value_type> base_type;
         typedef source_value_type value_type;
         typedef rxu::decay_t<Subscriber> dest_type;
         typedef observer<value_type, this_type> observer_type;
@@ -68,7 +67,7 @@ struct observe_on
                 , destination(std::move(d))
             {
             }
-            
+
             void finish(std::unique_lock<std::mutex>& guard, typename mode::type end) const {
                 if (!guard.owns_lock()) {
                     abort();
@@ -91,13 +90,13 @@ struct observe_on
                 }
                 if (current == mode::Empty) {
                     current = mode::Processing;
-                    
+
                     if (!lifetime.is_subscribed() && fill_queue.empty() && drain_queue.empty()) {
                         finish(guard, mode::Disposed);
                     }
 
                     auto keepAlive = this->shared_from_this();
-                    
+
                     auto drain = [keepAlive, this](const rxsc::schedulable& self){
                         using std::swap;
                         try {
@@ -140,7 +139,7 @@ struct observe_on
                     }
 
                     auto processor = coordinator.get_worker();
-                    
+
                     RXCPP_UNWIND_AUTO([&](){guard.lock();});
                     guard.unlock();
 
