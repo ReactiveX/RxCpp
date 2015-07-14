@@ -341,7 +341,7 @@ struct print_function
     template<class... TN>
     void operator()(const TN&... tn) const {
         bool inserts[] = {(os << tn, true)...};
-        inserts[0] = *(inserts); // silence warning
+        inserts[0] = *reinterpret_cast<bool*>(inserts); // silence warning
         delimit();
     }
 
