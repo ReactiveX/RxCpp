@@ -41,11 +41,10 @@ struct window_with_time_or_count
     }
 
     template<class Subscriber>
-    struct window_with_time_or_count_observer : public observer_base<observable<T>>
+    struct window_with_time_or_count_observer
     {
         typedef window_with_time_or_count_observer<Subscriber> this_type;
-        typedef observer_base<observable<T>> base_type;
-        typedef typename base_type::value_type value_type;
+        typedef rxu::decay_t<T> value_type;
         typedef rxu::decay_t<Subscriber> dest_type;
         typedef observer<T, this_type> observer_type;
 
