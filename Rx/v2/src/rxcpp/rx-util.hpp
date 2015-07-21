@@ -71,15 +71,15 @@ struct values_from
 template<bool... BN>
 struct all_true;
 
-template<bool B0>
-struct all_true<B0>
+template<bool B>
+struct all_true<B>
 {
-    static const bool value = B0;
+    static const bool value = B;
 };
-template<bool B0, bool... BN>
-struct all_true<B0, BN...>
+template<bool B, bool... BN>
+struct all_true<B, BN...>
 {
-    static const bool value = B0 && all_true<BN...>::value;
+    static const bool value = B && all_true<BN...>::value;
 };
 
 struct all_values_true {
