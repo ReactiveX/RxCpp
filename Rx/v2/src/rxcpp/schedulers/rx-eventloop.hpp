@@ -68,7 +68,7 @@ public:
         , count(0)
     {
         auto remaining = std::max(std::thread::hardware_concurrency(), unsigned(4));
-        while (--remaining) {
+        while (remaining--) {
             loops.push_back(newthread.create_worker());
         }
     }
@@ -78,7 +78,7 @@ public:
         , count(0)
     {
         auto remaining = std::max(std::thread::hardware_concurrency(), unsigned(4));
-        while (--remaining) {
+        while (remaining--) {
             loops.push_back(newthread.create_worker());
         }
     }
