@@ -21,7 +21,7 @@ struct range : public source_base<T>
 
     struct range_state_type
     {
-        range_state_type(T f, T l, ptrdiff_t s, coordination_type cn)
+        range_state_type(T f, T l, std::ptrdiff_t s, coordination_type cn)
             : next(f)
             , last(l)
             , step(s)
@@ -30,11 +30,11 @@ struct range : public source_base<T>
         }
         mutable T next;
         T last;
-        ptrdiff_t step;
+        std::ptrdiff_t step;
         coordination_type coordination;
     };
     range_state_type initial;
-    range(T f, T l, ptrdiff_t s, coordination_type cn)
+    range(T f, T l, std::ptrdiff_t s, coordination_type cn)
         : initial(f, l, s, std::move(cn))
     {
     }
@@ -91,13 +91,13 @@ struct range : public source_base<T>
 }
 
 template<class T>
-auto range(T first = 0, T last = std::numeric_limits<T>::max(), ptrdiff_t step = 1)
+auto range(T first = 0, T last = std::numeric_limits<T>::max(), std::ptrdiff_t step = 1)
     ->      observable<T,   detail::range<T, identity_one_worker>> {
     return  observable<T,   detail::range<T, identity_one_worker>>(
                             detail::range<T, identity_one_worker>(first, last, step, identity_current_thread()));
 }
 template<class T, class Coordination>
-auto range(T first, T last, ptrdiff_t step, Coordination cn)
+auto range(T first, T last, std::ptrdiff_t step, Coordination cn)
     ->      observable<T,   detail::range<T, Coordination>> {
     return  observable<T,   detail::range<T, Coordination>>(
                             detail::range<T, Coordination>(first, last, step, std::move(cn)));
