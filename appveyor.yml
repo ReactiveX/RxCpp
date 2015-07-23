@@ -24,7 +24,9 @@ build:
     project: build\rxcpp.sln
 
 test_script:
-  - build\test\Debug\rxcppv2_test.exe
+  - cd build\test\
+  - ctest -V
+  - cd ..\..
 
 artifacts:
   - path: Rx\v2\src\
@@ -36,6 +38,6 @@ artifacts:
 
 notifications:
   - provider: Slack
-    auth_token: 
+    auth_token:
       secure: qaGjbI98VXZa7Zd2s3RmMzfA+ymrfWUDuzevdtOcHssEGBXbcoOJzLHNOmG+Y1nX
     channel: rxcpp

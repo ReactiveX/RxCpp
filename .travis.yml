@@ -65,7 +65,9 @@ install:
 - cmake . -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_CXX_FLAGS="${CXX_FLAGS}" -DCMAKE_EXE_LINKER_FLAGS="${CXX_LINKER_FLAGS}"
 script:
 - make VERBOSE=1 $PROJECT
-- if [ "$RUN_TEST" == "On" ]; then build/test/rxcppv2_test; fi
+- if [ "$RUN_TEST" == "On" ]; then cd build/test/; fi
+- if [ "$RUN_TEST" == "On" ]; then ctest -V; fi
+- if [ "$RUN_TEST" == "On" ]; then cd ../../; fi
 after_success:
 - if [ "$PUBLISH_DOCS" == "On" ]; then sh projects/scripts/travis-doxygen.sh; fi
 branches:
