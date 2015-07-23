@@ -4,6 +4,8 @@
 #define CPPLINQ_LINQ_SKIP_HPP
 #pragma once
 
+#include <cstddef>
+
 namespace cpplinq 
 {
     template <class Collection>
@@ -12,10 +14,10 @@ namespace cpplinq
     public:
         typedef typename Collection::cursor cursor;
 
-        linq_skip(const Collection& c, size_t n) : c(c), n(n) {}
+        linq_skip(const Collection& c, std::size_t n) : c(c), n(n) {}
 
         cursor get_cursor() const {
-            size_t rem = n;
+            std::size_t rem = n;
 
             auto cur = c.get_cursor();
             while(rem-- && !cur.empty()) {
@@ -27,7 +29,7 @@ namespace cpplinq
 
     private:
         Collection  c;
-        size_t      n;
+        std::size_t      n;
     };
 }
 #endif // !defined(CPPLINQ_LINQ_SKIP_HPP)
