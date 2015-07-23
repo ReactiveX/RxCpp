@@ -222,7 +222,7 @@ TEST(test_take)
     VERIFY_EQ(11, ten[1]);
 }
 
-vector<int> some_primes(size_t howMany)
+vector<int> some_primes(std::size_t howMany)
 {
     auto xs = from(int_range(0, -1))
              .where(is_prime)
@@ -515,7 +515,7 @@ TEST(test_performance)
 
 int main(int argc, char** argv)
 {
-    size_t pass=0, fail=0;
+    std::size_t pass = 0, fail = 0;
     testrange<0,__LINE__>().run(pass, fail);
 
 
