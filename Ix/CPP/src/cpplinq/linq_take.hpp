@@ -4,6 +4,8 @@
 #define CPPLINQ_LINQ_TAKE_HPP
 #pragma once
 
+#include <cstddef>
+
 namespace cpplinq 
 {
     template <class InnerCursor>
@@ -13,7 +15,7 @@ namespace cpplinq
         typedef typename InnerCursor::reference_type reference_type;
         typedef typename InnerCursor::cursor_category cursor_category;
 
-        linq_take_cursor(const InnerCursor& cur, size_t rem) : cur(cur), rem(rem) {}
+        linq_take_cursor(const InnerCursor& cur, std::size_t rem) : cur(cur), rem(rem) {}
 
         void forget() { cur.forget(); }
         bool empty() const { return cur.empty() || rem == 0; }
@@ -23,13 +25,13 @@ namespace cpplinq
         bool atbegin() const { return cur.atbegin(); }
         void dec() { cur.dec(); --rem; }
 
-        void skip(size_t n) { cur.skip(n); rem -= n; }
-        size_t position() const { return cur.position(); }
-        size_t size() const { return cur.size(); }
+        void skip(std::size_t n) { cur.skip(n); rem -= n; }
+        std::size_t position() const { return cur.position(); }
+        std::size_t size() const { return cur.size(); }
             
     private:
         InnerCursor cur;
-        size_t      rem;
+        std::size_t rem;
     };
 
     namespace detail {
@@ -37,7 +39,7 @@ namespace cpplinq
         linq_take_cursor<typename Collection::cursor> 
             take_get_cursor_(
                 const Collection& c,
-                size_t n,
+                std::size_t n,
                 onepass_cursor_tag
                 )
         {
@@ -48,7 +50,7 @@ namespace cpplinq
         typename Collection::cursor
             take_get_cursor_(
                 const Collection& c,
-                size_t n,
+                std::size_t n,
                 random_access_cursor_tag
                 )
         {
@@ -71,14 +73,14 @@ namespace cpplinq
                 linq_take_cursor<typename Collection::cursor>>::type
             cursor;
 
-        linq_take(const Collection& c, size_t n) : c(c), n(n) {}
+        linq_take(const Collection& c, std::size_t n) : c(c), n(n) {}
 
         cursor get_cursor() const {
             return detail::take_get_cursor_(c, n, typename Collection::cursor::cursor_category());
         }
 
         Collection  c;
-        size_t      n;
+        std::size_t n;
     };
 
     template <class Collection>
