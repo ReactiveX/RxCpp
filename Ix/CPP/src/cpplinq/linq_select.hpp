@@ -4,6 +4,8 @@
 #define CPPLINQ_LINQ_SELECT_HPP
 #pragma once
 
+#include <cstddef>
+
 namespace cpplinq 
 {
     template <class Collection, class Selector>
@@ -30,9 +32,9 @@ namespace cpplinq
             bool atbegin() const { return cur.atbegin(); }
             void dec() { cur.dec(); }
 
-            void skip(size_t n) { cur.skip(n); }
-            size_t position() const { return cur.position(); }
-            size_t size() const { return cur.size(); }
+            void skip(std::size_t n) { cur.skip(n); }
+            std::size_t position() const { return cur.position(); }
+            std::size_t size() const { return cur.size(); }
         private:
             inner_cursor    cur;
             Selector        sel;
