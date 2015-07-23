@@ -114,7 +114,7 @@ namespace cpplinq {
     class cursor_iterator 
         : public std::iterator<std::forward_iterator_tag, 
                 typename Cursor::element_type,
-                ptrdiff_t,
+                std::ptrdiff_t,
                 typename std::conditional<std::is_reference<typename Cursor::reference_type>::value,
                                           typename std::add_pointer<typename Cursor::element_type>::type,
                                           util::value_ptr<typename Cursor::element_type>>::type,
@@ -149,7 +149,7 @@ namespace cpplinq {
             return *this;
         }
 
-        cursor_iterator& operator+=(ptrdiff_t n) {
+        cursor_iterator& operator+=(std::ptrdiff_t n) {
             cur->skip(n);
 
             if (cur->empty()) { cur.reset(); }
