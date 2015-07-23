@@ -35,7 +35,7 @@ namespace util {
 template<class T> using value_type_t = typename T::value_type;
 template<class T> using decay_t = typename std::decay<T>::type;
 
-template<class T, size_t size>
+template<class T, std::size_t size>
 std::vector<T> to_vector(const T (&arr) [size]) {
     return std::vector<T>(std::begin(arr), std::end(arr));
 }
@@ -479,7 +479,7 @@ public:
         return !is_set;
     }
 
-    size_t size() const {
+    std::size_t size() const {
         return is_set ? 1 : 0;
     }
 
