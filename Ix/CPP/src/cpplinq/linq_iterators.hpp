@@ -4,6 +4,8 @@
 #define CPPLINQ_LINQ_ITERATORS_HPP
 #pragma once
 
+#include <cstddef>
+
 namespace cpplinq {
 
     // if a member, provides the straightforward implementation of various redundant operators. For example,
