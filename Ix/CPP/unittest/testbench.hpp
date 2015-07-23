@@ -8,21 +8,22 @@
 #include <sstream>
 #include <utility>
 #include <memory>
+#include <cstddef>
 
 struct empty_testcase{ void run(){} const char* name(){return 0;} };
 
-template <size_t offset>
+template <std::size_t offset>
 struct testcase : empty_testcase{};
 
 
-template <size_t begin, size_t end>
+template <std::size_t begin, std::size_t end>
 struct testrange {
-    void run(size_t& pass, size_t& fail) 
+    void run(std::size_t& pass, std::size_t& fail) 
     {
         using namespace std;
         {   testcase<begin> a_case;
             if (a_case.name()) {
-                size_t p=0, f=0;
+                std::size_t p=0, f=0;
                 cout << "TEST: Running " << a_case.name() << endl;
                 try {
                     a_case.run();
@@ -35,15 +36,15 @@ struct testrange {
                 pass += p; fail += f;
             }
         }
-        const size_t rem = (end-begin-1);
+        const std::size_t rem = (end-begin-1);
         testrange<begin+1, begin+1+rem/2>().run(pass, fail);
         testrange<begin+1+rem/2, end>().run(pass, fail);
     }
 };
 
-template <size_t begin>
+template <std::size_t begin>
 struct testrange<begin,begin> {
-    void run(size_t& pass, size_t& fail) {};
+    void run(std::size_t& pass, std::size_t& fail) {};
 };
 
 #define TEST(fun_name) \

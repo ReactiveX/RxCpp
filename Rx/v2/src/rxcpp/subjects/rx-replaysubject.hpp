@@ -16,7 +16,7 @@ namespace detail {
 template<class Coordination>
 struct replay_traits
 {
-    typedef rxu::maybe<size_t> count_type;
+    typedef rxu::maybe<std::size_t> count_type;
     typedef rxu::maybe<rxsc::scheduler::clock_type::duration> period_type;
     typedef rxsc::scheduler::clock_type::time_point time_point_type;
     typedef rxu::decay_t<Coordination> coordination_type;
@@ -133,7 +133,7 @@ public:
     {
     }
 
-    replay(size_t count, Coordination cn, composite_subscription cs = composite_subscription())
+    replay(std::size_t count, Coordination cn, composite_subscription cs = composite_subscription())
         : s(count_type(std::move(count)), period_type(), cn, cs)
     {
     }
@@ -143,7 +143,7 @@ public:
     {
     }
 
-    replay(size_t count, rxsc::scheduler::clock_type::duration period, Coordination cn, composite_subscription cs = composite_subscription())
+    replay(std::size_t count, rxsc::scheduler::clock_type::duration period, Coordination cn, composite_subscription cs = composite_subscription())
         : s(count_type(count), period_type(period), cn, cs)
     {
     }

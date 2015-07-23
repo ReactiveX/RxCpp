@@ -56,7 +56,7 @@ private:
 
     mutable thread_factory factory;
     scheduler newthread;
-    mutable std::atomic<size_t> count;
+    mutable std::atomic<std::size_t> count;
     std::vector<worker> loops;
 
 public:

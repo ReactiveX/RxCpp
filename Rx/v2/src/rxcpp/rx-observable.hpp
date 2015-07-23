@@ -2083,7 +2083,7 @@ public:
         \snippet replay.cpp replay count sample
         \snippet output.txt replay count sample
     */
-    auto replay(size_t count, composite_subscription cs = composite_subscription()) const
+    auto replay(std::size_t count, composite_subscription cs = composite_subscription()) const
         /// \cond SHOW_SERVICE_MEMBERS
         -> decltype(EXPLICIT_THIS multicast(rxsub::replay<T, identity_one_worker>(count, identity_current_thread(), cs)))
         /// \endcond
@@ -2107,7 +2107,7 @@ public:
     */
     template<class Coordination,
         class Requires = typename std::enable_if<is_coordination<Coordination>::value, rxu::types_checked>::type>
-    auto replay(size_t count, Coordination cn, composite_subscription cs = composite_subscription()) const
+    auto replay(std::size_t count, Coordination cn, composite_subscription cs = composite_subscription()) const
         /// \cond SHOW_SERVICE_MEMBERS
         -> decltype(EXPLICIT_THIS multicast(rxsub::replay<T, Coordination>(count, std::move(cn), cs)))
         /// \endcond
@@ -2170,7 +2170,7 @@ public:
         \snippet replay.cpp replay count+period sample
         \snippet output.txt replay count+period sample
     */
-    auto replay(size_t count, rxsc::scheduler::clock_type::duration period, composite_subscription cs = composite_subscription()) const
+    auto replay(std::size_t count, rxsc::scheduler::clock_type::duration period, composite_subscription cs = composite_subscription()) const
         /// \cond SHOW_SERVICE_MEMBERS
         -> decltype(EXPLICIT_THIS multicast(rxsub::replay<T, identity_one_worker>(count, period, identity_current_thread(), cs)))
         /// \endcond
@@ -2195,7 +2195,7 @@ public:
     */
     template<class Coordination,
         class Requires = typename std::enable_if<is_coordination<Coordination>::value, rxu::types_checked>::type>
-    auto replay(size_t count, rxsc::scheduler::clock_type::duration period, Coordination cn, composite_subscription cs = composite_subscription()) const
+    auto replay(std::size_t count, rxsc::scheduler::clock_type::duration period, Coordination cn, composite_subscription cs = composite_subscription()) const
         /// \cond SHOW_SERVICE_MEMBERS
         -> decltype(EXPLICIT_THIS multicast(rxsub::replay<T, Coordination>(count, period, std::move(cn), cs)))
         /// \endcond
@@ -2925,7 +2925,7 @@ public:
         \snippet output.txt range sample
     */
     template<class T>
-    static auto range(T first = 0, T last = std::numeric_limits<T>::max(), ptrdiff_t step = 1)
+    static auto range(T first = 0, T last = std::numeric_limits<T>::max(), std::ptrdiff_t step = 1)
         -> decltype(rxs::range<T>(first, last, step, identity_current_thread())) {
         return      rxs::range<T>(first, last, step, identity_current_thread());
     }
@@ -2952,13 +2952,13 @@ public:
         \snippet output.txt subscribe_on range sample
     */
     template<class T, class Coordination>
-    static auto range(T first, T last, ptrdiff_t step, Coordination cn)
+    static auto range(T first, T last, std::ptrdiff_t step, Coordination cn)
         -> decltype(rxs::range<T>(first, last, step, std::move(cn))) {
         return      rxs::range<T>(first, last, step, std::move(cn));
     }
     /// Returns an observable that sends values in the range ```first```-```last``` by adding 1 to the previous value. The values are sent on the specified scheduler.
     ///
-    /// \see       rxcpp::observable<void,void>#range(T first, T last, ptrdiff_t step, Coordination cn)
+    /// \see       rxcpp::observable<void,void>#range(T first, T last, std::ptrdiff_t step, Coordination cn)
     template<class T, class Coordination>
     static auto range(T first, T last, Coordination cn)
         -> decltype(rxs::range<T>(first, last, std::move(cn))) {
@@ -2966,7 +2966,7 @@ public:
     }
     /// Returns an observable that infinitely (until overflow) sends values starting from ```first```. The values are sent on the specified scheduler.
     ///
-    /// \see       rxcpp::observable<void,void>#range(T first, T last, ptrdiff_t step, Coordination cn)
+    /// \see       rxcpp::observable<void,void>#range(T first, T last, std::ptrdiff_t step, Coordination cn)
     template<class T, class Coordination>
     static auto range(T first, Coordination cn)
         -> decltype(rxs::range<T>(first, std::move(cn))) {

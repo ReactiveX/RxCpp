@@ -112,7 +112,7 @@
 /// 
 /// query.count([pred])
 /// ===================
-/// -   Result: size_t
+/// -   Result: std::size_t
 /// 
 /// _TODO: should use inner container's iterator distance type instead._
 /// 
@@ -331,7 +331,7 @@ public:
     // TODO: distinct()
     // TODO: distinct(cmp)
 
-    reference_type element_at(size_t ix) const {
+    reference_type element_at(std::size_t ix) const {
         auto cur = c.get_cursor();
         while(ix && !cur.empty()) {
             cur.inc();
@@ -341,7 +341,7 @@ public:
         else             { return cur.get(); }
     }
 
-    element_type element_at_or_default(size_t ix) const {
+    element_type element_at_or_default(std::size_t ix) const {
         auto cur = c.get_cursor();
         while(ix && !cur.empty()) {
             cur.inc();
@@ -464,7 +464,7 @@ public:
 
     // TODO: single / single_or_default
 
-    linq_driver<linq_skip<Collection>> skip(size_t n) const {
+    linq_driver<linq_skip<Collection>> skip(std::size_t n) const {
         return linq_skip<Collection>(c, n);
     }
 
@@ -472,7 +472,7 @@ public:
 
     // TODO: sum
 
-    linq_driver<linq_take<Collection>> take(size_t n) const {
+    linq_driver<linq_take<Collection>> take(std::size_t n) const {
         return linq_take<Collection>(c, n);
     }
 
@@ -503,7 +503,7 @@ public:
     linq_driver& operator=(const linq_driver<TC2>& other) { c = other.c; return *this; }
 
     typename std::iterator_traits<iterator>::reference
-        operator[](size_t ix) const {
+        operator[](std::size_t ix) const {
         return *(begin()+=ix);
     }
 

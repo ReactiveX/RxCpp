@@ -10,6 +10,7 @@
 #include <string>
 
 #include <ctime>
+#include <cstddef>
 
 #include <boost/lambda/core.hpp>
 #include <boost/lambda/lambda.hpp>
@@ -23,7 +24,7 @@ using namespace std;
 using namespace cpplinq;
 
 struct int_iter
-    : std::iterator<std::random_access_iterator_tag, int, ptrdiff_t, int*, int>
+    : std::iterator<std::random_access_iterator_tag, int, std::ptrdiff_t, int*, int>
 {
     int_iter(value_type i = 0, value_type step = 1) : value(i), step(step)
     {}
@@ -37,14 +38,14 @@ struct int_iter
     int_iter& operator--() {
         value-=step; return *this;
     }
-    int_iter& operator+=(ptrdiff_t offset) {
+    int_iter& operator+=(std::ptrdiff_t offset) {
         value += step*offset; return *this;
     }
-    int_iter& operator-=(ptrdiff_t offset) {
+    int_iter& operator-=(std::ptrdiff_t offset) {
         value -= step*offset; return *this;
     }
-    ptrdiff_t operator-(int_iter rhs) const {
-        return ptrdiff_t((value - rhs.value)/step);
+    std::ptrdiff_t operator-(int_iter rhs) const {
+        return std::ptrdiff_t((value - rhs.value)/step);
     }
     bool operator==(int_iter other) const {
         return value == other.value; 
@@ -60,13 +61,13 @@ struct int_iter
     value_type value;
     value_type step;
 };
-int_iter operator+(int_iter lhs, ptrdiff_t rhs) {
+int_iter operator+(int_iter lhs, std::ptrdiff_t rhs) {
     return lhs+=rhs;
 }
-int_iter operator+(ptrdiff_t lhs, int_iter rhs) {
+int_iter operator+(std::ptrdiff_t lhs, int_iter rhs) {
     return rhs+=lhs;
 }
-int_iter operator-(int_iter lhs, ptrdiff_t rhs) {
+int_iter operator-(int_iter lhs, std::ptrdiff_t rhs) {
     return lhs-=rhs;
 }
 struct int_range
@@ -221,7 +222,7 @@ TEST(test_take)
     VERIFY_EQ(11, ten[1]);
 }
 
-vector<int> some_primes(size_t howMany)
+vector<int> some_primes(std::size_t howMany)
 {
     auto xs = from(int_range(0, -1))
              .where(is_prime)
@@ -514,7 +515,7 @@ TEST(test_performance)
 
 int main(int argc, char** argv)
 {
-    size_t pass=0, fail=0;
+    std::size_t pass = 0, fail = 0;
     testrange<0,__LINE__>().run(pass, fail);
 
 
