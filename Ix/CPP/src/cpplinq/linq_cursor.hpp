@@ -4,6 +4,8 @@
 #define CPPLINQ_LINQ_CURSOR_HPP
 #pragma once
 
+#include <cstddef>
+
 /// cursors
 /// ----------
 /// It should be noted that CppLinq uses a slightly different iterator concept, one where iterators
@@ -75,7 +77,7 @@ namespace cpplinq {
     {
         namespace detail 
         {
-            template <size_t n> struct type_to_size { char value[n]; };
+            template <std::size_t n> struct type_to_size { char value[n]; };
 
             type_to_size<1> get_category_from_iterator(std::input_iterator_tag);
             type_to_size<2> get_category_from_iterator(std::forward_iterator_tag);
@@ -83,13 +85,13 @@ namespace cpplinq {
             type_to_size<4> get_category_from_iterator(std::random_access_iterator_tag);
         }
 
-        template <size_t>
+        template <std::size_t>
         struct iter_to_cursor_category_;
 
         template <class Iter>
         struct iter_to_cursor_category
         {
-            static const size_t catIx = sizeof(detail::get_category_from_iterator(typename std::iterator_traits<Iter>::iterator_category()) /*.value*/  );
+            static const std::size_t catIx = sizeof(detail::get_category_from_iterator(typename std::iterator_traits<Iter>::iterator_category()) /*.value*/  );
             typedef typename iter_to_cursor_category_<catIx>::type type;
         };
 
@@ -167,9 +169,9 @@ namespace cpplinq {
         }
         
         void skip(std::ptrdiff_t n) { current += n; }
-        size_t size() { return fin-start; }
+        std::size_t size() { return fin-start; }
         void position() { return current-start; }
-        void truncate(size_t n) {
+        void truncate(std::size_t n) {
             if (n > fin-current) {
                 fin = current + n;
             }
