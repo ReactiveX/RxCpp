@@ -561,7 +561,7 @@ public:
         return tester->make_hot_observable(std::move(messages));
     }
 
-    template<class T, size_t size>
+    template<class T, std::size_t size>
     auto make_hot_observable(const T (&arr) [size]) const
         -> decltype(tester->make_hot_observable(std::vector<T>())) {
         return      tester->make_hot_observable(rxu::to_vector(arr));
@@ -578,7 +578,7 @@ public:
         return tester->make_cold_observable(std::move(messages));
     }
 
-    template<class T, size_t size>
+    template<class T, std::size_t size>
     auto make_cold_observable(const T (&arr) [size]) const
         -> decltype(tester->make_cold_observable(std::vector<T>())) {
         return      tester->make_cold_observable(rxu::to_vector(arr));
