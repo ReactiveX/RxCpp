@@ -166,7 +166,7 @@ namespace cpplinq {
             --current; 
         }
         
-        void skip(ptrdiff_t n) { current += n; }
+        void skip(std::ptrdiff_t n) { current += n; }
         size_t size() { return fin-start; }
         void position() { return current-start; }
         void truncate(size_t n) {
