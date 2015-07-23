@@ -2083,7 +2083,7 @@ public:
         \snippet replay.cpp replay count sample
         \snippet output.txt replay count sample
     */
-    auto replay(size_t count, composite_subscription cs = composite_subscription()) const
+    auto replay(std::size_t count, composite_subscription cs = composite_subscription()) const
         /// \cond SHOW_SERVICE_MEMBERS
         -> decltype(EXPLICIT_THIS multicast(rxsub::replay<T, identity_one_worker>(count, identity_current_thread(), cs)))
         /// \endcond
@@ -2107,7 +2107,7 @@ public:
     */
     template<class Coordination,
         class Requires = typename std::enable_if<is_coordination<Coordination>::value, rxu::types_checked>::type>
-    auto replay(size_t count, Coordination cn, composite_subscription cs = composite_subscription()) const
+    auto replay(std::size_t count, Coordination cn, composite_subscription cs = composite_subscription()) const
         /// \cond SHOW_SERVICE_MEMBERS
         -> decltype(EXPLICIT_THIS multicast(rxsub::replay<T, Coordination>(count, std::move(cn), cs)))
         /// \endcond
@@ -2170,7 +2170,7 @@ public:
         \snippet replay.cpp replay count+period sample
         \snippet output.txt replay count+period sample
     */
-    auto replay(size_t count, rxsc::scheduler::clock_type::duration period, composite_subscription cs = composite_subscription()) const
+    auto replay(std::size_t count, rxsc::scheduler::clock_type::duration period, composite_subscription cs = composite_subscription()) const
         /// \cond SHOW_SERVICE_MEMBERS
         -> decltype(EXPLICIT_THIS multicast(rxsub::replay<T, identity_one_worker>(count, period, identity_current_thread(), cs)))
         /// \endcond
@@ -2195,7 +2195,7 @@ public:
     */
     template<class Coordination,
         class Requires = typename std::enable_if<is_coordination<Coordination>::value, rxu::types_checked>::type>
-    auto replay(size_t count, rxsc::scheduler::clock_type::duration period, Coordination cn, composite_subscription cs = composite_subscription()) const
+    auto replay(std::size_t count, rxsc::scheduler::clock_type::duration period, Coordination cn, composite_subscription cs = composite_subscription()) const
         /// \cond SHOW_SERVICE_MEMBERS
         -> decltype(EXPLICIT_THIS multicast(rxsub::replay<T, Coordination>(count, period, std::move(cn), cs)))
         /// \endcond
