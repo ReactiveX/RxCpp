@@ -70,13 +70,6 @@ target_include_directories(rxcppv2_test
     )
 target_link_libraries(rxcppv2_test ${CMAKE_THREAD_LIBS_INIT})
 
-#add_test(NAME RunTests COMMAND rxcppv2_test)
-
-#add_test(NAME ListTests COMMAND rxcppv2_test --list-tests)
-#set_tests_properties(ListTests PROPERTIES PASS_REGULAR_EXPRESSION "[0-9]+ test cases")
-
-#add_test(NAME ListTags COMMAND rxcppv2_test --list-tags)
-#set_tests_properties(ListTags PROPERTIES PASS_REGULAR_EXPRESSION "[0-9]+ tags")
 
 foreach(ONE_TEST_SOURCE ${TEST_SOURCES})
     get_filename_component(ONE_TEST_NAME "${ONE_TEST_SOURCE}" NAME)
