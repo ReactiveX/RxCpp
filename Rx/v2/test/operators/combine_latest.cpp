@@ -1,9 +1,4 @@
-#include "rxcpp/rx.hpp"
-namespace rxu=rxcpp::util;
-namespace rxsc=rxcpp::schedulers;
-
-#include "rxcpp/rx-test.hpp"
-#include "catch.hpp"
+#include "../test.h"
 
 SCENARIO("combine_latest interleaved with tail", "[combine_latest][join][operators]"){
     GIVEN("2 hot observables of ints."){

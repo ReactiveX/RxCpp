@@ -1,7 +1,4 @@
-#include "rxcpp/rx.hpp"
-namespace rx=rxcpp;
-
-#include "catch.hpp"
+#include "../test.h"
 
 SCENARIO("subscriber traits", "[observer][traits]"){
     GIVEN("given some subscriber types"){

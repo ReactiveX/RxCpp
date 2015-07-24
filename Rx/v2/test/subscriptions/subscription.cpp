@@ -1,9 +1,4 @@
-#include "rxcpp/rx.hpp"
-namespace rx=rxcpp;
-namespace rxs=rx::rxs;
-namespace rxsc=rx::rxsc;
-
-#include "catch.hpp"
+#include "../test.h"
 
 SCENARIO("observe subscription", "[hide]"){
     GIVEN("observable of ints"){

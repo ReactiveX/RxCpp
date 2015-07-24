@@ -1,13 +1,4 @@
-#define RXCPP_USE_OBSERVABLE_MEMBERS 1
-
-#include "rxcpp/rx.hpp"
-namespace rx=rxcpp;
-namespace rxu=rxcpp::util;
-namespace rxo=rxcpp::operators;
-namespace rxsc=rxcpp::schedulers;
-
-#include "rxcpp/rx-test.hpp"
-#include "catch.hpp"
+#include "../test.h"
 
 namespace detail {
 

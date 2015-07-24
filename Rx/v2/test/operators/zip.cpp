@@ -1,9 +1,4 @@
-#include "rxcpp/rx.hpp"
-namespace rxu=rxcpp::util;
-namespace rxsc=rxcpp::schedulers;
-
-#include "rxcpp/rx-test.hpp"
-#include "catch.hpp"
+#include "../test.h"
 
 SCENARIO("zip never/never", "[zip][join][operators]"){
     GIVEN("2 hot observables of ints."){

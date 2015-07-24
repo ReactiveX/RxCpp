@@ -50,7 +50,7 @@ before_install:
   - if [ "$PUBLISH_DOCS" == "On" ]; then sudo apt-get install doxygen; fi
   - sh projects/scripts/travis-install.sh
   - if [ -n "$CLANG_VERSION" ]; then sh projects/scripts/install_libcxx.sh; fi
-  - wget http://apt.biicode.com/install.sh && chmod +x install.sh && ./install.sh
+  - if [ "$PUBLISH_DOCS" == "On" ]; then wget http://apt.biicode.com/install.sh && chmod +x install.sh && ./install.sh; fi
 install:
   - export CXX_FLAGS=""
   - export CXX_LINKER_FLAGS=""
@@ -72,9 +72,9 @@ script:
 after_success:
   - if [ "$PUBLISH_DOCS" == "On" ]; then sh projects/scripts/travis-doxygen.sh; fi
   - if [ "$PUBLISH_DOCS" == "On" ]; then cd projects/biicode; fi
-  - if [ "$PUBLISH_DOCS" == "On" ]; then cp ../../AUTHORS.txt AUTHORS.txt; fi
-  - if [ "$PUBLISH_DOCS" == "On" ]; then cp ../../Rx/v2/src/license.txt license.txt; fi
-  - if [ "$PUBLISH_DOCS" == "On" ]; then cp -r ../../Rx/v2/src/rxcpp ./rxcpp; fi
+  - if [ "$PUBLISH_DOCS" == "On" ]; then cp ../../AUTHORS.txt ./blocks/kirkshoop/rxcpp/AUTHORS.txt; fi
+  - if [ "$PUBLISH_DOCS" == "On" ]; then cp ../../Rx/v2/src/license.txt ./blocks/kirkshoop/rxcpp/license.txt; fi
+  - if [ "$PUBLISH_DOCS" == "On" ]; then cp -r ../../Rx/v2/src/rxcpp/* ./blocks/kirkshoop/rxcpp/*; fi
   - if [ "$PUBLISH_DOCS" == "On" ]; then bii setup:cpp; fi
   - if [ "$PUBLISH_DOCS" == "On" ]; then bii init; fi
 branches:

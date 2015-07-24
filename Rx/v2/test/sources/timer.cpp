@@ -1,11 +1,4 @@
-#include "rxcpp/rx.hpp"
-namespace rx=rxcpp;
-namespace rxu=rxcpp::util;
-namespace rxsc=rxcpp::schedulers;
-
-#include "rxcpp/rx-test.hpp"
-#include "catch.hpp"
-
+#include "../test.h"
 
 SCENARIO("timer", "[hide][periodically][timer][scheduler][long][perf][sources]"){
     GIVEN("the timer of 1 sec"){

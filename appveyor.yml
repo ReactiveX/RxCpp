@@ -11,6 +11,12 @@ environment:
     - VSVER: Visual Studio 12 2013 Win64
 #    - VSVER: Visual Studio 14 2015 Win64
 
+platform:
+  - x64
+
+configuration:
+  - Release
+
 install:
     - choco install cmake
     - choco upgrade cmake
@@ -25,7 +31,7 @@ build:
 
 test_script:
   - cd build\test\
-  - ctest -V
+  - ctest -V -C Release
   - cd ..\..
 
 artifacts:

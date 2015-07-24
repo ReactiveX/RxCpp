@@ -1,9 +1,4 @@
-#include "rxcpp/rx.hpp"
-namespace rxu=rxcpp::util;
-namespace rxsc=rxcpp::schedulers;
-
-#include "rxcpp/rx-test.hpp"
-#include "catch.hpp"
+#include "../test.h"
 
 SCENARIO("on_error_resume_next stops on completion", "[on_error_resume_next][operators]"){
     GIVEN("a test hot observable of ints"){

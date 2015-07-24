@@ -1,9 +1,4 @@
-#include "rxcpp/rx.hpp"
-namespace rxu = rxcpp::util;
-namespace rxsc = rxcpp::schedulers;
-
-#include "rxcpp/rx-test.hpp"
-#include "catch.hpp"
+#include "../test.h"
 
 SCENARIO("retry, basic test", "[retry][operators]") {
     GIVEN("hot observable of 3x4x7 ints with errors inbetween the groups. Infinite retry.") {

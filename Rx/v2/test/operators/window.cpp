@@ -1,13 +1,4 @@
-#include "rxcpp/rx.hpp"
-namespace rx = rxcpp;
-namespace rxu = rxcpp::util;
-namespace rxs = rxcpp::sources;
-namespace rxsc = rxcpp::schedulers;
-
-#include "rxcpp/rx-test.hpp"
-namespace rxt = rxcpp::test;
-
-#include "catch.hpp"
+#include "../test.h"
 
 SCENARIO("window count, basic", "[window][operators]"){
     GIVEN("1 hot observable of ints."){

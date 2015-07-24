@@ -61,8 +61,13 @@ set(TEST_SOURCES
 )
 
 
-add_executable(rxcppv2_test EXCLUDE_FROM_ALL ${TEST_DIR}/test.cpp ${TEST_SOURCES})
+add_executable(rxcppv2_test ${TEST_DIR}/test.cpp ${TEST_SOURCES})
 add_executable(rxcpp::tests ALIAS rxcppv2_test)
+set_target_properties(
+    rxcppv2_test PROPERTIES
+    EXCLUDE_FROM_DEFAULT_BUILD TRUE
+    EXCLUDE_FROM_ALL TRUE
+)
 target_compile_options(rxcppv2_test PUBLIC ${RX_COMPILE_OPTIONS})
 target_compile_features(rxcppv2_test PUBLIC ${RX_COMPILE_FEATURES})
 target_include_directories(rxcppv2_test

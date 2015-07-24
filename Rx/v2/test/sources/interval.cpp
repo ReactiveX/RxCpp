@@ -1,11 +1,4 @@
-#include "rxcpp/rx.hpp"
-namespace rx=rxcpp;
-namespace rxu=rxcpp::util;
-namespace rxsc=rxcpp::schedulers;
-
-#include "rxcpp/rx-test.hpp"
-#include "catch.hpp"
-
+#include "../test.h"
 
 SCENARIO("schedule_periodically", "[hide][periodically][scheduler][long][perf][sources]"){
     GIVEN("schedule_periodically"){

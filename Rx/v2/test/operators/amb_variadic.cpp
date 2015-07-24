@@ -1,12 +1,4 @@
-#include "rxcpp/rx.hpp"
-namespace rx=rxcpp;
-namespace rxu=rxcpp::util;
-namespace rxs=rxcpp::sources;
-namespace rxsc=rxcpp::schedulers;
-namespace rxn=rx::notifications;
-
-#include "rxcpp/rx-test.hpp"
-#include "catch.hpp"
+#include "../test.h"
 
 SCENARIO("variadic amb never 3", "[amb][join][operators]"){
     GIVEN("3 hot observables of ints."){

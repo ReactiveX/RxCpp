@@ -1,10 +1,4 @@
-#include "rxcpp/rx.hpp"
-namespace rxu=rxcpp::util;
-namespace rxs=rxcpp::sources;
-namespace rxsc=rxcpp::schedulers;
-
-#include "rxcpp/rx-test.hpp"
-#include "catch.hpp"
+#include "../test.h"
 
 #include <locale>
 
