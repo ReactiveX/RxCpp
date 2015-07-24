@@ -39,37 +39,44 @@ matrix:
         sources:
         - ubuntu-toolchain-r-test
 before_install:
-- if [ -n "$GCC_VERSION" ]; then export CXX="g++-${GCC_VERSION}" CC="gcc-${GCC_VERSION}";
-  fi
-- if [ -n "$CLANG_VERSION" ]; then export CXX="clang++-${CLANG_VERSION}" CC="clang-${CLANG_VERSION}";
-  fi
-- which $CXX
-- which $CC
-- if [ "$PUBLISH_DOCS" == "On" ]; then sudo apt-add-repository -y ppa:libreoffice/libreoffice-4-2; fi
-- if [ "$PUBLISH_DOCS" == "On" ]; then sudo apt-get update || echo "ignore update failure"; fi
-- if [ "$PUBLISH_DOCS" == "On" ]; then sudo apt-get install doxygen; fi
-- sh projects/scripts/travis-install.sh
-- if [ -n "$CLANG_VERSION" ]; then sh projects/scripts/install_libcxx.sh; fi
+  - if [ -n "$GCC_VERSION" ]; then export CXX="g++-${GCC_VERSION}" CC="gcc-${GCC_VERSION}";
+    fi
+  - if [ -n "$CLANG_VERSION" ]; then export CXX="clang++-${CLANG_VERSION}" CC="clang-${CLANG_VERSION}";
+    fi
+  - which $CXX
+  - which $CC
+  - if [ "$PUBLISH_DOCS" == "On" ]; then sudo apt-add-repository -y ppa:libreoffice/libreoffice-4-2; fi
+  - if [ "$PUBLISH_DOCS" == "On" ]; then sudo apt-get update || echo "ignore update failure"; fi
+  - if [ "$PUBLISH_DOCS" == "On" ]; then sudo apt-get install doxygen; fi
+  - sh projects/scripts/travis-install.sh
+  - if [ -n "$CLANG_VERSION" ]; then sh projects/scripts/install_libcxx.sh; fi
+  - wget http://apt.biicode.com/install.sh && chmod +x install.sh && ./install.sh
 install:
-- export CXX_FLAGS=""
-- export CXX_LINKER_FLAGS=""
-- if [ -z "$BUILD_TYPE" ]; then export BUILD_TYPE=Release; fi
-- if [ "$ASAN" == "On"]; then export CXX_FLAGS="${CXX_FLAGS} -fsanitize=address,undefined,integer
-  -fno-omit-frame-pointer -fno-sanitize=unsigned-integer-overflow"; fi
-- if [ -n "$CLANG_VERSION" ]; then CXX_FLAGS="${CXX_FLAGS} -D__extern_always_inline=inline";
-  fi
-- if [ "$LIBCXX" == "On" ]; then CXX_FLAGS="${CXX_FLAGS} -stdlib=libc++ -I/usr/include/c++/v1/";
-  fi
-- if [ "$LIBCXX" == "On" ]; then CXX_LINKER_FLAGS="${CXX_FLAGS} -L/usr/lib/ -lc++";
-  fi
-- cmake . -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_CXX_FLAGS="${CXX_FLAGS}" -DCMAKE_EXE_LINKER_FLAGS="${CXX_LINKER_FLAGS}"
+  - export CXX_FLAGS=""
+  - export CXX_LINKER_FLAGS=""
+  - if [ -z "$BUILD_TYPE" ]; then export BUILD_TYPE=Release; fi
+  - if [ "$ASAN" == "On"]; then export CXX_FLAGS="${CXX_FLAGS} -fsanitize=address,undefined,integer
+    -fno-omit-frame-pointer -fno-sanitize=unsigned-integer-overflow"; fi
+  - if [ -n "$CLANG_VERSION" ]; then CXX_FLAGS="${CXX_FLAGS} -D__extern_always_inline=inline";
+    fi
+  - if [ "$LIBCXX" == "On" ]; then CXX_FLAGS="${CXX_FLAGS} -stdlib=libc++ -I/usr/include/c++/v1/";
+    fi
+  - if [ "$LIBCXX" == "On" ]; then CXX_LINKER_FLAGS="${CXX_FLAGS} -L/usr/lib/ -lc++";
+    fi
+  - cmake . -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_CXX_FLAGS="${CXX_FLAGS}" -DCMAKE_EXE_LINKER_FLAGS="${CXX_LINKER_FLAGS}"
 script:
-- make VERBOSE=1 $PROJECT
-- if [ "$RUN_TEST" == "On" ]; then cd build/test/; fi
-- if [ "$RUN_TEST" == "On" ]; then ctest -V; fi
-- if [ "$RUN_TEST" == "On" ]; then cd ../../; fi
+  - make VERBOSE=1 $PROJECT
+  - if [ "$RUN_TEST" == "On" ]; then cd build/test/; fi
+  - if [ "$RUN_TEST" == "On" ]; then ctest -V; fi
+  - if [ "$RUN_TEST" == "On" ]; then cd ../../; fi
 after_success:
-- if [ "$PUBLISH_DOCS" == "On" ]; then sh projects/scripts/travis-doxygen.sh; fi
+  - if [ "$PUBLISH_DOCS" == "On" ]; then sh projects/scripts/travis-doxygen.sh; fi
+  - if [ "$PUBLISH_DOCS" == "On" ]; then cd projects/biicode; fi
+  - if [ "$PUBLISH_DOCS" == "On" ]; then cp ../../AUTHORS.txt AUTHORS.txt; fi
+  - if [ "$PUBLISH_DOCS" == "On" ]; then cp ../../Rx/v2/src/license.txt license.txt; fi
+  - if [ "$PUBLISH_DOCS" == "On" ]; then cp -r ../../Rx/v2/src/rxcpp ./rxcpp; fi
+  - if [ "$PUBLISH_DOCS" == "On" ]; then bii setup:cpp; fi
+  - if [ "$PUBLISH_DOCS" == "On" ]; then bii init; fi
 branches:
   only:
   - master
@@ -81,11 +88,17 @@ notifications:
     on_failure: always
   slack: reactivex:eq4FFCchRIzufO2ZmpuuiJ9E
 deploy:
-  provider: releases
-  api_key:
-    secure: sMyo0U4WxZ0kOlQ9SzKfeuU2/5y0Ngt8A0B0N6bb0TcGIyLhQv2q216Q+T0rkQKc04WnLY0Vr1/q9LonAA46nGq7zAiWcC3TY0zVUKRmKWrotQb/QqW1tvVEARKwG7CO+HCcGT3XCeM69XA/L7WiXRskTxS1+5Vy46/tVZBKofg=
-  file: ''
-  on:
-    condition: $PUBLISH_DOCS = On
-    tags: true
-    repo: Reactive-Extensions/RxCpp
+  - provider: releases
+    api_key:
+      secure: sMyo0U4WxZ0kOlQ9SzKfeuU2/5y0Ngt8A0B0N6bb0TcGIyLhQv2q216Q+T0rkQKc04WnLY0Vr1/q9LonAA46nGq7zAiWcC3TY0zVUKRmKWrotQb/QqW1tvVEARKwG7CO+HCcGT3XCeM69XA/L7WiXRskTxS1+5Vy46/tVZBKofg=
+    file: ''
+    on:
+      tags: true
+      repo: Reactive-Extensions/RxCpp
+  - provider: biicode
+    user: kirkshoop
+    password:
+      secure: OdyvgvS+3tKWHXo9sq/ZRkG2RqoEui+jBJORKyffm9sCGlj3VbeQ8r+b1I6y2H2Wbg4E6+hVHgYtLVrsUfGP81a+WQYecHWnn4R5B12FWhiRUk16zwK//qlXt3adwWkVX+L0I8InpCmRd44MJbfCmGUZ9zI9rtkQs0ljfTqwJcI=
+    skip_cleanup: true
+    on:
+      repo: Reactive-Extensions/RxCpp
