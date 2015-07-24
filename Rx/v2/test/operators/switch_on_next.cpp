@@ -1,11 +1,4 @@
-#include "rxcpp/rx.hpp"
-namespace rx=rxcpp;
-namespace rxu=rxcpp::util;
-namespace rxsc=rxcpp::schedulers;
-namespace rxn=rx::notifications;
-
-#include "rxcpp/rx-test.hpp"
-#include "catch.hpp"
+#include "../test.h"
 
 SCENARIO("switch_on_next - some changes", "[switch_on_next][operators]"){
     GIVEN("a source"){

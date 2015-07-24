@@ -1,9 +1,4 @@
-#include "rxcpp/rx.hpp"
-namespace rx=rxcpp;
-namespace rxs=rx::rxs;
-namespace rxsc=rx::rxsc;
-
-#include "catch.hpp"
+#include "../test.h"
 
 static const int static_subscriptions = 50000;
 

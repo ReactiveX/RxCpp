@@ -1,12 +1,4 @@
-#include "rxcpp/rx.hpp"
-namespace rx=rxcpp;
-namespace rxu=rxcpp::util;
-namespace rxs=rxcpp::sources;
-namespace rxsc=rxcpp::schedulers;
-
-#include "rxcpp/rx-test.hpp"
-#include "catch.hpp"
-
+#include "../test.h"
 
 SCENARIO("publish range", "[hide][range][subject][publish][subject][operators]"){
     GIVEN("a range"){

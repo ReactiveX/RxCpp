@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
 
-project(rxcppv2_test LANGUAGES C CXX)
+project(rxcpp_test LANGUAGES C CXX)
 
 # define some folders
 
@@ -12,11 +12,13 @@ MESSAGE( STATUS "RXCPP_DIR: " ${RXCPP_DIR} )
 
 include(${RXCPP_DIR}/projects/CMake/shared.cmake)
 
+# configure unit tests via CTest
+enable_testing()
+
 set(TEST_DIR ${RXCPP_DIR}/Rx/v2/test)
 
 # define the sources of the self test
 set(TEST_SOURCES
-    ${TEST_DIR}/test.cpp
     ${TEST_DIR}/subscriptions/observer.cpp
     ${TEST_DIR}/subscriptions/subscription.cpp
     ${TEST_DIR}/subjects/subject.cpp
@@ -28,8 +30,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/amb.cpp
     ${TEST_DIR}/operators/amb_variadic.cpp
     ${TEST_DIR}/operators/buffer.cpp
-    ${TEST_DIR}/operators/combine_latest.1.cpp
-    ${TEST_DIR}/operators/combine_latest.2.cpp
+    ${TEST_DIR}/operators/combine_latest.cpp
     ${TEST_DIR}/operators/concat.cpp
     ${TEST_DIR}/operators/concat_map.cpp
     ${TEST_DIR}/operators/distinct_until_changed.cpp
@@ -56,11 +57,17 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/take_until.cpp
     ${TEST_DIR}/operators/tap.cpp
     ${TEST_DIR}/operators/window.cpp
-    ${TEST_DIR}/operators/zip.1.cpp
-    ${TEST_DIR}/operators/zip.2.cpp
+    ${TEST_DIR}/operators/zip.cpp
 )
-add_executable(rxcppv2_test ${TEST_SOURCES})
+
+
+add_executable(rxcppv2_test ${TEST_DIR}/test.cpp ${TEST_SOURCES})
 add_executable(rxcpp::tests ALIAS rxcppv2_test)
+set_target_properties(
+    rxcppv2_test PROPERTIES
+    EXCLUDE_FROM_DEFAULT_BUILD TRUE
+    EXCLUDE_FROM_ALL TRUE
+)
 target_compile_options(rxcppv2_test PUBLIC ${RX_COMPILE_OPTIONS})
 target_compile_features(rxcppv2_test PUBLIC ${RX_COMPILE_FEATURES})
 target_include_directories(rxcppv2_test
@@ -68,29 +75,23 @@ target_include_directories(rxcppv2_test
     )
 target_link_libraries(rxcppv2_test ${CMAKE_THREAD_LIBS_INIT})
 
-# define the sources of the self test
-set(ONE_SOURCES
-    ${TEST_DIR}/test.cpp
-    #${TEST_DIR}/operators/tap.cpp
-    #${TEST_DIR}/operators/on_error_resume_next.cpp
-)
-add_executable(one_test ${ONE_SOURCES})
-add_executable(rxcpp::one_test ALIAS one_test)
-target_compile_options(one_test PUBLIC ${RX_COMPILE_OPTIONS})
-target_compile_features(one_test PUBLIC ${RX_COMPILE_FEATURES})
-target_include_directories(one_test
-    PUBLIC ${RX_SRC_DIR} ${RX_CATCH_DIR}
-    )
-target_link_libraries(one_test ${CMAKE_THREAD_LIBS_INIT})
 
-# configure unit tests via CTest
-enable_testing()
+foreach(ONE_TEST_SOURCE ${TEST_SOURCES})
+    get_filename_component(ONE_TEST_NAME "${ONE_TEST_SOURCE}" NAME)
+    string( REPLACE ".cpp" "" ONE_TEST_NAME ${ONE_TEST_NAME})
+    set(ONE_TEST_FULL_NAME "rxcpp_test_${ONE_TEST_NAME}")
+    add_executable( ${ONE_TEST_FULL_NAME} ${ONE_TEST_SOURCE} )
+    add_executable( rxcpp::${ONE_TEST_NAME} ALIAS ${ONE_TEST_FULL_NAME})
+    target_compile_definitions(${ONE_TEST_FULL_NAME} PUBLIC "CATCH_CONFIG_MAIN")
+    target_compile_options(${ONE_TEST_FULL_NAME} PUBLIC ${RX_COMPILE_OPTIONS})
+    target_compile_features(${ONE_TEST_FULL_NAME} PUBLIC ${RX_COMPILE_FEATURES})
+    target_include_directories(${ONE_TEST_FULL_NAME}
+        PUBLIC ${RX_SRC_DIR} ${RX_CATCH_DIR}
+        )
+    target_link_libraries(${ONE_TEST_FULL_NAME} ${CMAKE_THREAD_LIBS_INIT})
 
-add_test(NAME RunTests COMMAND rxcppv2_test)
+    add_test(NAME ${ONE_TEST_NAME} COMMAND ${ONE_TEST_FULL_NAME})
+endforeach(ONE_TEST_SOURCE ${TEST_SOURCES})
 
-add_test(NAME ListTests COMMAND rxcppv2_test --list-tests)
-set_tests_properties(ListTests PROPERTIES PASS_REGULAR_EXPRESSION "[0-9]+ test cases")
 
-add_test(NAME ListTags COMMAND rxcppv2_test --list-tags)
-set_tests_properties(ListTags PROPERTIES PASS_REGULAR_EXPRESSION "[0-9]+ tags")
 

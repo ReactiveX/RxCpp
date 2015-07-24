@@ -1,14 +1,6 @@
 #define RXCPP_SUBJECT_TEST_ASYNC 1
 
-#include "rxcpp/rx.hpp"
-namespace rx=rxcpp;
-namespace rxu=rxcpp::util;
-namespace rxs=rxcpp::sources;
-namespace rxsc=rxcpp::schedulers;
-namespace rxsub=rxcpp::subjects;
-
-#include "rxcpp/rx-test.hpp"
-#include "catch.hpp"
+#include "../test.h"
 
 #include <future>
 
