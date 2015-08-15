@@ -8,6 +8,8 @@ Linux & OSX: [![Linux & Osx Status](http://img.shields.io/travis/Reactive-Extens
 
 [doxygen documentation](http://reactive-extensions.github.io/RxCpp)
 
+[![Join in on gitter.im](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/Reactive-Extensions/RxCpp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 # Reactive Extensions:
 
 * Rx.NET: The Reactive Extensions (Rx) is a library for composing asynchronous and event-based programs using observable sequences and LINQ-style query operators.
