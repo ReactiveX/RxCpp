@@ -52,7 +52,7 @@ class subscriber : public subscriber_base<T>
             trace_activity().on_next_enter(*that, u);
             try {
                 that->destination.on_next(std::move(u));
-                do_unsubscribe.store(false);
+                do_unsubscribe = false;
             } catch(...) {
                 auto ex = std::current_exception();
                 trace_activity().on_error_enter(*that, ex);
@@ -61,7 +61,7 @@ class subscriber : public subscriber_base<T>
             }
         }
         const this_type* that;
-        std::atomic<bool> do_unsubscribe;
+        volatile bool do_unsubscribe;
     };
 
     struct errordetacher
