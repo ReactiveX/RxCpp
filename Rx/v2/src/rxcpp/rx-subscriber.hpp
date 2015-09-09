@@ -61,7 +61,7 @@ class subscriber : public subscriber_base<T>
             }
         }
         const this_type* that;
-        bool do_unsubscribe;
+        volatile bool do_unsubscribe;
     };
 
     struct errordetacher
