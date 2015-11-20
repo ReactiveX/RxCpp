@@ -140,6 +140,7 @@
 #include <numeric>
 #include <list>
 #include <map>
+#include <set>
 #include <memory>
 #include <utility>
 #include <type_traits>
@@ -494,6 +495,16 @@ public:
         return std::vector<typename Collection::cursor::element_type>(begin(), end());
     }
 
+    std::list<typename Collection::cursor::element_type> to_list() const
+    {
+        return std::list<typename Collection::cursor::element_type>(begin(), end());
+    }
+
+    std::set<typename Collection::cursor::element_type> to_set() const
+    {
+        return std::set<typename Collection::cursor::element_type>(begin(), end());
+    }
+
     // -------------------- container/range methods --------------------
 
     iterator begin() const  { auto cur = c.get_cursor(); return !cur.empty() ? iterator(cur) : iterator(); }
@@ -526,7 +537,7 @@ private:
 template <class TContainer>
 linq_driver<iter_cursor<typename util::container_traits<TContainer>::iterator>> from(TContainer& c)
 { 
-    auto cur = iter_cursor<typename util::container_traits<TContainer>::iterator>(begin(c), end(c));
+    auto cur = iter_cursor<typename util::container_traits<TContainer>::iterator>(std::begin(c), std::end(c));
     return cur;
 }
 template <class T>

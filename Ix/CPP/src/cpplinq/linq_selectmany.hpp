@@ -5,18 +5,65 @@
 #include "util.hpp"
 #include "linq_cursor.hpp"
 
-namespace cpplinq 
+#include <type_traits>
+
+namespace cpplinq
 {
-    namespace detail 
+    namespace detail
     {
         struct default_select_many_selector
         {
             template <class T1, class T2>
             auto operator()(T1&& t1, T2&& t2) const
-            -> decltype(std::forward<T2>(t2))
+                -> decltype(std::forward<T2>(t2))
             {
                 return std::forward<T2>(t2);
             }
+        };
+    }
+
+    namespace detail 
+    {
+        template <typename Fn, typename Arg>
+        struct resolve_select_many_fn_return_type
+        {
+            typedef decltype(std::declval<Fn>()(std::declval<Arg>())) value;
+        };
+
+        template <typename TCol>
+        struct value_collection_adapter
+        {
+            value_collection_adapter(const TCol& col)
+                : _collection(col){}
+
+            value_collection_adapter(const value_collection_adapter& src)
+                : _collection(src._collection) {}
+
+            value_collection_adapter(value_collection_adapter && src)
+                : _collection(std::move(src._collection)) {}
+
+            const TCol& get() const
+            {
+                return _collection;
+            }
+
+            TCol& get()
+            {
+                return _collection;
+            }
+
+        private:
+            TCol _collection;
+        };
+
+        template<typename TCol>
+        struct collection_store_type 
+        {
+            typedef typename std::remove_reference<TCol>::type                         collection_type;
+            typedef std::reference_wrapper<collection_type>                            reference_store_type;
+            typedef value_collection_adapter<collection_type>                          value_store_type;
+
+            typedef typename std::conditional<std::is_reference<TCol>::value, reference_store_type, value_store_type>::type    store;
         };
     }
 
@@ -34,6 +81,8 @@ namespace cpplinq
         typedef decltype(from(instance<Fn>()(instance<Cur1>().get()))) Container2;
         typedef typename Container2::cursor Cur2;
 
+        typedef typename detail::resolve_select_many_fn_return_type<Fn, typename Cur1::element_type>::value inner_collection;
+
     public:
         class cursor
         {
@@ -45,19 +94,24 @@ namespace cpplinq
             typedef typename Cur2::reference_type reference_type;
             typedef typename Cur2::element_type element_type;
 
+            typedef detail::collection_store_type<inner_collection>     collection_store_type;
+            typedef typename collection_store_type::store               collection_store;
+            typedef std::shared_ptr<collection_store>                   collection_store_ptr;
+
         private:
             // TODO: we need to lazy eval somehow, but this feels wrong.
-            Cur1                            cur1;
-            dynamic_cursor<reference_type>  cur2;
-            Fn                              fn;
-            Fn2                             fn2;
+            Cur1                                cur1;
+            dynamic_cursor<reference_type>      cur2;
+            Fn                                  fn;
+            Fn2                                 fn2;
+            collection_store_ptr                store;
 
         public:
             cursor(Cur1 cur1, const Fn& fn, const Fn2& fn2)
-            : cur1(std::move(cur1)), fn(fn), fn2(fn2)
+                : cur1(std::move(cur1)), fn(fn), fn2(fn2)
             {
-                auto container2 = fn(cur1.get());
-                cur2 = from(container2).get_cursor();
+                store = collection_store_ptr(new collection_store(fn(cur1.get())));
+                cur2 = from(store->get()).get_cursor();
             }
 
             bool empty() const 
