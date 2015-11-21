@@ -110,8 +110,11 @@ namespace cpplinq
             cursor(Cur1 cur1, const Fn& fn, const Fn2& fn2)
                 : cur1(std::move(cur1)), fn(fn), fn2(fn2)
             {
-                store = collection_store_ptr(new collection_store(fn(cur1.get())));
-                cur2 = from(store->get()).get_cursor();
+                if (!cur1.empty())
+                {
+                    store = collection_store_ptr(new collection_store(fn(cur1.get())));
+                    cur2 = from(store->get()).get_cursor();
+                }
             }
 
             bool empty() const 
