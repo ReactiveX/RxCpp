@@ -112,7 +112,7 @@ namespace cpplinq
             {
                 if (!cur1.empty())
                 {
-                    store = collection_store_ptr(new collection_store(fn(cur1.get())));
+                    store = std::make_shared<collection_store>(fn(cur1.get()));
                     cur2 = from(store->get()).get_cursor();
                 }
             }
@@ -142,8 +142,8 @@ namespace cpplinq
                     if (cur1.empty()) 
                         break;
 
-                    auto container2 = fn(cur1.get());
-                    cur2 = from(container2).get_cursor();
+                    store = std::make_shared<collection_store>(fn(cur1.get()));
+                    cur2 = from(store->get()).get_cursor();
                 }
             }
         };
