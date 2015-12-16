@@ -170,3 +170,91 @@ SCENARIO("average error sample"){
             [](){printf("OnCompleted\n");});
     printf("//! [average error sample]\n");
 }
+
+SCENARIO("max sample"){
+    printf("//! [max sample]\n");
+    auto values = rxcpp::observable<>::range(1, 4).max();
+    values.
+        subscribe(
+            [](double v){printf("OnNext: %lf\n", v);},
+            [](){printf("OnCompleted\n");});
+    printf("//! [max sample]\n");
+}
+
+SCENARIO("max empty sample"){
+    printf("//! [max empty sample]\n");
+    auto values = rxcpp::observable<>::empty<int>().max();
+    values.
+        subscribe(
+            [](double v){printf("OnNext: %lf\n", v);},
+            [](std::exception_ptr ep){
+                try {std::rethrow_exception(ep);}
+                catch (const rxcpp::empty_error& ex) {
+                    printf("OnError: %s\n", ex.what());
+                }
+            },
+            [](){printf("OnCompleted\n");});
+    printf("//! [max empty sample]\n");
+}
+
+SCENARIO("max error sample"){
+    printf("//! [max error sample]\n");
+    auto values = rxcpp::observable<>::range(1, 4).
+        concat(rxcpp::observable<>::error<int>(std::runtime_error("Error from source"))).
+            max();
+    values.
+        subscribe(
+            [](double v){printf("OnNext: %lf\n", v);},
+            [](std::exception_ptr ep){
+                try {std::rethrow_exception(ep);}
+                catch (const std::runtime_error& ex) {
+                    printf("OnError: %s\n", ex.what());
+                }
+            },
+            [](){printf("OnCompleted\n");});
+    printf("//! [max error sample]\n");
+}
+
+SCENARIO("min sample"){
+    printf("//! [min sample]\n");
+    auto values = rxcpp::observable<>::range(1, 4).min();
+    values.
+        subscribe(
+            [](double v){printf("OnNext: %lf\n", v);},
+            [](){printf("OnCompleted\n");});
+    printf("//! [min sample]\n");
+}
+
+SCENARIO("min empty sample"){
+    printf("//! [min empty sample]\n");
+    auto values = rxcpp::observable<>::empty<int>().min();
+    values.
+        subscribe(
+            [](double v){printf("OnNext: %lf\n", v);},
+            [](std::exception_ptr ep){
+                try {std::rethrow_exception(ep);}
+                catch (const rxcpp::empty_error& ex) {
+                    printf("OnError: %s\n", ex.what());
+                }
+            },
+            [](){printf("OnCompleted\n");});
+    printf("//! [min empty sample]\n");
+}
+
+SCENARIO("min error sample"){
+    printf("//! [min error sample]\n");
+    auto values = rxcpp::observable<>::range(1, 4).
+        concat(rxcpp::observable<>::error<int>(std::runtime_error("Error from source"))).
+            min();
+    values.
+        subscribe(
+            [](double v){printf("OnNext: %lf\n", v);},
+            [](std::exception_ptr ep){
+                try {std::rethrow_exception(ep);}
+                catch (const std::runtime_error& ex) {
+                    printf("OnError: %s\n", ex.what());
+                }
+            },
+            [](){printf("OnCompleted\n");});
+    printf("//! [min error sample]\n");
+}

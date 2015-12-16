@@ -267,6 +267,46 @@ struct sum {
     }
 };
 
+template<class T>
+struct max {
+    typedef rxu::maybe<T> seed_type;
+    seed_type seed() {
+        return seed_type();
+    }
+    seed_type operator()(seed_type a, T v) {
+        if (a.empty())
+            a.reset(v);
+        else
+            *a = (v < *a ? *a : v);
+        return a;
+    }
+    T operator()(seed_type a) {
+        if (a.empty())
+            throw rxcpp::empty_error("max() requires a stream with at least one value");
+        return *a;
+    }
+};
+
+template<class T>
+struct min {
+    typedef rxu::maybe<T> seed_type;
+    seed_type seed() {
+        return seed_type();
+    }
+    seed_type operator()(seed_type a, T v) {
+        if (a.empty())
+            a.reset(v);
+        else
+            *a = (*a < v ? *a : v);
+        return a;
+    }
+    T operator()(seed_type a) {
+        if (a.empty())
+            throw rxcpp::empty_error("min() requires a stream with at least one value");
+        return *a;
+    }
+};
+
 }
 
 template<class Seed, class Accumulator, class ResultSelector>
