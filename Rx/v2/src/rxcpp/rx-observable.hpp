@@ -422,6 +422,48 @@ public:
     double average() const {
         return source.average().as_blocking().last();
     }
+
+    /*! Return the max of all items emitted by this blocking_observable, or throw an std::runtime_error exception if it emits no items.
+
+    \return  The max of all items emitted by this blocking_observable.
+
+    \sample
+    When the source observable emits at least one item:
+    \snippet blocking_observable.cpp blocking max sample
+    \snippet output.txt blocking max sample
+
+    When the source observable is empty:
+    \snippet blocking_observable.cpp blocking max empty sample
+    \snippet output.txt blocking max empty sample
+
+    When the source observable calls on_error:
+    \snippet blocking_observable.cpp blocking max error sample
+    \snippet output.txt blocking max error sample
+*/
+    T max() const {
+        return source.max().as_blocking().last();
+    }
+
+    /*! Return the min of all items emitted by this blocking_observable, or throw an std::runtime_error exception if it emits no items.
+
+    \return  The min of all items emitted by this blocking_observable.
+
+    \sample
+    When the source observable emits at least one item:
+    \snippet blocking_observable.cpp blocking min sample
+    \snippet output.txt blocking min sample
+
+    When the source observable is empty:
+    \snippet blocking_observable.cpp blocking min empty sample
+    \snippet output.txt blocking min empty sample
+
+    When the source observable calls on_error:
+    \snippet blocking_observable.cpp blocking min error sample
+    \snippet output.txt blocking min error sample
+*/
+    T min() const {
+        return source.min().as_blocking().last();
+    }
 };
 
 template<>
@@ -2268,6 +2310,8 @@ public:
         - rxcpp::observable::count
         - rxcpp::observable::sum
         - rxcpp::observable::average
+        - rxcpp::observable::min
+        - rxcpp::observable::max
 
         \sample
         Geometric mean of source values:
@@ -2404,6 +2448,54 @@ public:
         /// \endcond
     {
         return      defer_reduce<rxu::defer_seed_type<rxo::detail::average, T>, rxu::defer_type<rxo::detail::average, T>, rxu::defer_type<rxo::detail::average, T>>::make(source_operator, rxo::detail::average<T>(), rxo::detail::average<T>(), rxo::detail::average<T>().seed());
+    }
+
+    /*! For each item from this observable reduce it by taking the max value of the previous items.
+
+        \return  An observable that emits a single item: the max of elements emitted by the source observable.
+
+        \sample
+        \snippet math.cpp max sample
+        \snippet output.txt max sample
+
+        When the source observable completes without emitting any items:
+        \snippet math.cpp max empty sample
+        \snippet output.txt max empty sample
+
+        When the source observable calls on_error:
+        \snippet math.cpp max error sample
+        \snippet output.txt max error sample
+    */
+    auto max() const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> typename defer_reduce<rxu::defer_seed_type<rxo::detail::max, T>, rxu::defer_type<rxo::detail::max, T>, rxu::defer_type<rxo::detail::max, T>>::observable_type
+        /// \endcond
+    {
+        return      defer_reduce<rxu::defer_seed_type<rxo::detail::max, T>, rxu::defer_type<rxo::detail::max, T>, rxu::defer_type<rxo::detail::max, T>>::make(source_operator, rxo::detail::max<T>(), rxo::detail::max<T>(), rxo::detail::max<T>().seed());
+    }
+
+    /*! For each item from this observable reduce it by taking the min value of the previous items.
+
+        \return  An observable that emits a single item: the min of elements emitted by the source observable.
+
+        \sample
+        \snippet math.cpp min sample
+        \snippet output.txt min sample
+
+        When the source observable completes without emitting any items:
+        \snippet math.cpp min empty sample
+        \snippet output.txt min empty sample
+
+        When the source observable calls on_error:
+        \snippet math.cpp min error sample
+        \snippet output.txt min error sample
+    */
+    auto min() const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> typename defer_reduce<rxu::defer_seed_type<rxo::detail::min, T>, rxu::defer_type<rxo::detail::min, T>, rxu::defer_type<rxo::detail::min, T>>::observable_type
+        /// \endcond
+    {
+        return      defer_reduce<rxu::defer_seed_type<rxo::detail::min, T>, rxu::defer_type<rxo::detail::min, T>, rxu::defer_type<rxo::detail::min, T>>::make(source_operator, rxo::detail::min<T>(), rxo::detail::min<T>(), rxo::detail::min<T>().seed());
     }
 
     /*! For each item from this observable use Accumulator to combine items into a value that will be emitted from the new observable that is returned.
