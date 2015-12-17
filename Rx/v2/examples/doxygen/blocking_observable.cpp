@@ -159,3 +159,71 @@ SCENARIO("blocking average error sample"){
     }
     printf("//! [blocking average error sample]\n");
 }
+
+SCENARIO("blocking max sample"){
+    printf("//! [blocking max sample]\n");
+    auto values = rxcpp::observable<>::range(1, 4).as_blocking();
+    auto max = values.max();
+    printf("max = %d\n", max);
+    printf("//! [blocking max sample]\n");
+}
+
+SCENARIO("blocking max empty sample"){
+    printf("//! [blocking max empty sample]\n");
+    auto values = rxcpp::observable<>::empty<int>().as_blocking();
+    try {
+        auto max = values.max();
+        printf("max = %d\n", max);
+    } catch (const rxcpp::empty_error& ex) {
+        printf("Exception: %s\n", ex.what());
+    }
+    printf("//! [blocking max empty sample]\n");
+}
+
+SCENARIO("blocking max error sample"){
+    printf("//! [blocking max error sample]\n");
+    auto values = rxcpp::observable<>::range(1, 4).
+        concat(rxcpp::observable<>::error<int>(std::runtime_error("Error from source"))).
+        as_blocking();
+    try {
+        auto max = values.max();
+        printf("max = %d\n", max);
+    } catch (const std::exception& ex) {
+        printf("Exception: %s\n", ex.what());
+    }
+    printf("//! [blocking max error sample]\n");
+}
+
+SCENARIO("blocking min sample"){
+    printf("//! [blocking min sample]\n");
+    auto values = rxcpp::observable<>::range(1, 4).as_blocking();
+    auto min = values.min();
+    printf("min = %d\n", min);
+    printf("//! [blocking min sample]\n");
+}
+
+SCENARIO("blocking min empty sample"){
+    printf("//! [blocking min empty sample]\n");
+    auto values = rxcpp::observable<>::empty<int>().as_blocking();
+    try {
+        auto min = values.min();
+        printf("min = %d\n", min);
+    } catch (const rxcpp::empty_error& ex) {
+        printf("Exception: %s\n", ex.what());
+    }
+    printf("//! [blocking min empty sample]\n");
+}
+
+SCENARIO("blocking min error sample"){
+    printf("//! [blocking min error sample]\n");
+    auto values = rxcpp::observable<>::range(1, 4).
+        concat(rxcpp::observable<>::error<int>(std::runtime_error("Error from source"))).
+        as_blocking();
+    try {
+        auto min = values.min();
+        printf("min = %d\n", min);
+    } catch (const std::exception& ex) {
+        printf("Exception: %s\n", ex.what());
+    }
+    printf("//! [blocking min error sample]\n");
+}
