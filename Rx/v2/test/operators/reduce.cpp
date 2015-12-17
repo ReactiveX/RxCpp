@@ -99,3 +99,296 @@ SCENARIO("average some data", "[reduce][average][operators]"){
         }
     }
 }
+
+SCENARIO("sum some data", "[reduce][sum][operators]"){
+    GIVEN("a test hot observable of ints"){
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+        const rxsc::test::messages<int> d_on;
+
+        auto xs = sc.make_hot_observable({
+             on.next(150, 1),
+             on.next(210, 3),
+             on.next(220, 4),
+             on.next(230, 2),
+             on.completed(250)
+         });
+
+        WHEN("sum is calculated"){
+
+            auto res = w.start(
+                [&]() {
+                    return xs.sum();
+                }
+            );
+
+            THEN("the output contains the sum of source values"){
+                auto required = rxu::to_vector({
+                    d_on.next(250, 9),
+                    d_on.completed(250)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription"){
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 250)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("max", "[reduce][max][operators]"){
+    GIVEN("a test hot observable of ints"){
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+        const rxsc::test::messages<int> d_on;
+
+        auto xs = sc.make_hot_observable({
+            on.next(150, 1),
+            on.next(210, 3),
+            on.next(220, 4),
+            on.next(230, 2),
+            on.completed(250)
+        });
+
+        WHEN("max is calculated"){
+
+            auto res = w.start(
+                [&]() {
+                    return xs.max();
+                }
+            );
+
+            THEN("the output contains the max of source values"){
+                auto required = rxu::to_vector({
+                    d_on.next(250, 4),
+                    d_on.completed(250)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription"){
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 250)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("max, empty", "[reduce][max][operators]"){
+    GIVEN("a test hot observable of ints"){
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+        const rxsc::test::messages<int> d_on;
+
+        std::runtime_error ex("max on_error");
+
+        auto xs = sc.make_hot_observable({
+            on.next(150, 1),
+            on.completed(250)
+        });
+
+        WHEN("max is calculated"){
+
+            auto res = w.start(
+                [&]() {
+                  return xs.max();
+                }
+            );
+
+            THEN("the output contains only error message"){
+                auto required = rxu::to_vector({
+                    d_on.error(250, ex)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription"){
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 250)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("max, error", "[reduce][max][operators]"){
+    GIVEN("a test hot observable of ints"){
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+        const rxsc::test::messages<int> d_on;
+
+        std::runtime_error ex("max on_error from source");
+
+        auto xs = sc.make_hot_observable({
+            on.next(150, 1),
+            on.error(250, ex)
+        });
+
+        WHEN("max is calculated"){
+
+            auto res = w.start(
+                [&]() {
+                  return xs.max();
+                }
+            );
+
+            THEN("the output contains only error message"){
+                auto required = rxu::to_vector({
+                    d_on.error(250, ex)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription"){
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 250)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("min", "[reduce][min][operators]"){
+    GIVEN("a test hot observable of ints"){
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+        const rxsc::test::messages<int> d_on;
+
+        auto xs = sc.make_hot_observable({
+            on.next(150, 1),
+            on.next(210, 3),
+            on.next(220, 4),
+            on.next(230, 2),
+            on.completed(250)
+        });
+
+        WHEN("min is calculated"){
+
+            auto res = w.start(
+                [&]() {
+                  return xs.min();
+                }
+            );
+
+            THEN("the output contains the min of source values"){
+                auto required = rxu::to_vector({
+                    d_on.next(250, 2),
+                    d_on.completed(250)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription"){
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 250)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("min, empty", "[reduce][min][operators]"){
+    GIVEN("a test hot observable of ints"){
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+        const rxsc::test::messages<int> d_on;
+
+        std::runtime_error ex("min on_error");
+
+        auto xs = sc.make_hot_observable({
+            on.next(150, 1),
+            on.completed(250)
+        });
+
+        WHEN("min is calculated"){
+
+            auto res = w.start(
+                [&]() {
+                  return xs.min();
+                }
+            );
+
+            THEN("the output contains only error message"){
+                auto required = rxu::to_vector({
+                    d_on.error(250, ex)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription"){
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 250)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("min, error", "[reduce][min][operators]"){
+    GIVEN("a test hot observable of ints"){
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+        const rxsc::test::messages<int> d_on;
+
+        std::runtime_error ex("min on_error from source");
+
+        auto xs = sc.make_hot_observable({
+            on.next(150, 1),
+            on.error(250, ex)
+        });
+
+        WHEN("min is calculated"){
+
+            auto res = w.start(
+                [&]() {
+                  return xs.min();
+                }
+            );
+
+            THEN("the output contains only error message"){
+                auto required = rxu::to_vector({
+                    d_on.error(250, ex)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription"){
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 250)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
