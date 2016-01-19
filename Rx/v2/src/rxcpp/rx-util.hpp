@@ -7,7 +7,7 @@
 
 #include "rx-includes.hpp"
 
-#if !defined(RXCPP_ON_IOS) && !defined(RXCPP_THREAD_LOCAL)
+#if !defined(RXCPP_ON_IOS) && !defined(RXCPP_ON_ANDROID) && !defined(RXCPP_THREAD_LOCAL)
 #if defined(_MSC_VER)
 #define RXCPP_THREAD_LOCAL __declspec(thread)
 #else
