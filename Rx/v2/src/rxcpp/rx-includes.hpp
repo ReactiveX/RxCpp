@@ -93,6 +93,10 @@
 #endif
 #endif
 
+#if defined(__ANDROID__)
+#define RXCPP_ON_ANDROID
+#endif
+
 #pragma push_macro("min")
 #pragma push_macro("max")
 #undef min
@@ -127,7 +131,7 @@
 #include <typeinfo>
 #include <tuple>
 
-#if defined(RXCPP_ON_IOS)
+#if defined(RXCPP_ON_IOS) || defined(RXCPP_ON_ANDROID)
 #include <pthread.h>
 #endif
 
