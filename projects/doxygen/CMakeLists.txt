@@ -22,6 +22,7 @@ if(DOXYGEN_FOUND)
 
     # File with main page (index.html) content
     set(DOXY_MAIN_PAGE ${DOXY_CONF_DIR}/mainpage.dox)
+    set(DOXY_FOOTER_HTML ${DOXY_CONF_DIR}/footer.html)
 
     # Sources for processing location
     set(DOXY_INPUT_DIR "${IX_SRC_DIR} ${RX_SRC_DIR} ${DOXY_MAIN_PAGE}")
