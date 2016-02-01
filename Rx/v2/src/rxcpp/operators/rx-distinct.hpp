@@ -13,8 +13,11 @@ namespace operators {
 
 namespace detail {
 
+template<class T, class Enable = void>
+struct distinct {};
+
 template<class T>
-struct distinct
+struct distinct<T, typename std::enable_if<is_hashable<T>::value>::type>
 {
     typedef rxu::decay_t<T> source_value_type;
 
