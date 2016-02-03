@@ -29,7 +29,7 @@ struct distinct<T, typename std::enable_if<is_hashable<T>::value>::type>
         typedef rxu::decay_t<Subscriber> dest_type;
         typedef observer<value_type, this_type> observer_type;
         dest_type dest;
-        mutable std::unordered_set<source_value_type> remembered;
+        mutable std::unordered_set<source_value_type, rxcpp::filtered_hash<source_value_type>> remembered;
 
         distinct_observer(dest_type d)
                 : dest(d)

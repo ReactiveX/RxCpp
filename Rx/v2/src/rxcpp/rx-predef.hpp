@@ -261,21 +261,6 @@ struct identity_for
     }
 };
 
-template<typename, typename = void>
-struct is_hashable
-        : std::false_type {};
-
-template<typename T>
-struct is_hashable<T, typename std::enable_if<!!sizeof(std::declval<std::hash<T>>()(std::declval<T>()))>::type>
-        : std::true_type {};
-
-}
-
-// disable std::hash for observable<>
-namespace std {
-    template <class T, class Source> struct hash<rxcpp::observable<T, Source>>;
-    template <class T, class Source> struct hash<rxcpp::connectable_observable<T, Source>>;
-    template <class K, class T, class Source> struct hash<rxcpp::grouped_observable<K, T, Source>>;
 }
 
 #endif
