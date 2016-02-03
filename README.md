@@ -2,7 +2,6 @@ Windows: [![Windows Status](http://img.shields.io/appveyor/ci/kirkshoop/RxCpp-44
 
 Linux & OSX: [![Linux & Osx Status](http://img.shields.io/travis/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://travis-ci.org/Reactive-Extensions/RxCpp)
 
-[![Build Status](https://webapi.biicode.com/v1/badges/kirkshoop/kirkshoop/rxcpp/master)](https://www.biicode.com/kirkshoop/rxcpp)
 [![NuGet version](http://img.shields.io/nuget/v/RxCpp.svg?style=flat-square)](http://www.nuget.org/packages/RxCpp/)
 [![NuGet downloads](http://img.shields.io/nuget/dt/RxCpp.svg?style=flat-square)](http://www.nuget.org/packages/RxCpp/)
 
@@ -108,15 +107,7 @@ namespace rxu=rxcpp::util;
 namespace rxsc=rxcpp::schedulers;
 namespace rxsub=rxcpp::subjects;
 
-// At this time, RxCpp will fail to compile if the contents
-// of the std namespace are merged into the global namespace
-// DO NOT USE: 'using namespace std;'
-
-#ifdef UNICODE
-int wmain(int argc, wchar_t** argv)
-#else
-int main(int argc, char** argv)
-#endif
+int main()
 {
     int c = 0;
 
