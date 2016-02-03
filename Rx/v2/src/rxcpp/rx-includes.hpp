@@ -130,6 +130,9 @@
 #include <initializer_list>
 #include <typeinfo>
 #include <tuple>
+#include <unordered_set>
+#include <type_traits>
+#include <utility>
 
 #if defined(RXCPP_ON_IOS) || defined(RXCPP_ON_ANDROID)
 #include <pthread.h>

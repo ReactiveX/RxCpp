@@ -677,6 +677,37 @@ public:
 }
 namespace rxu=util;
 
+//
+// due to an noisy static_assert issue in more than one std lib impl, 
+// build a whitelist filter for the types that are allowed to be hashed 
+// in rxcpp. this allows is_hashable<T> to work.
+//
+// NOTE: this should eventually be removed!
+//
+template <class T, typename = void> 
+struct filtered_hash;
+template <class T> 
+struct filtered_hash<T, typename std::enable_if<std::is_enum<T>::value>::type> : std::hash<T> {
+};
+template <class T> 
+struct filtered_hash<T, typename std::enable_if<std::is_integral<T>::value>::type> : std::hash<T> {
+};
+template <class T> 
+struct filtered_hash<T, typename std::enable_if<std::is_pointer<T>::value>::type> : std::hash<T> {
+};
+
+template<typename, typename C = rxu::types_checked>
+struct is_hashable
+    : std::false_type {};
+
+template<typename T>
+struct is_hashable<T, 
+    typename rxu::types_checked_from<
+        typename filtered_hash<T>::result_type, 
+        typename filtered_hash<T>::argument_type, 
+        typename std::result_of<filtered_hash<T>(T)>::type>::type>
+    : std::true_type {};
+
 }
 
 #define RXCPP_UNWIND(Name, Function) \

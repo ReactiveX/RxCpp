@@ -838,6 +838,22 @@ public:
         return                    lift<rxu::value_type_t<rxo::detail::map<T, Selector>>>(rxo::detail::map<T, Selector>(std::move(s)));
     }
 
+     /*! For each item from this observable, filter out repeated values and emit only items that have not already been emitted.
+
+        \return  Observable that emits those items from the source observable that are distinct.
+
+        \sample
+        \snippet distinct.cpp distinct sample
+        \snippet output.txt distinct sample
+    */
+    auto distinct() const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::distinct<T>()))
+        /// \endcond
+    {
+        return                    lift<T>(rxo::detail::distinct<T>());
+    }
+
     /*! For each item from this observable, filter out consequentially repeated values and emit only changes from the new observable that is returned.
 
         \return  Observable that emits those items from the source observable that are distinct from their immediate predecessors.
