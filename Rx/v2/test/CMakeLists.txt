@@ -35,6 +35,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/concat_map.cpp
     ${TEST_DIR}/operators/distinct.cpp
     ${TEST_DIR}/operators/distinct_until_changed.cpp
+    ${TEST_DIR}/operators/element_at.cpp
     ${TEST_DIR}/operators/filter.cpp
     ${TEST_DIR}/operators/flat_map.cpp
     ${TEST_DIR}/operators/group_by.cpp
