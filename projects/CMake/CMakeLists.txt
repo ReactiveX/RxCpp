@@ -36,6 +36,7 @@ set(RX_SOURCES
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-connect_forever.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-distinct.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-distinct_until_changed.hpp
+   ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-element_at.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-filter.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-finally.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-flat_map.hpp

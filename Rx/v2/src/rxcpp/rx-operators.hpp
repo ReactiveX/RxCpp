@@ -44,6 +44,7 @@ namespace rxo=operators;
 #include "operators/rx-connect_forever.hpp"
 #include "operators/rx-distinct.hpp"
 #include "operators/rx-distinct_until_changed.hpp"
+#include "rxcpp/operators/rx-element_at.hpp"
 #include "operators/rx-filter.hpp"
 #include "operators/rx-finally.hpp"
 #include "operators/rx-flat_map.hpp"

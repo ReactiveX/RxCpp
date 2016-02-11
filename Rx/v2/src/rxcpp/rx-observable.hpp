@@ -870,6 +870,24 @@ public:
         return                    lift<T>(rxo::detail::distinct_until_changed<T>());
     }
 
+    /*! Pulls an item located at a specified index location in the sequence of items and emits that item as its own sole emission.
+
+        \param  index  the index of the element to return.
+
+        \return  An observable that emit an item located at a specified index location.
+
+        \sample
+        \snippet element_at.cpp element_at sample
+        \snippet output.txt element_at sample
+    */
+    auto element_at(int index) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        ->      decltype(EXPLICIT_THIS lift<T>(rxo::detail::element_at<T>(index)))
+        /// \endcond
+    {
+        return                    lift<T>(rxo::detail::element_at<T>(index));
+    }
+
     /*! Rerurn an observable that emits connected, non-overlapping windows, each containing at most count items from the source observable.
 
         \param count  the maximum size of each window before it should be completed
