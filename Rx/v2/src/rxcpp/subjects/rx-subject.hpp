@@ -101,13 +101,14 @@ public:
     explicit multicast_observer(composite_subscription cs)
         : b(std::make_shared<binder_type>(cs))
     {
-        auto keepAlive = b;
-        b->state->lifetime.add([keepAlive](){
-            if (keepAlive->state->current == mode::Casting){
-                keepAlive->state->current = mode::Disposed;
-                keepAlive->current_completer.reset();
-                keepAlive->completer.reset();
-                ++keepAlive->state->generation;
+        std::weak_ptr<binder_type> binder = b;
+        b->state->lifetime.add([binder](){
+            auto b = binder.lock();
+            if (b && b->state->current == mode::Casting){
+                b->state->current = mode::Disposed;
+                b->current_completer.reset();
+                b->completer.reset();
+                ++b->state->generation;
             }
         });
     }
