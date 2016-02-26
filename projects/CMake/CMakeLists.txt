@@ -54,6 +54,7 @@ set(RX_SOURCES
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-repeat.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-replay.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-retry.hpp
+   ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-sample_time.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-scan.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-skip.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-skip_until.hpp
