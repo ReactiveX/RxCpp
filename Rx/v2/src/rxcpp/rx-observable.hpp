@@ -2556,6 +2556,45 @@ public:
                                     rxo::detail::scan<T, this_type, Accumulator, Seed>(*this, std::forward<Accumulator>(a), seed));
     }
 
+    /*! Return an Observable that emits the most recent items emitted by the source Observable within periodic time intervals.
+
+        \param period  the period of time to sample the source observable.
+        \param coordination  the scheduler for the items.
+
+        \return  Observable that emits the most recently emitted item since the previous sampling.
+
+        \sample
+        \snippet sample.cpp sample period sample
+        \snippet output.txt sample period sample
+    */
+    template<class Coordination,
+        class Requires = typename std::enable_if<is_coordination<Coordination>::value, rxu::types_checked>::type>
+    auto sample_with_time(rxsc::scheduler::clock_type::duration period, Coordination coordination) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::sample_with_time<T, rxsc::scheduler::clock_type::duration, Coordination>(period, coordination)))
+        /// \endcond
+    {
+        return                    lift<T>(rxo::detail::sample_with_time<T, rxsc::scheduler::clock_type::duration, Coordination>(period, coordination));
+    }
+
+    /*! Return an Observable that emits the most recent items emitted by the source Observable within periodic time intervals.
+
+        \param period  the period of time to sample the source observable.
+
+        \return  Observable that emits the most recently emitted item since the previous sampling.
+
+        \sample
+        \snippet sample.cpp sample period sample
+        \snippet output.txt sample period sample
+    */
+    auto sample_with_time(rxsc::scheduler::clock_type::duration period) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::sample_with_time<T, rxsc::scheduler::clock_type::duration, identity_one_worker>(period, identity_current_thread())))
+        /// \endcond
+    {
+        return                    lift<T>(rxo::detail::sample_with_time<T, rxsc::scheduler::clock_type::duration, identity_one_worker>(period, identity_current_thread()));
+    }
+
     /*! Make new observable with skipped first count items from this observable.
 
         \tparam  Count  the type of the items counter
