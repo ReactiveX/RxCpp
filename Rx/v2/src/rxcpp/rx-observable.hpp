@@ -2034,6 +2034,23 @@ public:
         return                    lift<typename rxo::detail::group_by_traits<T, this_type, KeySelector, MarbleSelector, rxu::less>::grouped_observable_type>(rxo::detail::group_by<T, this_type, KeySelector, MarbleSelector, rxu::less>(std::move(ks), std::move(ms), rxu::less()));
     }
 
+      /*! Do not emit any items from the source Observable, but allow termination notification (either onError or onCompleted) to pass through unchanged.
+
+        \return  Observable that emits termination notification from the source observable.
+
+        \sample
+        \snippet ignore_elements.cpp ignore_elements sample
+        \snippet output.txt ignore_elements sample
+    */
+    auto ignore_elements() const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::ignore_elements<T>()))
+        /// \endcond
+    {
+        return                    lift<T>(rxo::detail::ignore_elements<T>());
+    }
+
+
     /// \cond SHOW_SERVICE_MEMBERS
     /// multicast ->
     /// allows connections to the source to be independent of subscriptions

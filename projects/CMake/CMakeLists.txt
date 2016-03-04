@@ -41,6 +41,7 @@ set(RX_SOURCES
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-finally.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-flat_map.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-group_by.hpp
+   ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-ignore_elements.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-lift.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-map.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-merge.hpp
