@@ -61,6 +61,7 @@ if(DOXYGEN_FOUND)
         ${DOXY_EXAMPLES_SRC_DIR}/flat_map.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/from.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/group_by.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/ignore_elements.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/interval.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/iterate.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/just.cpp
