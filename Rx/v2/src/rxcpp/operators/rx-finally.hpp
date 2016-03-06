@@ -76,8 +76,8 @@ public:
     finally_factory(last_call_type lc) : last_call(std::move(lc)) {}
     template<class Observable>
     auto operator()(Observable&& source)
-        -> decltype(source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(filter<rxu::value_type_t<rxu::decay_t<Observable>>, last_call_type>(last_call))) {
-        return      source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(filter<rxu::value_type_t<rxu::decay_t<Observable>>, last_call_type>(last_call));
+        -> decltype(source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(finally<rxu::value_type_t<rxu::decay_t<Observable>>, last_call_type>(last_call))) {
+        return      source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(finally<rxu::value_type_t<rxu::decay_t<Observable>>, last_call_type>(last_call));
     }
 };
 
