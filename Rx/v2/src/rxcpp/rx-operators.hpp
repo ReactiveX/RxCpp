@@ -42,6 +42,7 @@ namespace rxo=operators;
 #include "operators/rx-concat.hpp"
 #include "operators/rx-concat_map.hpp"
 #include "operators/rx-connect_forever.hpp"
+#include "operators/rx-delay.hpp"
 #include "operators/rx-distinct.hpp"
 #include "operators/rx-distinct_until_changed.hpp"
 #include "operators/rx-element_at.hpp"

@@ -838,7 +838,51 @@ public:
         return                    lift<rxu::value_type_t<rxo::detail::map<T, Selector>>>(rxo::detail::map<T, Selector>(std::move(s)));
     }
 
-     /*! For each item from this observable, filter out repeated values and emit only items that have not already been emitted.
+    /*! Return an observable that emits each item emitted by the source observable after the specified delay.
+
+        \tparam Duration      the type of time interval
+        \tparam Coordination  the type of the scheduler
+
+        \param period        the period of time each item is delayed
+        \param coordination  the scheduler for the delays
+
+        \return  Observable that emits each item emitted by the source observable after the specified delay.
+
+        \sample
+        \snippet delay.cpp delay period+coordination sample
+        \snippet output.txt delay period+coordination sample
+    */
+    template<class Duration, class Coordination>
+    auto delay(Duration period, Coordination coordination) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::delay<T, Duration, Coordination>(period, coordination)))
+        /// \endcond
+    {
+        return                    lift<T>(rxo::detail::delay<T, Duration, Coordination>(period, coordination));
+    }
+
+    /*! Return an observable that emits each item emitted by the source observable after the specified delay.
+
+        \tparam Duration      the type of time interval
+
+        \param period        the period of time each item is delayed
+
+        \return  Observable that emits each item emitted by the source observable after the specified delay.
+
+        \sample
+        \snippet delay.cpp delay period sample
+        \snippet output.txt delay period sample
+    */
+    template<class Duration>
+    auto delay(Duration period) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::delay<T, Duration, identity_one_worker>(period, identity_current_thread())))
+        /// \endcond
+    {
+        return                    lift<T>(rxo::detail::delay<T, Duration, identity_one_worker>(period, identity_current_thread()));
+    }
+       
+    /*! For each item from this observable, filter out repeated values and emit only items that have not already been emitted.
 
         \return  Observable that emits those items from the source observable that are distinct.
 
@@ -888,7 +932,7 @@ public:
         return                    lift<T>(rxo::detail::element_at<T>(index));
     }
 
-    /*! Rerurn an observable that emits connected, non-overlapping windows, each containing at most count items from the source observable.
+    /*! Return an observable that emits connected, non-overlapping windows, each containing at most count items from the source observable.
 
         \param count  the maximum size of each window before it should be completed
 
@@ -906,7 +950,7 @@ public:
         return                    lift<observable<T>>(rxo::detail::window<T>(count, count));
     }
 
-    /*! Rerurn an observable that emits windows every skip items containing at most count items from the source observable.
+    /*! Return an observable that emits windows every skip items containing at most count items from the source observable.
 
         \param count  the maximum size of each window before it should be completed
         \param skip   how many items need to be skipped before starting a new window
@@ -925,7 +969,7 @@ public:
         return                    lift<observable<T>>(rxo::detail::window<T>(count, skip));
     }
 
-    /*! Rerurn an observable that emits observables every skip time interval and collects items from this observable for period of time into each produced observable, on the specified scheduler.
+    /*! Return an observable that emits observables every skip time interval and collects items from this observable for period of time into each produced observable, on the specified scheduler.
 
         \tparam Duration      the type of time intervals
         \tparam Coordination  the type of the scheduler
@@ -949,7 +993,7 @@ public:
         return                    lift<observable<T>>(rxo::detail::window_with_time<T, Duration, Coordination>(period, skip, coordination));
     }
 
-    /*! Rerurn an observable that emits observables every skip time interval and collects items from this observable for period of time into each produced observable.
+    /*! Return an observable that emits observables every skip time interval and collects items from this observable for period of time into each produced observable.
 
         \tparam Duration  the type of time intervals
 
@@ -971,7 +1015,7 @@ public:
         return                    lift<observable<T>>(rxo::detail::window_with_time<T, Duration, identity_one_worker>(period, skip, identity_current_thread()));
     }
 
-    /*! Rerurn an observable that emits observables every period time interval and collects items from this observable for period of time into each produced observable, on the specified scheduler.
+    /*! Return an observable that emits observables every period time interval and collects items from this observable for period of time into each produced observable, on the specified scheduler.
 
         \tparam Duration      the type of time intervals
         \tparam Coordination  the type of the scheduler
@@ -994,7 +1038,7 @@ public:
         return                    lift<observable<T>>(rxo::detail::window_with_time<T, Duration, Coordination>(period, period, coordination));
     }
 
-    /*! Rerurn an observable that emits connected, non-overlapping windows represending items emitted by the source observable during fixed, consecutive durations.
+    /*! Return an observable that emits connected, non-overlapping windows represending items emitted by the source observable during fixed, consecutive durations.
 
         \tparam Duration  the type of time intervals
 
@@ -1015,7 +1059,7 @@ public:
         return                    lift<observable<T>>(rxo::detail::window_with_time<T, Duration, identity_one_worker>(period, period, identity_current_thread()));
     }
 
-    /*! Rerurn an observable that emits connected, non-overlapping windows of items from the source observable that were emitted during a fixed duration of time or when the window has reached maximum capacity (whichever occurs first), on the specified scheduler.
+    /*! Return an observable that emits connected, non-overlapping windows of items from the source observable that were emitted during a fixed duration of time or when the window has reached maximum capacity (whichever occurs first), on the specified scheduler.
 
         \tparam Duration      the type of time intervals
         \tparam Coordination  the type of the scheduler
@@ -1039,7 +1083,7 @@ public:
         return                    lift<observable<T>>(rxo::detail::window_with_time_or_count<T, Duration, Coordination>(period, count, coordination));
     }
 
-    /*! Rerurn an observable that emits connected, non-overlapping windows of items from the source observable that were emitted during a fixed duration of time or when the window has reached maximum capacity (whichever occurs first).
+    /*! Return an observable that emits connected, non-overlapping windows of items from the source observable that were emitted during a fixed duration of time or when the window has reached maximum capacity (whichever occurs first).
 
         \tparam Duration  the type of time intervals
 
@@ -1061,7 +1105,7 @@ public:
         return                    lift<observable<T>>(rxo::detail::window_with_time_or_count<T, Duration, identity_one_worker>(period, count, identity_current_thread()));
     }
 
-    /*! Rerurn an observable that emits connected, non-overlapping buffer, each containing at most count items from the source observable.
+    /*! Return an observable that emits connected, non-overlapping buffer, each containing at most count items from the source observable.
 
         \param count  the maximum size of each buffer before it should be emitted
 
@@ -1079,7 +1123,7 @@ public:
         return                    lift_if<std::vector<T>>(rxo::detail::buffer_count<T>(count, count));
     }
 
-    /*! Rerurn an observable that emits buffers every skip items containing at most count items from the source observable.
+    /*! Return an observable that emits buffers every skip items containing at most count items from the source observable.
 
         \param count  the maximum size of each buffers before it should be emitted
         \param skip   how many items need to be skipped before starting a new buffers
@@ -1098,7 +1142,7 @@ public:
         return                    lift_if<std::vector<T>>(rxo::detail::buffer_count<T>(count, skip));
     }
 
-    /*! Rerurn an observable that emits buffers every skip time interval and collects items from this observable for period of time into each produced buffer, on the specified scheduler.
+    /*! Return an observable that emits buffers every skip time interval and collects items from this observable for period of time into each produced buffer, on the specified scheduler.
 
         \tparam Coordination  the type of the scheduler
 
@@ -1121,7 +1165,7 @@ public:
         return                    lift_if<std::vector<T>>(rxo::detail::buffer_with_time<T, rxsc::scheduler::clock_type::duration, Coordination>(period, skip, coordination));
     }
 
-    /*! Rerurn an observable that emits buffers every skip time interval and collects items from this observable for period of time into each produced buffer.
+    /*! Return an observable that emits buffers every skip time interval and collects items from this observable for period of time into each produced buffer.
 
         \param period        the period of time each buffer collects items before it is emitted
         \param skip          the period of time after which a new buffer will be created
@@ -1148,7 +1192,7 @@ public:
         return                    lift_if<std::vector<T>>(rxo::detail::buffer_with_time<T, rxsc::scheduler::clock_type::duration, identity_one_worker>(period, skip, identity_current_thread()));
     }
 
-    /*! Rerurn an observable that emits buffers every period time interval and collects items from this observable for period of time into each produced buffer, on the specified scheduler.
+    /*! Return an observable that emits buffers every period time interval and collects items from this observable for period of time into each produced buffer, on the specified scheduler.
 
         \tparam Coordination  the type of the scheduler
 
@@ -1171,7 +1215,7 @@ public:
         return                    lift_if<std::vector<T>>(rxo::detail::buffer_with_time<T, rxsc::scheduler::clock_type::duration, Coordination>(period, period, coordination));
     }
 
-    /*! Rerurn an observable that emits buffers every period time interval and collects items from this observable for period of time into each produced buffer.
+    /*! Return an observable that emits buffers every period time interval and collects items from this observable for period of time into each produced buffer.
 
         \param period  the period of time each buffer collects items before it is emitted and replaced with a new buffer
 
@@ -1189,7 +1233,7 @@ public:
         return                    lift_if<std::vector<T>>(rxo::detail::buffer_with_time<T, rxsc::scheduler::clock_type::duration, identity_one_worker>(period, period, identity_current_thread()));
     }
 
-    /*! Rerurn an observable that emits connected, non-overlapping buffers of items from the source observable that were emitted during a fixed duration of time or when the buffer has reached maximum capacity (whichever occurs first), on the specified scheduler.
+    /*! Return an observable that emits connected, non-overlapping buffers of items from the source observable that were emitted during a fixed duration of time or when the buffer has reached maximum capacity (whichever occurs first), on the specified scheduler.
 
         \tparam Coordination  the type of the scheduler
 
@@ -1212,7 +1256,7 @@ public:
         return                    lift_if<std::vector<T>>(rxo::detail::buffer_with_time_or_count<T, rxsc::scheduler::clock_type::duration, Coordination>(period, count, coordination));
     }
 
-    /*! Rerurn an observable that emits connected, non-overlapping buffers of items from the source observable that were emitted during a fixed duration of time or when the buffer has reached maximum capacity (whichever occurs first).
+    /*! Return an observable that emits connected, non-overlapping buffers of items from the source observable that were emitted during a fixed duration of time or when the buffer has reached maximum capacity (whichever occurs first).
 
         \param period        the period of time each buffer collects items before it is emitted and replaced with a new buffer
         \param count         the maximum size of each buffer before it is emitted and new buffer is created
