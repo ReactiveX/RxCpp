@@ -55,6 +55,7 @@ if(DOXYGEN_FOUND)
         ${DOXY_EXAMPLES_SRC_DIR}/delay.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/distinct.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/distinct_until_changed.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/element_at.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/empty.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/error.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/filter.cpp
