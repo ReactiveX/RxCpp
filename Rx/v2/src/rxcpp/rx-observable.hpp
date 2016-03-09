@@ -824,7 +824,7 @@ public:
         \param s  the selector function
 
         \return  Observable that emits the items from the source observable, transformed by the specified function.
-
+        
         \sample
         \snippet map.cpp map sample
         \snippet output.txt map sample
@@ -885,6 +885,8 @@ public:
     /*! For each item from this observable, filter out repeated values and emit only items that have not already been emitted.
 
         \return  Observable that emits those items from the source observable that are distinct.
+
+        \note distinct keeps an unordered_set<T> of past values. Due to an issue in multiple implementations of std::hash<T>, rxcpp maintains a whitelist of hashable types. new types can be added by specializing rxcpp::filtered_hash<T>
 
         \sample
         \snippet distinct.cpp distinct sample

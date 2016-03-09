@@ -48,14 +48,13 @@ before_install:
   - which $CXX
   - which $CC
   ############################################################################
-  # Install publish tools (doxygen, biicode)
+  # Install publish tools (doxygen)
   ############################################################################
   - |
     if [[ "$PUBLISH_DOCS" == "On" ]]; then
       sudo apt-add-repository -y ppa:libreoffice/libreoffice-4-2
       sudo apt-get update || echo "ignore update failure"
       sudo apt-get install doxygen
-      wget http://apt.biicode.com/install.sh && chmod +x install.sh && ./install.sh
     fi
   ############################################################################
   # Install a recent CMake
@@ -105,12 +104,6 @@ after_success:
   - |
     if [[ "$PUBLISH_DOCS" == "On" ]]; then
       sh projects/scripts/travis-doxygen.sh
-      cd projects/biicode
-      cp ../../AUTHORS.txt ./blocks/kirkshoop/rxcpp/AUTHORS.txt
-      cp ../../Rx/v2/src/license.txt ./blocks/kirkshoop/rxcpp/license.txt
-      cp -r ../../Rx/v2/src/rxcpp/* ./blocks/kirkshoop/rxcpp/*
-      bii setup:cpp
-      bii init
     fi
 branches:
   only:
@@ -135,11 +128,4 @@ deploy:
     file: ''
     on:
       tags: true
-      repo: Reactive-Extensions/RxCpp
-  - provider: biicode
-    user: kirkshoop
-    password:
-      secure: OdyvgvS+3tKWHXo9sq/ZRkG2RqoEui+jBJORKyffm9sCGlj3VbeQ8r+b1I6y2H2Wbg4E6+hVHgYtLVrsUfGP81a+WQYecHWnn4R5B12FWhiRUk16zwK//qlXt3adwWkVX+L0I8InpCmRd44MJbfCmGUZ9zI9rtkQs0ljfTqwJcI=
-    skip_cleanup: true
-    on:
       repo: Reactive-Extensions/RxCpp
