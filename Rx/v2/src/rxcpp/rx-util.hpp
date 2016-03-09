@@ -695,6 +695,18 @@ struct filtered_hash<T, typename std::enable_if<std::is_integral<T>::value>::typ
 template <class T> 
 struct filtered_hash<T, typename std::enable_if<std::is_pointer<T>::value>::type> : std::hash<T> {
 };
+template <class T>
+struct filtered_hash<T, typename std::enable_if<std::is_same<std::string, T>::value>::type> : std::hash<T> {
+};
+template <class T>
+struct filtered_hash<T, typename std::enable_if<std::is_same<std::wstring, T>::value>::type> : std::hash<T> {
+};
+template <class T>
+struct filtered_hash<T, typename std::enable_if<std::is_same<std::u16string, T>::value>::type> : std::hash<T> {
+};
+template <class T>
+struct filtered_hash<T, typename std::enable_if<std::is_same<std::u32string, T>::value>::type> : std::hash<T> {
+};
 
 template<typename, typename C = rxu::types_checked>
 struct is_hashable
