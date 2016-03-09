@@ -55,10 +55,29 @@
 
 #endif
 
+//
+// control std::hash<> of enum
+// force with RXCPP_FORCE_HASH_ENUM & RXCPP_FORCE_HASH_ENUM_UNDERLYING
+// in time use ifdef to detect library support for std::hash<> of enum
+//
+#define RXCPP_HASH_ENUM 0
+#define RXCPP_HASH_ENUM_UNDERLYING 1
+
 #if !defined(WINAPI_FAMILY) || (WINAPI_FAMILY == WINAPI_FAMILY_DESKTOP_APP)
 #define RXCPP_USE_WINRT 0
 #else
 #define RXCPP_USE_WINRT 1
+#endif
+
+#if defined(__APPLE__) && defined(__MACH__)
+#include <TargetConditionals.h>
+#if (TARGET_OS_IPHONE == 1) || (TARGET_IPHONE_SIMULATOR == 1)
+#define RXCPP_ON_IOS
+#endif
+#endif
+
+#if defined(__ANDROID__)
+#define RXCPP_ON_ANDROID
 #endif
 
 #if defined(RXCPP_FORCE_USE_VARIADIC_TEMPLATES)
@@ -81,20 +100,29 @@
 #define RXCPP_USE_WINRT RXCPP_FORCE_USE_WINRT
 #endif
 
+#if defined(RXCPP_FORCE_HASH_ENUM)
+#undef RXCPP_HASH_ENUM
+#define RXCPP_HASH_ENUM RXCPP_FORCE_HASH_ENUM
+#endif
+
+#if defined(RXCPP_FORCE_HASH_ENUM_UNDERLYING)
+#undef RXCPP_HASH_ENUM_UNDERLYING
+#define RXCPP_HASH_ENUM_UNDERLYING RXCPP_FORCE_HASH_ENUM_UNDERLYING
+#endif
+
+#if defined(RXCPP_FORCE_ON_IOS)
+#undef RXCPP_ON_IOS
+#define RXCPP_ON_IOS RXCPP_FORCE_ON_IOS
+#endif
+
+#if defined(RXCPP_FORCE_ON_ANDROID)
+#undef RXCPP_ON_ANDROID
+#define RXCPP_ON_ANDROID RXCPP_FORCE_ON_ANDROID
+#endif
+
 #if defined(_MSC_VER) && !RXCPP_USE_VARIADIC_TEMPLATES
 // resolve args needs enough to store all the possible resolved args
 #define _VARIADIC_MAX 10
-#endif
-
-#if defined(__APPLE__) && defined(__MACH__)
-#include <TargetConditionals.h>
-#if (TARGET_OS_IPHONE == 1) || (TARGET_IPHONE_SIMULATOR == 1)
-#define RXCPP_ON_IOS
-#endif
-#endif
-
-#if defined(__ANDROID__)
-#define RXCPP_ON_ANDROID
 #endif
 
 #pragma push_macro("min")
