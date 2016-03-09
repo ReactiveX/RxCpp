@@ -295,3 +295,47 @@ SCENARIO("distinct - some changes", "[distinct][operators]"){
         }
     }
 }
+
+SCENARIO("distinct - strings", "[distinct][operators]"){
+    GIVEN("a source"){
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        const rxsc::test::messages<std::string> on;
+
+        auto xs = sc.make_hot_observable({
+            on.next(150, "A"),
+            on.next(210, "B"),
+            on.next(220, "B"),
+            on.next(230, "B"),
+            on.next(240, "B"),
+            on.completed(250)
+        });
+
+        WHEN("distinct values are taken"){
+
+            auto res = w.start(
+                    [xs]() {
+                        return xs.distinct();
+                    }
+            );
+
+            THEN("the output only contains distinct items sent while subscribed"){
+                auto required = rxu::to_vector({
+                    on.next(210, "B"),
+                    on.completed(250)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was 1 subscription/unsubscription to the source"){
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 250)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+
+        }
+    }
+}
