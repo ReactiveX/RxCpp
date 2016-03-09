@@ -674,18 +674,37 @@ public:
 };
 #endif
 
+template<typename, typename C = types_checked>
+struct is_string : std::false_type {
+};
+
+template <typename T>
+struct is_string<T, 
+    typename types_checked_from<
+        typename T::value_type,
+        typename T::traits_type,
+        typename T::allocator_type>::type>
+    : std::is_base_of<
+            std::basic_string<
+                typename T::value_type,
+                typename T::traits_type,
+                typename T::allocator_type>, T> {
+};
+
 }
 namespace rxu=util;
 
+
 //
 // due to an noisy static_assert issue in more than one std lib impl, 
-// build a whitelist filter for the types that are allowed to be hashed 
-// in rxcpp. this allows is_hashable<T> to work.
+// rxcpp maintains a whitelist filter for the types that are allowed 
+// to be hashed. this allows is_hashable<T> to work.
 //
 // NOTE: this should eventually be removed!
 //
 template <class T, typename = void> 
 struct filtered_hash;
+
 template <class T> 
 struct filtered_hash<T, typename std::enable_if<std::is_enum<T>::value>::type> : std::hash<T> {
 };
@@ -695,17 +714,8 @@ struct filtered_hash<T, typename std::enable_if<std::is_integral<T>::value>::typ
 template <class T> 
 struct filtered_hash<T, typename std::enable_if<std::is_pointer<T>::value>::type> : std::hash<T> {
 };
-template <class T>
-struct filtered_hash<T, typename std::enable_if<std::is_same<std::string, T>::value>::type> : std::hash<T> {
-};
-template <class T>
-struct filtered_hash<T, typename std::enable_if<std::is_same<std::wstring, T>::value>::type> : std::hash<T> {
-};
-template <class T>
-struct filtered_hash<T, typename std::enable_if<std::is_same<std::u16string, T>::value>::type> : std::hash<T> {
-};
-template <class T>
-struct filtered_hash<T, typename std::enable_if<std::is_same<std::u32string, T>::value>::type> : std::hash<T> {
+template <class T> 
+struct filtered_hash<T, typename std::enable_if<rxu::is_string<T>::value>::type> : std::hash<T> {
 };
 
 template<typename, typename C = rxu::types_checked>
