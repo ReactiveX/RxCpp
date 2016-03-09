@@ -705,9 +705,16 @@ namespace rxu=util;
 template <class T, typename = void> 
 struct filtered_hash;
 
+#if RXCPP_HASH_ENUM
 template <class T> 
 struct filtered_hash<T, typename std::enable_if<std::is_enum<T>::value>::type> : std::hash<T> {
 };
+#elif RXCPP_HASH_ENUM_UNDERLYING
+template <class T> 
+struct filtered_hash<T, typename std::enable_if<std::is_enum<T>::value>::type> : std::hash<typename std::underlying_type<T>::type> {
+};
+#endif
+
 template <class T> 
 struct filtered_hash<T, typename std::enable_if<std::is_integral<T>::value>::type> : std::hash<T> {
 };
