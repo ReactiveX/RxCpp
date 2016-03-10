@@ -203,10 +203,29 @@ public:
 
 }
 
-template<class Coordination>
+inline auto concat()
+    ->      detail::concat_factory<identity_one_worker> {
+    return  detail::concat_factory<identity_one_worker>(identity_current_thread());
+}
+
+template<class Coordination, class Check = typename std::enable_if<is_coordination<Coordination>::value>::type>
 auto concat(Coordination&& sf)
     ->      detail::concat_factory<Coordination> {
     return  detail::concat_factory<Coordination>(std::forward<Coordination>(sf));
+}
+
+template<class O0, class... ON, class Check = typename std::enable_if<is_observable<O0>::value>::type>
+auto concat(O0&& o0, ON&&... on)
+    ->      detail::concat_factory<identity_one_worker> {
+    return  detail::concat_factory<identity_one_worker>(identity_current_thread())(from(std::forward<O0>(o0), std::forward<ON>(on)...));
+}
+
+template<class Coordination, class O0, class... ON, 
+    class CheckC = typename std::enable_if<is_coordination<Coordination>::value>::type,
+    class CheckO = typename std::enable_if<is_observable<O0>::value>::type>
+auto concat(Coordination&& sf, O0&& o0, ON&&... on)
+    ->      detail::concat_factory<Coordination> {
+    return  detail::concat_factory<Coordination>(std::forward<Coordination>(sf))(from(std::forward<O0>(o0), std::forward<ON>(on)...));
 }
 
 }

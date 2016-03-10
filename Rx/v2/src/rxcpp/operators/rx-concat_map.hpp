@@ -45,7 +45,7 @@ struct concat_traits {
 
     static_assert(!std::is_same<decltype(result_check<source_value_type, collection_value_type, result_selector_type>(0)), tag_not_valid>::value, "concat_map ResultSelector must be a function with the signature concat_map::value_type(concat_map::source_value_type, concat_map::collection_value_type)");
 
-    typedef decltype((*(result_selector_type*)nullptr)(*(source_value_type*)nullptr, *(collection_value_type*)nullptr)) value_type;
+    typedef rxu::decay_t<decltype((*(result_selector_type*)nullptr)(*(source_value_type*)nullptr, *(collection_value_type*)nullptr))> value_type;
 };
 
 template<class Observable, class CollectionSelector, class ResultSelector, class Coordination>
@@ -266,6 +266,19 @@ auto concat_map(CollectionSelector&& s, ResultSelector&& rs, Coordination&& sf)
     ->      detail::concat_map_factory<CollectionSelector, ResultSelector, Coordination> {
     return  detail::concat_map_factory<CollectionSelector, ResultSelector, Coordination>(std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<Coordination>(sf));
 }
+
+template<class CollectionSelector, class Coordination, class CheckC = typename std::enable_if<is_coordination<Coordination>::value>::type>
+auto concat_map(CollectionSelector&& s, Coordination&& sf)
+    ->      detail::concat_map_factory<CollectionSelector, rxu::detail::take_at<1>, Coordination> {
+    return  detail::concat_map_factory<CollectionSelector, rxu::detail::take_at<1>, Coordination>(std::forward<CollectionSelector>(s), rxu::take_at<1>(), std::forward<Coordination>(sf));
+}
+
+template<class CollectionSelector>
+auto concat_map(CollectionSelector&& s)
+    ->      detail::concat_map_factory<CollectionSelector, rxu::detail::take_at<1>, identity_one_worker> {
+    return  detail::concat_map_factory<CollectionSelector, rxu::detail::take_at<1>, identity_one_worker>(std::forward<CollectionSelector>(s), rxu::take_at<1>(), identity_current_thread());
+}
+
 
 }
 
