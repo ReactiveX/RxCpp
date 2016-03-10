@@ -1,28 +1,110 @@
-Windows: [![Windows Status](http://img.shields.io/appveyor/ci/kirkshoop/RxCpp-446.svg?style=flat-square)](https://ci.appveyor.com/project/kirkshoop/rxcpp-446)
+The Reactive Extensions for Native (__RxCpp__) is a library for composing asynchronous and event-based programs using observable sequences and LINQ-style query operators in C++.
 
+Windows: [![Windows Status](http://img.shields.io/appveyor/ci/kirkshoop/RxCpp-446.svg?style=flat-square)](https://ci.appveyor.com/project/kirkshoop/rxcpp-446)
 Linux & OSX: [![Linux & Osx Status](http://img.shields.io/travis/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://travis-ci.org/Reactive-Extensions/RxCpp)
 
-[![NuGet version](http://img.shields.io/nuget/v/RxCpp.svg?style=flat-square)](http://www.nuget.org/packages/RxCpp/)
+Github: [![GitHub release](https://img.shields.io/github/release/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp/releases)
+[![GitHub commits](https://img.shields.io/github/commits-since/Reactive-Extensions/RxCpp/v2.2.0.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp)
+
+NuGet: [![NuGet version](http://img.shields.io/nuget/v/RxCpp.svg?style=flat-square)](http://www.nuget.org/packages/RxCpp/)
 [![NuGet downloads](http://img.shields.io/nuget/dt/RxCpp.svg?style=flat-square)](http://www.nuget.org/packages/RxCpp/)
 
-[doxygen documentation](http://reactive-extensions.github.io/RxCpp)
+[![GitHub license](https://img.shields.io/github/license/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp)
 
-[![Join in on gitter.im](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/Reactive-Extensions/RxCpp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join in on gitter.im](https://img.shields.io/gitter/room/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://gitter.im/Reactive-Extensions/RxCpp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![doxygen documentation](https://img.shields.io/badge/documentation-latest-brightgreen.svg?style=flat-square)](http://reactive-extensions.github.io/RxCpp)
+
+#Example
+Add ```Rx/v2/src``` to the include paths
+
+[![lines from bytes](https://img.shields.io/badge/blog%20post-lines%20from%20bytes-blue.svg?style=flat-square)](http://kirkshoop.github.io/async/rxcpp/c++/2015/07/07/rxcpp_-_parsing_bytes_to_lines_of_text.html)
+
+```cpp
+
+#include "rxcpp/rx.hpp"
+using namespace rxcpp;
+using namespace rxcpp::sources;
+using namespace rxcpp::operators;
+using namespace rxcpp::util;
+
+#include <regex>
+#include <random>
+using namespace std;
+
+//using rxcpp::operators::sum;
+
+int main()
+{
+    random_device rd;   // non-deterministic generator
+    mt19937 gen(rd());
+    uniform_int_distribution<> dist(4, 18);
+
+    // produce byte stream that contains lines of text
+    auto bytes = range(1, 10) |
+        flat_map([&](int i){ 
+            return from(
+                from((uint8_t)('A' + i)) |
+                    repeat(dist(gen)), 
+                from((uint8_t)'\r')) |
+                concat();
+        }) |
+        window(17) |
+        flat_map([](observable<uint8_t> w){ 
+            return w |
+                reduce(
+                    vector<uint8_t>(), 
+                    [](vector<uint8_t>& v, uint8_t b){
+                        v.push_back(b); 
+                        return move(v);
+                    }, 
+                    [](vector<uint8_t>& v){return move(v);}) |
+                as_dynamic(); 
+        }) |
+        filter([](vector<uint8_t>& v){
+            copy(v.begin(), v.end(), ostream_iterator<long>(cout, " "));
+            cout << endl; 
+            return true;
+        });
+
+    // create strings split on \r
+    auto strings = bytes |
+        concat_map([](vector<uint8_t> v){
+            string s(v.begin(), v.end());
+            regex delim(R"/(\r)/");
+            sregex_token_iterator cursor(s.begin(), s.end(), delim, {-1, 0});
+            sregex_token_iterator end;
+            vector<string> splits(cursor, end);
+            return iterate(move(splits));
+        });
+
+    // group strings by line
+    int group = 0;
+    auto linewindows = strings |
+        group_by(
+            [=](string& s) mutable {
+                return s.back() == '\r' ? group++ : group;
+            },
+            [](string& s) { return move(s);});
+
+    // reduce the strings for a line into one string
+    auto lines = linewindows |
+        flat_map([](grouped_observable<int, string> w){ 
+            return w | sum(); 
+        });
+
+    // print result
+    lines |
+        subscribe(println(cout));
+
+    return 0;
+}
+```
 
 # Reactive Extensions:
 
 * Rx.NET: The Reactive Extensions (Rx) is a library for composing asynchronous and event-based programs using observable sequences and LINQ-style query operators.
 * RxJS: The Reactive Extensions for JavaScript (RxJS) is a library for composing asynchronous and event-based programs using observable sequences and LINQ-style query operators in JavaScript which can target both the browser and Node.js.
-* RxCpp: The Reactive Extensions for Native (RxC) is a library for composing asynchronous and event-based programs using observable sequences and LINQ-style query operators in both C and C++.
-
-# Interactive Extensions
-* Ix: The Interactive Extensions (Ix) is a .NET library which extends LINQ to Objects to provide many of the operators available in Rx but targeted for IEnumerable<T>.
-* IxJS: An implementation of LINQ to Objects and the Interactive Extensions (Ix) in JavaScript.
-* Ix++: An implantation of LINQ for Native Developers in C++
-
-# Applications:
-* Tx: a set of code samples showing how to use LINQ to events, such as real-time standing queries and queries on past history from trace and log files, which targets ETW, Windows Event Logs and SQL Server Extended Events.
-* LINQ2Charts: an example for Rx bindings.  Similar to existing APIs like LINQ to XML, it allows developers to use LINQ to create/change/update charts in an easy way and avoid having to deal with XML or other underneath data structures. We would love to see more Rx bindings like this one.
+* RxCpp: The Reactive Extensions for Native (RxCpp) is a library for composing asynchronous and event-based programs using observable sequences and LINQ-style query operators in both C++.
 
 #Building RxCpp
 
@@ -93,54 +175,6 @@ The build only produces a test binary.
 Example of by-tag
 
 ```rxcppv2_test [perf]```
-
-#Using RxCpp
-Add ```Rx/v2/src``` to the include paths
-
-```cpp
-#include "rxcpp/rx.hpp"
-// create alias' to simplify code
-// these are owned by the user so that
-// conflicts can be managed by the user.
-namespace rx=rxcpp;
-namespace rxu=rxcpp::util;
-namespace rxsc=rxcpp::schedulers;
-namespace rxsub=rxcpp::subjects;
-
-int main()
-{
-    int c = 0;
-
-    auto triples =
-        rx::observable<>::range(1)
-            .concat_map(
-                [&c](int z){
-                    return rx::observable<>::range(1, z)
-                        .concat_map(
-                            [=, &c](int x){
-                                return rx::observable<>::range(x, z)
-                                    .filter([=, &c](int y){++c; return x*x + y*y == z*z;})
-                                    .map([=](int y){return std::make_tuple(x, y, z);})
-                                    // forget type to workaround lambda deduction bug on msvc 2013
-                                    .as_dynamic();},
-                            [](int x, std::tuple<int,int,int> triplet){return triplet;})
-                        // forget type to workaround lambda deduction bug on msvc 2013
-                        .as_dynamic();},
-                [](int z, std::tuple<int,int,int> triplet){return triplet;});
-
-    int ct = 0;
-
-    triples
-        .take(100)
-        .subscribe(rxu::apply_to([&ct](int x,int y,int z){
-            ++ct;
-        }));
-
-    std::cout << "concat_map pythagorian range : " << c << " filtered to, " << ct << " triplets" << std::endl;
-
-    return 0;
-}
-```
 
 #Documentation
 
