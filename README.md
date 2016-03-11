@@ -9,7 +9,7 @@ Linux & OSX: [![Linux & Osx Status](http://img.shields.io/travis/Reactive-Extens
 [![doxygen documentation](https://img.shields.io/badge/documentation-latest-brightgreen.svg?style=flat-square)](http://reactive-extensions.github.io/RxCpp)
 
 Github: [![GitHub release](https://img.shields.io/github/release/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp/releases)
-[![GitHub commits](https://img.shields.io/github/commits-since/Reactive-Extensions/RxCpp/v2.2.0.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp)
+[![GitHub commits](https://img.shields.io/github/commits-since/Reactive-Extensions/RxCpp/v2.3.0.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp)
 
 NuGet: [![NuGet version](http://img.shields.io/nuget/v/RxCpp.svg?style=flat-square)](http://www.nuget.org/packages/RxCpp/)
 [![NuGet downloads](http://img.shields.io/nuget/dt/RxCpp.svg?style=flat-square)](http://www.nuget.org/packages/RxCpp/)
