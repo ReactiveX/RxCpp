@@ -182,6 +182,11 @@ public:
 
 }
 
+inline auto merge()
+    ->      detail::merge_factory<identity_one_worker> {
+    return  detail::merge_factory<identity_one_worker>(identity_current_thread());
+}
+
 template<class Coordination>
 auto merge(Coordination&& sf)
     ->      detail::merge_factory<Coordination> {

@@ -214,6 +214,31 @@ inline auto pack()
     return  detail::pack();
 }
 
+namespace detail {
+
+template<int Index>
+struct take_at
+{
+    template<class... ParamN>
+    auto operator()(ParamN... pn)
+        -> decay_t<decltype(std::get<Index>(std::make_tuple(std::move(pn)...)))> {
+        return              std::get<Index>(std::make_tuple(std::move(pn)...));
+    }
+    template<class... ParamN>
+    auto operator()(ParamN... pn) const
+        -> decay_t<decltype(std::get<Index>(std::make_tuple(std::move(pn)...)))> {
+        return              std::get<Index>(std::make_tuple(std::move(pn)...));
+    }
+};
+
+}
+
+template<int Index>
+inline auto take_at()
+    ->      detail::take_at<Index> {
+    return  detail::take_at<Index>();
+}
+
 template <class D>
 struct resolve_type;
 

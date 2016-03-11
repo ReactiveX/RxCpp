@@ -51,7 +51,7 @@ struct is_result_function_for {
     template<class CS, class CRS>
     static tag_not_valid check(...);
 
-    typedef decltype(check<seed_type, result_selector_type>(0)) type;
+    typedef rxu::decay_t<decltype(check<seed_type, result_selector_type>(0))> type;
     static const bool value = !std::is_same<type, tag_not_valid>::value;
 };
 
@@ -69,7 +69,7 @@ struct reduce_traits
 
     static_assert(is_result_function_for<seed_type, result_selector_type>::value, "reduce ResultSelector must be a function with the signature reduce::value_type(Seed)");
 
-    typedef typename is_result_function_for<seed_type, result_selector_type>::type value_type;
+    typedef rxu::decay_t<typename is_result_function_for<seed_type, result_selector_type>::type> value_type;
 };
 
 template<class T, class SourceOperator, class Accumulator, class ResultSelector, class Seed>
@@ -189,6 +189,22 @@ public:
     }
 };
 
+template<template<class T> class Factory>
+class delay_reduce_factory
+{
+    template<class Observable> using accumulator_t = Factory<rxu::value_type_t<Observable>>;
+    template<class Observable> using result_selector_t = Factory<rxu::value_type_t<Observable>>;
+    template<class Observable> using seed_t = typename Factory<rxu::value_type_t<Observable>>::seed_type;
+    template<class Observable> using result_value_t = decltype(result_selector_t<Observable>()(*(seed_t<Observable>*)nullptr));
+public:
+    template<class Observable>
+    auto operator()(const Observable& source)
+        ->      observable<result_value_t<Observable>,   reduce<rxu::value_type_t<Observable>, typename Observable::source_operator_type, accumulator_t<Observable>, result_selector_t<Observable>, seed_t<Observable>>> {
+        return  observable<result_value_t<Observable>,   reduce<rxu::value_type_t<Observable>, typename Observable::source_operator_type, accumulator_t<Observable>, result_selector_t<Observable>, seed_t<Observable>>>(
+                                                         reduce<rxu::value_type_t<Observable>, typename Observable::source_operator_type, accumulator_t<Observable>, result_selector_t<Observable>, seed_t<Observable>>(source.source_operator, accumulator_t<Observable>(), result_selector_t<Observable>(), accumulator_t<Observable>().seed()));
+    }
+};
+
 template<class T>
 struct initialize_seeder {
     typedef T seed_type;
@@ -213,7 +229,7 @@ struct average {
     seed_type seed() {
         return seed_type{};
     }
-    seed_type operator()(seed_type a, T v) {
+    seed_type operator()(seed_type& a, T v) {
         if (a.count != 0 &&
             (a.count == std::numeric_limits<int>::max() ||
             ((v > 0) && (a.value > (std::numeric_limits<T>::max() - v))) ||
@@ -235,7 +251,7 @@ struct average {
         }
         return a;
     }
-    double operator()(seed_type a) {
+    double operator()(seed_type& a) {
         if (a.count > 0) {
             double avg = a.value / a.count;
             if (!a.stage.empty()) {
@@ -253,14 +269,14 @@ struct sum {
     seed_type seed() {
         return seed_type();
     }
-    seed_type operator()(seed_type a, T v) {
+    seed_type operator()(seed_type& a, T v) {
         if (a.empty())
             a.reset(v);
         else
             *a = *a + v;
         return a;
     }
-    T operator()(seed_type a) {
+    T operator()(seed_type& a) {
         if (a.empty())
             throw rxcpp::empty_error("sum() requires a stream with at least one value");
         return *a;
@@ -273,14 +289,14 @@ struct max {
     seed_type seed() {
         return seed_type();
     }
-    seed_type operator()(seed_type a, T v) {
+    seed_type operator()(seed_type& a, T v) {
         if (a.empty())
             a.reset(v);
         else
             *a = (v < *a ? *a : v);
         return a;
     }
-    T operator()(seed_type a) {
+    T operator()(seed_type& a) {
         if (a.empty())
             throw rxcpp::empty_error("max() requires a stream with at least one value");
         return *a;
@@ -293,14 +309,14 @@ struct min {
     seed_type seed() {
         return seed_type();
     }
-    seed_type operator()(seed_type a, T v) {
+    seed_type operator()(seed_type& a, T v) {
         if (a.empty())
             a.reset(v);
         else
             *a = (*a < v ? *a : v);
         return a;
     }
-    T operator()(seed_type a) {
+    T operator()(seed_type& a) {
         if (a.empty())
             throw rxcpp::empty_error("min() requires a stream with at least one value");
         return *a;
@@ -313,6 +329,37 @@ template<class Seed, class Accumulator, class ResultSelector>
 auto reduce(Seed s, Accumulator a, ResultSelector rs)
     ->      detail::reduce_factory<Accumulator, ResultSelector, Seed> {
     return  detail::reduce_factory<Accumulator, ResultSelector, Seed>(std::move(a), std::move(rs), std::move(s));
+}
+
+template<class Seed, class Accumulator>
+auto reduce(Seed s, Accumulator a)
+    ->      detail::reduce_factory<Accumulator, rxu::detail::take_at<0>, Seed> {
+    return  detail::reduce_factory<Accumulator, rxu::detail::take_at<0>, Seed>(std::move(a), rxu::take_at<0>(), std::move(s));
+}
+
+inline auto count()
+    ->      detail::reduce_factory<rxu::count, rxu::detail::take_at<0>, int> {
+    return  detail::reduce_factory<rxu::count, rxu::detail::take_at<0>, int>(rxu::count(), rxu::take_at<0>(), 0);
+}
+
+inline auto average()
+    ->      detail::delay_reduce_factory<detail::average> {
+    return  detail::delay_reduce_factory<detail::average>();
+}
+
+inline auto sum()
+    ->      detail::delay_reduce_factory<detail::sum> {
+    return  detail::delay_reduce_factory<detail::sum>();
+}
+
+inline auto min()
+    ->      detail::delay_reduce_factory<detail::min> {
+    return  detail::delay_reduce_factory<detail::min>();
+}
+
+inline auto max()
+    ->      detail::delay_reduce_factory<detail::max> {
+    return  detail::delay_reduce_factory<detail::max>();
 }
 
 }

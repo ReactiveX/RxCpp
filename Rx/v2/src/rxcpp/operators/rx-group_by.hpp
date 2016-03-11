@@ -190,7 +190,7 @@ public:
     template<class Observable>
     struct group_by_factory_traits
     {
-        typedef rxu::value_type_t<Observable> value_type;
+        typedef rxu::value_type_t<rxu::decay_t<Observable>> value_type;
         typedef detail::group_by_traits<value_type, Observable, KeySelector, MarbleSelector, BinaryPredicate> traits_type;
         typedef detail::group_by<value_type, Observable, KeySelector, MarbleSelector, BinaryPredicate> group_by_type;
     };
@@ -207,6 +207,18 @@ template<class KeySelector, class MarbleSelector, class BinaryPredicate>
 inline auto group_by(KeySelector ks, MarbleSelector ms, BinaryPredicate p)
     ->      detail::group_by_factory<KeySelector, MarbleSelector, BinaryPredicate> {
     return  detail::group_by_factory<KeySelector, MarbleSelector, BinaryPredicate>(std::move(ks), std::move(ms), std::move(p));
+}
+
+template<class KeySelector, class MarbleSelector>
+inline auto group_by(KeySelector ks, MarbleSelector ms)
+    ->      detail::group_by_factory<KeySelector, MarbleSelector, rxu::less> {
+    return  detail::group_by_factory<KeySelector, MarbleSelector, rxu::less>(std::move(ks), std::move(ms), rxu::less());
+}
+
+template<class KeySelector>
+inline auto group_by(KeySelector ks)
+    ->      detail::group_by_factory<KeySelector, rxu::detail::take_at<0>, rxu::less> {
+    return  detail::group_by_factory<KeySelector, rxu::detail::take_at<0>, rxu::less>(std::move(ks), rxu::take_at<0>(), rxu::less());
 }
 
 

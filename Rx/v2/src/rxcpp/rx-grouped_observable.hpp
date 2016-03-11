@@ -174,8 +174,8 @@ public:
 // support range() >> filter() >> subscribe() syntax
 // '>>' is spelled 'stream'
 //
-template<class T, class SourceOperator, class OperatorFactory>
-auto operator >> (const rxcpp::grouped_observable<T, SourceOperator>& source, OperatorFactory&& of)
+template<class K, class T, class SourceOperator, class OperatorFactory>
+auto operator >> (const rxcpp::grouped_observable<K, T, SourceOperator>& source, OperatorFactory&& of)
     -> decltype(source.op(std::forward<OperatorFactory>(of))) {
     return      source.op(std::forward<OperatorFactory>(of));
 }
@@ -184,8 +184,8 @@ auto operator >> (const rxcpp::grouped_observable<T, SourceOperator>& source, Op
 // support range() | filter() | subscribe() syntax
 // '|' is spelled 'pipe'
 //
-template<class T, class SourceOperator, class OperatorFactory>
-auto operator | (const rxcpp::grouped_observable<T, SourceOperator>& source, OperatorFactory&& of)
+template<class K, class T, class SourceOperator, class OperatorFactory>
+auto operator | (const rxcpp::grouped_observable<K, T, SourceOperator>& source, OperatorFactory&& of)
     -> decltype(source.op(std::forward<OperatorFactory>(of))) {
     return      source.op(std::forward<OperatorFactory>(of));
 }

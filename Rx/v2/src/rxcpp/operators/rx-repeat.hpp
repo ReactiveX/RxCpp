@@ -105,9 +105,9 @@ public:
 
     template<class Observable>
     auto operator()(Observable&& source)
-        ->      observable<rxu::value_type_t<rxu::decay_t<Observable>>, repeat<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, count_type>> {
-        return  observable<rxu::value_type_t<rxu::decay_t<Observable>>, repeat<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, count_type>>(
-                                                                        repeat<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, count_type>(std::forward<Observable>(source), count));
+        ->      observable<rxu::value_type_t<rxu::decay_t<Observable>>, repeat<rxu::value_type_t<rxu::decay_t<Observable>>, rxu::decay_t<Observable>, count_type>> {
+        return  observable<rxu::value_type_t<rxu::decay_t<Observable>>, repeat<rxu::value_type_t<rxu::decay_t<Observable>>, rxu::decay_t<Observable>, count_type>>(
+                                                                        repeat<rxu::value_type_t<rxu::decay_t<Observable>>, rxu::decay_t<Observable>, count_type>(std::forward<Observable>(source), count));
     }
 };
 
@@ -115,7 +115,7 @@ public:
 
 template<class T>
 auto repeat(T&& t)
-->      detail::repeat_factory<T> {
+    ->      detail::repeat_factory<T> {
     return  detail::repeat_factory<T>(std::forward<T>(t));
 }
 
