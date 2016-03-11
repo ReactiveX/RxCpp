@@ -111,13 +111,13 @@ int main()
 #Building RxCpp
 
 * RxCpp is regularly tested on OSX and Windows.
-* RxCpp is regularly built with Clang and VC
+* RxCpp is regularly built with Clang, Gcc and VC
 * RxCpp depends on the latest compiler releases.
-* RxCpp has an experimental build with gcc.
 
 RxCpp uses CMake to create build files for several platforms and IDE's
 
-###Ide builds
+###ide builds
+
 ####XCode
 ```shell
 mkdir projects/build
@@ -167,22 +167,22 @@ cmake -G"NMake Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -B. ..\CMake
 nmake
 ```
 
-The build only produces a test binary.
+The build only produces test and example binaries.
 
 #Running tests
 
 * You can use the CMake test runner ```ctest```
-* You can run the test binary directly ```rxcppv2_test```
+* You can run the test binaries directly ```rxcppv2_test_*```
 * Tests can be selected by name or tag
 Example of by-tag
 
-```rxcppv2_test [perf]```
+```rxcppv2_test_subscription [perf]```
 
 #Documentation
 
 RxCpp uses Doxygen to generate project [documentation](http://reactive-extensions.github.io/RxCpp).
 
-When Doxygen+Graphviz is installed, CMake creates a special build task named ```doc```. It creates actual documentation and puts it to ```projects/doxygen/html/``` folder, which can be published to the `gh-pages` branch.
+When Doxygen+Graphviz is installed, CMake creates a special build task named ```doc```. It creates actual documentation and puts it to ```projects/doxygen/html/``` folder, which can be published to the `gh-pages` branch. Each merged pull request will build the docs and publish them.
 
 [Developers Material](DeveloperManual.md)
 
