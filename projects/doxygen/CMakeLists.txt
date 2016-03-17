@@ -52,6 +52,7 @@ if(DOXYGEN_FOUND)
         ${DOXY_EXAMPLES_SRC_DIR}/concat_map.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/create.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/defer.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/debounce.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/delay.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/distinct.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/distinct_until_changed.cpp

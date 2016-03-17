@@ -33,6 +33,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/combine_latest.cpp
     ${TEST_DIR}/operators/concat.cpp
     ${TEST_DIR}/operators/concat_map.cpp
+    ${TEST_DIR}/operators/debounce.cpp
     ${TEST_DIR}/operators/delay.cpp
     ${TEST_DIR}/operators/distinct.cpp
     ${TEST_DIR}/operators/distinct_until_changed.cpp
