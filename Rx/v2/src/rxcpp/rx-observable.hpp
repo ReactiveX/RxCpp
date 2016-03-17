@@ -197,17 +197,11 @@ class blocking_observable
             {
                 if (!disposed || !wakened) abort();
             }
-            tracking()
+            tracking() : disposed(false), wakened(false)
             {
-                disposed = false;
-                wakened = false;
-                false_wakes = 0;
-                true_wakes = 0;
             }
-            std::atomic_bool disposed;
-            std::atomic_bool wakened;
-            std::atomic_int false_wakes;
-            std::atomic_int true_wakes;
+            bool disposed;
+            bool wakened;
         };
         auto track = std::make_shared<tracking>();
 
@@ -230,11 +224,11 @@ class blocking_observable
         auto cs = scbr.get_subscription();
         cs.add(
             [&, track](){
-                // OSX geting invalid x86 op if notify_one is after the disposed = true
-                // presumably because the condition_variable may already have been awakened
-                // and is now sitting in a while loop on disposed
+                {
+                    std::unique_lock<std::mutex> guard(lock);
+                    track->disposed = true;
+                }
                 wake.notify_one();
-                track->disposed = true;
             });
 
         std::unique_lock<std::mutex> guard(lock);
@@ -242,19 +236,9 @@ class blocking_observable
 
         wake.wait(guard,
             [&, track](){
-                // this is really not good.
-                // false wakeups were never followed by true wakeups so..
-
-                // anyways this gets triggered before disposed is set now so wait.
-                while (!track->disposed) {
-                    ++track->false_wakes;
-                }
-                ++track->true_wakes;
-                return true;
+                return track->disposed;
             });
         track->wakened = true;
-        if (!track->disposed || !track->wakened) abort();
-
         if (error) {std::rethrow_exception(error);}
     }
 
