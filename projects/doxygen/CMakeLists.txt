@@ -50,6 +50,7 @@ if(DOXYGEN_FOUND)
         ${DOXY_EXAMPLES_SRC_DIR}/combine_latest.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/concat.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/concat_map.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/contains.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/create.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/defer.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/debounce.cpp
