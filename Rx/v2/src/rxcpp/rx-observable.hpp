@@ -723,6 +723,28 @@ public:
         return detail_subscribe(make_subscriber<T>(std::forward<ArgN>(an)...));
     }
 
+    /*! Returns an Observable that emits true if any item emitted by the source Observable satisfies a specified condition, otherwise false.
+        Emits false if the source Observable terminates without emitting any item.
+
+        \tparam Predicate  the type of the test function.
+
+        \param p  the test function to test items emitted by the source Observable.
+
+        \return  Observable that emits true if any item emitted by the source observable satisfies a specified condition, otherwise false.
+
+        \sample
+        \snippet exists.cpp exists sample
+        \snippet output.txt exists sample
+    */
+    template<class Predicate>
+    auto exists(Predicate p) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(EXPLICIT_THIS lift<bool>(rxo::detail::any<T, Predicate>(std::move(p))))
+        /// \endcond
+    {
+        return                    lift<bool>(rxo::detail::any<T, Predicate>(std::move(p)));
+    }
+
     /*! For each item from this observable use Predicate to select which items to emit from the new observable that is returned.
 
         \tparam Predicate  the type of the filter function

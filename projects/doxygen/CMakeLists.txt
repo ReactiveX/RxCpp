@@ -59,6 +59,7 @@ if(DOXYGEN_FOUND)
         ${DOXY_EXAMPLES_SRC_DIR}/element_at.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/empty.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/error.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/exists.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/filter.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/finally.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/flat_map.cpp
