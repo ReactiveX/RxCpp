@@ -748,8 +748,6 @@ public:
     /*! Returns an Observable that emits true if the source Observable emitted a specified item, otherwise false.
         Emits false if the source Observable terminates without emitting any item.
 
-        \tparam Value  type of the item to search for equality.
-
         \param value  the item to search for.
 
         \return  Observable that emits true if the source Observable emitted a specified item, otherwise false.
@@ -758,13 +756,12 @@ public:
         \snippet contains.cpp contains sample
         \snippet output.txt contains sample
     */
-    template<class Value>
-    auto contains(Value value) const
+    auto contains(T value) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> observable<bool>
+        -> decltype(EXPLICIT_THIS lift<bool>(rxo::detail::any<T, std::function<bool(T)>>(std::function<bool(T)>{})))
         /// \endcond
     {
-        return exists([=](T v) { return value == v; });
+        return                    lift<bool>(rxo::detail::any<T, std::function<bool(T)>>([value](T n) { return n == value; }));
     }
 
     /*! For each item from this observable use Predicate to select which items to emit from the new observable that is returned.
