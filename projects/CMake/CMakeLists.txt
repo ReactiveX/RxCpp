@@ -27,6 +27,7 @@ add_subdirectory(${EXAMPLES_DIR}/tests ${CMAKE_CURRENT_BINARY_DIR}/examples/test
 # The list of RxCpp source files. Please add every new file to this list
 set(RX_SOURCES
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-amb.hpp
+   ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-any.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-buffer_count.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-buffer_time.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-buffer_time_count.hpp
