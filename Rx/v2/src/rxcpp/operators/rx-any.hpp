@@ -78,8 +78,35 @@ struct any
     }
 };
 
+template <class Predicate>
+class any_factory
+{
+    typedef rxu::decay_t<Predicate> test_type;
+
+    test_type test;
+public:
+    any_factory(test_type t) : test(t) { }
+
+    template<class Observable>
+    auto operator()(Observable&& source)
+        -> decltype(source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(any<rxu::value_type_t<rxu::decay_t<Observable>>, Predicate>(test))) {
+        return      source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(any<rxu::value_type_t<rxu::decay_t<Observable>>, Predicate>(test));
+    }
+};
+
 }
 
+template <class Predicate>
+inline auto exists(Predicate test)
+->      detail::any_factory<Predicate> {
+    return  detail::any_factory<Predicate>(test);
+}
+
+template <class T>
+inline auto contains(T value)
+->      detail::any_factory<std::function<bool(T)>> {
+    return  detail::any_factory<std::function<bool(T)>>([value](T n) { return n == value; });
+}
 }
 
 }
