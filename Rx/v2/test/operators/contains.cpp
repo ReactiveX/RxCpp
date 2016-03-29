@@ -17,7 +17,9 @@ SCENARIO("contains emits true if an item satisfies the given condition", "[conta
 
             auto res = w.start(
                 [xs]() {
-                    return xs.contains(2);
+                    return xs
+                        .contains(2)
+                        .as_dynamic(); // forget type to workaround lambda deduction bug on msvc 2013
                 }
             );
 
@@ -59,7 +61,9 @@ SCENARIO("contains emits false if no item satisfies the given condition", "[cont
 
             auto res = w.start(
                 [xs]() {
-                    return xs.contains(20);
+                    return xs
+                        .contains(20)
+                        .as_dynamic(); // forget type to workaround lambda deduction bug on msvc 2013
                 }
             );
 
@@ -99,7 +103,9 @@ SCENARIO("contains emits false if the source observable is empty", "[contains][o
 
             auto res = w.start(
                 [xs]() {
-                    return xs.contains(2);
+                    return xs
+                        .contains(2)
+                        .as_dynamic(); // forget type to workaround lambda deduction bug on msvc 2013
                 }
             );
 
@@ -138,7 +144,9 @@ SCENARIO("contains never emits if the source observable never emits any items", 
 
             auto res = w.start(
                 [xs]() {
-                    return xs.contains(2);
+                    return xs
+                        .contains(2)
+                        .as_dynamic(); // forget type to workaround lambda deduction bug on msvc 2013
                 }
             );
 
@@ -177,7 +185,9 @@ SCENARIO("contains emits an error", "[contains][operators]"){
 
             auto res = w.start(
                 [xs]() {
-                    return xs.contains(2);
+                    return xs
+                        .contains(2)
+                        .as_dynamic(); // forget type to workaround lambda deduction bug on msvc 2013
                 }
             );
 

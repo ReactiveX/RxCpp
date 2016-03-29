@@ -17,7 +17,9 @@ SCENARIO("exists emits true if an item satisfies the given condition", "[exists]
 
             auto res = w.start(
                 [xs]() {
-                    return xs.exists([](int n) { return n == 2; });
+                    return xs
+                        .exists([](int n) { return n == 2; })
+                        .as_dynamic(); // forget type to workaround lambda deduction bug on msvc 2013
                 }
             );
 
@@ -59,7 +61,10 @@ SCENARIO("exists emits false if no item satisfies the given condition", "[exists
 
             auto res = w.start(
                 [xs]() {
-                    return xs.exists([](int n) { return n > 2; });
+                    return xs
+                        .exists([](int n) { return n > 2; })
+                        .as_dynamic(); // forget type to workaround lambda deduction bug on msvc 2013
+
                 }
             );
 
@@ -99,7 +104,9 @@ SCENARIO("exists emits false if the source observable is empty", "[exists][opera
 
             auto res = w.start(
                 [xs]() {
-                    return xs.exists([](int n) { return n == 2; });
+                    return xs
+                        .exists([](int n) { return n == 2; })
+                        .as_dynamic(); // forget type to workaround lambda deduction bug on msvc 2013
                 }
             );
 
@@ -138,7 +145,9 @@ SCENARIO("exists never emits if the source observable never emits any items", "[
 
             auto res = w.start(
                 [xs]() {
-                    return xs.exists([](int n) { return n == 2; });
+                    return xs
+                        .exists([](int n) { return n == 2; })
+                        .as_dynamic(); // forget type to workaround lambda deduction bug on msvc 2013
                 }
             );
 
@@ -177,7 +186,9 @@ SCENARIO("exists emits an error", "[exists][operators]"){
 
             auto res = w.start(
                 [xs]() {
-                    return xs.exists([](int n) { return n == 2; });
+                    return xs
+                        .exists([](int n) { return n == 2; })
+                        .as_dynamic(); // forget type to workaround lambda deduction bug on msvc 2013
                 }
             );
 
