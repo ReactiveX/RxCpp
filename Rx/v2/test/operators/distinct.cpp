@@ -348,11 +348,11 @@ SCENARIO("distinct - system_clock's duration", "[distinct][operators]") {
         const rxsc::test::messages<system_clock::duration> on;
 
         auto xs = sc.make_hot_observable({
-            on.next(150, 10s),
-            on.next(210, 20s),
-            on.next(220, 20s),
-            on.next(230, 100s),
-            on.next(240, 100s),
+            on.next(150, system_clock::duration{ 10 }),
+            on.next(210, system_clock::duration{ 20 }),
+            on.next(220, system_clock::duration{ 20 }),
+            on.next(230, system_clock::duration{ 100 }),
+            on.next(240, system_clock::duration{ 100 }),
             on.completed(250)
         });
 
@@ -366,8 +366,8 @@ SCENARIO("distinct - system_clock's duration", "[distinct][operators]") {
 
             THEN("the output only contains distinct items sent while subscribed") {
                 auto required = rxu::to_vector({
-                    on.next(210, 20s),
-                    on.next(230, 100s),
+                    on.next(210, system_clock::duration{ 20 }),
+                    on.next(230, system_clock::duration{ 100 }),
                     on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
@@ -394,11 +394,11 @@ SCENARIO("distinct - high_resolution_clock's duration", "[distinct][operators]")
         const rxsc::test::messages<high_resolution_clock::duration> on;
 
         auto xs = sc.make_hot_observable({
-            on.next(150, 10s),
-            on.next(210, 20s),
-            on.next(220, 20s),
-            on.next(230, 100s),
-            on.next(240, 100s),
+            on.next(150, high_resolution_clock::duration{ 10 }),
+            on.next(210, high_resolution_clock::duration{ 20 }),
+            on.next(220, high_resolution_clock::duration{ 20 }),
+            on.next(230, high_resolution_clock::duration{ 100 }),
+            on.next(240, high_resolution_clock::duration{ 100 }),
             on.completed(250)
         });
 
@@ -412,8 +412,8 @@ SCENARIO("distinct - high_resolution_clock's duration", "[distinct][operators]")
 
             THEN("the output only contains distinct items sent while subscribed") {
                 auto required = rxu::to_vector({
-                    on.next(210, 20s),
-                    on.next(230, 100s),
+                    on.next(210, high_resolution_clock::duration{ 20 }),
+                    on.next(230, high_resolution_clock::duration{ 100 }),
                     on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
@@ -440,11 +440,11 @@ SCENARIO("distinct - steady_clock's duration", "[distinct][operators]") {
         const rxsc::test::messages<steady_clock::duration> on;
 
         auto xs = sc.make_hot_observable({
-            on.next(150, 10s),
-            on.next(210, 20s),
-            on.next(220, 20s),
-            on.next(230, 100s),
-            on.next(240, 100s),
+            on.next(150, steady_clock::duration{ 10 }),
+            on.next(210, steady_clock::duration{ 20 }),
+            on.next(220, steady_clock::duration{ 20 }),
+            on.next(230, steady_clock::duration{ 100 }),
+            on.next(240, steady_clock::duration{ 100 }),
             on.completed(250)
         });
 
@@ -458,8 +458,8 @@ SCENARIO("distinct - steady_clock's duration", "[distinct][operators]") {
 
             THEN("the output only contains distinct items sent while subscribed") {
                 auto required = rxu::to_vector({
-                    on.next(210, 20s),
-                    on.next(230, 100s),
+                    on.next(210, steady_clock::duration{ 20 }),
+                    on.next(230, steady_clock::duration{ 100 }),
                     on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
@@ -486,11 +486,11 @@ SCENARIO("distinct - system_clock's time_point", "[distinct][operators]") {
         const rxsc::test::messages<system_clock::time_point> on;
 
         auto xs = sc.make_hot_observable({
-            on.next(150, system_clock::time_point{ 10s }),
-            on.next(210, system_clock::time_point{ 20s }),
-            on.next(220, system_clock::time_point{ 20s }),
-            on.next(230, system_clock::time_point{ 100s }),
-            on.next(240, system_clock::time_point{ 100s }),
+            on.next(150, system_clock::time_point{ system_clock::duration{ 10 } }),
+            on.next(210, system_clock::time_point{ system_clock::duration{ 20 } }),
+            on.next(220, system_clock::time_point{ system_clock::duration{ 20 } }),
+            on.next(230, system_clock::time_point{ system_clock::duration{ 100 } }),
+            on.next(240, system_clock::time_point{ system_clock::duration{ 100 } }),
             on.completed(250)
         });
 
@@ -504,8 +504,8 @@ SCENARIO("distinct - system_clock's time_point", "[distinct][operators]") {
 
             THEN("the output only contains distinct items sent while subscribed") {
                 auto required = rxu::to_vector({
-                    on.next(210, system_clock::time_point{ 20s }),
-                    on.next(230, system_clock::time_point{ 100s }),
+                    on.next(210, system_clock::time_point{ system_clock::duration{ 20 } }),
+                    on.next(230, system_clock::time_point{ system_clock::duration{ 100 } }),
                     on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
@@ -532,11 +532,11 @@ SCENARIO("distinct - high_resolution_clock's time_point", "[distinct][operators]
         const rxsc::test::messages<high_resolution_clock::time_point> on;
 
         auto xs = sc.make_hot_observable({
-            on.next(150, high_resolution_clock::time_point{ 10s }),
-            on.next(210, high_resolution_clock::time_point{ 20s }),
-            on.next(220, high_resolution_clock::time_point{ 20s }),
-            on.next(230, high_resolution_clock::time_point{ 100s }),
-            on.next(240, high_resolution_clock::time_point{ 100s }),
+            on.next(150, high_resolution_clock::time_point{ high_resolution_clock::duration{ 10 } }),
+            on.next(210, high_resolution_clock::time_point{ high_resolution_clock::duration{ 20 } }),
+            on.next(220, high_resolution_clock::time_point{ high_resolution_clock::duration{ 20 } }),
+            on.next(230, high_resolution_clock::time_point{ high_resolution_clock::duration{ 100 } }),
+            on.next(240, high_resolution_clock::time_point{ high_resolution_clock::duration{ 100 } }),
             on.completed(250)
         });
 
@@ -550,8 +550,8 @@ SCENARIO("distinct - high_resolution_clock's time_point", "[distinct][operators]
 
             THEN("the output only contains distinct items sent while subscribed") {
                 auto required = rxu::to_vector({
-                    on.next(210, high_resolution_clock::time_point{ 20s }),
-                    on.next(230, high_resolution_clock::time_point{ 100s }),
+                    on.next(210, high_resolution_clock::time_point{ high_resolution_clock::duration{ 20 } }),
+                    on.next(230, high_resolution_clock::time_point{ high_resolution_clock::duration{ 100 } }),
                     on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
@@ -578,11 +578,11 @@ SCENARIO("distinct - steady_clock's time_point", "[distinct][operators]") {
         const rxsc::test::messages<steady_clock::time_point> on;
 
         auto xs = sc.make_hot_observable({
-            on.next(150, steady_clock::time_point{ 10s }),
-            on.next(210, steady_clock::time_point{ 20s }),
-            on.next(220, steady_clock::time_point{ 20s }),
-            on.next(230, steady_clock::time_point{ 100s }),
-            on.next(240, steady_clock::time_point{ 100s }),
+            on.next(150, steady_clock::time_point{ steady_clock::duration{ 10 } }),
+            on.next(210, steady_clock::time_point{ steady_clock::duration{ 20 } }),
+            on.next(220, steady_clock::time_point{ steady_clock::duration{ 20 } }),
+            on.next(230, steady_clock::time_point{ steady_clock::duration{ 100 } }),
+            on.next(240, steady_clock::time_point{ steady_clock::duration{ 100 } }),
             on.completed(250)
         });
 
@@ -596,8 +596,8 @@ SCENARIO("distinct - steady_clock's time_point", "[distinct][operators]") {
 
             THEN("the output only contains distinct items sent while subscribed") {
                 auto required = rxu::to_vector({
-                    on.next(210, steady_clock::time_point{ 20s }),
-                    on.next(230, steady_clock::time_point{ 100s }),
+                    on.next(210, steady_clock::time_point{ steady_clock::duration{ 20 } }),
+                    on.next(230, steady_clock::time_point{ steady_clock::duration{ 100 } }),
                     on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
