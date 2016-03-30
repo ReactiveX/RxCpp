@@ -749,6 +749,26 @@ struct filtered_hash<T, typename std::enable_if<std::is_pointer<T>::value>::type
 template <class T> 
 struct filtered_hash<T, typename std::enable_if<rxu::is_string<T>::value>::type> : std::hash<T> {
 };
+template <class T>
+struct filtered_hash<T, typename std::enable_if<std::is_convertible<T, std::chrono::duration<typename T::rep, typename T::period>>::value>::type> {
+    using argument_type = T;
+    using result_type = std::size_t;
+
+    result_type operator()(argument_type const & dur) const
+    {
+        return std::hash<typename argument_type::rep>{}(dur.count());
+    }
+};
+template <class T>
+struct filtered_hash<T, typename std::enable_if<std::is_convertible<T, std::chrono::time_point<typename T::clock, typename T::duration>>::value>::type> {
+    using argument_type = T;
+    using result_type = std::size_t;
+
+    result_type operator()(argument_type const & tp) const
+    {
+        return std::hash<typename argument_type::rep>{}(tp.time_since_epoch().count());
+    }
+};
 
 template<typename, typename C = rxu::types_checked>
 struct is_hashable

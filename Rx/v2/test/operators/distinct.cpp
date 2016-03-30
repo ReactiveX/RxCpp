@@ -340,6 +340,282 @@ SCENARIO("distinct - strings", "[distinct][operators]"){
     }
 }
 
+SCENARIO("distinct - system_clock's duration", "[distinct][operators]") {
+    GIVEN("a source") {
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        using namespace std::chrono;
+        const rxsc::test::messages<system_clock::duration> on;
+
+        auto xs = sc.make_hot_observable({
+            on.next(150, 10s),
+            on.next(210, 20s),
+            on.next(220, 20s),
+            on.next(230, 100s),
+            on.next(240, 100s),
+            on.completed(250)
+        });
+
+        WHEN("distinct values are taken") {
+
+            auto res = w.start(
+                [xs]() {
+                return xs.distinct();
+            }
+            );
+
+            THEN("the output only contains distinct items sent while subscribed") {
+                auto required = rxu::to_vector({
+                    on.next(210, 20s),
+                    on.next(230, 100s),
+                    on.completed(250)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was 1 subscription/unsubscription to the source") {
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 250)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+
+        }
+    }
+}
+
+SCENARIO("distinct - high_resolution_clock's duration", "[distinct][operators]") {
+    GIVEN("a source") {
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        using namespace std::chrono;
+        const rxsc::test::messages<high_resolution_clock::duration> on;
+
+        auto xs = sc.make_hot_observable({
+            on.next(150, 10s),
+            on.next(210, 20s),
+            on.next(220, 20s),
+            on.next(230, 100s),
+            on.next(240, 100s),
+            on.completed(250)
+        });
+
+        WHEN("distinct values are taken") {
+
+            auto res = w.start(
+                [xs]() {
+                return xs.distinct();
+            }
+            );
+
+            THEN("the output only contains distinct items sent while subscribed") {
+                auto required = rxu::to_vector({
+                    on.next(210, 20s),
+                    on.next(230, 100s),
+                    on.completed(250)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was 1 subscription/unsubscription to the source") {
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 250)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+
+        }
+    }
+}
+
+SCENARIO("distinct - steady_clock's duration", "[distinct][operators]") {
+    GIVEN("a source") {
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        using namespace std::chrono;
+        const rxsc::test::messages<steady_clock::duration> on;
+
+        auto xs = sc.make_hot_observable({
+            on.next(150, 10s),
+            on.next(210, 20s),
+            on.next(220, 20s),
+            on.next(230, 100s),
+            on.next(240, 100s),
+            on.completed(250)
+        });
+
+        WHEN("distinct values are taken") {
+
+            auto res = w.start(
+                [xs]() {
+                return xs.distinct();
+            }
+            );
+
+            THEN("the output only contains distinct items sent while subscribed") {
+                auto required = rxu::to_vector({
+                    on.next(210, 20s),
+                    on.next(230, 100s),
+                    on.completed(250)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was 1 subscription/unsubscription to the source") {
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 250)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+
+        }
+    }
+}
+
+SCENARIO("distinct - system_clock's time_point", "[distinct][operators]") {
+    GIVEN("a source") {
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        using namespace std::chrono;
+        const rxsc::test::messages<system_clock::time_point> on;
+
+        auto xs = sc.make_hot_observable({
+            on.next(150, system_clock::time_point{ 10s }),
+            on.next(210, system_clock::time_point{ 20s }),
+            on.next(220, system_clock::time_point{ 20s }),
+            on.next(230, system_clock::time_point{ 100s }),
+            on.next(240, system_clock::time_point{ 100s }),
+            on.completed(250)
+        });
+
+        WHEN("distinct values are taken") {
+
+            auto res = w.start(
+                [xs]() {
+                return xs.distinct();
+            }
+            );
+
+            THEN("the output only contains distinct items sent while subscribed") {
+                auto required = rxu::to_vector({
+                    on.next(210, system_clock::time_point{ 20s }),
+                    on.next(230, system_clock::time_point{ 100s }),
+                    on.completed(250)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was 1 subscription/unsubscription to the source") {
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 250)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+
+        }
+    }
+}
+
+SCENARIO("distinct - high_resolution_clock's time_point", "[distinct][operators]") {
+    GIVEN("a source") {
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        using namespace std::chrono;
+        const rxsc::test::messages<high_resolution_clock::time_point> on;
+
+        auto xs = sc.make_hot_observable({
+            on.next(150, high_resolution_clock::time_point{ 10s }),
+            on.next(210, high_resolution_clock::time_point{ 20s }),
+            on.next(220, high_resolution_clock::time_point{ 20s }),
+            on.next(230, high_resolution_clock::time_point{ 100s }),
+            on.next(240, high_resolution_clock::time_point{ 100s }),
+            on.completed(250)
+        });
+
+        WHEN("distinct values are taken") {
+
+            auto res = w.start(
+                [xs]() {
+                return xs.distinct();
+            }
+            );
+
+            THEN("the output only contains distinct items sent while subscribed") {
+                auto required = rxu::to_vector({
+                    on.next(210, high_resolution_clock::time_point{ 20s }),
+                    on.next(230, high_resolution_clock::time_point{ 100s }),
+                    on.completed(250)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was 1 subscription/unsubscription to the source") {
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 250)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+
+        }
+    }
+}
+
+SCENARIO("distinct - steady_clock's time_point", "[distinct][operators]") {
+    GIVEN("a source") {
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        using namespace std::chrono;
+        const rxsc::test::messages<steady_clock::time_point> on;
+
+        auto xs = sc.make_hot_observable({
+            on.next(150, steady_clock::time_point{ 10s }),
+            on.next(210, steady_clock::time_point{ 20s }),
+            on.next(220, steady_clock::time_point{ 20s }),
+            on.next(230, steady_clock::time_point{ 100s }),
+            on.next(240, steady_clock::time_point{ 100s }),
+            on.completed(250)
+        });
+
+        WHEN("distinct values are taken") {
+
+            auto res = w.start(
+                [xs]() {
+                return xs.distinct();
+            }
+            );
+
+            THEN("the output only contains distinct items sent while subscribed") {
+                auto required = rxu::to_vector({
+                    on.next(210, steady_clock::time_point{ 20s }),
+                    on.next(230, steady_clock::time_point{ 100s }),
+                    on.completed(250)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was 1 subscription/unsubscription to the source") {
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 250)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+
+        }
+    }
+}
+
 SCENARIO("distinct - enum", "[distinct][operators]"){
     enum Value {
         A,
