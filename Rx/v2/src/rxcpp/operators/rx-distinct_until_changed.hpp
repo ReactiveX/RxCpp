@@ -62,8 +62,8 @@ class distinct_until_changed_factory
 public:
     template<class Observable>
     auto operator()(Observable&& source)
-        -> decltype(source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(distinct_until_changed<rxu::decay_t<Observable>>::value_type)) {
-        return      source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(distinct_until_changed<rxu::decay_t<Observable>>::value_type);
+        -> decltype(source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(distinct_until_changed<rxu::value_type_t<rxu::decay_t<Observable>>>())) {
+        return      source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(distinct_until_changed<rxu::value_type_t<rxu::decay_t<Observable>>>());
     }
 };
 
