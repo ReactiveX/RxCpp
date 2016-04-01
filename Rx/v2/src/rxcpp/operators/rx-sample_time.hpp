@@ -194,6 +194,12 @@ inline auto sample_with_time(Duration period, Coordination coordination)
     return  detail::sample_with_time_factory<Duration, Coordination>(period, coordination);
 }
 
+template<class Duration>
+inline auto sample_with_time(Duration period)
+    ->      detail::sample_with_time_factory<Duration, identity_one_worker> {
+    return  detail::sample_with_time_factory<Duration, identity_one_worker>(period, identity_current_thread());
+}
+
 }
 
 }
