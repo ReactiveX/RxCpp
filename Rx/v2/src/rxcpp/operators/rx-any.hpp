@@ -99,14 +99,15 @@ public:
 template <class Predicate>
 inline auto exists(Predicate test)
 ->      detail::any_factory<Predicate> {
-    return  detail::any_factory<Predicate>(test);
+return  detail::any_factory<Predicate>(test);
 }
 
 template <class T>
 inline auto contains(T value)
-->      detail::any_factory<std::function<bool(T)>> {
-    return  detail::any_factory<std::function<bool(T)>>([value](T n) { return n == value; });
+->      detail::any_factory<decltype(std::bind(std::equal_to<T>(), std::placeholders::_1, T{}))> {
+return  detail::any_factory<decltype(std::bind(std::equal_to<T>(), std::placeholders::_1, T{}))>(std::bind(std::equal_to<T>(), std::placeholders::_1, value));
 }
+
 }
 
 }
