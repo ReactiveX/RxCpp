@@ -758,10 +758,10 @@ public:
     */
     auto contains(T value) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<bool>(rxo::detail::any<T, std::function<bool(T)>>(std::function<bool(T)>{})))
+        -> decltype(EXPLICIT_THIS lift<bool>(rxo::detail::any<T, decltype(std::bind(std::equal_to<T>(), std::placeholders::_1, T{}))>(std::bind(std::equal_to<T>(), std::placeholders::_1, T{}))))
         /// \endcond
     {
-        return                    lift<bool>(rxo::detail::any<T, std::function<bool(T)>>([value](T n) { return n == value; }));
+        return                    lift<bool>(rxo::detail::any<T, decltype(std::bind(std::equal_to<T>(), std::placeholders::_1, T{}))>(std::bind(std::equal_to<T>(), std::placeholders::_1, value)));
     }
 
     /*! For each item from this observable use Predicate to select which items to emit from the new observable that is returned.
