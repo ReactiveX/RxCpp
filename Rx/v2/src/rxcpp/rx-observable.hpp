@@ -812,6 +812,50 @@ public:
         return                    lift<T>(rxo::detail::tap<T, std::tuple<MakeObserverArgN...>>(std::make_tuple(std::forward<MakeObserverArgN>(an)...)));
     }
 
+    /*! Return an observable that terminates with timeout_error if a particular timespan has passed without emitting another item from the source observable.
+
+        \tparam Duration      the type of time interval
+        \tparam Coordination  the type of the scheduler
+
+        \param period        the period of time wait for another item from the source observable.
+        \param coordination  the scheduler to manage timeout for each event
+
+        \return  Observable that terminates with an error if a particular timespan has passed without emitting another item from the source observable.
+
+        \sample
+        \snippet timeout.cpp timeout sample
+        \snippet output.txt timeout sample
+    */
+    template<class Duration, class Coordination>
+    auto timeout(Duration period, Coordination coordination) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::timeout<T, Duration, Coordination>(period, coordination)))
+        /// \endcond
+    {
+        return                    lift<T>(rxo::detail::timeout<T, Duration, Coordination>(period, coordination));
+    }
+
+    /*! Return an observable that terminates with timeout_error if a particular timespan has passed without emitting another item from the source observable.
+
+        \tparam Duration      the type of time interval
+
+        \param period        the period of time wait for another item from the source observable.
+
+        \return  Observable that terminates with an error if a particular timespan has passed without emitting another item from the source observable.
+
+        \sample
+        \snippet timeout.cpp timeout sample
+        \snippet output.txt timeout sample
+    */
+    template<class Duration>
+    auto timeout(Duration period) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::timeout<T, Duration, identity_one_worker>(period, identity_current_thread())))
+        /// \endcond
+    {
+        return                    lift<T>(rxo::detail::timeout<T, Duration, identity_one_worker>(period, identity_current_thread()));
+    }
+
     /*! Add a new action at the end of the new observable that is returned.
 
         \tparam LastCall  the type of the action function
