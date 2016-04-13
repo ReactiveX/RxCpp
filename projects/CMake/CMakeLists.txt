@@ -70,6 +70,7 @@ set(RX_SOURCES
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-take_until.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-tap.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-timeout.hpp
+   ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-with_latest_from.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-window.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-window_time.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-window_time_count.hpp
