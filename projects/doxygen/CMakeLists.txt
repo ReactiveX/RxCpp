@@ -97,6 +97,7 @@ if(DOXYGEN_FOUND)
         ${DOXY_EXAMPLES_SRC_DIR}/tap.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/timeout.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/timer.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/with_latest_from.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/window.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/zip.cpp
     )
