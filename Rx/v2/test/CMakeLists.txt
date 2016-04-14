@@ -27,6 +27,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/sources/interval.cpp
     ${TEST_DIR}/sources/scope.cpp
     ${TEST_DIR}/sources/timer.cpp
+    ${TEST_DIR}/operators/all.cpp
     ${TEST_DIR}/operators/amb.cpp
     ${TEST_DIR}/operators/amb_variadic.cpp
     ${TEST_DIR}/operators/buffer.cpp

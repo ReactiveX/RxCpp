@@ -723,6 +723,28 @@ public:
         return detail_subscribe(make_subscriber<T>(std::forward<ArgN>(an)...));
     }
 
+    /*! Returns an Observable that emits true if every item emitted by the source Observable satisfies a specified condition, otherwise false.
+        Emits true if the source Observable terminates without emitting any item.
+
+        \tparam Predicate  the type of the test function.
+
+        \param p  the test function to test items emitted by the source Observable.
+
+        \return  Observable that emits true if every item emitted by the source observable satisfies a specified condition, otherwise false.
+
+        \sample
+        \snippet all.cpp all sample
+        \snippet output.txt all sample
+    */
+    template<class Predicate>
+    auto all(Predicate p) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(EXPLICIT_THIS lift<bool>(rxo::detail::all<T, Predicate>(std::move(p))))
+        /// \endcond
+    {
+        return                    lift<bool>(rxo::detail::all<T, Predicate>(std::move(p)));
+    }
+
     /*! Returns an Observable that emits true if any item emitted by the source Observable satisfies a specified condition, otherwise false.
         Emits false if the source Observable terminates without emitting any item.
 
