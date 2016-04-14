@@ -43,6 +43,7 @@ if(DOXYGEN_FOUND)
     # Target to build examples
     set(DOXY_EXAMPLE_SRC_LIST
         ${DOXY_EXAMPLES_SRC_DIR}/main.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/all.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/amb.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/as_dynamic.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/blocking_observable.cpp
