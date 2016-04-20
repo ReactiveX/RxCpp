@@ -79,6 +79,7 @@ namespace rxo=operators;
 #include "operators/rx-take_until.hpp"
 #include "operators/rx-tap.hpp"
 #include "operators/rx-timeout.hpp"
+#include "operators/rx-timestamp.hpp"
 #include "operators/rx-with_latest_from.hpp"
 #include "operators/rx-window.hpp"
 #include "operators/rx-window_time.hpp"

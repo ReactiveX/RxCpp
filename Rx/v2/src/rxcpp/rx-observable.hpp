@@ -878,6 +878,45 @@ public:
         return                    lift<T>(rxo::detail::timeout<T, Duration, identity_one_worker>(period, identity_current_thread()));
     }
 
+    /*! Returns an observable that attaches a timestamp to each item emitted by the source observable indicating when it was emitted.
+
+        \tparam Coordination  the type of the scheduler
+
+        \param coordination  the scheduler to manage timeout for each event
+
+        \return  Observable that emits a pair: { item emitted by the source observable, time_point representing the current value of the clock }.
+
+        \sample
+        \snippet timestamp.cpp timestamp sample
+        \snippet output.txt timestamp sample
+    */
+    template<class Coordination>
+    auto timestamp(Coordination coordination) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(EXPLICIT_THIS lift<std::pair<T, rxsc::scheduler::clock_type::time_point>>(rxo::detail::timestamp<T, Coordination>{coordination}))
+    /// \endcond
+    {
+        return                lift<std::pair<T, rxsc::scheduler::clock_type::time_point>>(rxo::detail::timestamp<T, Coordination>{coordination});
+    }
+
+    /*! Returns an observable that attaches a timestamp to each item emitted by the source observable indicating when it was emitted.
+
+        \tparam ClockType    the type of the clock to return a time_point.
+
+        \return  Observable that emits a pair: { item emitted by the source observable, time_point representing the current value of the clock }.
+
+        \sample
+        \snippet timestamp.cpp timestamp sample
+        \snippet output.txt timestamp sample
+    */
+    auto timestamp() const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(EXPLICIT_THIS lift<std::pair<T, rxsc::scheduler::clock_type::time_point>>(rxo::detail::timestamp<T, identity_one_worker>{identity_current_thread()}))
+    /// \endcond
+    {
+        return                lift<std::pair<T, rxsc::scheduler::clock_type::time_point>>(rxo::detail::timestamp<T, identity_one_worker>{identity_current_thread()});
+    }
+
     /*! Add a new action at the end of the new observable that is returned.
 
         \tparam LastCall  the type of the action function
