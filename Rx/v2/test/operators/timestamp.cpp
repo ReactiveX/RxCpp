@@ -4,7 +4,7 @@ using namespace std::chrono;
 
 SCENARIO("should not emit timestamped items if the source never emits any items", "[timestamp][operators]"){
     GIVEN("a source"){
-        typedef typename rxsc::detail::test_type::clock_type::time_point time_point;
+        typedef rxsc::detail::test_type::clock_type::time_point time_point;
 
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -41,7 +41,7 @@ SCENARIO("should not emit timestamped items if the source never emits any items"
 
 SCENARIO("should not emit timestamped items if the source observable is empty", "[timestamp][operators]"){
     GIVEN("a source"){
-        typedef typename rxsc::detail::test_type::clock_type::time_point time_point;
+        typedef rxsc::detail::test_type::clock_type::time_point time_point;
 
         auto sc = rxsc::make_test();
         auto so = rx::synchronize_in_one_worker(sc);
@@ -84,8 +84,8 @@ SCENARIO("should not emit timestamped items if the source observable is empty", 
 
 SCENARIO("should emit timestamped items for every item in the source observable", "[timestamp][operators]"){
     GIVEN("a source"){
-        typedef typename rxsc::detail::test_type::clock_type clock_type;
-        typedef typename clock_type::time_point time_point;
+        typedef rxsc::detail::test_type::clock_type clock_type;
+        typedef clock_type::time_point time_point;
 
         auto sc = rxsc::make_test();
         auto so = rx::synchronize_in_one_worker(sc);
@@ -132,8 +132,8 @@ SCENARIO("should emit timestamped items for every item in the source observable"
 
 SCENARIO("should emit timestamped items and an error if there is an error", "[timestamp][operators]"){
     GIVEN("a source"){
-        typedef typename rxsc::detail::test_type::clock_type clock_type;
-        typedef typename clock_type::time_point time_point;
+        typedef rxsc::detail::test_type::clock_type clock_type;
+        typedef clock_type::time_point time_point;
 
         auto sc = rxsc::make_test();
         auto so = rx::synchronize_in_one_worker(sc);
