@@ -66,6 +66,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/take_until.cpp
     ${TEST_DIR}/operators/tap.cpp
     ${TEST_DIR}/operators/timeout.cpp
+    ${TEST_DIR}/operators/timestamp.cpp
     ${TEST_DIR}/operators/with_latest_from.cpp
     ${TEST_DIR}/operators/window.cpp
     ${TEST_DIR}/operators/zip.cpp
