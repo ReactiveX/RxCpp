@@ -139,6 +139,18 @@ public:
     {}
 
     ///
+    /// takes any function that will take this observable and produce a result value.
+    /// this is intended to allow externally defined operators, that use subscribe,
+    /// to be connected into the expression.
+    ///
+    template<class OperatorFactory>
+    auto op(OperatorFactory&& of) const
+        -> decltype(of(*(const this_type*)nullptr)) {
+        return      of(*this);
+        static_assert(detail::is_operator_factory_for<this_type, OperatorFactory>::value, "Function passed for op() must have the signature Result(SourceObservable)");
+    }
+    
+    ///
     /// performs type-forgetting conversion to a new composite_observable
     ///
     connectable_observable<T> as_dynamic() {

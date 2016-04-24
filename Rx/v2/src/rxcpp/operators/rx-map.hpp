@@ -35,17 +35,18 @@ struct map
         typedef rxu::decay_t<Subscriber> dest_type;
         typedef observer<T, this_type> observer_type;
         dest_type dest;
-        select_type selector;
+        mutable select_type selector;
 
         map_observer(dest_type d, select_type s)
             : dest(std::move(d))
             , selector(std::move(s))
         {
         }
-        void on_next(source_value_type v) const {
+        template<class Value>
+        void on_next(Value&& v) const {
             auto selected = on_exception(
                 [&](){
-                    return this->selector(std::move(v));},
+                    return this->selector(std::forward<Value>(v));},
                 dest);
             if (selected.empty()) {
                 return;

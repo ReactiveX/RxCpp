@@ -58,7 +58,7 @@ SCENARIO("range partitioned by group_by across hardware threads to derive pi", "
                                                 message << key << " on " << std::this_thread::get_id() << " - value: " << std::setprecision(16) << v;
                                                 return std::make_tuple(message.str(), v);
                                             }).
-                                        start_with(std::make_tuple(message.str(), 0)).
+                                        start_with(std::make_tuple(message.str(), 0.0L)).
                                         as_dynamic();
                                 }).
                             concat(). // only subscribe to one range at a time in this group.
@@ -129,7 +129,7 @@ SCENARIO("range partitioned by dividing work across hardware threads to derive p
                                     message << w.index << " on " << std::this_thread::get_id() << " - value: " << std::setprecision(16) << v;
                                     return std::make_tuple(message.str(), v);
                                 }).
-                            start_with(std::make_tuple(message.str(), 0)).
+                            start_with(std::make_tuple(message.str(), 0.0L)).
                             as_dynamic();
                     }).
                 merge(rxcpp::observe_on_new_thread()).
