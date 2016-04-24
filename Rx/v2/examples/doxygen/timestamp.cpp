@@ -12,9 +12,12 @@ SCENARIO("timestamp sample") {
     auto values = rxcpp::observable<>::interval(milliseconds(100))
             .timestamp()
             .take(3);
+    time_point start = rxcpp::identity_current_thread().now();
     values.
         subscribe(
-            [](std::pair<long, time_point> v) { printf("OnNext: %ld %lld\n", v.first, static_cast<long long>(v.second.time_since_epoch().count())); },
+            [&](std::pair<long, time_point> v) { 
+                printf("OnNext: %ld @%lldms\n", v.first, duration_cast<milliseconds>(v.second - start).count()); 
+            },
             [](std::exception_ptr ep) {
                 try {
                     std::rethrow_exception(ep);
@@ -38,9 +41,12 @@ SCENARIO("timestamp operator syntax sample") {
     auto values = interval(milliseconds(100))
                   | timestamp()
                   | take(3);
+    time_point start = rxcpp::identity_current_thread().now();
     values.
             subscribe(
-            [](std::pair<long, time_point> v) { printf("OnNext: %ld %lld\n", v.first, static_cast<long long>(v.second.time_since_epoch().count())); },
+            [&](std::pair<long, time_point> v) { 
+                printf("OnNext: %ld @%lldms\n", v.first, duration_cast<milliseconds>(v.second - start).count()); 
+            },
             [](std::exception_ptr ep) {
                 try {
                     std::rethrow_exception(ep);

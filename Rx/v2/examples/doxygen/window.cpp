@@ -192,3 +192,49 @@ SCENARIO("window period+count sample"){
             });
     printf("//! [window period+count sample]\n");
 }
+
+SCENARIO("window toggle+coordination sample"){
+    printf("//! [window toggle+coordination sample]\n");
+    int counter = 0;
+    auto values = rxcpp::observable<>::interval(std::chrono::steady_clock::now() + std::chrono::milliseconds(1), std::chrono::milliseconds(2)).
+        take(7).
+        window_toggle(
+            rxcpp::observable<>::interval(std::chrono::milliseconds(4)), 
+            [](long){
+                return rxcpp::observable<>::interval(std::chrono::milliseconds(4)).skip(1);
+            },
+            rxcpp::observe_on_new_thread());
+    values.
+        as_blocking().
+        subscribe(
+            [&counter](rxcpp::observable<long> v){
+                int id = counter++;
+                printf("[window %d] Create window\n", id);
+                v.subscribe(
+                    [id](long v){printf("[window %d] OnNext: %ld\n", id, v);},
+                    [id](){printf("[window %d] OnCompleted\n", id);});
+            });
+    printf("//! [window toggle+coordination sample]\n");
+}
+
+SCENARIO("window toggle sample"){
+    printf("//! [window toggle sample]\n");
+    int counter = 0;
+    auto values = rxcpp::observable<>::interval(std::chrono::steady_clock::now() + std::chrono::milliseconds(1), std::chrono::milliseconds(2)).
+        take(7).
+        window_toggle(
+            rxcpp::observable<>::interval(std::chrono::milliseconds(4)), 
+            [](long){
+                return rxcpp::observable<>::interval(std::chrono::milliseconds(4)).skip(1);
+            });
+    values.
+        subscribe(
+            [&counter](rxcpp::observable<long> v){
+                int id = counter++;
+                printf("[window %d] Create window\n", id);
+                v.subscribe(
+                    [id](long v){printf("[window %d] OnNext: %ld\n", id, v);},
+                    [id](){printf("[window %d] OnCompleted\n", id);});
+            });
+    printf("//! [window toggle sample]\n");
+}

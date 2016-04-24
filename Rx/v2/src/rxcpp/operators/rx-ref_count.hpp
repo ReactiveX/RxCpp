@@ -63,11 +63,17 @@ class ref_count_factory
 {
 public:
     ref_count_factory() {}
-    template<class Observable>
-    auto operator()(Observable&& source)
-        ->      observable<rxu::value_type_t<rxu::decay_t<Observable>>,   ref_count<rxu::value_type_t<rxu::decay_t<Observable>>, Observable>> {
-        return  observable<rxu::value_type_t<rxu::decay_t<Observable>>,   ref_count<rxu::value_type_t<rxu::decay_t<Observable>>, Observable>>(
-                                                                          ref_count<rxu::value_type_t<rxu::decay_t<Observable>>, Observable>(std::forward<Observable>(source)));
+    template<class... TN>
+    auto operator()(connectable_observable<TN...>&& source)
+        ->      observable<rxu::value_type_t<connectable_observable<TN...>>,   ref_count<rxu::value_type_t<connectable_observable<TN...>>, connectable_observable<TN...>>> {
+        return  observable<rxu::value_type_t<connectable_observable<TN...>>,   ref_count<rxu::value_type_t<connectable_observable<TN...>>, connectable_observable<TN...>>>(
+                                                                               ref_count<rxu::value_type_t<connectable_observable<TN...>>, connectable_observable<TN...>>(std::move(source)));
+    }
+    template<class... TN>
+    auto operator()(const connectable_observable<TN...>& source)
+        ->      observable<rxu::value_type_t<connectable_observable<TN...>>,   ref_count<rxu::value_type_t<connectable_observable<TN...>>, connectable_observable<TN...>>> {
+        return  observable<rxu::value_type_t<connectable_observable<TN...>>,   ref_count<rxu::value_type_t<connectable_observable<TN...>>, connectable_observable<TN...>>>(
+                                                                               ref_count<rxu::value_type_t<connectable_observable<TN...>>, connectable_observable<TN...>>(source));
     }
 };
 

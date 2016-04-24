@@ -1297,6 +1297,54 @@ public:
         return                    lift<observable<T>>(rxo::detail::window_with_time_or_count<T, Duration, identity_one_worker>(period, count, identity_current_thread()));
     }
 
+    /*! Return an observable that emits observables every period time interval and collects items from this observable for period of time into each produced observable, on the specified scheduler.
+
+        \tparam Openings        observable<OT>
+        \tparam ClosingSelector a function of type observable<CT>(OT)
+        \tparam Coordination    the type of the scheduler
+
+        \param opens         each value from this observable opens a new window. 
+        \param closes        this function is called for each opened window and returns an observable. the first value from the returned observable will close the window
+        \param coordination  the scheduler for the windows
+
+        \return  Observable that emits an observable for each opened window.
+
+        \sample
+        \snippet window.cpp window toggle+coordination sample
+        \snippet output.txt window toggle+coordination sample
+    */
+    template<class Openings, class ClosingSelector, class Coordination, class Reqiures = typename rxu::types_checked_from<typename Coordination::coordination_tag>::type>
+    auto window_toggle(Openings opens, ClosingSelector closes, Coordination coordination) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(EXPLICIT_THIS lift<observable<T>>(rxo::detail::window_toggle<T, Openings, ClosingSelector, Coordination>(opens, closes, coordination)))
+        /// \endcond
+    {
+        return                    lift<observable<T>>(rxo::detail::window_toggle<T, Openings, ClosingSelector, Coordination>(opens, closes, coordination));
+    }
+
+    /*! Return an observable that emits connected, non-overlapping windows represending items emitted by the source observable during fixed, consecutive durations.
+
+        \tparam Openings        observable<OT>
+        \tparam ClosingSelector a function of type observable<CT>(OT)
+
+        \param opens         each value from this observable opens a new window. 
+        \param closes        this function is called for each opened window and returns an observable. the first value from the returned observable will close the window
+
+        \return  Observable that emits an observable for each opened window.
+
+        \sample
+        \snippet window.cpp window toggle sample
+        \snippet output.txt window toggle sample
+    */
+    template<class Openings, class ClosingSelector>
+    auto window_toggle(Openings opens, ClosingSelector closes) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(EXPLICIT_THIS lift<observable<T>>(rxo::detail::window_toggle<T, Openings, ClosingSelector, identity_one_worker>(opens, closes, identity_current_thread())))
+        /// \endcond
+    {
+        return                    lift<observable<T>>(rxo::detail::window_toggle<T, Openings, ClosingSelector, identity_one_worker>(opens, closes, identity_current_thread()));
+    }
+
     /*! Return an observable that emits connected, non-overlapping buffer, each containing at most count items from the source observable.
 
         \param count  the maximum size of each buffer before it should be emitted
@@ -3265,10 +3313,10 @@ public:
     template<class Value0, class... ValueN>
     auto start_with(Value0 v0, ValueN... vn) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(rxo::start_with(*(this_type*)nullptr, std::move(v0), std::move(vn)...))
+        -> decltype(rxo::start_with(std::move(v0), std::move(vn)...)(*(this_type*)nullptr))
         /// \endcond
     {
-        return      rxo::start_with(*this, std::move(v0), std::move(vn)...);
+        return      rxo::start_with(std::move(v0), std::move(vn)...)(*this);
     }
 
     /*! Take values pairwise from this observable.

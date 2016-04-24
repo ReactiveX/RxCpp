@@ -164,10 +164,11 @@ struct zip : public operator_base<rxu::value_type_t<zip_traits<Coordination, Sel
 template<class Coordination, class Selector, class... ObservableN>
 class zip_factory
 {
+    using this_type = zip_factory<Coordination, Selector, ObservableN...>;
     typedef rxu::decay_t<Coordination> coordination_type;
     typedef rxu::decay_t<Selector> selector_type;
     typedef std::tuple<ObservableN...> tuple_source_type;
-
+    
     coordination_type coordination;
     selector_type selector;
     tuple_source_type sourcen;
@@ -179,6 +180,8 @@ class zip_factory
                                              zip<Coordination, Selector, YObservableN...>(coordination, selector, std::move(source)));
     }
 public:
+    using checked_type = std::enable_if<is_coordination<coordination_type>::value, this_type>;
+
     zip_factory(coordination_type sf, selector_type s, ObservableN... on)
         : coordination(std::move(sf))
         , selector(std::move(s))
@@ -197,8 +200,14 @@ public:
 
 template<class Coordination, class Selector, class... ObservableN>
 auto zip(Coordination sf, Selector s, ObservableN... on)
-    ->      detail::zip_factory<Coordination, Selector, ObservableN...> {
-    return  detail::zip_factory<Coordination, Selector, ObservableN...>(std::move(sf), std::move(s), std::move(on)...);
+    -> typename detail::zip_factory<Coordination, Selector, ObservableN...>::checked_type::type {
+    return      detail::zip_factory<Coordination, Selector, ObservableN...>(std::move(sf), std::move(s), std::move(on)...);
+}
+
+template<class Selector, class... ObservableN>
+auto zip(Selector s, ObservableN... on)
+    -> typename detail::zip_factory<identity_one_worker, Selector, ObservableN...>::checked_type::type {
+    return      detail::zip_factory<identity_one_worker, Selector, ObservableN...>(identity_current_thread(), std::move(s), std::move(on)...);
 }
 
 }

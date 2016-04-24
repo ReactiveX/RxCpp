@@ -172,6 +172,8 @@ struct with_latest_from : public operator_base<rxu::value_type_t<with_latest_fro
 template<class Coordination, class Selector, class... ObservableN>
 class with_latest_from_factory
 {
+    using this_type = with_latest_from_factory<Coordination, Selector, ObservableN...>;
+
     typedef rxu::decay_t<Coordination> coordination_type;
     typedef rxu::decay_t<Selector> selector_type;
     typedef std::tuple<ObservableN...> tuple_source_type;
@@ -187,6 +189,8 @@ class with_latest_from_factory
                                              with_latest_from<Coordination, Selector, YObservableN...>(coordination, selector, std::move(source)));
     }
 public:
+    using checked_type = std::enable_if<is_coordination<coordination_type>::value, this_type>;
+
     with_latest_from_factory(coordination_type sf, selector_type s, ObservableN... on)
         : coordination(std::move(sf))
         , selector(std::move(s))
@@ -205,8 +209,14 @@ public:
 
 template<class Coordination, class Selector, class... ObservableN>
 auto with_latest_from(Coordination sf, Selector s, ObservableN... on)
-    ->      detail::with_latest_from_factory<Coordination, Selector, ObservableN...> {
-    return  detail::with_latest_from_factory<Coordination, Selector, ObservableN...>(std::move(sf), std::move(s), std::move(on)...);
+    -> typename detail::with_latest_from_factory<Coordination, Selector, ObservableN...>::checked_type::type {
+    return      detail::with_latest_from_factory<Coordination, Selector, ObservableN...>(std::move(sf), std::move(s), std::move(on)...);
+}
+
+template<class Selector, class... ObservableN>
+auto with_latest_from(Selector s, ObservableN... on)
+    -> typename detail::with_latest_from_factory<identity_one_worker, Selector, ObservableN...>::checked_type::type {
+    return      detail::with_latest_from_factory<identity_one_worker, Selector, ObservableN...>(identity_current_thread(), std::move(s), std::move(on)...);
 }
 
 }
