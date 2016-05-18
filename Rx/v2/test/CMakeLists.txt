@@ -63,6 +63,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/subscribe_on.cpp
     ${TEST_DIR}/operators/switch_on_next.cpp
     ${TEST_DIR}/operators/take.cpp
+    ${TEST_DIR}/operators/take_last.cpp
     ${TEST_DIR}/operators/take_until.cpp
     ${TEST_DIR}/operators/tap.cpp
     ${TEST_DIR}/operators/timeout.cpp

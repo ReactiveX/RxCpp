@@ -3107,6 +3107,29 @@ public:
                                 rxo::detail::take<T, this_type, Count>(*this, t));
     }
 
+    /*! Emit only the final t items emitted by the source Observable.
+
+        \tparam Count  the type of the items counter
+
+        \param t  the number of last items to take
+
+        \return  An observable that emits only the last t items emitted by the source Observable, or all of the items from the source observable if that observable emits fewer than t items.
+
+        \sample
+        \snippet take_last.cpp take sample
+        \snippet output.txt take sample
+    */
+    template<class Count>
+    auto take_last(Count t) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        ->      observable<T,   rxo::detail::take_last<T, this_type, Count>>
+        /// \endcond
+    {
+        return  observable<T,   rxo::detail::take_last<T, this_type, Count>>(
+                                rxo::detail::take_last<T, this_type, Count>(*this, t));
+    }
+
+
     /*! For each item from this observable until on_next occurs on the trigger observable, emit them from the new observable that is returned.
 
         \tparam  TriggerSource  the type of the trigger observable

@@ -68,6 +68,7 @@ set(RX_SOURCES
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-subscribe_on.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-switch_on_next.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-take.hpp
+   ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-take_last.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-take_until.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-tap.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-timeout.hpp
