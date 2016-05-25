@@ -3035,6 +3035,28 @@ public:
                                 rxo::detail::skip<T, this_type, Count>(*this, t));
     }
 
+    /*! Make new observable with skipped last count items from this observable.
+
+        \tparam  Count  the type of the items counter
+
+        \param  t  the number of last items to skip
+
+        \return  An observable that is identical to the source observable except that it does not emit the last t items that the source observable emits.
+
+        \sample
+        \snippet skip_last.cpp skip sample
+        \snippet output.txt skip sample
+    */
+    template<class Count>
+    auto skip_last(Count t) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        ->      observable<T,   rxo::detail::skip_last<T, this_type, Count>>
+        /// \endcond
+    {
+        return  observable<T,   rxo::detail::skip_last<T, this_type, Count>>(
+                                rxo::detail::skip_last<T, this_type, Count>(*this, t));
+    }
+
     /*! Make new observable with items skipped until on_next occurs on the trigger observable
 
         \tparam  TriggerSource  the type of the trigger observable

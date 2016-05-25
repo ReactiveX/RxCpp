@@ -1,6 +1,6 @@
 #include "../test.h"
 
-SCENARIO("take last 0", "[take_last][operators]"){
+SCENARIO("skip last 0", "[skip_last][operators]"){
     GIVEN("a source"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -15,12 +15,12 @@ SCENARIO("take last 0", "[take_last][operators]"){
             on.completed(250)
         });
 
-        WHEN("0 last values are taken"){
+        WHEN("0 last values are skipped"){
 
             auto res = w.start(
                 [xs]() {
                     return xs
-                        .take_last(0)
+                        .skip_last(0)
                         // forget type to workaround lambda deduction bug on msvc 2013
                         .as_dynamic();
                 }
@@ -28,6 +28,10 @@ SCENARIO("take last 0", "[take_last][operators]"){
 
             THEN("the output only contains the completion event"){
                 auto required = rxu::to_vector({
+                    on.next(210, 2),
+                    on.next(220, 3),
+                    on.next(230, 4),
+                    on.next(240, 5),
                     on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
@@ -46,7 +50,7 @@ SCENARIO("take last 0", "[take_last][operators]"){
     }
 }
 
-SCENARIO("take last 1", "[take_last][operators]"){
+SCENARIO("skip last 1", "[skip_last][operators]"){
     GIVEN("a source"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -61,12 +65,12 @@ SCENARIO("take last 1", "[take_last][operators]"){
             on.completed(250)
         });
 
-        WHEN("1 last value is taken"){
+        WHEN("1 last value is skipped"){
 
             auto res = w.start(
                 [xs]() {
                     return xs
-                        .take_last(1)
+                        .skip_last(1)
                         // forget type to workaround lambda deduction bug on msvc 2013
                         .as_dynamic();
                 }
@@ -74,7 +78,9 @@ SCENARIO("take last 1", "[take_last][operators]"){
 
             THEN("the output only contains items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.next(250, 5),
+                    on.next(220, 2),
+                    on.next(230, 3),
+                    on.next(240, 4),
                     on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
@@ -93,7 +99,7 @@ SCENARIO("take last 1", "[take_last][operators]"){
     }
 }
 
-SCENARIO("take last 2", "[take_last][operators]"){
+SCENARIO("skip last 2", "[skip_last][operators]"){
     GIVEN("a source"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -108,12 +114,12 @@ SCENARIO("take last 2", "[take_last][operators]"){
             on.completed(250)
         });
 
-        WHEN("2 last values are taken"){
+        WHEN("2 last values are skipped"){
 
             auto res = w.start(
                 [xs]() {
                     return xs
-                        .take_last(2)
+                        .skip_last(2)
                         // forget type to workaround lambda deduction bug on msvc 2013
                         .as_dynamic();
                 }
@@ -121,8 +127,8 @@ SCENARIO("take last 2", "[take_last][operators]"){
 
             THEN("the output only contains items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.next(250, 4),
-                    on.next(250, 5),
+                    on.next(230, 2),
+                    on.next(240, 3),
                     on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
@@ -141,7 +147,7 @@ SCENARIO("take last 2", "[take_last][operators]"){
     }
 }
 
-SCENARIO("take last 10, complete before all elements are taken", "[take_last][operators]"){
+SCENARIO("skip last 10, complete before all elements are skipped", "[skip_last][operators]"){
     GIVEN("a source"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -156,12 +162,12 @@ SCENARIO("take last 10, complete before all elements are taken", "[take_last][op
             on.completed(250)
         });
 
-        WHEN("10 last values are taken"){
+        WHEN("10 last values are skipped"){
 
             auto res = w.start(
                 [xs]() {
                     return xs
-                        .take_last(10)
+                        .skip_last(10)
                         // forget type to workaround lambda deduction bug on msvc 2013
                         .as_dynamic();
                 }
@@ -169,10 +175,6 @@ SCENARIO("take last 10, complete before all elements are taken", "[take_last][op
 
             THEN("the output only contains items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.next(250, 2),
-                    on.next(250, 3),
-                    on.next(250, 4),
-                    on.next(250, 5),
                     on.completed(250)
                 });
                 auto actual = res.get_observer().messages();
@@ -191,7 +193,7 @@ SCENARIO("take last 10, complete before all elements are taken", "[take_last][op
     }
 }
 
-SCENARIO("no items to take_last", "[take_last][operators]"){
+SCENARIO("no items to skip_last", "[skip_last][operators]"){
     GIVEN("a source"){
         auto sc = rxsc::make_test();
         auto so = rx::synchronize_in_one_worker(sc);
@@ -202,12 +204,12 @@ SCENARIO("no items to take_last", "[take_last][operators]"){
             on.next(150, 1)
         });
 
-        WHEN("2 last values are taken"){
+        WHEN("2 last values are skipped"){
 
             auto res = w.start(
                 [so, xs]() {
                     return xs
-                        .take_last(2)
+                        .skip_last(2)
                         // forget type to workaround lambda deduction bug on msvc 2013
                         .as_dynamic();
                 }
@@ -230,7 +232,7 @@ SCENARIO("no items to take_last", "[take_last][operators]"){
     }
 }
 
-SCENARIO("take_last, source observable emits an error", "[take_last][operators]"){
+SCENARIO("skip_last, source observable emits an error", "[skip_last][operators]"){
     GIVEN("a source"){
         auto sc = rxsc::make_test();
         auto so = rx::synchronize_in_one_worker(sc);
@@ -244,12 +246,12 @@ SCENARIO("take_last, source observable emits an error", "[take_last][operators]"
             on.error(250, ex)
         });
 
-        WHEN("2 last values are taken"){
+        WHEN("2 last values are skipped"){
 
             auto res = w.start(
                 [so, xs]() {
                     return xs
-                        .take_last(2)
+                        .skip_last(2)
                         // forget type to workaround lambda deduction bug on msvc 2013
                         .as_dynamic();
                 }

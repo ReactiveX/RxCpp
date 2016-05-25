@@ -70,6 +70,7 @@ namespace rxo=operators;
 #include "operators/rx-sample_time.hpp"
 #include "operators/rx-scan.hpp"
 #include "operators/rx-skip.hpp"
+#include "operators/rx-skip_last.hpp"
 #include "operators/rx-skip_until.hpp"
 #include "operators/rx-start_with.hpp"
 #include "operators/rx-subscribe.hpp"
