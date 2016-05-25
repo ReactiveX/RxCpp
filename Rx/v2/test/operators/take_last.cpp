@@ -15,7 +15,7 @@ SCENARIO("take last 0", "[take_last][operators]"){
             on.completed(250)
         });
 
-        WHEN("2 last values are taken"){
+        WHEN("0 last values are taken"){
 
             auto res = w.start(
                 [xs]() {
@@ -230,7 +230,7 @@ SCENARIO("no items to take_last", "[take_last][operators]"){
     }
 }
 
-SCENARIO("source observable emits an error", "[take_last][operators]"){
+SCENARIO("take_last, source observable emits an error", "[take_last][operators]"){
     GIVEN("a source"){
         auto sc = rxsc::make_test();
         auto so = rx::synchronize_in_one_worker(sc);
