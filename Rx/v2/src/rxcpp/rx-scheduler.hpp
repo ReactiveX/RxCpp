@@ -673,6 +673,47 @@ public:
     }
 };
 
+class action_tailrecurser
+    : public std::enable_shared_from_this<action_type>
+{
+    typedef action_type this_type;
+
+public:
+    typedef std::function<void(const schedulable&)> function_type;
+
+private:
+    function_type f;
+
+public:
+    action_tailrecurser()
+    {
+    }
+
+    action_tailrecurser(function_type f)
+        : f(std::move(f))
+    {
+    }
+
+    inline void operator()(const schedulable& s, const recurse& r) {
+        if (!f) {
+            abort();
+        }
+        trace_activity().action_enter(s);
+        auto scope = s.set_recursed(r);
+        while (s.is_subscribed()) {
+            r.reset();
+            f(s);
+            if (!r.is_allowed() || !r.is_requested()) {
+                if (r.is_requested()) {
+                    s.schedule();
+                }
+                break;
+            }
+            trace_activity().action_recurse(s);
+        }
+        trace_activity().action_return(s);
+    }
+};
 }
 
 inline void action::operator()(const schedulable& s, const recurse& r) const {
@@ -687,25 +728,7 @@ template<class F>
 inline action make_action(F&& f) {
     static_assert(detail::is_action_function<F>::value, "action function must be void(schedulable)");
     auto fn = std::forward<F>(f);
-    return action(std::make_shared<detail::action_type>(
-        // tail-recurse inside of the virtual function call
-        // until a new action, lifetime or scheduler is returned
-        [fn](const schedulable& s, const recurse& r) {
-            trace_activity().action_enter(s);
-            auto scope = s.set_recursed(r);
-            while (s.is_subscribed()) {
-                r.reset();
-                fn(s);
-                if (!r.is_allowed() || !r.is_requested()) {
-                    if (r.is_requested()) {
-                        s.schedule();
-                    }
-                    break;
-                }
-                trace_activity().action_recurse(s);
-            }
-            trace_activity().action_return(s);
-        }));
+    return action(std::make_shared<detail::action_type>(detail::action_tailrecurser(fn)));
 }
 
 // copy
