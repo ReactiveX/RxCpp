@@ -3060,8 +3060,8 @@ public:
         \return  An observable that is identical to the source observable except that it does not emit the last t items that the source observable emits.
 
         \sample
-        \snippet skip_last.cpp skip sample
-        \snippet output.txt skip sample
+        \snippet skip_last.cpp skip_last sample
+        \snippet output.txt skip_last sample
     */
     template<class Count>
     auto skip_last(Count t) const
@@ -3154,8 +3154,8 @@ public:
         \return  An observable that emits only the last t items emitted by the source Observable, or all of the items from the source observable if that observable emits fewer than t items.
 
         \sample
-        \snippet take_last.cpp take sample
-        \snippet output.txt take sample
+        \snippet take_last.cpp take_last sample
+        \snippet output.txt take_last sample
     */
     template<class Count>
     auto take_last(Count t) const
