@@ -834,6 +834,45 @@ public:
         return                    lift<T>(rxo::detail::tap<T, std::tuple<MakeObserverArgN...>>(std::make_tuple(std::forward<MakeObserverArgN>(an)...)));
     }
 
+    /*! Returns an observable that emits indications of the amount of time lapsed between consecutive emissions of the source observable.
+        The first emission from this new Observable indicates the amount of time lapsed between the time when the observer subscribed to the Observable and the time when the source Observable emitted its first item.
+
+        \tparam Coordination  the type of the scheduler
+
+        \param coordination  the scheduler for itme intervals
+
+        \return  Observable that emits a time_duration to indicate the amount of time lapsed between pairs of emissions.
+
+        \sample
+        \snippet time_interval.cpp time_interval sample
+        \snippet output.txt time_interval sample
+    */
+    template<class Coordination>
+    auto time_interval(Coordination coordination) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(EXPLICIT_THIS lift<rxsc::scheduler::clock_type::time_point::duration>(rxo::detail::time_interval<T, Coordination>{coordination}))
+    /// \endcond
+    {
+        return                lift<rxsc::scheduler::clock_type::time_point::duration>(rxo::detail::time_interval<T, Coordination>{coordination});
+    }
+
+    /*! Returns an observable that emits indications of the amount of time lapsed between consecutive emissions of the source observable.
+        The first emission from this new Observable indicates the amount of time lapsed between the time when the observer subscribed to the Observable and the time when the source Observable emitted its first item.
+
+        \return  Observable that emits a time_duration to indicate the amount of time lapsed between pairs of emissions.
+
+        \sample
+        \snippet time_interval.cpp time_interval sample
+        \snippet output.txt time_interval sample
+    */
+    auto time_interval() const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(EXPLICIT_THIS lift<rxsc::scheduler::clock_type::time_point::duration>(rxo::detail::time_interval<T, identity_one_worker>{identity_current_thread()}))
+    /// \endcond
+    {
+        return                lift<rxsc::scheduler::clock_type::time_point::duration>(rxo::detail::time_interval<T, identity_one_worker>{identity_current_thread()});
+    }
+
     /*! Return an observable that terminates with timeout_error if a particular timespan has passed without emitting another item from the source observable.
 
         \tparam Duration      the type of time interval
