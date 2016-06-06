@@ -466,6 +466,36 @@ public:
     }
 };
 
+namespace detail {
+    
+template<class SourceOperator, class Subscriber>
+struct safe_subscriber 
+{
+    safe_subscriber(SourceOperator& so, Subscriber& o) : so(std::addressof(so)), o(std::addressof(o)) {}
+
+    void subscribe() {
+        try {
+            so->on_subscribe(*o);
+        }
+        catch(...) {
+            if (!o->is_subscribed()) {
+                throw;
+            }
+            o->on_error(std::current_exception());
+            o->unsubscribe();
+        }
+    }
+
+    void operator()(const rxsc::schedulable&) {
+        subscribe();
+    }
+
+    SourceOperator* so;
+    Subscriber* o;
+};
+
+}
+
 template<>
 class observable<void, void>;
 
@@ -525,29 +555,15 @@ private:
             return o.get_subscription();
         }
 
-        auto safe_subscribe = [&]() {
-            try {
-                source_operator.on_subscribe(o);
-            }
-            catch(...) {
-                if (!o.is_subscribed()) {
-                    throw;
-                }
-                o.on_error(std::current_exception());
-                o.unsubscribe();
-            }
-        };
+        detail::safe_subscriber<source_operator_type, subscriber_type> subscriber(source_operator, o);
 
         // make sure to let current_thread take ownership of the thread as early as possible.
         if (rxsc::current_thread::is_schedule_required()) {
             const auto& sc = rxsc::make_current_thread();
-            sc.create_worker(o.get_subscription()).schedule(
-                [&](const rxsc::schedulable&) {
-                    safe_subscribe();
-                });
+            sc.create_worker(o.get_subscription()).schedule(subscriber);
         } else {
             // current_thread already owns this thread.
-            safe_subscribe();
+            subscriber.subscribe();
         }
 
         trace_activity().subscribe_return(*this);
@@ -3083,8 +3099,8 @@ public:
         \return  An observable that is identical to the source observable except that it does not emit the last t items that the source observable emits.
 
         \sample
-        \snippet skip_last.cpp skip sample
-        \snippet output.txt skip sample
+        \snippet skip_last.cpp skip_last sample
+        \snippet output.txt skip_last sample
     */
     template<class Count>
     auto skip_last(Count t) const
@@ -3177,8 +3193,8 @@ public:
         \return  An observable that emits only the last t items emitted by the source Observable, or all of the items from the source observable if that observable emits fewer than t items.
 
         \sample
-        \snippet take_last.cpp take sample
-        \snippet output.txt take sample
+        \snippet take_last.cpp take_last sample
+        \snippet output.txt take_last sample
     */
     template<class Count>
     auto take_last(Count t) const
