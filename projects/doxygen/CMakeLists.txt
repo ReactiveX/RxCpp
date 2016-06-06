@@ -98,6 +98,7 @@ if(DOXYGEN_FOUND)
         ${DOXY_EXAMPLES_SRC_DIR}/take_last.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/take_until.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/tap.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/time_interval.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/timeout.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/timer.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/timestamp.cpp

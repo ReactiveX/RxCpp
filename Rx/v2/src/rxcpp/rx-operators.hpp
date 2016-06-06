@@ -80,6 +80,7 @@ namespace rxo=operators;
 #include "operators/rx-take_last.hpp"
 #include "operators/rx-take_until.hpp"
 #include "operators/rx-tap.hpp"
+#include "operators/rx-time_interval.hpp"
 #include "operators/rx-timeout.hpp"
 #include "operators/rx-timestamp.hpp"
 #include "operators/rx-with_latest_from.hpp"
