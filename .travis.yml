@@ -1,25 +1,23 @@
-sudo: true
 language: cpp
+
+dist: trusty
+sudo: true
+
 env:
   global:
     secure: FNZOWYO89qsT9kQKngrYbpnqCTMCSCSQ2rnZ3l17KHctOfS554TTDS+dfxPYz2XHm6azYDVcyBSs2gWJ6TmXZZZqEfr3X4VV4ooAa9PoeIkvVlT654zjZwxeXPYXrHFXZh/ImLUGWjsxRaUHYOv5SzyNGcZv07dtLKVd0ykhbH4=
+
 matrix:
   include:
-  - env: BUILD_TYPE=Release CPP=11 ASAN=On LIBCXX=On RUN_TEST=On
+
+  - env: BUILD_TYPE=Release CPP=11 ASAN=On LIBCXX=On RUN_TEST=On 
     os: osx
     compiler: clang
-  - env: CLANG_VERSION=3.7 BUILD_TYPE=Release CPP=11 ASAN=On LIBCXX=On
+
+  - env: BUILD_TYPE=Release CPP=11 ASAN=Off LLVM_VERSION=3.8.0 RUN_TEST=On CMAKE_VERSION=3.5 CMAKE_VERSION_MINOR=2
     os: linux
-    compiler: clang
-    addons:
-      apt:
-        packages:
-        - clang-3.7
-        sources:
-        - ubuntu-toolchain-r-test
-        - llvm-toolchain-precise-3.7
-        - llvm-toolchain-precise
-  - env: GCC_VERSION=4.9 BUILD_TYPE=Release CPP=11 ASAN=Off LIBCXX=Off RUN_TEST=On
+
+  - env: BUILD_TYPE=Release CPP=11 ASAN=Off GCC_VERSION=4.9 RUN_TEST=On CMAKE_VERSION=3.5 CMAKE_VERSION_MINOR=2
     os: linux
     compiler: gcc
     addons:
@@ -28,83 +26,109 @@ matrix:
         - g++-4.9
         sources:
         - ubuntu-toolchain-r-test
-  - env: CLANG_VERSION=3.7 BUILD_TYPE=Release CPP=11 ASAN=Off LIBCXX=On PROJECT=doc PUBLISH_DOCS=On
+
+  - env: BUILD_TYPE=Release CPP=11 ASAN=Off PROJECT=doc PUBLISH_DOCS=On LLVM_VERSION=3.8.0 CMAKE_VERSION=3.5 CMAKE_VERSION_MINOR=2
     os: linux
-    compiler: clang
     addons:
       apt:
         packages:
-        - clang-3.7
         - graphviz
         sources:
         - ubuntu-toolchain-r-test
-        - llvm-toolchain-precise-3.7
-        - llvm-toolchain-precise
+
+cache:
+  directories:
+    - llvm-3.8.0
+    - cmake-3.5.2
+    
 before_install:
-  - if [ -n "$GCC_VERSION" ]; then export CXX="g++-${GCC_VERSION}" CC="gcc-${GCC_VERSION}";
+  ############################################################################
+  # Install llvm
+  ############################################################################
+  - |
+    if [ -n "$LLVM_VERSION" ]; then
+      if [ -z "$(ls -A llvm-$LLVM_VERSION)" ]; then
+        travis_retry wget -O llvm-$LLVM_VERSION.tar.xz http://llvm.org/releases/$LLVM_VERSION/clang+llvm-$LLVM_VERSION-x86_64-linux-gnu-ubuntu-14.04.tar.xz;
+        mkdir llvm-$LLVM_VERSION;
+        xzcat llvm-$LLVM_VERSION.tar.xz | tar -xvf - --strip 1 -C llvm-$LLVM_VERSION;
+      fi;
+      llvm-$LLVM_VERSION/bin/llvm-config --version;
+      export LLVM_CONFIG="llvm-$LLVM_VERSION/bin/llvm-config";
+    fi  
+  ############################################################################
+  # Use gcc
+  ############################################################################
+  - |
+    if [ -n "$GCC_VERSION" ]; then 
+      export CXX="g++-${GCC_VERSION}" CC="gcc-${GCC_VERSION}";
     fi
-  - if [ -n "$CLANG_VERSION" ]; then export CXX="clang++-${CLANG_VERSION}" CC="clang-${CLANG_VERSION}";
-    fi
-  - which $CXX
-  - which $CC
   ############################################################################
   # Install publish tools (doxygen)
   ############################################################################
   - |
     if [[ "$PUBLISH_DOCS" == "On" ]]; then
-      sudo apt-add-repository -y ppa:libreoffice/libreoffice-4-2
-      sudo apt-get update || echo "ignore update failure"
-      sudo apt-get install doxygen
+      sudo apt-add-repository -y ppa:libreoffice/libreoffice-4-2;
+      sudo apt-get update || echo "ignore update failure";
+      sudo apt-get install doxygen;
     fi
   ############################################################################
   # Install a recent CMake
   ############################################################################
   - |
     if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
-      CMAKE_URL="http://www.cmake.org/files/v3.3/cmake-3.3.2-Linux-x86_64.tar.gz"
-      mkdir ${TRAVIS_BUILD_DIR}/cmake && travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C ${TRAVIS_BUILD_DIR}/cmake
-      export PATH=${TRAVIS_BUILD_DIR}/cmake/bin:${PATH}
+      if [ -z "$(ls -A cmake-$CMAKE_VERSION.$CMAKE_VERSION_MINOR)" ]; then
+        CMAKE_URL="http://www.cmake.org/files/v$CMAKE_VERSION/cmake-$CMAKE_VERSION.$CMAKE_VERSION_MINOR-Linux-x86_64.tar.gz";
+        mkdir cmake-$CMAKE_VERSION.$CMAKE_VERSION_MINOR;
+        travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake-$CMAKE_VERSION.$CMAKE_VERSION_MINOR;
+      fi;
+      export PATH=cmake-$CMAKE_VERSION.$CMAKE_VERSION_MINOR/bin:${PATH};
     else
-      xcode-select --install
-      brew update || echo "suppress failures in order to ignore warnings"
-      brew doctor || echo "suppress failures in order to ignore warnings"
-      brew list cmake || echo "suppress failures in order to ignore warnings"
-      sudo brew uninstall --force cmake || "suppress failures in order to ignore warnings"
-      brew search cmake || echo "suppress failures in order to ignore warnings"
-      brew install cmake || echo "suppress failures in order to ignore warnings"
-      brew upgrade cmake || echo "suppress failures in order to ignore warnings"
-    fi
-  - cmake --version
-  ############################################################################
-  # Install LIBCXX
-  ############################################################################
-  - if [ -n "$CLANG_VERSION" ]; then sh projects/scripts/install_libcxx.sh; fi
+      xcode-select --install;
+      brew update || echo "suppress failures in order to ignore warnings";
+      brew doctor || echo "suppress failures in order to ignore warnings";
+      brew list cmake || echo "suppress failures in order to ignore warnings";
+      sudo brew uninstall --force cmake || "suppress failures in order to ignore warnings";
+      brew search cmake || echo "suppress failures in order to ignore warnings";
+      brew install cmake || echo "suppress failures in order to ignore warnings";
+      brew upgrade cmake || echo "suppress failures in order to ignore warnings";
+    fi;
+    cmake --version;
 install:
-  - export CXX_FLAGS=""
-  - export CXX_LINKER_FLAGS=""
-  - if [ -z "$BUILD_TYPE" ]; then export BUILD_TYPE=Release; fi
-  - if [ "$ASAN" == "On"]; then export CXX_FLAGS="${CXX_FLAGS} -fsanitize=address,undefined,integer
-    -fno-omit-frame-pointer -fno-sanitize=unsigned-integer-overflow"; fi
-  - if [ -n "$CLANG_VERSION" ]; then CXX_FLAGS="${CXX_FLAGS} -D__extern_always_inline=inline";
-    fi
-  - if [ "$LIBCXX" == "On" ]; then CXX_FLAGS="${CXX_FLAGS} -stdlib=libc++ -I/usr/include/c++/v1/";
-    fi
-  - if [ "$LIBCXX" == "On" ]; then CXX_LINKER_FLAGS="${CXX_FLAGS} -L/usr/lib/ -lc++";
-    fi
-  - cmake . -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_CXX_FLAGS="${CXX_FLAGS}" -DCMAKE_EXE_LINKER_FLAGS="${CXX_LINKER_FLAGS}"
-script:
-  - make VERBOSE=1 $PROJECT
   - |
+    export CXX_FLAGS="";
+    export CXX_LINKER_FLAGS="";
+    if [ -z "$BUILD_TYPE" ]; then 
+      export BUILD_TYPE=Release; 
+    fi;
+    if [ "$ASAN" == "On"]; then 
+      export CXX_FLAGS="${CXX_FLAGS} -fsanitize=address,undefined,integer -fno-omit-frame-pointer -fno-sanitize=unsigned-integer-overflow"; 
+    fi;
+    if [ -n "$LLVM_VERSION" ]; then 
+      CXX_FLAGS="${CXX_FLAGS} -D__extern_always_inline=inline";
+    fi;
+  ############################################################################
+  # Run cmake
+  ############################################################################
+  - |
+    if [ -n "$GCC_VERSION" ]; then
+      cmake . -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_CXX_FLAGS="${CXX_FLAGS}" -DCMAKE_EXE_LINKER_FLAGS="${CXX_LINKER_FLAGS}"; 
+    fi;
+    if [ -n "$LLVM_VERSION" ]; then
+      cmake . -DLLVM_CONFIG=$(which ${LLVM_CONFIG}) -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_CXX_FLAGS="${CXX_FLAGS}" -DCMAKE_EXE_LINKER_FLAGS="${CXX_LINKER_FLAGS}"; 
+    fi;
+script:
+  - |
+    make VERBOSE=1 $PROJECT;
     if [[ "$RUN_TEST" == "On" ]]; then
-      cd build/test/
-      ctest -V
-      cd ../../
-    fi
+      cd build/test/;
+      ctest -V;
+      cd ../../;
+    fi;
 after_success:
   - |
     if [[ "$PUBLISH_DOCS" == "On" ]]; then
-      sh projects/scripts/travis-doxygen.sh
-    fi
+      sh projects/scripts/travis-doxygen.sh;
+    fi;
 branches:
   only:
   - master
