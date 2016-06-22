@@ -15,7 +15,8 @@ SCENARIO("time_interval sample") {
     values.
         subscribe(
             [&](duration_type v) {
-                printf("OnNext: @%lldms\n", duration_cast<milliseconds>(v).count());
+                long long int ms = duration_cast<milliseconds>(v).count();
+                printf("OnNext: @%lldms\n", ms);
             },
             [](std::exception_ptr ep) {
                 try {
@@ -43,7 +44,8 @@ SCENARIO("time_interval operator syntax sample") {
     values.
             subscribe(
             [&](duration_type v) {
-                printf("OnNext: @%lldms\n", duration_cast<milliseconds>(v).count());
+                long long int ms = duration_cast<milliseconds>(v).count();
+                printf("OnNext: @%lldms\n", ms);
             },
             [](std::exception_ptr ep) {
                 try {
