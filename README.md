@@ -1,18 +1,16 @@
 The Reactive Extensions for Native (__RxCpp__) is a library for composing asynchronous and event-based programs using observable sequences and LINQ-style query operators in C++.
 
-Windows: [![Windows Status](http://img.shields.io/appveyor/ci/kirkshoop/RxCpp-446.svg?style=flat-square)](https://ci.appveyor.com/project/kirkshoop/rxcpp-446)
-Linux & OSX: [![Linux & Osx Status](http://img.shields.io/travis/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://travis-ci.org/Reactive-Extensions/RxCpp)
+Platform    | Status | 
+----------- | :------------: |
+Windows | [![Windows Status](http://img.shields.io/appveyor/ci/kirkshoop/RxCpp-446.svg?style=flat-square)](https://ci.appveyor.com/project/kirkshoop/rxcpp-446)
+Linux & OSX | [![Linux & Osx Status](http://img.shields.io/travis/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://travis-ci.org/Reactive-Extensions/RxCpp)
 
-[![GitHub license](https://img.shields.io/github/license/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp)
-
-[![Join in on gitter.im](https://img.shields.io/gitter/room/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://gitter.im/Reactive-Extensions/RxCpp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![doxygen documentation](https://img.shields.io/badge/documentation-latest-brightgreen.svg?style=flat-square)](http://reactive-extensions.github.io/RxCpp)
-
-Github: [![GitHub release](https://img.shields.io/github/release/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp/releases)
-[![GitHub commits](https://img.shields.io/github/commits-since/Reactive-Extensions/RxCpp/v2.3.0.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp)
-
-NuGet: [![NuGet version](http://img.shields.io/nuget/v/RxCpp.svg?style=flat-square)](http://www.nuget.org/packages/RxCpp/)
-[![NuGet downloads](http://img.shields.io/nuget/dt/RxCpp.svg?style=flat-square)](http://www.nuget.org/packages/RxCpp/)
+Source        | Badges |
+------------- | :---------------: |
+Github | [![GitHub license](https://img.shields.io/github/license/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp) [![GitHub release](https://img.shields.io/github/release/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp/releases) [![GitHub commits](https://img.shields.io/github/commits-since/Reactive-Extensions/RxCpp/v2.3.0.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp)
+Gitter.im | [![Join in on gitter.im](https://img.shields.io/gitter/room/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://gitter.im/Reactive-Extensions/RxCpp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+NuGet | [![NuGet version](http://img.shields.io/nuget/v/RxCpp.svg?style=flat-square)](http://www.nuget.org/packages/RxCpp/)
+Documentation | [![doxygen documentation](https://img.shields.io/badge/documentation-latest-brightgreen.svg?style=flat-square)](http://reactive-extensions.github.io/RxCpp) [![reactivex intro](https://img.shields.io/badge/reactivex-intro-brightgreen.svg?style=flat-square)](http://reactivex.io/intro.html) [![rx marble diagrams](https://img.shields.io/badge/rx-marble-diagrams-brightgreen.svg?style=flat-square)](http://rxmarbles.com/)
 
 #Example
 Add ```Rx/v2/src``` to the include paths
@@ -102,11 +100,30 @@ int main()
 }
 ```
 
-# Reactive Extensions:
+#Reactive Extensions
 
-* Rx.NET: The Reactive Extensions (Rx) is a library for composing asynchronous and event-based programs using observable sequences and LINQ-style query operators.
-* RxJS: The Reactive Extensions for JavaScript (RxJS) is a library for composing asynchronous and event-based programs using observable sequences and LINQ-style query operators in JavaScript which can target both the browser and Node.js.
-* RxCpp: The Reactive Extensions for Native (RxCpp) is a library for composing asynchronous and event-based programs using observable sequences and LINQ-style query operators in both C++.
+>The ReactiveX Observable model allows you to treat streams of asynchronous events with the same sort of simple, composable operations that you use for collections of data items like arrays. It frees you from tangled webs of callbacks, and thereby makes your code more readable and less prone to bugs.
+Credit [ReactiveX.io](http://reactivex.io/intro.html)
+
+Java: [RxJava](https://github.com/ReactiveX/RxJava)
+JavaScript: [RxJS](https://github.com/Reactive-Extensions/RxJS)
+C#: [Rx.NET](https://github.com/Reactive-Extensions/Rx.NET)
+[More..](http://reactivex.io/languages.html)
+
+###Resources
+
+* [Intro](http://reactivex.io/intro.html)
+* [Tutorials](http://reactivex.io/tutorials.html)
+* [Marble Diagrams](http://rxmarbles.com/)
+
+#Cloning RxCpp
+
+RxCpp uses a git submodule (in `ext/catch`) for the excellent [Catch](https://github.com/philsquared/Catch) library. The easiest way to ensure that the submodules are included in the clone is to add `--recursive` in the clone command.
+
+```shell
+git clone --recursive https://github.com/Reactive-Extensions/RxCpp.git
+cd RxCpp
+```
 
 #Building RxCpp
 
@@ -125,13 +142,13 @@ cd projects/build
 cmake -G"Xcode" ../CMake -B.
 ```
 
-####Visual Studio 13
+####Visual Studio 2013
 ```batch
 mkdir projects\build
 cd projects\build
-cmake -G"Visual Studio 12" ..\CMake -B.
+cmake -G"Visual Studio 14" ..\CMake -B.
+msbuild rxcpp.sln
 ```
-* Note: open in VC2013 and upgrade to the 2013 toolset
 
 ###makefile builds
 
@@ -171,18 +188,18 @@ The build only produces test and example binaries.
 
 #Running tests
 
-* You can use the CMake test runner ```ctest```
-* You can run the test binaries directly ```rxcppv2_test_*```
+* You can use the CMake test runner `ctest`
+* You can run the test binaries directly `rxcppv2_test_*`
 * Tests can be selected by name or tag
 Example of by-tag
 
-```rxcppv2_test_subscription [perf]```
+`rxcppv2_test_subscription [perf]`
 
 #Documentation
 
 RxCpp uses Doxygen to generate project [documentation](http://reactive-extensions.github.io/RxCpp).
 
-When Doxygen+Graphviz is installed, CMake creates a special build task named ```doc```. It creates actual documentation and puts it to ```projects/doxygen/html/``` folder, which can be published to the `gh-pages` branch. Each merged pull request will build the docs and publish them.
+When Doxygen+Graphviz is installed, CMake creates a special build task named `doc`. It creates actual documentation and puts it to `projects/doxygen/html/` folder, which can be published to the `gh-pages` branch. Each merged pull request will build the docs and publish them.
 
 [Developers Material](DeveloperManual.md)
 
@@ -190,4 +207,4 @@ When Doxygen+Graphviz is installed, CMake creates a special build task named ```
 
 Before submitting a feature or substantial code contribution please  discuss it with the team and ensure it follows the product roadmap. Note that all code submissions will be rigorously reviewed and tested by the Rx Team, and only those that meet an extremely high bar for both quality and design/roadmap appropriateness will be merged into the source.
 
-You will be promted to submit a Contributor License Agreement form after submitting your pull request. This needs to only be done once for any Microsoft OSS project. Fill in the [Contributor License Agreement](https://cla2.msopentech.com/) (CLA).
+You will be prompted to submit a Contributor License Agreement form after submitting your pull request. This needs to only be done once for any Microsoft OSS project. Fill in the [Contributor License Agreement](https://cla2.msopentech.com/) (CLA).
