@@ -12,7 +12,8 @@ SCENARIO("delay period+coordination sample"){
     const auto next = [=](const char* s) {
         return [=](long v){
             auto t = duration_cast<milliseconds>(scheduler.now() - start);
-            printf("[%s @ %lld] OnNext: %ld\n", s, t.count(), v);
+            long long int ms = t.count();
+            printf("[%s @ %lld] OnNext: %ld\n", s, ms, v);
         };
     };
     auto values = rxcpp::observable<>::interval(start, period, scheduler).
@@ -36,7 +37,8 @@ SCENARIO("delay period sample"){
     const auto next = [=](const char* s) {
         return [=](long v){
             auto t = duration_cast<milliseconds>(scheduler.now() - start);
-            printf("[%s @ %lld] OnNext: %ld\n", s, t.count(), v);
+            long long int ms = t.count();
+            printf("[%s @ %lld] OnNext: %ld\n", s, ms, v);
         };
     };
     auto values = rxcpp::observable<>::interval(start, period, scheduler).

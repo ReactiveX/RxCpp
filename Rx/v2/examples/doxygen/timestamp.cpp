@@ -16,7 +16,8 @@ SCENARIO("timestamp sample") {
     values.
         subscribe(
             [&](std::pair<long, time_point> v) { 
-                printf("OnNext: %ld @%lldms\n", v.first, duration_cast<milliseconds>(v.second - start).count()); 
+                long long int ms = duration_cast<milliseconds>(v.second - start).count();
+                printf("OnNext: %ld @%lldms\n", v.first, ms); 
             },
             [](std::exception_ptr ep) {
                 try {
@@ -45,7 +46,8 @@ SCENARIO("timestamp operator syntax sample") {
     values.
             subscribe(
             [&](std::pair<long, time_point> v) { 
-                printf("OnNext: %ld @%lldms\n", v.first, duration_cast<milliseconds>(v.second - start).count()); 
+                long long int ms = duration_cast<milliseconds>(v.second - start).count();
+                printf("OnNext: %ld @%lldms\n", v.first, ms); 
             },
             [](std::exception_ptr ep) {
                 try {
