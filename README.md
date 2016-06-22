@@ -1,16 +1,16 @@
 The Reactive Extensions for Native (__RxCpp__) is a library for composing asynchronous and event-based programs using observable sequences and LINQ-style query operators in C++.
 
 Platform    | Status | 
------------ | :------------: |
+----------- | :------------ |
 Windows | [![Windows Status](http://img.shields.io/appveyor/ci/kirkshoop/RxCpp-446.svg?style=flat-square)](https://ci.appveyor.com/project/kirkshoop/rxcpp-446)
 Linux & OSX | [![Linux & Osx Status](http://img.shields.io/travis/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://travis-ci.org/Reactive-Extensions/RxCpp)
 
 Source        | Badges |
-------------- | :---------------: |
-Github | [![GitHub license](https://img.shields.io/github/license/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp) [![GitHub release](https://img.shields.io/github/release/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp/releases) [![GitHub commits](https://img.shields.io/github/commits-since/Reactive-Extensions/RxCpp/v2.3.0.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp)
+------------- | :--------------- |
+Github | [![GitHub license](https://img.shields.io/github/license/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp) <br/> [![GitHub release](https://img.shields.io/github/release/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp/releases) [![GitHub commits](https://img.shields.io/github/commits-since/Reactive-Extensions/RxCpp/v2.3.0.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp)
 Gitter.im | [![Join in on gitter.im](https://img.shields.io/gitter/room/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://gitter.im/Reactive-Extensions/RxCpp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 NuGet | [![NuGet version](http://img.shields.io/nuget/v/RxCpp.svg?style=flat-square)](http://www.nuget.org/packages/RxCpp/)
-Documentation | [![doxygen documentation](https://img.shields.io/badge/documentation-latest-brightgreen.svg?style=flat-square)](http://reactive-extensions.github.io/RxCpp) [![reactivex intro](https://img.shields.io/badge/reactivex-intro-brightgreen.svg?style=flat-square)](http://reactivex.io/intro.html) [![rx marble diagrams](https://img.shields.io/badge/rx-marble-diagrams-brightgreen.svg?style=flat-square)](http://rxmarbles.com/)
+Documentation | [![rxcpp doxygen documentation](https://img.shields.io/badge/rxcpp-latest-brightgreen.svg?style=flat-square)](http://reactive-extensions.github.io/RxCpp) <br/> [![reactivex intro](https://img.shields.io/badge/reactivex.io-intro-brightgreen.svg?style=flat-square)](http://reactivex.io/intro.html) [![rx marble diagrams](https://img.shields.io/badge/rxmarbles-diagrams-brightgreen.svg?style=flat-square)](http://rxmarbles.com/)
 
 #Example
 Add ```Rx/v2/src``` to the include paths
@@ -103,12 +103,15 @@ int main()
 #Reactive Extensions
 
 >The ReactiveX Observable model allows you to treat streams of asynchronous events with the same sort of simple, composable operations that you use for collections of data items like arrays. It frees you from tangled webs of callbacks, and thereby makes your code more readable and less prone to bugs.
+
 Credit [ReactiveX.io](http://reactivex.io/intro.html)
 
-Java: [RxJava](https://github.com/ReactiveX/RxJava)
-JavaScript: [RxJS](https://github.com/Reactive-Extensions/RxJS)
-C#: [Rx.NET](https://github.com/Reactive-Extensions/Rx.NET)
-[More..](http://reactivex.io/languages.html)
+###Other language implementations
+
+* Java: [RxJava](https://github.com/ReactiveX/RxJava)
+* JavaScript: [RxJS](https://github.com/Reactive-Extensions/RxJS)
+* C#: [Rx.NET](https://github.com/Reactive-Extensions/Rx.NET)
+* [More..](http://reactivex.io/languages.html)
 
 ###Resources
 
