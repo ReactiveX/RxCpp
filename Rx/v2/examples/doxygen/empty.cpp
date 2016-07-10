@@ -23,3 +23,15 @@ SCENARIO("threaded empty sample"){
             [](){printf("OnCompleted\n");});
     printf("//! [threaded empty sample]\n");
 }
+
+SCENARIO("empty operator syntax sample"){
+    using namespace rxcpp::sources;
+
+    printf("//! [empty operator syntax sample]\n");
+    auto values = empty<int>();
+    values.
+            subscribe(
+            [](int v){printf("OnNext: %d\n", v);},
+            [](){printf("OnCompleted\n");});
+    printf("//! [empty operator syntax sample]\n");
+}
