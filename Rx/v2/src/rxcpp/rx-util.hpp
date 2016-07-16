@@ -97,6 +97,21 @@ struct all_values_true {
     }
 };
 
+struct any_value_true {
+    template<class... ValueN>
+    bool operator()(ValueN... vn) const;
+
+    template<class Value0>
+    bool operator()(Value0 v0) const {
+        return v0;
+    }
+
+    template<class Value0, class... ValueN>
+    bool operator()(Value0 v0, ValueN... vn) const {
+        return v0 || all_values_true()(vn...);
+    }
+};
+
 template<class... TN>
 struct types;
 
@@ -603,22 +618,6 @@ inline auto surely(const std::tuple<T...>& tpl)
     -> decltype(apply(tpl, detail::surely())) {
     return      apply(tpl, detail::surely());
 }
-
-struct list_not_empty {
-    template<class T>
-    bool operator()(std::list<T>& list) const {
-        return !list.empty();
-    }
-};
-
-struct extract_list_front {
-    template<class T>
-    T operator()(std::list<T>& list) const {
-        auto val = std::move(list.front());
-        list.pop_front();
-        return val;
-    }
-};
 
 namespace detail {
 

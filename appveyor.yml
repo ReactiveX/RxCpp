@@ -18,8 +18,6 @@ configuration:
   - Release
 
 install:
-    - choco install cmake
-    - choco upgrade cmake
     - cmake --version
     - git submodule -q update --init
 

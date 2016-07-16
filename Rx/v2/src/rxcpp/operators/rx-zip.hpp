@@ -13,10 +13,44 @@ namespace operators {
 
 namespace detail {
 
+template<class T>
+struct zip_source_state
+{
+    zip_source_state() 
+        : completed(false) 
+    {
+    }
+    std::list<T> values;
+    bool completed;
+};
+
+struct values_not_empty {
+    template<class T>
+    bool operator()(zip_source_state<T>& source) const {
+        return !source.values.empty();
+    }
+};
+
+struct source_completed_values_empty {
+    template<class T>
+    bool operator()(zip_source_state<T>& source) const {
+        return source.completed && source.values.empty();
+    }
+};
+
+struct extract_value_front {
+    template<class T>
+    T operator()(zip_source_state<T>& source) const {
+        auto val = std::move(source.values.front());
+        source.values.pop_front();
+        return val;
+    }
+};
+
 template<class Coordination, class Selector, class... ObservableN>
 struct zip_traits {
     typedef std::tuple<ObservableN...> tuple_source_type;
-    typedef std::tuple<std::list<typename ObservableN::value_type>...> tuple_source_values_type;
+    typedef std::tuple<zip_source_state<typename ObservableN::value_type>...> tuple_source_values_type;
 
     typedef rxu::decay_t<Selector> selector_type;
     typedef rxu::decay_t<Coordination> coordination_type;
@@ -92,11 +126,14 @@ struct zip : public operator_base<rxu::value_type_t<zip_traits<Coordination, Sel
             innercs,
         // on_next
             [state](source_value_type st) {
-                auto& values = std::get<Index>(state->pending);
+                auto& values = std::get<Index>(state->pending).values;
                 values.push_back(st);
-                if (rxu::apply_to_each(state->pending, rxu::list_not_empty(), rxu::all_values_true())) {
-                    auto selectedResult = rxu::apply_to_each(state->pending, rxu::extract_list_front(), state->selector);
+                if (rxu::apply_to_each(state->pending, values_not_empty(), rxu::all_values_true())) {
+                    auto selectedResult = rxu::apply_to_each(state->pending, extract_value_front(), state->selector);
                     state->out.on_next(selectedResult);
+                }
+                if (rxu::apply_to_each(state->pending, source_completed_values_empty(), rxu::any_value_true())) {
+                    state->out.on_completed();
                 }
             },
         // on_error
@@ -105,6 +142,8 @@ struct zip : public operator_base<rxu::value_type_t<zip_traits<Coordination, Sel
             },
         // on_completed
             [state]() {
+                auto& completed = std::get<Index>(state->pending).completed;
+                completed = true;
                 if (--state->pendingCompletions == 0) {
                     state->out.on_completed();
                 }
