@@ -371,7 +371,7 @@ SCENARIO("zip empty/return", "[zip][join][operators]"){
 
             THEN("the output contains only complete message"){
                 auto required = rxu::to_vector({
-                    on.completed(220)
+                    on.completed(215)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -387,7 +387,7 @@ SCENARIO("zip empty/return", "[zip][join][operators]"){
 
             THEN("there was one subscription and one unsubscription to the o"){
                 auto required = rxu::to_vector({
-                    on.subscribe(200, 220)
+                    on.subscribe(200, 215)
                 });
                 auto actual = o.subscriptions();
                 REQUIRE(required == actual);
@@ -431,7 +431,7 @@ SCENARIO("zip return/empty", "[zip][join][operators]"){
 
             THEN("the output contains only complete message"){
                 auto required = rxu::to_vector({
-                    on.completed(220)
+                    on.completed(215)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -439,7 +439,7 @@ SCENARIO("zip return/empty", "[zip][join][operators]"){
 
             THEN("there was one subscription and one unsubscription to the o"){
                 auto required = rxu::to_vector({
-                    on.subscribe(200, 220)
+                    on.subscribe(200, 215)
                 });
                 auto actual = o.subscriptions();
                 REQUIRE(required == actual);
@@ -1407,7 +1407,7 @@ SCENARIO("zip interleaved with tail", "[zip][join][operators]"){
                 auto required = rxu::to_vector({
                     on.next(220, 2 + 3),
                     on.next(230, 4 + 5),
-                    on.completed(250)
+                    on.completed(230)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -1423,7 +1423,7 @@ SCENARIO("zip interleaved with tail", "[zip][join][operators]"){
 
             THEN("there was one subscription and one unsubscription to the o2"){
                 auto required = rxu::to_vector({
-                    on.subscribe(200, 250)
+                    on.subscribe(200, 230)
                 });
                 auto actual = o2.subscriptions();
                 REQUIRE(required == actual);
@@ -1472,7 +1472,7 @@ SCENARIO("zip consecutive", "[zip][join][operators]"){
                 auto required = rxu::to_vector({
                     on.next(235, 2 + 6),
                     on.next(240, 4 + 7),
-                    on.completed(250)
+                    on.completed(240)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -1488,7 +1488,7 @@ SCENARIO("zip consecutive", "[zip][join][operators]"){
 
             THEN("there was one subscription and one unsubscription to the o2"){
                 auto required = rxu::to_vector({
-                    on.subscribe(200, 250)
+                    on.subscribe(200, 240)
                 });
                 auto actual = o2.subscriptions();
                 REQUIRE(required == actual);
