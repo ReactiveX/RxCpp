@@ -37,6 +37,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/concat_map.cpp
     ${TEST_DIR}/operators/contains.cpp
     ${TEST_DIR}/operators/debounce.cpp
+    ${TEST_DIR}/operators/default_if_empty.cpp
     ${TEST_DIR}/operators/delay.cpp
     ${TEST_DIR}/operators/distinct.cpp
     ${TEST_DIR}/operators/distinct_until_changed.cpp
@@ -63,6 +64,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/skip_last.cpp
     ${TEST_DIR}/operators/skip_until.cpp
     ${TEST_DIR}/operators/subscribe_on.cpp
+    ${TEST_DIR}/operators/switch_if_empty.cpp
     ${TEST_DIR}/operators/switch_on_next.cpp
     ${TEST_DIR}/operators/take.cpp
     ${TEST_DIR}/operators/take_last.cpp
