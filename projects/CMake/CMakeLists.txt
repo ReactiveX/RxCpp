@@ -67,6 +67,7 @@ set(RX_SOURCES
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-start_with.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-subscribe.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-subscribe_on.hpp
+   ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-switch_if_empty.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-switch_on_next.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-take.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-take_last.hpp

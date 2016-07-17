@@ -75,6 +75,7 @@ namespace rxo=operators;
 #include "operators/rx-start_with.hpp"
 #include "operators/rx-subscribe.hpp"
 #include "operators/rx-subscribe_on.hpp"
+#include "operators/rx-switch_if_empty.hpp"
 #include "operators/rx-switch_on_next.hpp"
 #include "operators/rx-take.hpp"
 #include "operators/rx-take_last.hpp"
