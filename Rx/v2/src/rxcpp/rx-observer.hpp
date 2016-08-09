@@ -27,7 +27,7 @@ struct OnErrorEmpty
 {
     void operator()(std::exception_ptr) const {
         // error implicitly ignored, abort
-        abort();
+        std::terminate();
     }
 };
 struct OnErrorIgnore
