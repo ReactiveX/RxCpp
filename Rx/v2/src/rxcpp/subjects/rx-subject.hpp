@@ -55,6 +55,15 @@ class multicast_observer
         completer_type(std::shared_ptr<state_type> s, const std::shared_ptr<completer_type>& old, observer_type o)
             : state(s)
         {
+            retain(old);
+            observers.push_back(o);
+        }
+        completer_type(std::shared_ptr<state_type> s, const std::shared_ptr<completer_type>& old)
+            : state(s)
+        {
+            retain(old);
+        }
+        void retain(const std::shared_ptr<completer_type>& old) {
             if (old) {
                 observers.reserve(old->observers.size() + 1);
                 std::copy_if(
@@ -64,7 +73,6 @@ class multicast_observer
                         return o.is_subscribed();
                     });
             }
-            observers.push_back(o);
         }
         std::shared_ptr<state_type> state;
         list_type observers;
@@ -133,6 +141,15 @@ public:
         case mode::Casting:
             {
                 if (o.is_subscribed()) {
+                    std::weak_ptr<binder_type> binder = b;
+                    o.add([=](){
+                        auto b = binder.lock();
+                        if (b) {
+                            std::unique_lock<std::mutex> guard(b->state->lock);
+                            b->completer = std::make_shared<completer_type>(b->state, b->completer);
+                            ++b->state->generation;
+                        }
+                    });
                     b->completer = std::make_shared<completer_type>(b->state, b->completer, o);
                     ++b->state->generation;
                 }
