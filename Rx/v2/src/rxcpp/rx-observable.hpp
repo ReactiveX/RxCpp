@@ -864,6 +864,29 @@ public:
         return                  switch_if_empty(rxs::from(std::move(v)));
     }
 
+    /*! Determine whether two Observables emit the same sequence of items.
+
+        \tparam OtherSource  the type of the other observable.
+
+        \param t  the other Observable that emits items to compare.
+
+        \return  Observable that emits true only if both sequences terminate normally after emitting the same sequence of items in the same order; otherwise it will emit false.
+
+        \sample
+        \snippet sequence_equal.cpp sequence_equal sample
+        \snippet output.txt sequence_equal sample
+    */
+    template<class OtherSource>
+    auto sequence_equal(OtherSource&& t) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> typename std::enable_if<is_observable<OtherSource>::value,
+                observable<bool, rxo::detail::sequence_equal<T, this_type, OtherSource, identity_one_worker>>>::type
+    /// \endcond
+    {
+        return  observable<bool, rxo::detail::sequence_equal<T, this_type, OtherSource, identity_one_worker>>(
+                rxo::detail::sequence_equal<T, this_type, OtherSource, identity_one_worker>(*this, std::forward<OtherSource>(t), identity_one_worker(rxsc::make_current_thread())));
+    }
+
     /*! inspect calls to on_next, on_error and on_completed.
 
         \tparam MakeObserverArgN...  these args are passed to make_observer
