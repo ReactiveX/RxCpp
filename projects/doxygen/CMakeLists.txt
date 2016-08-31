@@ -88,6 +88,7 @@ if(DOXYGEN_FOUND)
         ${DOXY_EXAMPLES_SRC_DIR}/sample.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/scan.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/scope.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/sequence_equal.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/skip.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/skip_last.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/skip_until.cpp
