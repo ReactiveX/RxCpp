@@ -909,6 +909,12 @@ private:
 
     int64_t ordinal;
 public:
+
+    schedulable_queue() 
+        : ordinal(0) 
+    {
+    }
+
     const_reference top() const {
         return q.top().first;
     }
