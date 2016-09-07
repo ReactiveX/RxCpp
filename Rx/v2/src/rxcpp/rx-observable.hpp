@@ -783,6 +783,10 @@ public:
         return                    lift<bool>(rxo::detail::any<T, Predicate>(std::move(p)));
     }
 
+    // workaround for - rx-observable.hpp(799): error C2066: cast to function type is illegal 
+    // 799 was: decltype(EXPLICIT_THIS lift<bool>(rxo::detail::any<T, std::function<bool(T)>>(std::function<bool(T)>{})))
+    typedef std::function<bool(T)> boolFromT;
+
     /*! Returns an Observable that emits true if the source Observable emitted a specified item, otherwise false.
         Emits false if the source Observable terminates without emitting any item.
 
@@ -796,10 +800,10 @@ public:
     */
     auto contains(T value) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<bool>(rxo::detail::any<T, std::function<bool(T)>>(std::function<bool(T)>{})))
+        -> decltype(EXPLICIT_THIS lift<bool>(rxo::detail::any<T, boolFromT>(nullptr)))
         /// \endcond
     {
-        return                    lift<bool>(rxo::detail::any<T, std::function<bool(T)>>([value](T n) { return n == value; }));
+        return                    lift<bool>(rxo::detail::any<T, boolFromT>([value](T n) { return n == value; }));
     }
 
     /*! For each item from this observable use Predicate to select which items to emit from the new observable that is returned.
@@ -2186,20 +2190,6 @@ public:
 
     template<class Source, class TS, class C = rxu::types_checked>
     struct select_with_latest_from : public std::false_type {
-        template<class T0, class T1, class... TN>
-        void operator()(const Source&, T0, T1, TN...) const {
-            static_assert(is_coordination<T0>::value ||
-                is_observable<T0>::value ||
-                std::is_convertible<T0, std::function<void(typename T1::value_type, typename TN::value_type...)>>::value
-                , "T0 must be selector, coordination or observable");
-            static_assert(is_observable<T1>::value  ||
-                std::is_convertible<T1, std::function<void(typename TN::value_type...)>>::value, "T1 must be selector or observable");
-            static_assert(rxu::all_true<true, is_observable<TN>::value...>::value, "TN... must be observable");
-        }
-        template<class T0>
-        void operator()(const Source&, T0) const {
-            static_assert(is_observable<T0>::value, "T0 must be observable");
-        }
     };
 
     template<class Source, class T0, class T1, class... TN>
@@ -2209,7 +2199,7 @@ public:
     };
 
     template<class Source, class Selector, class... TN>
-    struct select_with_latest_from<Source, rxu::types<Selector, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::enable_if<!is_coordination<Selector>::value>::type, typename std::enable_if<!is_observable<Selector>::value>::type, typename std::result_of<Selector(typename Source::value_type, typename TN::value_type...)>::type, typename TN::observable_tag...>::type>
+    struct select_with_latest_from<Source, rxu::types<Selector, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::enable_if<!is_coordination<Selector>::value>::type, typename std::enable_if<!is_observable<Selector>::value>::type, typename TN::observable_tag...>::type>
         : public std::true_type
     {
         typedef rxo::detail::with_latest_from<identity_one_worker, Selector, Source, TN...> operator_type;
@@ -2272,7 +2262,6 @@ public:
         return      select_with_latest_from<this_type, rxu::types<decltype(an)...>>{}(*this,                 std::move(an)...);
     }
 
-
     /// \cond SHOW_SERVICE_MEMBERS
     template<class Source, class Coordination, class TS, class C = rxu::types_checked>
     struct select_combine_latest_cn : public std::false_type {};
@@ -2303,20 +2292,6 @@ public:
 
     template<class Source, class TS, class C = rxu::types_checked>
     struct select_combine_latest : public std::false_type {
-        template<class T0, class T1, class... TN>
-        void operator()(const Source&, T0, T1, TN...) const {
-            static_assert(is_coordination<T0>::value ||
-                is_observable<T0>::value ||
-                std::is_convertible<T0, std::function<void(typename T1::value_type, typename TN::value_type...)>>::value
-                , "T0 must be selector, coordination or observable");
-            static_assert(is_observable<T1>::value  ||
-                std::is_convertible<T1, std::function<void(typename TN::value_type...)>>::value, "T1 must be selector or observable");
-            static_assert(rxu::all_true<true, is_observable<TN>::value...>::value, "TN... must be observable");
-        }
-        template<class T0>
-        void operator()(const Source&, T0) const {
-            static_assert(is_observable<T0>::value, "T0 must be observable");
-        }
     };
 
     template<class Source, class T0, class T1, class... TN>
@@ -2326,7 +2301,7 @@ public:
     };
 
     template<class Source, class Selector, class... TN>
-    struct select_combine_latest<Source, rxu::types<Selector, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::enable_if<!is_coordination<Selector>::value>::type, typename std::enable_if<!is_observable<Selector>::value>::type, typename std::result_of<Selector(typename Source::value_type, typename TN::value_type...)>::type, typename TN::observable_tag...>::type>
+    struct select_combine_latest<Source, rxu::types<Selector, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::enable_if<!is_coordination<Selector>::value>::type, typename std::enable_if<!is_observable<Selector>::value>::type, typename TN::observable_tag...>::type>
         : public std::true_type
     {
         typedef rxo::detail::combine_latest<identity_one_worker, Selector, Source, TN...> operator_type;
@@ -2419,20 +2394,6 @@ public:
 
     template<class Source, class TS, class C = rxu::types_checked>
     struct select_zip : public std::false_type {
-        template<class T0, class T1, class... TN>
-        void operator()(const Source&, T0, T1, TN...) const {
-            static_assert(is_coordination<T0>::value ||
-                is_observable<T0>::value ||
-                std::is_convertible<T0, std::function<void(typename T1::value_type, typename TN::value_type...)>>::value
-                , "T0 must be selector, coordination or observable");
-            static_assert(is_observable<T1>::value  ||
-                std::is_convertible<T1, std::function<void(typename TN::value_type...)>>::value, "T1 must be selector or observable");
-            static_assert(rxu::all_true<true, is_observable<TN>::value...>::value, "TN... must be observable");
-        }
-        template<class T0>
-        void operator()(const Source&, T0) const {
-            static_assert(is_observable<T0>::value, "T0 must be observable");
-        }
     };
 
     template<class Source, class T0, class T1, class... TN>
@@ -2442,7 +2403,7 @@ public:
     };
 
     template<class Source, class Selector, class... TN>
-    struct select_zip<Source, rxu::types<Selector, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::enable_if<!is_coordination<Selector>::value>::type, typename std::enable_if<!is_observable<Selector>::value>::type, typename std::result_of<Selector(typename Source::value_type, typename TN::value_type...)>::type, typename TN::observable_tag...>::type>
+    struct select_zip<Source, rxu::types<Selector, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::enable_if<!is_coordination<Selector>::value>::type, typename std::enable_if<!is_observable<Selector>::value>::type, typename TN::observable_tag...>::type>
         : public std::true_type
     {
         typedef rxo::detail::zip<identity_one_worker, Selector, Source, TN...> operator_type;
