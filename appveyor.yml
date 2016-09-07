@@ -9,7 +9,8 @@ branches:
 environment:
   matrix:
     - VSVER: Visual Studio 12 2013 Win64
-#    - VSVER: Visual Studio 14 2015 Win64
+    - os: Visual Studio 2015
+      VSVER: Visual Studio 14 2015 Win64
 
 platform:
   - x64
@@ -45,3 +46,5 @@ notifications:
     auth_token:
       secure: qaGjbI98VXZa7Zd2s3RmMzfA+ymrfWUDuzevdtOcHssEGBXbcoOJzLHNOmG+Y1nX
     channel: rxcpp
+  - provider: Webhook  
+    url: https://webhooks.gitter.im/e/4c53c094183ccaa8d059
