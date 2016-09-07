@@ -783,6 +783,10 @@ public:
         return                    lift<bool>(rxo::detail::any<T, Predicate>(std::move(p)));
     }
 
+    // workaround for - rx-observable.hpp(799): error C2066: cast to function type is illegal 
+    // 799 was: decltype(EXPLICIT_THIS lift<bool>(rxo::detail::any<T, std::function<bool(T)>>(std::function<bool(T)>{})))
+    typedef std::function<bool(T)> boolFromT;
+
     /*! Returns an Observable that emits true if the source Observable emitted a specified item, otherwise false.
         Emits false if the source Observable terminates without emitting any item.
 
@@ -796,10 +800,10 @@ public:
     */
     auto contains(T value) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<bool>(rxo::detail::any<T, std::function<bool(T)>>(std::function<bool(T)>{})))
+        -> decltype(EXPLICIT_THIS lift<bool>(rxo::detail::any<T, boolFromT>(nullptr)))
         /// \endcond
     {
-        return                    lift<bool>(rxo::detail::any<T, std::function<bool(T)>>([value](T n) { return n == value; }));
+        return                    lift<bool>(rxo::detail::any<T, boolFromT>([value](T n) { return n == value; }));
     }
 
     /*! For each item from this observable use Predicate to select which items to emit from the new observable that is returned.
