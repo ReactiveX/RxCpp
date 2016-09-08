@@ -42,9 +42,11 @@ artifacts:
     type: zip
 
 notifications:
-  - provider: Slack
-    auth_token:
-      secure: qaGjbI98VXZa7Zd2s3RmMzfA+ymrfWUDuzevdtOcHssEGBXbcoOJzLHNOmG+Y1nX
-    channel: rxcpp
   - provider: Webhook  
     url: https://webhooks.gitter.im/e/4c53c094183ccaa8d059
+  - provider: Email
+    to:
+      - kirk.shoop@microsoft.com
+    on_build_success: true
+    on_build_failure: true
+    on_build_status_changed: false
