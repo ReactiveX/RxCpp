@@ -44,6 +44,9 @@ artifacts:
 notifications:
   - provider: Webhook  
     url: https://webhooks.gitter.im/e/4c53c094183ccaa8d059
+    on_build_success: true
+    on_build_failure: true
+    on_build_status_changed: false
   - provider: Email
     to:
       - kirk.shoop@microsoft.com
