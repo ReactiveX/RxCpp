@@ -870,6 +870,31 @@ public:
 
     /*! Determine whether two Observables emit the same sequence of items.
 
+        \tparam OtherSource      the type of the other observable.
+        \tparam BinaryPredicate  the type of the value comparing function. The signature should be equivalent to the following: bool pred(const T1& a, const T2& b);
+
+        \param t     the other Observable that emits items to compare.
+        \param pred  the function that implements comparison of two values.
+
+        \return  Observable that emits true only if both sequences terminate normally after emitting the same sequence of items in the same order; otherwise it will emit false.
+
+        \sample
+        \snippet sequence_equal.cpp sequence_equal sample
+        \snippet output.txt sequence_equal sample
+    */
+    template<class OtherSource, class BinaryPredicate>
+    auto sequence_equal(OtherSource&& t, BinaryPredicate&& pred) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> typename std::enable_if<is_observable<OtherSource>::value,
+                observable<bool, rxo::detail::sequence_equal<T, this_type, OtherSource, BinaryPredicate, identity_one_worker>>>::type
+    /// \endcond
+    {
+        return  observable<bool, rxo::detail::sequence_equal<T, this_type, OtherSource, BinaryPredicate, identity_one_worker>>(
+                rxo::detail::sequence_equal<T, this_type, OtherSource, BinaryPredicate, identity_one_worker>(*this, std::forward<OtherSource>(t), std::forward<BinaryPredicate>(pred), identity_one_worker(rxsc::make_current_thread())));
+    }
+
+    /*! Determine whether two Observables emit the same sequence of items.
+
         \tparam OtherSource  the type of the other observable.
 
         \param t  the other Observable that emits items to compare.
@@ -884,11 +909,11 @@ public:
     auto sequence_equal(OtherSource&& t) const
     /// \cond SHOW_SERVICE_MEMBERS
     -> typename std::enable_if<is_observable<OtherSource>::value,
-                observable<bool, rxo::detail::sequence_equal<T, this_type, OtherSource, identity_one_worker>>>::type
+                observable<bool, rxo::detail::sequence_equal<T, this_type, OtherSource, rxu::equal_to<>, identity_one_worker>>>::type
     /// \endcond
     {
-        return  observable<bool, rxo::detail::sequence_equal<T, this_type, OtherSource, identity_one_worker>>(
-                rxo::detail::sequence_equal<T, this_type, OtherSource, identity_one_worker>(*this, std::forward<OtherSource>(t), identity_one_worker(rxsc::make_current_thread())));
+        return  observable<bool, rxo::detail::sequence_equal<T, this_type, OtherSource, rxu::equal_to<>, identity_one_worker>>(
+                rxo::detail::sequence_equal<T, this_type, OtherSource, rxu::equal_to<>, identity_one_worker>(*this, std::forward<OtherSource>(t), rxu::equal_to<>(), identity_one_worker(rxsc::make_current_thread())));
     }
 
     /*! inspect calls to on_next, on_error and on_completed.
@@ -897,7 +922,7 @@ public:
 
         \param an  these args are passed to make_observer.
 
-        \return  Observable that emits the same items as the source observable to both the subscriber and the observer. 
+        \return  Observable that emits the same items as the source observable to both the subscriber and the observer.
 
         \note If an on_error method is not supplied the observer will ignore errors rather than call std::abort()
 
@@ -1093,7 +1118,7 @@ public:
         \param s  the selector function
 
         \return  Observable that emits the items from the source observable, transformed by the specified function.
-        
+
         \sample
         \snippet map.cpp map sample
         \snippet output.txt map sample
@@ -1194,7 +1219,7 @@ public:
     {
         return                    lift<T>(rxo::detail::delay<T, Duration, identity_one_worker>(period, identity_current_thread()));
     }
-       
+
     /*! For each item from this observable, filter out repeated values and emit only items that have not already been emitted.
 
         \return  Observable that emits those items from the source observable that are distinct.
@@ -1426,7 +1451,7 @@ public:
         \tparam ClosingSelector a function of type observable<CT>(OT)
         \tparam Coordination    the type of the scheduler
 
-        \param opens         each value from this observable opens a new window. 
+        \param opens         each value from this observable opens a new window.
         \param closes        this function is called for each opened window and returns an observable. the first value from the returned observable will close the window
         \param coordination  the scheduler for the windows
 
@@ -1450,7 +1475,7 @@ public:
         \tparam Openings        observable<OT>
         \tparam ClosingSelector a function of type observable<CT>(OT)
 
-        \param opens         each value from this observable opens a new window. 
+        \param opens         each value from this observable opens a new window.
         \param closes        this function is called for each opened window and returns an observable. the first value from the returned observable will close the window
 
         \return  Observable that emits an observable for each opened window.
