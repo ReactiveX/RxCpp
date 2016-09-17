@@ -370,6 +370,21 @@ struct less
         { return std::forward<LHS>(lhs) < std::forward<RHS>(rhs); }
 };
 
+template<class T = void>
+struct equal_to
+{
+    bool operator()(const T& lhs, const T& rhs) const { return lhs == rhs; }
+};
+
+template<>
+struct equal_to<void>
+{
+    template<class LHS, class RHS>
+    auto operator()(LHS&& lhs, RHS&& rhs) const
+    -> decltype(std::forward<LHS>(lhs) == std::forward<RHS>(rhs))
+    { return std::forward<LHS>(lhs) == std::forward<RHS>(rhs); }
+};
+
 namespace detail {
 template<class OStream, class Delimit>
 struct print_function
