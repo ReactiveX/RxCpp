@@ -64,6 +64,36 @@ struct group_by
     typedef typename traits_type::subject_type subject_type;
     typedef typename traits_type::key_type key_type;
 
+    typedef typename traits_type::key_subscriber_map_type group_map_type;
+    typedef std::vector<typename composite_subscription::weak_subscription> bindings_type;
+
+    struct group_by_state_type 
+    {
+        group_by_state_type(composite_subscription sl, predicate_type p) 
+            : source_lifetime(sl)
+            , groups(p)
+            , observers(0) 
+        {}
+        composite_subscription source_lifetime;
+        rxsc::worker worker;
+        group_map_type groups;
+        std::atomic<int> observers;
+    };
+
+    template<class Subscriber>
+    static void stopsource(Subscriber&& dest, std::shared_ptr<group_by_state_type>& state) {
+        ++state->observers;
+        dest.add([state](){
+            if (!state->source_lifetime.is_subscribed()) {
+                return;
+            }
+            --state->observers;
+            if (state->observers == 0) {
+                state->source_lifetime.unsubscribe();
+            }
+        });
+    }
+
     struct group_by_values
     {
         group_by_values(key_selector_type ks, marble_selector_type ms, predicate_type p)
@@ -86,17 +116,20 @@ struct group_by
 
     struct group_by_observable : public rxs::source_base<marble_type>
     {
+        mutable std::shared_ptr<group_by_state_type> state;
         subject_type subject;
         key_type key;
 
-        group_by_observable(subject_type s, key_type k)
-            : subject(std::move(s))
+        group_by_observable(std::shared_ptr<group_by_state_type> st, subject_type s, key_type k)
+            : state(std::move(st))
+            , subject(std::move(s))
             , key(k)
         {
         }
 
         template<class Subscriber>
         void on_subscribe(Subscriber&& o) const {
+            group_by::stopsource(o, state);
             subject.get_observable().subscribe(std::forward<Subscriber>(o));
         }
 
@@ -112,15 +145,17 @@ struct group_by
         typedef typename traits_type::grouped_observable_type value_type;
         typedef rxu::decay_t<Subscriber> dest_type;
         typedef observer<T, this_type> observer_type;
+
         dest_type dest;
 
-        mutable typename traits_type::key_subscriber_map_type groups;
+        mutable std::shared_ptr<group_by_state_type> state;
 
-        group_by_observer(dest_type d, group_by_values v)
+        group_by_observer(composite_subscription l, dest_type d, group_by_values v)
             : group_by_values(v)
             , dest(std::move(d))
-            , groups(group_by_values::predicate)
+            , state(std::make_shared<group_by_state_type>(l, group_by_values::predicate))
         {
+            group_by::stopsource(dest, state);
         }
         void on_next(T v) const {
             auto selectedKey = on_exception(
@@ -130,11 +165,14 @@ struct group_by
             if (selectedKey.empty()) {
                 return;
             }
-            auto g = groups.find(selectedKey.get());
-            if (g == groups.end()) {
+            auto g = state->groups.find(selectedKey.get());
+            if (g == state->groups.end()) {
+                if (!dest.is_subscribed()) {
+                    return;
+                }
                 auto sub = subject_type();
-                g = groups.insert(std::make_pair(selectedKey.get(), sub.get_subscriber())).first;
-                dest.on_next(make_dynamic_grouped_observable<key_type, marble_type>(group_by_observable(sub, selectedKey.get())));
+                g = state->groups.insert(std::make_pair(selectedKey.get(), sub.get_subscriber())).first;
+                dest.on_next(make_dynamic_grouped_observable<key_type, marble_type>(group_by_observable(state, sub, selectedKey.get())));
             }
             auto selectedMarble = on_exception(
                 [&](){
@@ -146,21 +184,21 @@ struct group_by
             g->second.on_next(std::move(selectedMarble.get()));
         }
         void on_error(std::exception_ptr e) const {
-            for(auto& g : groups) {
+            for(auto& g : state->groups) {
                 g.second.on_error(e);
             }
             dest.on_error(e);
         }
         void on_completed() const {
-            for(auto& g : groups) {
+            for(auto& g : state->groups) {
                 g.second.on_completed();
             }
             dest.on_completed();
         }
 
         static subscriber<T, observer_type> make(dest_type d, group_by_values v) {
-            auto cs = d.get_subscription();
-            return make_subscriber<T>(std::move(cs), observer_type(this_type(std::move(d), std::move(v))));
+            auto cs = composite_subscription();
+            return make_subscriber<T>(cs, observer_type(this_type(cs, std::move(d), std::move(v))));
         }
     };
 
@@ -212,7 +250,7 @@ inline auto group_by(KeySelector ks, MarbleSelector ms, BinaryPredicate p)
 template<class KeySelector, class MarbleSelector>
 inline auto group_by(KeySelector ks, MarbleSelector ms)
     ->      detail::group_by_factory<KeySelector, MarbleSelector, rxu::less> {
-    return  detail::group_by_factory<KeySelector, MarbleSelector, rxu::less>(std::move(ks), std::move(ms), rxu::less());
+    return  detail::group_by_factory<KeySelector, MarbleSelector, rxu::less>(std::move(ks), std::move(ms), rxu::less(), identity_current_thread());
 }
 
 template<class KeySelector>
@@ -220,7 +258,6 @@ inline auto group_by(KeySelector ks)
     ->      detail::group_by_factory<KeySelector, rxu::detail::take_at<0>, rxu::less> {
     return  detail::group_by_factory<KeySelector, rxu::detail::take_at<0>, rxu::less>(std::move(ks), rxu::take_at<0>(), rxu::less());
 }
-
 
 }
 
