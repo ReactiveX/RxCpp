@@ -80,12 +80,12 @@ std::ostream& to_stream(std::ostream& os, const T&, ...) {
 template<class T>
 inline std::ostream& ostreamvector (std::ostream& os, const std::vector<T>& v) {
     os << "[";
-    bool emit = false;
+    bool doemit = false;
     for(auto& i : v) {
-        if (emit) {
+        if (doemit) {
             os << ", ";
         } else {
-            emit = true;
+            doemit = true;
         }
         to_stream(os, i, 0, 0);
     }
