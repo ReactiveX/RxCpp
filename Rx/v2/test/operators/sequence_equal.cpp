@@ -694,3 +694,168 @@ SCENARIO("sequence_equal - both observables emit errors", "[sequence_equal][oper
         }
     }
 }
+
+SCENARIO("sequence_equal - both sources emit the same sequence of items, custom comparing function", "[sequence_equal][operators]"){
+    GIVEN("two sources"){
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+        const rxsc::test::messages<bool> o_on;
+
+        auto xs = sc.make_hot_observable({
+            on.next(150, 1),
+            on.next(210, 2),
+            on.next(310, 3),
+            on.next(410, 4),
+            on.next(510, 5),
+            on.completed(610)
+        });
+
+        auto ys = sc.make_hot_observable({
+            on.next(150, 1),
+            on.next(220, 2),
+            on.next(330, 3),
+            on.next(440, 4),
+            on.next(550, 5),
+            on.completed(600)
+        });
+
+        WHEN("two observables are checked for equality"){
+
+            auto res = w.start(
+                [xs, ys]() {
+                    return xs
+                            .sequence_equal(ys, [](int x, int y) { return x == y; })
+                            .as_dynamic(); // forget type to workaround lambda deduction bug on msvc 2013
+                }
+            );
+
+            THEN("the output contains true"){
+                auto required = rxu::to_vector({
+                    o_on.next(610, true),
+                    o_on.completed(610)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was 1 subscription/unsubscription to the source"){
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 610)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("sequence_equal - both sources emit the same sequence of items, custom coordinator", "[sequence_equal][operators]"){
+    GIVEN("two sources"){
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+        const rxsc::test::messages<bool> o_on;
+
+        auto xs = sc.make_hot_observable({
+            on.next(150, 1),
+            on.next(210, 2),
+            on.next(310, 3),
+            on.next(410, 4),
+            on.next(510, 5),
+            on.completed(610)
+        });
+
+        auto ys = sc.make_hot_observable({
+            on.next(150, 1),
+            on.next(220, 2),
+            on.next(330, 3),
+            on.next(440, 4),
+            on.next(550, 5),
+            on.completed(600)
+        });
+
+        WHEN("two observables are checked for equality"){
+
+            auto res = w.start(
+                [xs, ys]() {
+                    return xs
+                            .sequence_equal(ys, rxcpp::identity_one_worker(rxsc::make_current_thread()))
+                            .as_dynamic(); // forget type to workaround lambda deduction bug on msvc 2013
+                }
+            );
+
+            THEN("the output contains true"){
+                auto required = rxu::to_vector({
+                    o_on.next(610, true),
+                    o_on.completed(610)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was 1 subscription/unsubscription to the source"){
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 610)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("sequence_equal - both sources emit the same sequence of items, custom comparing function and coordinator", "[sequence_equal][operators]"){
+    GIVEN("two sources"){
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+        const rxsc::test::messages<bool> o_on;
+
+        auto xs = sc.make_hot_observable({
+            on.next(150, 1),
+            on.next(210, 2),
+            on.next(310, 3),
+            on.next(410, 4),
+            on.next(510, 5),
+            on.completed(610)
+        });
+
+        auto ys = sc.make_hot_observable({
+            on.next(150, 1),
+            on.next(220, 2),
+            on.next(330, 3),
+            on.next(440, 4),
+            on.next(550, 5),
+            on.completed(600)
+        });
+
+        WHEN("two observables are checked for equality"){
+
+            auto res = w.start(
+                [xs, ys]() {
+                    return xs
+                            .sequence_equal(ys, [](int x, int y) { return x == y; }, rxcpp::identity_one_worker(rxsc::make_current_thread()))
+                            .as_dynamic(); // forget type to workaround lambda deduction bug on msvc 2013
+                }
+            );
+
+            THEN("the output contains true"){
+                auto required = rxu::to_vector({
+                    o_on.next(610, true),
+                    o_on.completed(610)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was 1 subscription/unsubscription to the source"){
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 610)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
