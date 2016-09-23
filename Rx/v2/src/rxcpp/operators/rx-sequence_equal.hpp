@@ -208,10 +208,22 @@ inline auto sequence_equal(OtherObservable&& t)
     return  detail::sequence_equal_factory<OtherObservable, rxu::equal_to<>, identity_one_worker>(std::forward<OtherObservable>(t), rxu::equal_to<>(), identity_current_thread());
 }
 
-template<class OtherObservable, class BinaryPredicate>
+template<class OtherObservable, class BinaryPredicate, class Check = typename std::enable_if<!is_coordination<BinaryPredicate>::value>::type>
 inline auto sequence_equal(OtherObservable&& t, BinaryPredicate&& pred)
     ->      detail::sequence_equal_factory<OtherObservable, BinaryPredicate, identity_one_worker> {
-    return  detail::sequence_equal_factory<OtherObservable, BinaryPredicate, identity_one_worker>(std::forward<OtherObservable>(t), std::forward<BinaryPredicate>(pred));
+    return  detail::sequence_equal_factory<OtherObservable, BinaryPredicate, identity_one_worker>(std::forward<OtherObservable>(t), std::forward<BinaryPredicate>(pred), identity_current_thread());
+}
+
+template<class OtherObservable, class Coordination, class Check = typename std::enable_if<is_coordination<Coordination>::value>::type>
+inline auto sequence_equal(OtherObservable&& t, Coordination&& cn)
+    ->      detail::sequence_equal_factory<OtherObservable, rxu::equal_to<>, Coordination> {
+    return  detail::sequence_equal_factory<OtherObservable, rxu::equal_to<>, Coordination>(std::forward<OtherObservable>(t), rxu::equal_to<>(), std::forward<Coordination>(cn));
+}
+
+template<class OtherObservable, class BinaryPredicate, class Coordination>
+inline auto sequence_equal(OtherObservable&& t, BinaryPredicate&& pred, Coordination&& cn)
+    ->      detail::sequence_equal_factory<OtherObservable, BinaryPredicate, Coordination> {
+    return  detail::sequence_equal_factory<OtherObservable, BinaryPredicate, Coordination>(std::forward<OtherObservable>(t), std::forward<BinaryPredicate>(pred), std::forward<Coordination>(cn));
 }
 
 }

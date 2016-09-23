@@ -872,6 +872,34 @@ public:
 
         \tparam OtherSource      the type of the other observable.
         \tparam BinaryPredicate  the type of the value comparing function. The signature should be equivalent to the following: bool pred(const T1& a, const T2& b);
+        \tparam Coordination  the type of the scheduler.
+
+        \param t     the other Observable that emits items to compare.
+        \param pred  the function that implements comparison of two values.
+        \param cn    the scheduler.
+
+        \return  Observable that emits true only if both sequences terminate normally after emitting the same sequence of items in the same order; otherwise it will emit false.
+
+        \sample
+        \snippet sequence_equal.cpp sequence_equal sample
+        \snippet output.txt sequence_equal sample
+    */
+    template<class OtherSource, class BinaryPredicate, class Coordination>
+    auto sequence_equal(OtherSource&& t, BinaryPredicate&& pred, Coordination&& cn) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> typename std::enable_if<is_observable<OtherSource>::value,
+                observable<bool, rxo::detail::sequence_equal<T, this_type, OtherSource, BinaryPredicate, Coordination>>>::type
+    /// \endcond
+    {
+        return  observable<bool, rxo::detail::sequence_equal<T, this_type, OtherSource, BinaryPredicate, Coordination>>(
+                rxo::detail::sequence_equal<T, this_type, OtherSource, BinaryPredicate, Coordination>(*this, std::forward<OtherSource>(t), std::forward<BinaryPredicate>(pred), std::forward<Coordination>(cn)));
+    }
+
+
+    /*! Determine whether two Observables emit the same sequence of items.
+
+        \tparam OtherSource      the type of the other observable.
+        \tparam BinaryPredicate  the type of the value comparing function. The signature should be equivalent to the following: bool pred(const T1& a, const T2& b);
 
         \param t     the other Observable that emits items to compare.
         \param pred  the function that implements comparison of two values.
@@ -885,12 +913,37 @@ public:
     template<class OtherSource, class BinaryPredicate>
     auto sequence_equal(OtherSource&& t, BinaryPredicate&& pred) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> typename std::enable_if<is_observable<OtherSource>::value,
+    -> typename std::enable_if<is_observable<OtherSource>::value && !is_coordination<BinaryPredicate>::value,
                 observable<bool, rxo::detail::sequence_equal<T, this_type, OtherSource, BinaryPredicate, identity_one_worker>>>::type
     /// \endcond
     {
         return  observable<bool, rxo::detail::sequence_equal<T, this_type, OtherSource, BinaryPredicate, identity_one_worker>>(
                 rxo::detail::sequence_equal<T, this_type, OtherSource, BinaryPredicate, identity_one_worker>(*this, std::forward<OtherSource>(t), std::forward<BinaryPredicate>(pred), identity_one_worker(rxsc::make_current_thread())));
+    }
+
+    /*! Determine whether two Observables emit the same sequence of items.
+
+        \tparam OtherSource   the type of the other observable.
+        \tparam Coordination  the type of the scheduler.
+
+        \param t  the other Observable that emits items to compare.
+        \param cn the scheduler.
+
+        \return  Observable that emits true only if both sequences terminate normally after emitting the same sequence of items in the same order; otherwise it will emit false.
+
+        \sample
+        \snippet sequence_equal.cpp sequence_equal sample
+        \snippet output.txt sequence_equal sample
+    */
+    template<class OtherSource, class Coordination>
+    auto sequence_equal(OtherSource&& t, Coordination&& cn) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> typename std::enable_if<is_observable<OtherSource>::value && is_coordination<Coordination>::value,
+                observable<bool, rxo::detail::sequence_equal<T, this_type, OtherSource, rxu::equal_to<>, Coordination>>>::type
+    /// \endcond
+    {
+        return  observable<bool, rxo::detail::sequence_equal<T, this_type, OtherSource, rxu::equal_to<>, Coordination>>(
+                rxo::detail::sequence_equal<T, this_type, OtherSource, rxu::equal_to<>, Coordination>(*this, std::forward<OtherSource>(t), rxu::equal_to<>(), std::forward<Coordination>(cn)));
     }
 
     /*! Determine whether two Observables emit the same sequence of items.
