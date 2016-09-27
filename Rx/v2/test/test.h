@@ -7,7 +7,7 @@ inline bool uncaught_exception() noexcept(true) {
 }
 #endif
 
-#include "rxcpp/rx.hpp"
+#include "rxcpp/rx-lite.hpp"
 namespace rx=rxcpp;
 namespace rxu=rxcpp::util;
 namespace rxs=rxcpp::sources;

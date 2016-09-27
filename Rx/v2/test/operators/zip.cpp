@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-zip.hpp>
 
 SCENARIO("zip never/never", "[zip][join][operators]"){
     GIVEN("2 hot observables of ints."){
@@ -19,14 +20,14 @@ SCENARIO("zip never/never", "[zip][join][operators]"){
             auto res = w.start(
                 [&]() {
                     return n1
-                        .zip(
+                        | rxo::zip(
                             [](int v2, int v1){
                                 return v2 + v1;
                             },
                             n2
                         )
                         // forget type to workaround lambda deduction bug on msvc 2013
-                        .as_dynamic();
+                        | rxo::as_dynamic();
                 }
             );
 
@@ -77,14 +78,14 @@ SCENARIO("zip never N", "[zip][join][operators]"){
             auto res = w.start(
                 [&]() {
                     return n[0]
-                        .zip(
+                        | rxo::zip(
                             [](int v0, int v1, int v2, int v3){
                                 return v0 + v1 + v2 + v3;
                             },
                             n[1], n[2], n[3]
                         )
                         // forget type to workaround lambda deduction bug on msvc 2013
-                        .as_dynamic();
+                        | rxo::as_dynamic();
                 }
             );
 
@@ -127,7 +128,7 @@ SCENARIO("zip never/empty", "[zip][join][operators]"){
 
             auto res = w.start(
                 [&]() {
-                    return n
+                    return n 
                         .zip(
                             [](int v2, int v1){
                                 return v2 + v1;

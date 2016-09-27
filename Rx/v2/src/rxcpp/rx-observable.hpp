@@ -17,22 +17,6 @@ namespace rxcpp {
 
 namespace detail {
 
-template<class Source, class F>
-struct is_operator_factory_for
-{
-    struct not_void {};
-    template<class CS, class CF>
-    static auto check(int) -> decltype((*(CF*)nullptr)(*(CS*)nullptr));
-    template<class CS, class CF>
-    static not_void check(...);
-
-    typedef rxu::decay_t<Source> source_type;
-    typedef rxu::decay_t<F> function_type;
-
-    typedef decltype(check<source_type, function_type>(0)) detail_result;
-    static const bool value = !std::is_same<detail_result, not_void>::value && is_observable<source_type>::value;
-};
-
 template<class Subscriber, class T>
 struct has_on_subscribe_for
 {
@@ -647,7 +631,7 @@ public:
     auto op(OperatorFactory&& of) const
         -> decltype(of(*(const this_type*)nullptr)) {
         return      of(*this);
-        static_assert(detail::is_operator_factory_for<this_type, OperatorFactory>::value, "Function passed for op() must have the signature Result(SourceObservable)");
+        static_assert(is_operator_factory_for<this_type, OperatorFactory>::value, "Function passed for op() must have the signature Result(SourceObservable)");
     }
 
     ///
@@ -2442,106 +2426,15 @@ public:
         return      select_combine_latest<this_type, rxu::types<decltype(an)...>>{}(*this,                 std::move(an)...);
     }
 
-    /// \cond SHOW_SERVICE_MEMBERS
-    template<class Source, class Coordination, class TS, class C = rxu::types_checked>
-    struct select_zip_cn : public std::false_type {};
-
-    template<class Source, class Coordination, class T0, class... TN>
-    struct select_zip_cn<Source, Coordination, rxu::types<T0, TN...>, typename rxu::types_checked_from<typename Coordination::coordination_tag, typename T0::observable_tag, typename TN::observable_tag...>::type>
-        : public std::true_type
-    {
-        typedef rxo::detail::zip<Coordination, rxu::detail::pack, Source, T0, TN...> operator_type;
-        typedef observable<typename operator_type::value_type, operator_type> observable_type;
-        template<class... ObservableN>
-        observable_type operator()(const Source& src, Coordination cn, ObservableN... on) const {
-            return observable_type(operator_type(std::move(cn), rxu::pack(), std::make_tuple(src, std::move(on)...)));
-        }
-    };
-
-    template<class Source, class Coordination, class T0, class... TN>
-    struct select_zip_cn<Source, Coordination, rxu::types<T0, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::enable_if<!is_observable<T0>::value>::type, typename std::result_of<T0(typename Source::value_type, typename TN::value_type...)>::type, typename Coordination::coordination_tag, typename TN::observable_tag...>::type>
-        : public std::true_type
-    {
-        typedef rxo::detail::zip<Coordination, T0, Source, TN...> operator_type;
-        typedef observable<typename operator_type::value_type, operator_type> observable_type;
-        template<class... ObservableN>
-        observable_type operator()(const Source& src, Coordination cn, T0 t0, ObservableN... on) const {
-            return observable_type(operator_type(std::move(cn), std::move(t0), std::make_tuple(src, std::move(on)...)));
-        }
-    };
-
-    template<class Source, class TS, class C = rxu::types_checked>
-    struct select_zip : public std::false_type {
-    };
-
-    template<class Source, class T0, class T1, class... TN>
-    struct select_zip<Source, rxu::types<T0, T1, TN...>, typename rxu::types_checked_from<typename T0::coordination_tag, typename TN::observable_tag...>::type>
-        : public select_zip_cn<Source, T0, rxu::types<T1, TN...>>
-    {
-    };
-
-    template<class Source, class Selector, class... TN>
-    struct select_zip<Source, rxu::types<Selector, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::enable_if<!is_coordination<Selector>::value>::type, typename std::enable_if<!is_observable<Selector>::value>::type, typename TN::observable_tag...>::type>
-        : public std::true_type
-    {
-        typedef rxo::detail::zip<identity_one_worker, Selector, Source, TN...> operator_type;
-        typedef observable<typename operator_type::value_type, operator_type> observable_type;
-        template<class... ObservableN>
-        observable_type operator()(const Source& src, Selector sel, ObservableN... on) const {
-            return observable_type(operator_type(identity_current_thread(), std::move(sel), std::make_tuple(src, std::move(on)...)));
-        }
-    };
-
-    template<class Source, class T0, class... TN>
-    struct select_zip<Source, rxu::types<T0, TN...>, typename rxu::types_checked_from<typename T0::observable_tag, typename TN::observable_tag...>::type>
-        : public std::true_type
-    {
-        typedef rxo::detail::zip<identity_one_worker, rxu::detail::pack, Source, T0, TN...> operator_type;
-        typedef observable<typename operator_type::value_type, operator_type> observable_type;
-        template<class... ObservableN>
-        observable_type operator()(const Source& src, ObservableN... on) const {
-            return observable_type(operator_type(identity_current_thread(), rxu::pack(), std::make_tuple(src, std::move(on)...)));
-        }
-    };
-    /// \endcond
-
-    /*! Bring by one item from all given observables and select a value to emit from the new observable that is returned.
-
-        \tparam AN  types of scheduler (optional), aggregate function (optional), and source observables
-
-        \param  an  scheduler (optional), aggregation function (optional), and source observables
-
-        \return  Observable that emits the result of combining the items emitted and brought by one from each of the source observables.
-
-        If scheduler is omitted, identity_current_thread is used.
-
-        If aggregation function is omitted, the resulting observable returns tuples of emitted items.
-
-        \sample
-
-        Neither scheduler nor aggregation function are present:
-        \snippet zip.cpp zip sample
-        \snippet output.txt zip sample
-
-        Only scheduler is present:
-        \snippet zip.cpp Coordination zip sample
-        \snippet output.txt Coordination zip sample
-
-        Only aggregation function is present:
-        \snippet zip.cpp Selector zip sample
-        \snippet output.txt Selector zip sample
-
-        Both scheduler and aggregation function are present:
-        \snippet zip.cpp Coordination+Selector zip sample
-        \snippet output.txt Coordination+Selector zip sample
-    */
+    /*! @copydoc rx-zip.hpp
+     */
     template<class... AN>
-    auto zip(AN... an) const
+    auto zip(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(select_zip<this_type, rxu::types<decltype(an)...>>{}(*(this_type*)nullptr,  std::move(an)...))
+        -> decltype(observable_member(zip_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return      select_zip<this_type, rxu::types<decltype(an)...>>{}(*this,                 std::move(an)...);
+        return      observable_member(zip_tag{}, *this,                std::forward<AN>(an)...);
     }
 
     /*! Return an observable that emits grouped_observables, each of which corresponds to a unique key value and each of which emits those items from the source observable that share that key value.

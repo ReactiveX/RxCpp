@@ -15,7 +15,7 @@ namespace detail {
 
 template<class T, class Observable, class Coordination>
 struct amb
-    : public operator_base<rxu::value_type_t<rxu::decay_t<T>>>
+    : public operator_base<rxu::value_type_t<T>>
 {
     //static_assert(is_observable<Observable>::value, "amb requires an observable");
     //static_assert(is_observable<T>::value, "amb requires an observable that contains observables");

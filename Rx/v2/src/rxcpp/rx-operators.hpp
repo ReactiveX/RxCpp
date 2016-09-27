@@ -18,19 +18,74 @@ struct operator_base
     typedef T value_type;
     typedef tag_operator operator_tag;
 };
-template<class T>
-class is_operator
+
+namespace detail {
+
+template<class T, class =rxu::types_checked>
+struct is_operator : std::false_type
 {
-    template<class C>
-    static typename C::operator_tag* check(int);
-    template<class C>
-    static void check(...);
-public:
-    static const bool value = std::is_convertible<decltype(check<rxu::decay_t<T>>(0)), tag_operator*>::value;
+};
+
+template<class T>
+struct is_operator<T, rxu::types_checked_t<typename T::operator_tag>> 
+    : std::is_convertible<typename T::operator_tag*, tag_operator*>
+{
 };
 
 }
+
+template<class T, class Decayed = rxu::decay_t<T>>
+struct is_operator : detail::is_operator<Decayed>
+{
+};
+
+
+}
 namespace rxo=operators;
+
+template<class Tag> 
+struct member_overload
+{
+    template<class... AN>
+    static auto member(AN&&...) ->
+                typename Tag::template include_header<std::false_type> {
+        return  typename Tag::template include_header<std::false_type>();
+    }
+};
+
+template<class Tag, class... AN, class Overload = member_overload<rxu::decay_t<Tag>>>
+auto observable_member(Tag, AN&&... an) -> 
+    decltype(Overload::member(std::forward<AN>(an)...)) {
+    return   Overload::member(std::forward<AN>(an)...);
+}
+
+template<class Tag, class... AN>
+class operator_factory
+{
+    using this_type = operator_factory<Tag, AN...>;
+    using tag_type = rxu::decay_t<Tag>;
+    using tuple_type = std::tuple<rxu::decay_t<AN>...>;
+    
+    tuple_type an;
+
+public:
+    operator_factory(tuple_type an)
+        : an(std::move(an))
+    {
+    }
+
+    template<class... ZN>
+    auto operator()(tag_type t, ZN&&... zn) const
+        -> decltype(observable_member(t, std::forward<ZN>(zn)...)) {
+        return      observable_member(t, std::forward<ZN>(zn)...);
+    }
+
+    template<class Observable>
+    auto operator()(Observable source) const 
+        -> decltype(rxu::apply(std::tuple_cat(std::make_tuple(tag_type{}, source), (*(tuple_type*)nullptr)), (*(this_type*)nullptr))) {
+        return      rxu::apply(std::tuple_cat(std::make_tuple(tag_type{}, source),                      an),                  *this);
+    }
+};
 
 }
 
@@ -90,5 +145,15 @@ namespace rxo=operators;
 #include "operators/rx-window_time.hpp"
 #include "operators/rx-window_time_count.hpp"
 #include "operators/rx-window_toggle.hpp"
-#include "operators/rx-zip.hpp"
+
+namespace rxcpp {
+struct zip_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-zip.hpp>");
+    };
+};
+
+}
+
 #endif

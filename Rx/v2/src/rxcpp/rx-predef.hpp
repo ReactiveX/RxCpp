@@ -157,16 +157,40 @@ struct observable_base {
     typedef tag_observable observable_tag;
     typedef T value_type;
 };
-template<class T>
-class is_observable
+
+namespace detail {
+
+template<class T, class =rxu::types_checked>
+struct is_observable : std::false_type
 {
-    template<class C>
-    static typename C::observable_tag check(int);
-    template<class C>
-    static void check(...);
-public:
-    static const bool value = std::is_convertible<decltype(check<rxu::decay_t<T>>(0)), tag_observable>::value;
 };
+
+template<class T>
+struct is_observable<T, rxu::types_checked_t<typename T::observable_tag>> 
+    : std::is_convertible<typename T::observable_tag*, tag_observable*>
+{
+};
+
+}
+
+template<class T, class Decayed = rxu::decay_t<T>>
+struct is_observable : detail::is_observable<Decayed>
+{
+};
+
+template<class Observable, class DecayedObservable = rxu::decay_t<Observable>>
+using observable_tag_t = typename DecayedObservable::observable_tag;
+
+// extra indirection for vs2013 support
+template<class Types, class =rxu::types_checked>
+struct expand_observable_tags { struct type; };
+template<class... ObservableN>
+struct expand_observable_tags<rxu::types<ObservableN...>, rxu::types_checked_t<typename ObservableN::observable_tag...>> 
+{
+    using type = rxu::types<typename ObservableN::observable_tag...>;
+};
+template<class... ObservableN>
+using observable_tags_t = typename expand_observable_tags<rxu::types<ObservableN...>>::type;
 
 struct tag_dynamic_connectable_observable : public tag_dynamic_observable {};
 
@@ -237,6 +261,24 @@ class is_grouped_observable
     static void check(...);
 public:
     static const bool value = std::is_convertible<decltype(check<rxu::decay_t<T>>(0)), tag_grouped_observable>::value;
+};
+
+template<class Source, class Function>
+struct is_operator_factory_for {
+    using function_type = rxu::decay_t<Function>;
+    using source_type = rxu::decay_t<Source>;
+
+// check methods instead of void_t for vs2013 support
+
+    struct tag_not_valid;
+    template<class CS, class CO>
+    static auto check(int) -> decltype((*(CS*)nullptr)((*(CO*)nullptr)));
+    template<class CS, class CO>
+    static tag_not_valid check(...);
+
+    using type = decltype(check<function_type, source_type>(0));
+
+    static const bool value = !std::is_same<type, tag_not_valid>::value && is_observable<source_type>::value;
 };
 
 //

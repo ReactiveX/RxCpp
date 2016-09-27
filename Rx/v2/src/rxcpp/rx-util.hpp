@@ -32,8 +32,9 @@ namespace rxcpp {
 
 namespace util {
 
-template<class T> using value_type_t = typename T::value_type;
+template<class T> using value_type_t = typename std::decay<T>::type::value_type;
 template<class T> using decay_t = typename std::decay<T>::type;
+template<class... TN> using result_of_t = typename std::result_of<TN...>::type;
 
 template<class T, std::size_t size>
 std::vector<T> to_vector(const T (&arr) [size]) {
@@ -82,6 +83,9 @@ struct all_true<B, BN...>
     static const bool value = B && all_true<BN...>::value;
 };
 
+template<bool... BN>
+using enable_if_all_true_t = typename std::enable_if<all_true<BN...>::value>::type;
+
 struct all_values_true {
     template<class... ValueN>
     bool operator()(ValueN... vn) const;
@@ -113,7 +117,7 @@ struct any_value_true {
 };
 
 template<class... TN>
-struct types;
+struct types {};
 
 //
 // based on Walter Brown's void_t proposal
@@ -128,6 +132,21 @@ template<class... TN> struct types_checked_from {typedef types_checked type;};
 
 template<class... TN>
 struct types_checked_from {typedef typename detail::types_checked_from<TN...>::type type;};
+
+template<class... TN>
+using types_checked_t = typename types_checked_from<TN...>::type;
+
+
+template<class Types, class =types_checked>
+struct expand_value_types { struct type; };
+template<class... TN>
+struct expand_value_types<types<TN...>, types_checked_t<typename std::decay<TN>::type::value_type...>> 
+{
+    using type = types<typename std::decay<TN>::type::value_type...>;
+};
+template<class... TN>
+using value_types_t = typename expand_value_types<types<TN...>>::type;
+
 
 template<class T, class C = types_checked>
 struct value_type_from : public std::false_type {typedef types_checked type;};
