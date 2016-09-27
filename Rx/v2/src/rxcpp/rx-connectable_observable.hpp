@@ -147,7 +147,7 @@ public:
     auto op(OperatorFactory&& of) const
         -> decltype(of(*(const this_type*)nullptr)) {
         return      of(*this);
-        static_assert(detail::is_operator_factory_for<this_type, OperatorFactory>::value, "Function passed for op() must have the signature Result(SourceObservable)");
+        static_assert(is_operator_factory_for<this_type, OperatorFactory>::value, "Function passed for op() must have the signature Result(SourceObservable)");
     }
     
     ///

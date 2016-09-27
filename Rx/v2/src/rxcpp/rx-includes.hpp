@@ -181,6 +181,10 @@
 #include "rx-connectable_observable.hpp"
 #include "rx-grouped_observable.hpp"
 
+#if !defined(RXCPP_LITE)
+#include "operators/rx-zip.hpp"
+#endif
+
 #pragma pop_macro("min")
 #pragma pop_macro("max")
 

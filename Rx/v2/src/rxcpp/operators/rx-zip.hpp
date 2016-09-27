@@ -7,63 +7,130 @@
 
 #include "../rx-includes.hpp"
 
+/*! \file rx-zip.hpp
+
+    \brief Bring by one item from all given observables and select a value to emit from the new observable that is returned.
+
+    \tparam AN  types of scheduler (optional), aggregate function (optional), and source observables
+
+    \param  an  scheduler (optional), aggregation function (optional), and source observables
+
+    \return  Observable that emits the result of combining the items emitted and brought by one from each of the source observables.
+
+    If scheduler is omitted, identity_current_thread is used.
+
+    If aggregation function is omitted, the resulting observable returns tuples of emitted items.
+
+    \sample
+
+    Neither scheduler nor aggregation function are present:
+    \snippet zip.cpp zip sample
+    \snippet output.txt zip sample
+
+    Only scheduler is present:
+    \snippet zip.cpp Coordination zip sample
+    \snippet output.txt Coordination zip sample
+
+    Only aggregation function is present:
+    \snippet zip.cpp Selector zip sample
+    \snippet output.txt Selector zip sample
+
+    Both scheduler and aggregation function are present:
+    \snippet zip.cpp Coordination+Selector zip sample
+    \snippet output.txt Coordination+Selector zip sample
+*/
+
 namespace rxcpp {
 
 namespace operators {
 
 namespace detail {
 
-template<class T>
+template<class Observable>
 struct zip_source_state
 {
+    using value_type = rxu::value_type_t<Observable>;
     zip_source_state() 
         : completed(false) 
     {
     }
-    std::list<T> values;
+    std::list<value_type> values;
     bool completed;
 };
 
 struct values_not_empty {
-    template<class T>
-    bool operator()(zip_source_state<T>& source) const {
+    template<class Observable>
+    bool operator()(zip_source_state<Observable>& source) const {
         return !source.values.empty();
     }
 };
 
 struct source_completed_values_empty {
-    template<class T>
-    bool operator()(zip_source_state<T>& source) const {
+    template<class Observable>
+    bool operator()(zip_source_state<Observable>& source) const {
         return source.completed && source.values.empty();
     }
 };
 
 struct extract_value_front {
-    template<class T>
-    T operator()(zip_source_state<T>& source) const {
+    template<class Observable, class Value = rxu::value_type_t<Observable>>
+    Value operator()(zip_source_state<Observable>& source) const {
         auto val = std::move(source.values.front());
         source.values.pop_front();
         return val;
     }
 };
 
+template<class... AN>
+struct zip_invalid_arguments {};
+
+template<class... AN>
+struct zip_invalid : public rxo::operator_base<zip_invalid_arguments<AN...>> {
+    using type = observable<zip_invalid_arguments<AN...>, zip_invalid<AN...>>;
+};
+template<class... AN>
+using zip_invalid_t = typename zip_invalid<AN...>::type;
+
+template<class Selector, class... ObservableN>
+struct is_zip_selector_check {
+    typedef rxu::decay_t<Selector> selector_type;
+
+    struct tag_not_valid;
+    template<class CS, class... CON>
+    static auto check(int) -> decltype((*(CS*)nullptr)((*(typename CON::value_type*)nullptr)...));
+    template<class CS, class... CON>
+    static tag_not_valid check(...);
+
+    using type = decltype(check<selector_type, rxu::decay_t<ObservableN>...>(0));
+
+    static const bool value = !std::is_same<type, tag_not_valid>::value;
+};
+
+template<class Selector, class... ObservableN>
+struct invalid_zip_selector {
+    using type = zip_invalid_arguments<Selector, ObservableN...>;
+    static const bool value = false;
+};
+
+template<class Selector, class... ObservableN>
+struct is_zip_selector : public std::conditional<
+    is_zip_selector_check<Selector, ObservableN...>::value, 
+    is_zip_selector_check<Selector, ObservableN...>, 
+    invalid_zip_selector<Selector, ObservableN...>>::type {
+};
+
+template<class Selector, class... ON>
+using result_zip_selector_t = typename is_zip_selector<Selector, ON...>::type;
+
 template<class Coordination, class Selector, class... ObservableN>
 struct zip_traits {
-    typedef std::tuple<ObservableN...> tuple_source_type;
-    typedef std::tuple<zip_source_state<typename ObservableN::value_type>...> tuple_source_values_type;
+    typedef std::tuple<rxu::decay_t<ObservableN>...> tuple_source_type;
+    typedef std::tuple<zip_source_state<ObservableN>...> tuple_source_values_type;
 
     typedef rxu::decay_t<Selector> selector_type;
     typedef rxu::decay_t<Coordination> coordination_type;
 
-    struct tag_not_valid {};
-    template<class CS, class... CVN>
-    static auto check(int) -> decltype((*(CS*)nullptr)((*(CVN*)nullptr)...));
-    template<class CS, class... CVN>
-    static tag_not_valid check(...);
-
-    static_assert(!std::is_same<decltype(check<selector_type, typename ObservableN::value_type...>(0)), tag_not_valid>::value, "zip Selector must be a function with the signature value_type(Observable::value_type...)");
-
-    typedef decltype(check<selector_type, typename ObservableN::value_type...>(0)) value_type;
+    typedef typename is_zip_selector<selector_type, ObservableN...>::type value_type;
 };
 
 template<class Coordination, class Selector, class... ObservableN>
@@ -200,56 +267,82 @@ struct zip : public operator_base<rxu::value_type_t<zip_traits<Coordination, Sel
     }
 };
 
-template<class Coordination, class Selector, class... ObservableN>
-class zip_factory
+}
+
+/*! @copydoc rx-zip.hpp
+*/
+template<class... AN>
+auto zip(AN&&... an) 
+    ->     operator_factory<zip_tag, AN...> {
+    return operator_factory<zip_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<> 
+struct member_overload<zip_tag>
 {
-    using this_type = zip_factory<Coordination, Selector, ObservableN...>;
-    typedef rxu::decay_t<Coordination> coordination_type;
-    typedef rxu::decay_t<Selector> selector_type;
-    typedef std::tuple<ObservableN...> tuple_source_type;
-    
-    coordination_type coordination;
-    selector_type selector;
-    tuple_source_type sourcen;
-
-    template<class... YObservableN>
-    auto make(std::tuple<YObservableN...> source)
-        ->      observable<rxu::value_type_t<zip<Coordination, Selector, YObservableN...>>, zip<Coordination, Selector, YObservableN...>> {
-        return  observable<rxu::value_type_t<zip<Coordination, Selector, YObservableN...>>, zip<Coordination, Selector, YObservableN...>>(
-                                             zip<Coordination, Selector, YObservableN...>(coordination, selector, std::move(source)));
-    }
-public:
-    using checked_type = std::enable_if<is_coordination<coordination_type>::value, this_type>;
-
-    zip_factory(coordination_type sf, selector_type s, ObservableN... on)
-        : coordination(std::move(sf))
-        , selector(std::move(s))
-        , sourcen(std::make_tuple(std::move(on)...))
+    template<class Observable, class... ObservableN, 
+        class Requires = rxu::types_checked_t<
+            observable_tag_t<Observable>, 
+            observable_tags_t<ObservableN...>>,
+        class Zip = rxo::detail::zip<identity_one_worker, rxu::detail::pack, rxu::decay_t<Observable>, rxu::decay_t<ObservableN>...>,
+        class Value = rxu::value_type_t<Zip>,
+        class Result = observable<Value, Zip>>
+    static Result member(Observable&& o, ObservableN&&... on)
     {
+        return Result(Zip(identity_current_thread(), rxu::pack(), std::make_tuple(std::forward<Observable>(o), std::forward<ObservableN>(on)...)));
     }
 
-    template<class Observable>
-    auto operator()(Observable source)
-        -> decltype(make(std::tuple_cat(std::make_tuple(source), *(tuple_source_type*)nullptr))) {
-        return      make(std::tuple_cat(std::make_tuple(source), sourcen));
+    template<class Coordination, class Observable, class... ObservableN, 
+        class Requires = rxu::types_checked_t<
+            coordination_tag_t<Coordination>,
+            observable_tag_t<Observable>, 
+            observable_tags_t<ObservableN...>>,
+        class Zip = rxo::detail::zip<Coordination, rxu::detail::pack, rxu::decay_t<Observable>, rxu::decay_t<ObservableN>...>,
+        class Value = rxu::value_type_t<Zip>,
+        class Result = observable<Value, Zip>>
+    static Result member(Observable&& o, Coordination&& cn, ObservableN&&... on)
+    {
+        return Result(Zip(std::forward<Coordination>(cn), rxu::pack(), std::make_tuple(std::forward<Observable>(o), std::forward<ObservableN>(on)...)));
     }
+
+    template<class Observable, class Selector, class... ObservableN,
+        class Requires = rxu::types_checked_t<
+            operators::detail::result_zip_selector_t<Selector, Observable, ObservableN...>,
+            observable_tag_t<Observable>, 
+            observable_tags_t<ObservableN...>>,
+        class ResolvedSelector = rxu::decay_t<Selector>,
+        class Zip = rxo::detail::zip<identity_one_worker, ResolvedSelector, rxu::decay_t<Observable>, rxu::decay_t<ObservableN>...>,
+        class Value = rxu::value_type_t<Zip>,
+        class Result = observable<Value, Zip>>
+    static Result member(Observable&& o, Selector&& s, ObservableN&&... on)
+    {
+        return Result(Zip(identity_current_thread(), std::forward<Selector>(s), std::make_tuple(std::forward<Observable>(o), std::forward<ObservableN>(on)...)));
+    }
+
+    template<class Coordination, class Selector, class Observable, class... ObservableN,
+        class Requires = rxu::types_checked_t<
+            coordination_tag_t<Coordination>,
+            operators::detail::result_zip_selector_t<Selector, Observable, ObservableN...>,
+            observable_tag_t<Observable>, 
+            observable_tags_t<ObservableN...>>,
+        class ResolvedSelector = rxu::decay_t<Selector>,
+        class Zip = rxo::detail::zip<Coordination, ResolvedSelector, rxu::decay_t<Observable>, rxu::decay_t<ObservableN>...>,
+        class Value = rxu::value_type_t<Zip>,
+        class Result = observable<Value, Zip>>
+    static Result member(Observable&& o, Coordination&& cn, Selector&& s, ObservableN&&... on)
+    {
+        return Result(Zip(std::forward<Coordination>(cn), std::forward<Selector>(s), std::make_tuple(std::forward<Observable>(o), std::forward<ObservableN>(on)...)));
+    }
+
+    template<class... AN>
+    static operators::detail::zip_invalid_t<AN...> member(const AN&...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "zip takes (optional Coordination, optional Selector, required Observable, optional Observable...), Selector takes (Observable::value_type...)");
+    } 
 };
-
-}
-
-template<class Coordination, class Selector, class... ObservableN>
-auto zip(Coordination sf, Selector s, ObservableN... on)
-    -> typename detail::zip_factory<Coordination, Selector, ObservableN...>::checked_type::type {
-    return      detail::zip_factory<Coordination, Selector, ObservableN...>(std::move(sf), std::move(s), std::move(on)...);
-}
-
-template<class Selector, class... ObservableN>
-auto zip(Selector s, ObservableN... on)
-    -> typename detail::zip_factory<identity_one_worker, Selector, ObservableN...>::checked_type::type {
-    return      detail::zip_factory<identity_one_worker, Selector, ObservableN...>(identity_current_thread(), std::move(s), std::move(on)...);
-}
-
-}
 
 }
 

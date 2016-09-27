@@ -29,6 +29,9 @@ template<class T>
 struct is_coordination<T, typename rxu::types_checked_from<typename T::coordination_tag>::type>
     : public std::is_convertible<typename T::coordination_tag*, tag_coordination*> {};
 
+template<class Coordination, class DecayedCoordination = rxu::decay_t<Coordination>>
+using coordination_tag_t = typename DecayedCoordination::coordination_tag;
+
 template<class Input>
 class coordinator : public coordinator_base
 {

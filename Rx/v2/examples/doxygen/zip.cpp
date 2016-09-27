@@ -51,7 +51,7 @@ SCENARIO("Selector zip sample"){
     auto o1 = rxcpp::observable<>::interval(std::chrono::milliseconds(1));
     auto o2 = rxcpp::observable<>::interval(std::chrono::milliseconds(2));
     auto o3 = rxcpp::observable<>::interval(std::chrono::milliseconds(3));
-    auto values = o1.zip(
+    auto values = o1 | rxcpp::operators::zip(
         [](int v1, int v2, int v3) {
             return 100 * v1 + 10 * v2 + v3;
         },
