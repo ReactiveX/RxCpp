@@ -86,6 +86,23 @@ struct all_true<B, BN...>
 template<bool... BN>
 using enable_if_all_true_t = typename std::enable_if<all_true<BN...>::value>::type;
 
+template<class... BN>
+struct all_true_type;
+
+template<class B>
+struct all_true_type<B>
+{
+    static const bool value = B::value;
+};
+template<class B, class... BN>
+struct all_true_type<B, BN...>
+{
+    static const bool value = B::value && all_true_type<BN...>::value;
+};
+
+template<class... BN>
+using enable_if_all_true_type_t = typename std::enable_if<all_true_type<BN...>::value>::type;
+
 struct all_values_true {
     template<class... ValueN>
     bool operator()(ValueN... vn) const;

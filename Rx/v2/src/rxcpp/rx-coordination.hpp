@@ -22,12 +22,21 @@ struct is_coordinator<T, typename rxu::types_checked_from<typename T::coordinato
 struct tag_coordination {};
 struct coordination_base {typedef tag_coordination coordination_tag;};
 
+namespace detail {
+
 template<class T, class C = rxu::types_checked>
 struct is_coordination : public std::false_type {};
 
 template<class T>
 struct is_coordination<T, typename rxu::types_checked_from<typename T::coordination_tag>::type>
     : public std::is_convertible<typename T::coordination_tag*, tag_coordination*> {};
+
+}
+
+template<class T, class Decayed = rxu::decay_t<T>>
+struct is_coordination : detail::is_coordination<Decayed>
+{
+};
 
 template<class Coordination, class DecayedCoordination = rxu::decay_t<Coordination>>
 using coordination_tag_t = typename DecayedCoordination::coordination_tag;
