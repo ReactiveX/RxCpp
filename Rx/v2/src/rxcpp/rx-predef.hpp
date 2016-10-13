@@ -192,6 +192,9 @@ struct expand_observable_tags<rxu::types<ObservableN...>, rxu::types_checked_t<t
 template<class... ObservableN>
 using observable_tags_t = typename expand_observable_tags<rxu::types<ObservableN...>>::type;
 
+template<class... ObservableN>
+using all_observables = rxu::all_true_type<is_observable<ObservableN>...>;
+
 struct tag_dynamic_connectable_observable : public tag_dynamic_observable {};
 
 template<class T>

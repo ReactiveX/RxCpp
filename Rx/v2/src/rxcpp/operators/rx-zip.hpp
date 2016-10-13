@@ -108,7 +108,6 @@ struct is_zip_selector_check {
 
 template<class Selector, class... ObservableN>
 struct invalid_zip_selector {
-    using type = zip_invalid_arguments<Selector, ObservableN...>;
     static const bool value = false;
 };
 
@@ -283,9 +282,8 @@ template<>
 struct member_overload<zip_tag>
 {
     template<class Observable, class... ObservableN, 
-        class Requires = rxu::types_checked_t<
-            observable_tag_t<Observable>, 
-            observable_tags_t<ObservableN...>>,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            all_observables<Observable, ObservableN...>>,
         class Zip = rxo::detail::zip<identity_one_worker, rxu::detail::pack, rxu::decay_t<Observable>, rxu::decay_t<ObservableN>...>,
         class Value = rxu::value_type_t<Zip>,
         class Result = observable<Value, Zip>>
@@ -294,24 +292,10 @@ struct member_overload<zip_tag>
         return Result(Zip(identity_current_thread(), rxu::pack(), std::make_tuple(std::forward<Observable>(o), std::forward<ObservableN>(on)...)));
     }
 
-    template<class Coordination, class Observable, class... ObservableN, 
-        class Requires = rxu::types_checked_t<
-            coordination_tag_t<Coordination>,
-            observable_tag_t<Observable>, 
-            observable_tags_t<ObservableN...>>,
-        class Zip = rxo::detail::zip<Coordination, rxu::detail::pack, rxu::decay_t<Observable>, rxu::decay_t<ObservableN>...>,
-        class Value = rxu::value_type_t<Zip>,
-        class Result = observable<Value, Zip>>
-    static Result member(Observable&& o, Coordination&& cn, ObservableN&&... on)
-    {
-        return Result(Zip(std::forward<Coordination>(cn), rxu::pack(), std::make_tuple(std::forward<Observable>(o), std::forward<ObservableN>(on)...)));
-    }
-
     template<class Observable, class Selector, class... ObservableN,
-        class Requires = rxu::types_checked_t<
-            operators::detail::result_zip_selector_t<Selector, Observable, ObservableN...>,
-            observable_tag_t<Observable>, 
-            observable_tags_t<ObservableN...>>,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            operators::detail::is_zip_selector<Selector, Observable, ObservableN...>,
+            all_observables<Observable, ObservableN...>>,
         class ResolvedSelector = rxu::decay_t<Selector>,
         class Zip = rxo::detail::zip<identity_one_worker, ResolvedSelector, rxu::decay_t<Observable>, rxu::decay_t<ObservableN>...>,
         class Value = rxu::value_type_t<Zip>,
@@ -321,12 +305,23 @@ struct member_overload<zip_tag>
         return Result(Zip(identity_current_thread(), std::forward<Selector>(s), std::make_tuple(std::forward<Observable>(o), std::forward<ObservableN>(on)...)));
     }
 
+    template<class Coordination, class Observable, class... ObservableN, 
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_coordination<Coordination>,
+            all_observables<Observable, ObservableN...>>,
+        class Zip = rxo::detail::zip<Coordination, rxu::detail::pack, rxu::decay_t<Observable>, rxu::decay_t<ObservableN>...>,
+        class Value = rxu::value_type_t<Zip>,
+        class Result = observable<Value, Zip>>
+    static Result member(Observable&& o, Coordination&& cn, ObservableN&&... on)
+    {
+        return Result(Zip(std::forward<Coordination>(cn), rxu::pack(), std::make_tuple(std::forward<Observable>(o), std::forward<ObservableN>(on)...)));
+    }
+
     template<class Coordination, class Selector, class Observable, class... ObservableN,
-        class Requires = rxu::types_checked_t<
-            coordination_tag_t<Coordination>,
-            operators::detail::result_zip_selector_t<Selector, Observable, ObservableN...>,
-            observable_tag_t<Observable>, 
-            observable_tags_t<ObservableN...>>,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_coordination<Coordination>,
+            operators::detail::is_zip_selector<Selector, Observable, ObservableN...>,
+            all_observables<Observable, ObservableN...>>,
         class ResolvedSelector = rxu::decay_t<Selector>,
         class Zip = rxo::detail::zip<Coordination, ResolvedSelector, rxu::decay_t<Observable>, rxu::decay_t<ObservableN>...>,
         class Value = rxu::value_type_t<Zip>,
