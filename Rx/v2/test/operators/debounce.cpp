@@ -18,7 +18,8 @@ SCENARIO("debounce - never", "[debounce][operators]"){
 
             auto res = w.start(
                 [so, xs]() {
-                    return xs | rxo::debounce(milliseconds(10), so);
+                    return xs
+                           | rxo::debounce(milliseconds(10), so);
                 }
             );
 
@@ -55,7 +56,10 @@ SCENARIO("debounce - empty", "[debounce][operators]"){
 
             auto res = w.start(
                 [so, xs]() {
-                    return xs.debounce(milliseconds(10), so);
+                    return xs
+                            .debounce(milliseconds(10), so)
+                            // forget type to workaround lambda deduction bug on msvc 2013
+                            .as_dynamic();
                 }
             );
 
@@ -97,7 +101,10 @@ SCENARIO("debounce - no overlap", "[debounce][operators]"){
 
             auto res = w.start(
                 [so, xs]() {
-                    return xs.debounce(milliseconds(10), so);
+                    return xs
+                            .debounce(milliseconds(10), so)
+                            // forget type to workaround lambda deduction bug on msvc 2013
+                            .as_dynamic();
                 }
             );
 
@@ -145,7 +152,11 @@ SCENARIO("debounce - overlap", "[debounce][operators]"){
 
             auto res = w.start(
                 [so, xs]() {
-                    return xs.debounce(milliseconds(30), so);
+                    return xs
+                            .debounce(milliseconds(30), so)
+                            // forget type to workaround lambda deduction bug on msvc 2013
+                            .as_dynamic();
+
                 }
             );
 
@@ -188,7 +199,10 @@ SCENARIO("debounce - throw", "[debounce][operators]"){
 
             auto res = w.start(
                 [so, xs]() {
-                    return xs.debounce(milliseconds(10), so);
+                    return xs
+                            .debounce(milliseconds(10), so)
+                            // forget type to workaround lambda deduction bug on msvc 2013
+                            .as_dynamic();
                 }
             );
 
