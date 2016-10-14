@@ -183,6 +183,7 @@
 
 #if !defined(RXCPP_LITE)
 #include "operators/rx-zip.hpp"
+#include "operators/rx-debounce.hpp"
 #endif
 
 #pragma pop_macro("min")
