@@ -20,10 +20,14 @@ struct is_lift_function_for {
     template<class CS, class CF>
     static tag_not_valid check(...);
 
-    typedef rxu::decay_t<S> for_type;
-    typedef rxu::decay_t<F> func_type;
-    typedef decltype(check<for_type, func_type>(0)) detail_result;
-    static const bool value = is_subscriber<detail_result>::value && is_subscriber<for_type>::value && std::is_convertible<V, typename rxu::value_type_from<detail_result>::type>::value;
+    using for_type = rxu::decay_t<S>;
+    using func_type = rxu::decay_t<F>;
+    using detail_result = decltype(check<for_type, func_type>(0));
+
+    static const bool value = rxu::all_true_type<
+        is_subscriber<detail_result>,
+        is_subscriber<for_type>,
+        std::is_convertible<V, typename rxu::value_type_from<detail_result>::type>>::value;
 };
 
 }
@@ -40,8 +44,6 @@ struct lift_traits
     typedef rxu::decay_t<Operator> operator_type;
 
     typedef typename source_operator_type::value_type source_value_type;
-
-    static const bool value = rxcpp::detail::is_lift_function_for<source_value_type, subscriber<result_value_type>, operator_type>::value;
 };
 
 template<class ResultType, class SourceOperator, class Operator>

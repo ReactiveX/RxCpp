@@ -2472,56 +2472,18 @@ public:
         return      observable_member(zip_tag{}, *this,                std::forward<AN>(an)...);
     }
 
-    /*! Return an observable that emits grouped_observables, each of which corresponds to a unique key value and each of which emits those items from the source observable that share that key value.
-
-        \tparam KeySelector      the type of the key extracting function
-        \tparam MarbleSelector   the type of the element extracting function
-        \tparam BinaryPredicate  the type of the key comparing function
-
-        \param  ks  a function that extracts the key for each item
-        \param  ms  a function that extracts the return element for each item
-        \param  p   a function that implements comparison of two keys
-
-        \return  Observable that emits values of grouped_observable type, each of which corresponds to a unique key value and each of which emits those items from the source observable that share that key value.
-
-        \sample
-        \snippet group_by.cpp group_by full intro
-        \snippet group_by.cpp group_by full sample
-        \snippet output.txt group_by full sample
-    */
-    template<class KeySelector, class MarbleSelector, class BinaryPredicate>
-    inline auto group_by(KeySelector ks, MarbleSelector ms, BinaryPredicate p) const
+    /*! @copydoc rx-group_by.hpp
+     */
+    template<class... AN>
+    inline auto group_by(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<typename rxo::detail::group_by_traits<T, this_type, KeySelector, MarbleSelector, BinaryPredicate>::grouped_observable_type>(rxo::detail::group_by<T, this_type, KeySelector, MarbleSelector, BinaryPredicate>(std::move(ks), std::move(ms), std::move(p))))
+        -> decltype(observable_member(group_by_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return                    lift<typename rxo::detail::group_by_traits<T, this_type, KeySelector, MarbleSelector, BinaryPredicate>::grouped_observable_type>(rxo::detail::group_by<T, this_type, KeySelector, MarbleSelector, BinaryPredicate>(std::move(ks), std::move(ms), std::move(p)));
+        return      observable_member(group_by_tag{}, *this,                std::forward<AN>(an)...);
     }
 
-    /*! Return an observable that emits grouped_observables, each of which corresponds to a unique key value and each of which emits those items from the source observable that share that key value.
-
-        \tparam KeySelector     the type of the key extracting function
-        \tparam MarbleSelector  the type of the element extracting function
-
-        \param  ks  a function that extracts the key for each item
-        \param  ms  a function that extracts the return element for each item
-
-        \return  Observable that emits values of grouped_observable type, each of which corresponds to a unique key value and each of which emits those items from the source observable that share that key value.
-
-        \sample
-        \snippet group_by.cpp group_by sample
-        \snippet output.txt group_by sample
-    */
-    template<class KeySelector, class MarbleSelector>
-    inline auto group_by(KeySelector ks, MarbleSelector ms) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<typename rxo::detail::group_by_traits<T, this_type, KeySelector, MarbleSelector, rxu::less>::grouped_observable_type>(rxo::detail::group_by<T, this_type, KeySelector, MarbleSelector, rxu::less>(std::move(ks), std::move(ms), rxu::less())))
-        /// \endcond
-    {
-        return                    lift<typename rxo::detail::group_by_traits<T, this_type, KeySelector, MarbleSelector, rxu::less>::grouped_observable_type>(rxo::detail::group_by<T, this_type, KeySelector, MarbleSelector, rxu::less>(std::move(ks), std::move(ms), rxu::less()));
-    }
-
-      /*! Do not emit any items from the source Observable, but allow termination notification (either onError or onCompleted) to pass through unchanged.
+    /*! Do not emit any items from the source Observable, but allow termination notification (either onError or onCompleted) to pass through unchanged.
 
         \return  Observable that emits termination notification from the source observable.
 

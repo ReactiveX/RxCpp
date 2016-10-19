@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-group_by.hpp>
 
 #include <locale>
 
@@ -285,7 +286,7 @@ SCENARIO("group_by take 1", "[group_by][take][operators]"){
             auto res = w.start(
                 [&]() {
                     return xs
-                        .group_by(
+                        | rxo::group_by(
                             [&](long v) {
                                 ++keyInvoked;
                                 return v % 2;
@@ -294,14 +295,14 @@ SCENARIO("group_by take 1", "[group_by][take][operators]"){
                                 ++marbleInvoked;
                                 return v;
                             })
-                        .take(1)
-                        .map([&](const rxcpp::grouped_observable<long, long>& g) -> rxcpp::observable<long> {
+                        | rxo::take(1)
+                        | rxo::map([&](const rxcpp::grouped_observable<long, long>& g) -> rxcpp::observable<long> {
                             ++groupEmitted;
                             return g;
                         })
-                        .merge()
+                        | rxo::merge()
                         // forget type to workaround lambda deduction bug on msvc 2013
-                        .as_dynamic();
+                        | rxo::as_dynamic();
                 }
             );
 

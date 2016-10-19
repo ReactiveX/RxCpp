@@ -182,6 +182,7 @@
 #include "rx-grouped_observable.hpp"
 
 #if !defined(RXCPP_LITE)
+#include "operators/rx-group_by.hpp"
 #include "operators/rx-zip.hpp"
 #endif
 

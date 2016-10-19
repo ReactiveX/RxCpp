@@ -107,7 +107,6 @@ public:
 #include "operators/rx-filter.hpp"
 #include "operators/rx-finally.hpp"
 #include "operators/rx-flat_map.hpp"
-#include "operators/rx-group_by.hpp"
 #include "operators/rx-ignore_elements.hpp"
 #include "operators/rx-lift.hpp"
 #include "operators/rx-map.hpp"
@@ -147,10 +146,18 @@ public:
 #include "operators/rx-window_toggle.hpp"
 
 namespace rxcpp {
+
 struct zip_tag {
     template<class Included>
     struct include_header{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-zip.hpp>");
+    };
+};
+
+struct group_by_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-group_by.hpp>");
     };
 };
 
