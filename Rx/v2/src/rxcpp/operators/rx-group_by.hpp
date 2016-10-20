@@ -2,6 +2,30 @@
 
 #pragma once
 
+/*! \file rx-group_by.hpp
+
+    \brief Return an observable that emits grouped_observables, each of which corresponds to a unique key value and each of which emits those items from the source observable that share that key value.
+
+    \tparam KeySelector      the type of the key extracting function
+    \tparam MarbleSelector   the type of the element extracting function
+    \tparam BinaryPredicate  the type of the key comparing function
+
+    \param  ks  a function that extracts the key for each item (optional)
+    \param  ms  a function that extracts the return element for each item (optional)
+    \param  p   a function that implements comparison of two keys (optional)
+
+    \return  Observable that emits values of grouped_observable type, each of which corresponds to a unique key value and each of which emits those items from the source observable that share that key value.
+
+    \sample
+    \snippet group_by.cpp group_by full intro
+    \snippet group_by.cpp group_by full sample
+    \snippet output.txt group_by full sample
+
+    \sample
+    \snippet group_by.cpp group_by sample
+    \snippet output.txt group_by sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_GROUP_BY_HPP)
 #define RXCPP_OPERATORS_RX_GROUP_BY_HPP
 
@@ -12,6 +36,16 @@ namespace rxcpp {
 namespace operators {
 
 namespace detail {
+
+template<class... AN>
+struct group_by_invalid_arguments {};
+
+template<class... AN>
+struct group_by_invalid : public rxo::operator_base<group_by_invalid_arguments<AN...>> {
+    using type = observable<group_by_invalid_arguments<AN...>, group_by_invalid<AN...>>;
+};
+template<class... AN>
+using group_by_invalid_t = typename group_by_invalid<AN...>::type;
 
 template<class T, class Selector>
 struct is_group_by_selector_for {
@@ -241,25 +275,76 @@ public:
 
 }
 
-template<class KeySelector, class MarbleSelector, class BinaryPredicate>
-inline auto group_by(KeySelector ks, MarbleSelector ms, BinaryPredicate p)
-    ->      detail::group_by_factory<KeySelector, MarbleSelector, BinaryPredicate> {
-    return  detail::group_by_factory<KeySelector, MarbleSelector, BinaryPredicate>(std::move(ks), std::move(ms), std::move(p));
-}
-
-template<class KeySelector, class MarbleSelector>
-inline auto group_by(KeySelector ks, MarbleSelector ms)
-    ->      detail::group_by_factory<KeySelector, MarbleSelector, rxu::less> {
-    return  detail::group_by_factory<KeySelector, MarbleSelector, rxu::less>(std::move(ks), std::move(ms), rxu::less(), identity_current_thread());
-}
-
-template<class KeySelector>
-inline auto group_by(KeySelector ks)
-    ->      detail::group_by_factory<KeySelector, rxu::detail::take_at<0>, rxu::less> {
-    return  detail::group_by_factory<KeySelector, rxu::detail::take_at<0>, rxu::less>(std::move(ks), rxu::take_at<0>(), rxu::less());
+/*! @copydoc rx-group_by.hpp
+*/
+template<class... AN>
+auto group_by(AN&&... an) 
+    ->     operator_factory<group_by_tag, AN...> {
+    return operator_factory<group_by_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
 }
 
 }
+
+template<> 
+struct member_overload<group_by_tag>
+{
+    template<class Observable, class KeySelector, class MarbleSelector, class BinaryPredicate, 
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Traits = rxo::detail::group_by_traits<SourceValue, rxu::decay_t<Observable>, KeySelector, MarbleSelector, BinaryPredicate>,
+        class GroupBy = rxo::detail::group_by<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<KeySelector>, rxu::decay_t<MarbleSelector>, rxu::decay_t<BinaryPredicate>>,
+        class Value = typename Traits::grouped_observable_type>
+    static auto member(Observable&& o, KeySelector&& ks, MarbleSelector&& ms, BinaryPredicate&& p)
+        -> decltype(o.template lift<Value>(GroupBy(std::forward<KeySelector>(ks), std::forward<MarbleSelector>(ms), std::forward<BinaryPredicate>(p)))) {
+        return      o.template lift<Value>(GroupBy(std::forward<KeySelector>(ks), std::forward<MarbleSelector>(ms), std::forward<BinaryPredicate>(p)));
+    }
+
+    template<class Observable, class KeySelector, class MarbleSelector, 
+        class BinaryPredicate=rxu::less, 
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Traits = rxo::detail::group_by_traits<SourceValue, rxu::decay_t<Observable>, KeySelector, MarbleSelector, BinaryPredicate>,
+        class GroupBy = rxo::detail::group_by<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<KeySelector>, rxu::decay_t<MarbleSelector>, rxu::decay_t<BinaryPredicate>>,
+        class Value = typename Traits::grouped_observable_type>
+    static auto member(Observable&& o, KeySelector&& ks, MarbleSelector&& ms)
+        -> decltype(o.template lift<Value>(GroupBy(std::forward<KeySelector>(ks), std::forward<MarbleSelector>(ms), rxu::less()))) {
+        return      o.template lift<Value>(GroupBy(std::forward<KeySelector>(ks), std::forward<MarbleSelector>(ms), rxu::less()));
+    }
+
+
+    template<class Observable, class KeySelector, 
+        class MarbleSelector=rxu::detail::take_at<0>, 
+        class BinaryPredicate=rxu::less, 
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Traits = rxo::detail::group_by_traits<SourceValue, rxu::decay_t<Observable>, KeySelector, MarbleSelector, BinaryPredicate>,
+        class GroupBy = rxo::detail::group_by<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<KeySelector>, rxu::decay_t<MarbleSelector>, rxu::decay_t<BinaryPredicate>>,
+        class Value = typename Traits::grouped_observable_type>
+    static auto member(Observable&& o, KeySelector&& ks)
+        -> decltype(o.template lift<Value>(GroupBy(std::forward<KeySelector>(ks), rxu::detail::take_at<0>(), rxu::less()))) {
+        return      o.template lift<Value>(GroupBy(std::forward<KeySelector>(ks), rxu::detail::take_at<0>(), rxu::less()));
+    }
+
+    template<class Observable, 
+        class KeySelector=rxu::detail::take_at<0>, 
+        class MarbleSelector=rxu::detail::take_at<0>, 
+        class BinaryPredicate=rxu::less, 
+        class Enabled = rxu::enable_if_all_true_type_t<
+            all_observables<Observable>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Traits = rxo::detail::group_by_traits<SourceValue, rxu::decay_t<Observable>, KeySelector, MarbleSelector, BinaryPredicate>,
+        class GroupBy = rxo::detail::group_by<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<KeySelector>, rxu::decay_t<MarbleSelector>, rxu::decay_t<BinaryPredicate>>,
+        class Value = typename Traits::grouped_observable_type>
+    static auto member(Observable&& o)
+        -> decltype(o.template lift<Value>(GroupBy(rxu::detail::take_at<0>(), rxu::detail::take_at<0>(), rxu::less()))) {
+        return      o.template lift<Value>(GroupBy(rxu::detail::take_at<0>(), rxu::detail::take_at<0>(), rxu::less()));
+    }
+
+    template<class... AN>
+    static operators::detail::group_by_invalid_t<AN...> member(const AN&...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "group_by takes (optional KeySelector, optional MarbleSelector, optional BinaryKeyPredicate), KeySelector takes (Observable::value_type) -> KeyValue, MarbleSelector takes (Observable::value_type) -> MarbleValue, BinaryKeyPredicate takes (KeyValue, KeyValue) -> bool");
+    } 
+
+};
 
 }
 
