@@ -95,7 +95,6 @@ public:
 #include "operators/rx-buffer_count.hpp"
 #include "operators/rx-buffer_time.hpp"
 #include "operators/rx-buffer_time_count.hpp"
-#include "operators/rx-combine_latest.hpp"
 #include "operators/rx-concat.hpp"
 #include "operators/rx-concat_map.hpp"
 #include "operators/rx-connect_forever.hpp"
@@ -139,7 +138,6 @@ public:
 #include "operators/rx-time_interval.hpp"
 #include "operators/rx-timeout.hpp"
 #include "operators/rx-timestamp.hpp"
-#include "operators/rx-with_latest_from.hpp"
 #include "operators/rx-window.hpp"
 #include "operators/rx-window_time.hpp"
 #include "operators/rx-window_time_count.hpp"
@@ -147,10 +145,10 @@ public:
 
 namespace rxcpp {
 
-struct zip_tag {
+struct combine_latest_tag {
     template<class Included>
     struct include_header{
-        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-zip.hpp>");
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-combine_latest.hpp>");
     };
 };
 
@@ -158,6 +156,20 @@ struct group_by_tag {
     template<class Included>
     struct include_header{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-group_by.hpp>");
+    };
+};
+
+struct with_latest_from_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-with_latest_from.hpp>");
+    };
+};
+
+struct zip_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-zip.hpp>");
     };
 };
 

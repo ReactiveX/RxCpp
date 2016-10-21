@@ -1,4 +1,5 @@
 #include "../test.h"
+#include "rxcpp/operators/rx-with_latest_from.hpp"
 
 SCENARIO("with_latest_from interleaved with tail", "[with_latest_from][join][operators]"){
     GIVEN("2 hot observables of ints."){
