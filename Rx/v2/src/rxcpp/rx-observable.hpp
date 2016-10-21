@@ -2257,208 +2257,25 @@ public:
                                                                                                                                       rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, Coordination>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<Coordination>(cn)));
     }
 
-    /// \cond SHOW_SERVICE_MEMBERS
-    template<class Source, class Coordination, class TS, class C = rxu::types_checked>
-    struct select_with_latest_from_cn : public std::false_type {};
-
-    template<class Source, class Coordination, class T0, class... TN>
-    struct select_with_latest_from_cn<Source, Coordination, rxu::types<T0, TN...>, typename rxu::types_checked_from<typename Coordination::coordination_tag, typename T0::observable_tag, typename TN::observable_tag...>::type>
-        : public std::true_type
-    {
-        typedef rxo::detail::with_latest_from<Coordination, rxu::detail::pack, Source, T0, TN...> operator_type;
-        typedef observable<typename operator_type::value_type, operator_type> observable_type;
-        template<class... ObservableN>
-        observable_type operator()(const Source& src, Coordination cn, ObservableN... on) const {
-            return observable_type(operator_type(std::move(cn), rxu::pack(), std::make_tuple(src, std::move(on)...)));
-        }
-    };
-
-    template<class Source, class Coordination, class T0, class... TN>
-    struct select_with_latest_from_cn<Source, Coordination, rxu::types<T0, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::enable_if<!is_observable<T0>::value>::type, typename std::result_of<T0(typename Source::value_type, typename TN::value_type...)>::type, typename Coordination::coordination_tag, typename TN::observable_tag...>::type>
-        : public std::true_type
-    {
-        typedef rxo::detail::with_latest_from<Coordination, T0, Source, TN...> operator_type;
-        typedef observable<typename operator_type::value_type, operator_type> observable_type;
-        template<class... ObservableN>
-        observable_type operator()(const Source& src, Coordination cn, T0 t0, ObservableN... on) const {
-            return observable_type(operator_type(std::move(cn), std::move(t0), std::make_tuple(src, std::move(on)...)));
-        }
-    };
-
-    template<class Source, class TS, class C = rxu::types_checked>
-    struct select_with_latest_from : public std::false_type {
-    };
-
-    template<class Source, class T0, class T1, class... TN>
-    struct select_with_latest_from<Source, rxu::types<T0, T1, TN...>, typename rxu::types_checked_from<typename T0::coordination_tag, typename TN::observable_tag...>::type>
-        : public select_with_latest_from_cn<Source, T0, rxu::types<T1, TN...>>
-    {
-    };
-
-    template<class Source, class Selector, class... TN>
-    struct select_with_latest_from<Source, rxu::types<Selector, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::enable_if<!is_coordination<Selector>::value>::type, typename std::enable_if<!is_observable<Selector>::value>::type, typename TN::observable_tag...>::type>
-        : public std::true_type
-    {
-        typedef rxo::detail::with_latest_from<identity_one_worker, Selector, Source, TN...> operator_type;
-        typedef observable<typename operator_type::value_type, operator_type> observable_type;
-        template<class... ObservableN>
-        observable_type operator()(const Source& src, Selector sel, ObservableN... on) const {
-            return observable_type(operator_type(identity_current_thread(), std::move(sel), std::make_tuple(src, std::move(on)...)));
-        }
-    };
-
-    template<class Source, class T0, class... TN>
-    struct select_with_latest_from<Source, rxu::types<T0, TN...>, typename rxu::types_checked_from<typename T0::observable_tag, typename TN::observable_tag...>::type>
-        : public std::true_type
-    {
-        typedef rxo::detail::with_latest_from<identity_one_worker, rxu::detail::pack, Source, T0, TN...> operator_type;
-        typedef observable<typename operator_type::value_type, operator_type> observable_type;
-        template<class... ObservableN>
-        observable_type operator()(const Source& src, ObservableN... on) const {
-            return observable_type(operator_type(identity_current_thread(), rxu::pack(), std::make_tuple(src, std::move(on)...)));
-        }
-    };
-    /// \endcond
-
-    /*! For each item from the first observable select the latest value from all the observables to emit from the new observable that is returned.
-
-        \tparam AN  types of scheduler (optional), aggregate function (optional), and source observables
-
-        \param  an  scheduler (optional), aggregation function (optional), and source observables
-
-        \return  Observable that emits items that are the result of combining the items emitted by the source observables.
-
-        If scheduler is omitted, identity_current_thread is used.
-
-        If aggregation function is omitted, the resulting observable returns tuples of emitted items.
-
-        \sample
-
-        Neither scheduler nor aggregation function are present:
-        \snippet with_latest_from.cpp with_latest_from sample
-        \snippet output.txt with_latest_from sample
-
-        Only scheduler is present:
-        \snippet with_latest_from.cpp Coordination with_latest_from sample
-        \snippet output.txt Coordination with_latest_from sample
-
-        Only aggregation function is present:
-        \snippet with_latest_from.cpp Selector with_latest_from sample
-        \snippet output.txt Selector with_latest_from sample
-
-        Both scheduler and aggregation function are present:
-        \snippet with_latest_from.cpp Coordination+Selector with_latest_from sample
-        \snippet output.txt Coordination+Selector with_latest_from sample
-    */
     template<class... AN>
     auto with_latest_from(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(select_with_latest_from<this_type, rxu::types<decltype(an)...>>{}(*(this_type*)nullptr,  std::move(an)...))
+        -> decltype(observable_member(with_latest_from_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return      select_with_latest_from<this_type, rxu::types<decltype(an)...>>{}(*this,                 std::move(an)...);
+        return      observable_member(with_latest_from_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /// \cond SHOW_SERVICE_MEMBERS
-    template<class Source, class Coordination, class TS, class C = rxu::types_checked>
-    struct select_combine_latest_cn : public std::false_type {};
 
-    template<class Source, class Coordination, class T0, class... TN>
-    struct select_combine_latest_cn<Source, Coordination, rxu::types<T0, TN...>, typename rxu::types_checked_from<typename Coordination::coordination_tag, typename T0::observable_tag, typename TN::observable_tag...>::type>
-        : public std::true_type
-    {
-        typedef rxo::detail::combine_latest<Coordination, rxu::detail::pack, Source, T0, TN...> operator_type;
-        typedef observable<typename operator_type::value_type, operator_type> observable_type;
-        template<class... ObservableN>
-        observable_type operator()(const Source& src, Coordination cn, ObservableN... on) const {
-            return observable_type(operator_type(std::move(cn), rxu::pack(), std::make_tuple(src, std::move(on)...)));
-        }
-    };
-
-    template<class Source, class Coordination, class T0, class... TN>
-    struct select_combine_latest_cn<Source, Coordination, rxu::types<T0, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::enable_if<!is_observable<T0>::value>::type, typename std::result_of<T0(typename Source::value_type, typename TN::value_type...)>::type, typename Coordination::coordination_tag, typename TN::observable_tag...>::type>
-        : public std::true_type
-    {
-        typedef rxo::detail::combine_latest<Coordination, T0, Source, TN...> operator_type;
-        typedef observable<typename operator_type::value_type, operator_type> observable_type;
-        template<class... ObservableN>
-        observable_type operator()(const Source& src, Coordination cn, T0 t0, ObservableN... on) const {
-            return observable_type(operator_type(std::move(cn), std::move(t0), std::make_tuple(src, std::move(on)...)));
-        }
-    };
-
-    template<class Source, class TS, class C = rxu::types_checked>
-    struct select_combine_latest : public std::false_type {
-    };
-
-    template<class Source, class T0, class T1, class... TN>
-    struct select_combine_latest<Source, rxu::types<T0, T1, TN...>, typename rxu::types_checked_from<typename T0::coordination_tag, typename TN::observable_tag...>::type>
-        : public select_combine_latest_cn<Source, T0, rxu::types<T1, TN...>>
-    {
-    };
-
-    template<class Source, class Selector, class... TN>
-    struct select_combine_latest<Source, rxu::types<Selector, TN...>, typename rxu::types_checked_from<typename Source::value_type, typename TN::value_type..., typename std::enable_if<!is_coordination<Selector>::value>::type, typename std::enable_if<!is_observable<Selector>::value>::type, typename TN::observable_tag...>::type>
-        : public std::true_type
-    {
-        typedef rxo::detail::combine_latest<identity_one_worker, Selector, Source, TN...> operator_type;
-        typedef observable<typename operator_type::value_type, operator_type> observable_type;
-        template<class... ObservableN>
-        observable_type operator()(const Source& src, Selector sel, ObservableN... on) const {
-            return observable_type(operator_type(identity_current_thread(), std::move(sel), std::make_tuple(src, std::move(on)...)));
-        }
-    };
-
-    template<class Source, class T0, class... TN>
-    struct select_combine_latest<Source, rxu::types<T0, TN...>, typename rxu::types_checked_from<typename T0::observable_tag, typename TN::observable_tag...>::type>
-        : public std::true_type
-    {
-        typedef rxo::detail::combine_latest<identity_one_worker, rxu::detail::pack, Source, T0, TN...> operator_type;
-        typedef observable<typename operator_type::value_type, operator_type> observable_type;
-        template<class... ObservableN>
-        observable_type operator()(const Source& src, ObservableN... on) const {
-            return observable_type(operator_type(identity_current_thread(), rxu::pack(), std::make_tuple(src, std::move(on)...)));
-        }
-    };
-    /// \endcond
-
-    /*! For each item from all of the observables select a value to emit from the new observable that is returned.
-
-        \tparam AN  types of scheduler (optional), aggregate function (optional), and source observables
-
-        \param  an  scheduler (optional), aggregation function (optional), and source observables
-
-        \return  Observable that emits items that are the result of combining the items emitted by the source observables.
-
-        If scheduler is omitted, identity_current_thread is used.
-
-        If aggregation function is omitted, the resulting observable returns tuples of emitted items.
-
-        \sample
-
-        Neither scheduler nor aggregation function are present:
-        \snippet combine_latest.cpp combine_latest sample
-        \snippet output.txt combine_latest sample
-
-        Only scheduler is present:
-        \snippet combine_latest.cpp Coordination combine_latest sample
-        \snippet output.txt Coordination combine_latest sample
-
-        Only aggregation function is present:
-        \snippet combine_latest.cpp Selector combine_latest sample
-        \snippet output.txt Selector combine_latest sample
-
-        Both scheduler and aggregation function are present:
-        \snippet combine_latest.cpp Coordination+Selector combine_latest sample
-        \snippet output.txt Coordination+Selector combine_latest sample
-    */
+    /*! @copydoc rx-zip.hpp
+     */
     template<class... AN>
     auto combine_latest(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(select_combine_latest<this_type, rxu::types<decltype(an)...>>{}(*(this_type*)nullptr,  std::move(an)...))
+        -> decltype(observable_member(combine_latest_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return      select_combine_latest<this_type, rxu::types<decltype(an)...>>{}(*this,                 std::move(an)...);
+        return      observable_member(combine_latest_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-zip.hpp
@@ -2469,7 +2286,7 @@ public:
         -> decltype(observable_member(zip_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return      observable_member(zip_tag{}, *this,                std::forward<AN>(an)...);
+        return      observable_member(zip_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-group_by.hpp
@@ -2480,7 +2297,7 @@ public:
         -> decltype(observable_member(group_by_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return      observable_member(group_by_tag{}, *this,                std::forward<AN>(an)...);
+        return      observable_member(group_by_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! Do not emit any items from the source Observable, but allow termination notification (either onError or onCompleted) to pass through unchanged.

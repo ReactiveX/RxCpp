@@ -1,4 +1,5 @@
 #include "../test.h"
+#include "rxcpp/operators/rx-combine_latest.hpp"
 
 SCENARIO("observe subscription", "[hide]"){
     GIVEN("observable of ints"){

@@ -2,6 +2,39 @@
 
 #pragma once
 
+/*! \file rx-with_latest_from.hpp
+
+    \brief For each item from the first observable select the latest value from all the observables to emit from the new observable that is returned.
+
+    \tparam AN  types of scheduler (optional), aggregate function (optional), and source observables
+
+    \param  an  scheduler (optional), aggregation function (optional), and source observables
+
+    \return  Observable that emits items that are the result of combining the items emitted by the source observables.
+
+    If scheduler is omitted, identity_current_thread is used.
+
+    If aggregation function is omitted, the resulting observable returns tuples of emitted items.
+
+    \sample
+
+    Neither scheduler nor aggregation function are present:
+    \snippet with_latest_from.cpp with_latest_from sample
+    \snippet output.txt with_latest_from sample
+
+    Only scheduler is present:
+    \snippet with_latest_from.cpp Coordination with_latest_from sample
+    \snippet output.txt Coordination with_latest_from sample
+
+    Only aggregation function is present:
+    \snippet with_latest_from.cpp Selector with_latest_from sample
+    \snippet output.txt Selector with_latest_from sample
+
+    Both scheduler and aggregation function are present:
+    \snippet with_latest_from.cpp Coordination+Selector with_latest_from sample
+    \snippet output.txt Coordination+Selector with_latest_from sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_WITH_LATEST_FROM_HPP)
 #define RXCPP_OPERATORS_RX_WITH_LATEST_FROM_HPP
 
@@ -13,6 +46,46 @@ namespace operators {
 
 namespace detail {
 
+template<class... AN>
+struct with_latest_from_invalid_arguments {};
+
+template<class... AN>
+struct with_latest_from_invalid : public rxo::operator_base<with_latest_from_invalid_arguments<AN...>> {
+    using type = observable<with_latest_from_invalid_arguments<AN...>, with_latest_from_invalid<AN...>>;
+};
+template<class... AN>
+using with_latest_from_invalid_t = typename with_latest_from_invalid<AN...>::type;
+
+template<class Selector, class... ObservableN>
+struct is_with_latest_from_selector_check {
+    typedef rxu::decay_t<Selector> selector_type;
+
+    struct tag_not_valid;
+    template<class CS, class... CON>
+    static auto check(int) -> decltype((*(CS*)nullptr)((*(typename CON::value_type*)nullptr)...));
+    template<class CS, class... CON>
+    static tag_not_valid check(...);
+
+    using type = decltype(check<selector_type, rxu::decay_t<ObservableN>...>(0));
+
+    static const bool value = !std::is_same<type, tag_not_valid>::value;
+};
+
+template<class Selector, class... ObservableN>
+struct invalid_with_latest_from_selector {
+    static const bool value = false;
+};
+
+template<class Selector, class... ObservableN>
+struct is_with_latest_from_selector : public std::conditional<
+    is_with_latest_from_selector_check<Selector, ObservableN...>::value, 
+    is_with_latest_from_selector_check<Selector, ObservableN...>, 
+    invalid_with_latest_from_selector<Selector, ObservableN...>>::type {
+};
+
+template<class Selector, class... ON>
+using result_with_latest_from_selector_t = typename is_with_latest_from_selector<Selector, ON...>::type;
+
 template<class Coordination, class Selector, class... ObservableN>
 struct with_latest_from_traits {
 
@@ -22,15 +95,7 @@ struct with_latest_from_traits {
     typedef rxu::decay_t<Selector> selector_type;
     typedef rxu::decay_t<Coordination> coordination_type;
 
-    struct tag_not_valid {};
-    template<class CS, class... CVN>
-    static auto check(int) -> decltype((*(CS*)nullptr)((*(CVN*)nullptr)...));
-    template<class CS, class... CVN>
-    static tag_not_valid check(...);
-
-    static_assert(!std::is_same<decltype(check<selector_type, typename ObservableN::value_type...>(0)), tag_not_valid>::value, "with_latest_from Selector must be a function with the signature value_type(Observable::value_type...)");
-
-    typedef decltype(check<selector_type, typename ObservableN::value_type...>(0)) value_type;
+    typedef typename is_with_latest_from_selector<selector_type, ObservableN...>::type value_type;
 };
 
 template<class Coordination, class Selector, class... ObservableN>
@@ -169,57 +234,78 @@ struct with_latest_from : public operator_base<rxu::value_type_t<with_latest_fro
     }
 };
 
-template<class Coordination, class Selector, class... ObservableN>
-class with_latest_from_factory
+}
+
+/*! @copydoc rx-with_latest_from.hpp
+*/
+template<class... AN>
+auto with_latest_from(AN&&... an) 
+    ->     operator_factory<with_latest_from_tag, AN...> {
+    return operator_factory<with_latest_from_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<> 
+struct member_overload<with_latest_from_tag>
 {
-    using this_type = with_latest_from_factory<Coordination, Selector, ObservableN...>;
-
-    typedef rxu::decay_t<Coordination> coordination_type;
-    typedef rxu::decay_t<Selector> selector_type;
-    typedef std::tuple<ObservableN...> tuple_source_type;
-
-    coordination_type coordination;
-    selector_type selector;
-    tuple_source_type sourcen;
-
-    template<class... YObservableN>
-    auto make(std::tuple<YObservableN...> source)
-        ->      observable<rxu::value_type_t<with_latest_from<Coordination, Selector, YObservableN...>>, with_latest_from<Coordination, Selector, YObservableN...>> {
-        return  observable<rxu::value_type_t<with_latest_from<Coordination, Selector, YObservableN...>>, with_latest_from<Coordination, Selector, YObservableN...>>(
-                                             with_latest_from<Coordination, Selector, YObservableN...>(coordination, selector, std::move(source)));
-    }
-public:
-    using checked_type = std::enable_if<is_coordination<coordination_type>::value, this_type>;
-
-    with_latest_from_factory(coordination_type sf, selector_type s, ObservableN... on)
-        : coordination(std::move(sf))
-        , selector(std::move(s))
-        , sourcen(std::make_tuple(std::move(on)...))
+    template<class Observable, class... ObservableN, 
+        class Enabled = rxu::enable_if_all_true_type_t<
+            all_observables<Observable, ObservableN...>>,
+        class with_latest_from = rxo::detail::with_latest_from<identity_one_worker, rxu::detail::pack, rxu::decay_t<Observable>, rxu::decay_t<ObservableN>...>,
+        class Value = rxu::value_type_t<with_latest_from>,
+        class Result = observable<Value, with_latest_from>>
+    static Result member(Observable&& o, ObservableN&&... on)
     {
+        return Result(with_latest_from(identity_current_thread(), rxu::pack(), std::make_tuple(std::forward<Observable>(o), std::forward<ObservableN>(on)...)));
     }
 
-    template<class Observable>
-    auto operator()(Observable source)
-        -> decltype(make(std::tuple_cat(std::make_tuple(source), *(tuple_source_type*)nullptr))) {
-        return      make(std::tuple_cat(std::make_tuple(source), sourcen));
+    template<class Observable, class Selector, class... ObservableN,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            operators::detail::is_with_latest_from_selector<Selector, Observable, ObservableN...>,
+            all_observables<Observable, ObservableN...>>,
+        class ResolvedSelector = rxu::decay_t<Selector>,
+        class with_latest_from = rxo::detail::with_latest_from<identity_one_worker, ResolvedSelector, rxu::decay_t<Observable>, rxu::decay_t<ObservableN>...>,
+        class Value = rxu::value_type_t<with_latest_from>,
+        class Result = observable<Value, with_latest_from>>
+    static Result member(Observable&& o, Selector&& s, ObservableN&&... on)
+    {
+        return Result(with_latest_from(identity_current_thread(), std::forward<Selector>(s), std::make_tuple(std::forward<Observable>(o), std::forward<ObservableN>(on)...)));
     }
+
+    template<class Coordination, class Observable, class... ObservableN, 
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_coordination<Coordination>,
+            all_observables<Observable, ObservableN...>>,
+        class with_latest_from = rxo::detail::with_latest_from<Coordination, rxu::detail::pack, rxu::decay_t<Observable>, rxu::decay_t<ObservableN>...>,
+        class Value = rxu::value_type_t<with_latest_from>,
+        class Result = observable<Value, with_latest_from>>
+    static Result member(Observable&& o, Coordination&& cn, ObservableN&&... on)
+    {
+        return Result(with_latest_from(std::forward<Coordination>(cn), rxu::pack(), std::make_tuple(std::forward<Observable>(o), std::forward<ObservableN>(on)...)));
+    }
+
+    template<class Coordination, class Selector, class Observable, class... ObservableN,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_coordination<Coordination>,
+            operators::detail::is_with_latest_from_selector<Selector, Observable, ObservableN...>,
+            all_observables<Observable, ObservableN...>>,
+        class ResolvedSelector = rxu::decay_t<Selector>,
+        class with_latest_from = rxo::detail::with_latest_from<Coordination, ResolvedSelector, rxu::decay_t<Observable>, rxu::decay_t<ObservableN>...>,
+        class Value = rxu::value_type_t<with_latest_from>,
+        class Result = observable<Value, with_latest_from>>
+    static Result member(Observable&& o, Coordination&& cn, Selector&& s, ObservableN&&... on)
+    {
+        return Result(with_latest_from(std::forward<Coordination>(cn), std::forward<Selector>(s), std::make_tuple(std::forward<Observable>(o), std::forward<ObservableN>(on)...)));
+    }
+
+    template<class... AN>
+    static operators::detail::with_latest_from_invalid_t<AN...> member(const AN&...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "with_latest_from takes (optional Coordination, optional Selector, required Observable, optional Observable...), Selector takes (Observable::value_type...)");
+    } 
 };
-
-}
-
-template<class Coordination, class Selector, class... ObservableN>
-auto with_latest_from(Coordination sf, Selector s, ObservableN... on)
-    -> typename detail::with_latest_from_factory<Coordination, Selector, ObservableN...>::checked_type::type {
-    return      detail::with_latest_from_factory<Coordination, Selector, ObservableN...>(std::move(sf), std::move(s), std::move(on)...);
-}
-
-template<class Selector, class... ObservableN>
-auto with_latest_from(Selector s, ObservableN... on)
-    -> typename detail::with_latest_from_factory<identity_one_worker, Selector, ObservableN...>::checked_type::type {
-    return      detail::with_latest_from_factory<identity_one_worker, Selector, ObservableN...>(identity_current_thread(), std::move(s), std::move(on)...);
-}
-
-}
 
 }
 
