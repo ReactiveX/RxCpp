@@ -766,6 +766,20 @@ struct is_string<T,
                 typename T::allocator_type>, T> {
 };
 
+namespace detail {
+
+    template <class T, class = types_checked>
+    struct is_duration : std::false_type {};
+
+    template <class T>
+    struct is_duration<T, types_checked_t<T, typename T::rep, typename T::period>>
+            : std::is_convertible<T*, std::chrono::duration<typename T::rep, typename T::period>*> {};
+
+}
+
+template <class T, class Decayed = decay_t<T>>
+struct is_duration : detail::is_duration<Decayed> {};
+
 }
 namespace rxu=util;
 
