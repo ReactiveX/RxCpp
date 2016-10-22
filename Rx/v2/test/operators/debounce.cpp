@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-debounce.hpp>
 
 using namespace std::chrono;
 
@@ -17,7 +18,7 @@ SCENARIO("debounce - never", "[debounce][operators]"){
 
             auto res = w.start(
                 [so, xs]() {
-                    return xs.debounce(milliseconds(10), so);
+                    return xs | rxo::debounce(so, milliseconds(10));
                 }
             );
 

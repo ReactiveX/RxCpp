@@ -2,6 +2,23 @@
 
 #pragma once
 
+/*! \file rx-debounce.hpp
+
+    \brief  Return an observable that emits an item if a particular timespan has passed without emitting another item from the source observable.
+
+    \tparam Duration      the type of the time interval
+    \tparam Coordination  the type of the scheduler
+
+    \param period        the period of time to suppress any emitted items
+    \param coordination  the scheduler to manage timeout for each event
+
+    \return  Observable that emits an item if a particular timespan has passed without emitting another item from the source observable.
+
+    \sample
+    \snippet debounce.cpp debounce sample
+    \snippet output.txt debounce sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_DEBOUNCE_HPP)
 #define RXCPP_OPERATORS_RX_DEBOUNCE_HPP
 
@@ -12,6 +29,16 @@ namespace rxcpp {
 namespace operators {
 
 namespace detail {
+
+template<class... AN>
+struct debounce_invalid_arguments {};
+
+template<class... AN>
+struct debounce_invalid : public rxo::operator_base<debounce_invalid_arguments<AN...>> {
+    using type = observable<debounce_invalid_arguments<AN...>, debounce_invalid<AN...>>;
+};
+template<class... AN>
+using debounce_invalid_t = typename debounce_invalid<AN...>::type;
 
 template<class T, class Duration, class Coordination>
 struct debounce
@@ -197,19 +224,61 @@ public:
 
 }
 
-template<class Duration, class Coordination>
-inline auto debounce(Duration period, Coordination coordination)
-    ->      detail::debounce_factory<Duration, Coordination> {
-    return  detail::debounce_factory<Duration, Coordination>(period, coordination);
-}
-
-template<class Duration>
-inline auto debounce(Duration period)
-    ->      detail::debounce_factory<Duration, identity_one_worker> {
-    return  detail::debounce_factory<Duration, identity_one_worker>(period, identity_current_thread());
+/*! @copydoc rx-debounce.hpp
+*/
+template<class... AN>
+auto debounce(AN&&... an)
+    ->      operator_factory<debounce_tag, AN...> {
+     return operator_factory<debounce_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
 }
 
 }
+
+template<>
+struct member_overload<debounce_tag>
+{
+    template<class Observable, class Duration,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            rxu::is_duration<Duration>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Debounce = rxo::detail::debounce<SourceValue, rxu::decay_t<Duration>, identity_one_worker>>
+    static auto member(Observable&& o, Duration&& d)
+        -> decltype(o.template lift<SourceValue>(Debounce(std::forward<Duration>(d), identity_current_thread()))) {
+        return      o.template lift<SourceValue>(Debounce(std::forward<Duration>(d), identity_current_thread()));
+    }
+
+    template<class Observable, class Coordination, class Duration,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            is_coordination<Coordination>,
+            rxu::is_duration<Duration>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Debounce = rxo::detail::debounce<SourceValue, rxu::decay_t<Duration>, rxu::decay_t<Coordination>>>
+    static auto member(Observable&& o, Coordination&& cn, Duration&& d)
+        -> decltype(o.template lift<SourceValue>(Debounce(std::forward<Duration>(d), std::forward<Coordination>(cn)))) {
+        return      o.template lift<SourceValue>(Debounce(std::forward<Duration>(d), std::forward<Coordination>(cn)));
+    }
+
+    template<class Observable, class Coordination, class Duration,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            is_coordination<Coordination>,
+            rxu::is_duration<Duration>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Debounce = rxo::detail::debounce<SourceValue, rxu::decay_t<Duration>, rxu::decay_t<Coordination>>>
+    static auto member(Observable&& o, Duration&& d, Coordination&& cn)
+        -> decltype(o.template lift<SourceValue>(Debounce(std::forward<Duration>(d), std::forward<Coordination>(cn)))) {
+        return      o.template lift<SourceValue>(Debounce(std::forward<Duration>(d), std::forward<Coordination>(cn)));
+    }
+
+    template<class... AN>
+    static operators::detail::debounce_invalid_t<AN...> member(const AN&...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "debounce takes (optional Coordination, required Duration) or (required Duration, optional Coordination)");
+    }
+};
 
 }
 
