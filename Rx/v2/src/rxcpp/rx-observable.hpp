@@ -1179,48 +1179,15 @@ public:
         return                    lift<rxu::value_type_t<rxo::detail::map<T, Selector>>>(rxo::detail::map<T, Selector>(std::move(s)));
     }
 
-    /*! Return an observable that emits an item if a particular timespan has passed without emitting another item from the source ovservable.
-
-        \tparam Duration      the type of time interval
-        \tparam Coordination  the type of the scheduler
-
-        \param period        the period of time to suppress any emitted items
-        \param coordination  the scheduler to manage timeout for each event
-
-        \return  Observable that emits an item if a particular timespan has passed without emitting another item from the source ovservable.
-
-        \sample
-        \snippet debounce.cpp debounce sample
-        \snippet output.txt debounce sample
-    */
-    template<class Duration, class Coordination>
-    auto debounce(Duration period, Coordination coordination) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::debounce<T, Duration, Coordination>(period, coordination)))
-        /// \endcond
+    /*! @copydoc rx-debounce.hpp
+     */
+    template<class... AN>
+    auto debounce(AN&&... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(debounce_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
     {
-        return                    lift<T>(rxo::detail::debounce<T, Duration, Coordination>(period, coordination));
-    }
-
-    /*! Return an observable that emits an item if a particular timespan has passed without emitting another item from the source ovservable.
-
-        \tparam Duration      the type of time interval
-
-        \param period        the period of time to suppress any emitted items
-
-        \return  Observable that emits an item if a particular timespan has passed without emitting another item from the source ovservable.
-
-        \sample
-        \snippet debounce.cpp debounce sample
-        \snippet output.txt debounce sample
-    */
-    template<class Duration>
-    auto debounce(Duration period) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::debounce<T, Duration, identity_one_worker>(period, identity_current_thread())))
-        /// \endcond
-    {
-        return                    lift<T>(rxo::detail::debounce<T, Duration, identity_one_worker>(period, identity_current_thread()));
+        return  observable_member(debounce_tag{}, *this,                std::forward<AN>(an)...);
     }
 
     /*! Return an observable that emits each item emitted by the source observable after the specified delay.

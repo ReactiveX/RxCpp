@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-debounce.hpp>
 
 using namespace std::chrono;
 
@@ -17,7 +18,8 @@ SCENARIO("debounce - never", "[debounce][operators]"){
 
             auto res = w.start(
                 [so, xs]() {
-                    return xs.debounce(milliseconds(10), so);
+                    return xs
+                           | rxo::debounce(milliseconds(10), so);
                 }
             );
 
@@ -29,7 +31,7 @@ SCENARIO("debounce - never", "[debounce][operators]"){
 
             THEN("there was 1 subscription/unsubscription to the source"){
                 auto required = rxu::to_vector({
-                    on.subscribe(200, 1001)
+                    on.subscribe(200, 1000)
                 });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
@@ -54,13 +56,16 @@ SCENARIO("debounce - empty", "[debounce][operators]"){
 
             auto res = w.start(
                 [so, xs]() {
-                    return xs.debounce(milliseconds(10), so);
+                    return xs
+                            .debounce(milliseconds(10), so)
+                            // forget type to workaround lambda deduction bug on msvc 2013
+                            .as_dynamic();
                 }
             );
 
             THEN("the output only contains complete message"){
                 auto required = rxu::to_vector({
-                    on.completed(251)
+                    on.completed(252)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -96,15 +101,18 @@ SCENARIO("debounce - no overlap", "[debounce][operators]"){
 
             auto res = w.start(
                 [so, xs]() {
-                    return xs.debounce(milliseconds(10), so);
+                    return xs
+                            .debounce(milliseconds(10), so)
+                            // forget type to workaround lambda deduction bug on msvc 2013
+                            .as_dynamic();
                 }
             );
 
             THEN("the output only contains debounced items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.next(221, 2),
-                    on.next(251, 3),
-                    on.completed(301)
+                    on.next(222, 2),
+                    on.next(252, 3),
+                    on.completed(302)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -144,14 +152,18 @@ SCENARIO("debounce - overlap", "[debounce][operators]"){
 
             auto res = w.start(
                 [so, xs]() {
-                    return xs.debounce(milliseconds(30), so);
+                    return xs
+                            .debounce(milliseconds(30), so)
+                            // forget type to workaround lambda deduction bug on msvc 2013
+                            .as_dynamic();
+
                 }
             );
 
             THEN("the output only contains debounced items sent while subscribed"){
                 auto required = rxu::to_vector({
-                    on.next(296, 7),
-                    on.completed(301)
+                    on.next(297, 7),
+                    on.completed(302)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
@@ -187,13 +199,16 @@ SCENARIO("debounce - throw", "[debounce][operators]"){
 
             auto res = w.start(
                 [so, xs]() {
-                    return xs.debounce(milliseconds(10), so);
+                    return xs
+                            .debounce(milliseconds(10), so)
+                            // forget type to workaround lambda deduction bug on msvc 2013
+                            .as_dynamic();
                 }
             );
 
             THEN("the output only contains only error"){
                 auto required = rxu::to_vector({
-                    on.error(251, ex)
+                    on.error(252, ex)
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
