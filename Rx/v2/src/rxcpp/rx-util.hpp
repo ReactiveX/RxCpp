@@ -272,13 +272,13 @@ struct take_at
 {
     template<class... ParamN>
     auto operator()(ParamN... pn)
-        -> decay_t<decltype(std::get<Index>(std::make_tuple(std::move(pn)...)))> {
-        return              std::get<Index>(std::make_tuple(std::move(pn)...));
+        -> typename std::tuple_element<Index, std::tuple<decay_t<ParamN>...>>::type {
+        return                std::get<Index>(std::make_tuple(std::move(pn)...));
     }
     template<class... ParamN>
     auto operator()(ParamN... pn) const
-        -> decay_t<decltype(std::get<Index>(std::make_tuple(std::move(pn)...)))> {
-        return              std::get<Index>(std::make_tuple(std::move(pn)...));
+        -> typename std::tuple_element<Index, std::tuple<decay_t<ParamN>...>>::type {
+        return                std::get<Index>(std::make_tuple(std::move(pn)...));
     }
 };
 
@@ -589,29 +589,29 @@ public:
     }
 
     T* operator->() {
-        if (!is_set) abort();
+        if (!is_set) std::terminate();
         return reinterpret_cast<T*>(&storage);
     }
     const T* operator->() const {
-        if (!is_set) abort();
+        if (!is_set) std::terminate();
         return reinterpret_cast<T*>(&storage);
     }
 
     T& operator*() {
-        if (!is_set) abort();
+        if (!is_set) std::terminate();
         return *reinterpret_cast<T*>(&storage);
     }
     const T& operator*() const {
-        if (!is_set) abort();
+        if (!is_set) std::terminate();
         return *reinterpret_cast<T*>(&storage);
     }
 
     T& get() {
-        if (!is_set) abort();
+        if (!is_set) std::terminate();
         return *reinterpret_cast<T*>(&storage);
     }
     const T& get() const {
-        if (!is_set) abort();
+        if (!is_set) std::terminate();
         return *reinterpret_cast<const T*>(&storage);
     }
 

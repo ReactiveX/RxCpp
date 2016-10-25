@@ -1,4 +1,5 @@
 #include "../test.h"
+#include "rxcpp/operators/rx-reduce.hpp"
 
 SCENARIO("reduce some data with seed", "[reduce][operators]"){
     GIVEN("a test hot observable of ints"){
@@ -17,8 +18,6 @@ SCENARIO("reduce some data with seed", "[reduce][operators]"){
             on.next(250, 4),
             on.completed(260)
         });
-
-        auto sum = xs.sum();
 
         WHEN("mapped to ints that are one larger"){
 

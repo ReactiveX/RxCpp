@@ -49,7 +49,7 @@ class synchronize_observer : public detail::multicast_observer<T>
 
         void ensure_processing(std::unique_lock<std::mutex>& guard) const {
             if (!guard.owns_lock()) {
-                abort();
+                std::terminate();
             }
             if (current == mode::Empty) {
                 current = mode::Processing;

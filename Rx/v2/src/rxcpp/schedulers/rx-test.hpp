@@ -169,10 +169,10 @@ public:
     std::vector<recorded_type> m;
 
     virtual void on_subscribe(subscriber<T>) const {
-        abort();
+        std::terminate();
     }
     virtual std::vector<rxn::subscription> subscriptions() const {
-        abort();
+        std::terminate();
     }
 
     virtual std::vector<recorded_type> messages() const {

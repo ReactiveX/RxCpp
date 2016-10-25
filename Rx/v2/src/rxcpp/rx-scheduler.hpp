@@ -667,7 +667,7 @@ public:
 
     inline void operator()(const schedulable& s, const recurse& r) {
         if (!f) {
-            abort();
+            std::terminate();
         }
         f(s, r);
     }
@@ -696,7 +696,7 @@ public:
 
     inline void operator()(const schedulable& s, const recurse& r) {
         if (!f) {
-            abort();
+            std::terminate();
         }
         trace_activity().action_enter(s);
         auto scope = s.set_recursed(r);

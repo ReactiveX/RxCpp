@@ -31,7 +31,7 @@ struct test_source
     explicit test_source(typename test_subject_base<T>::type ts)
         : ts(std::move(ts))
     {
-        if (!this->ts) abort();
+        if (!this->ts) std::terminate();
     }
     typename test_subject_base<T>::type ts;
     void on_subscribe(subscriber<T> o) const {

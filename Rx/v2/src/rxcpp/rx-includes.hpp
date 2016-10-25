@@ -185,6 +185,7 @@
 #include "operators/rx-combine_latest.hpp"
 #include "operators/rx-debounce.hpp"
 #include "operators/rx-group_by.hpp"
+#include "operators/rx-reduce.hpp"
 #include "operators/rx-with_latest_from.hpp"
 #include "operators/rx-zip.hpp"
 #endif

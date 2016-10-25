@@ -178,7 +178,7 @@ public:
             }
             break;
         default:
-            abort();
+            std::terminate();
         }
     }
     template<class V>

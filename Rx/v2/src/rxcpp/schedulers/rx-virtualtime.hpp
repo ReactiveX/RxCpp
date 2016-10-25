@@ -95,7 +95,7 @@ public:
     void advance_to(absolute time) const
     {
         if (time < clock_now) {
-            abort();
+            std::terminate();
         }
 
         if (time == clock_now) {
@@ -125,7 +125,7 @@ public:
             clock_now = time;
         }
         else {
-            abort();
+            std::terminate();
         }
     }
 
@@ -134,7 +134,7 @@ public:
         auto dt = add(clock_now, time);
 
         if (dt < clock_now) {
-            abort();
+            std::terminate();
         }
 
         if (dt == clock_now) {
@@ -145,7 +145,7 @@ public:
             advance_to(dt);
         }
         else {
-            abort();
+            std::terminate();
         }
     }
 
@@ -154,7 +154,7 @@ public:
         auto dt = add(clock_now, time);
 
         if (dt < clock_now) {
-            abort();
+            std::terminate();
         }
 
         clock_now = dt;

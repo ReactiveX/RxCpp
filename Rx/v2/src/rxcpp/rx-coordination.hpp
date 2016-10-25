@@ -195,7 +195,7 @@ class serialize_one_worker : public coordination_base
             , lock(std::move(m))
         {
             if (!lock) {
-                abort();
+                std::terminate();
             }
         }
         auto operator()(const rxsc::schedulable& scbl) const
@@ -220,7 +220,7 @@ class serialize_one_worker : public coordination_base
             , lock(std::move(m))
         {
             if (!lock) {
-                abort();
+                std::terminate();
             }
         }
         void on_next(value_type v) const {

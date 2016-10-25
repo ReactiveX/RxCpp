@@ -114,7 +114,7 @@ private:
         : state(w.lock())
     {
         if (!state) {
-            abort();
+            std::terminate();
         }
     }
 public:
@@ -123,7 +123,7 @@ public:
         : state(std::make_shared<base_subscription_state>(false))
     {
         if (!state) {
-            abort();
+            std::terminate();
         }
     }
     template<class U>
@@ -131,7 +131,7 @@ public:
         : state(std::make_shared<subscription_state<U>>(std::move(u)))
     {
         if (!state) {
-            abort();
+            std::terminate();
         }
     }
     template<class U>
@@ -140,21 +140,21 @@ public:
         : state(std::move((*static_cast<subscription*>(&u)).state))
     {
         if (!state) {
-            abort();
+            std::terminate();
         }
     }
     subscription(const subscription& o)
         : state(o.state)
     {
         if (!state) {
-            abort();
+            std::terminate();
         }
     }
     subscription(subscription&& o)
         : state(std::move(o.state))
     {
         if (!state) {
-            abort();
+            std::terminate();
         }
     }
     subscription& operator=(subscription o) {
@@ -163,13 +163,13 @@ public:
     }
     bool is_subscribed() const {
         if (!state) {
-            abort();
+            std::terminate();
         }
         return state->issubscribed;
     }
     void unsubscribe() const {
         if (!state) {
-            abort();
+            std::terminate();
         }
         auto keepAlive = state;
         state->unsubscribe();
@@ -305,14 +305,14 @@ public:
         : state(o.state)
     {
         if (!state) {
-            abort();
+            std::terminate();
         }
     }
     composite_subscription_inner(composite_subscription_inner&& o)
         : state(std::move(o.state))
     {
         if (!state) {
-            abort();
+            std::terminate();
         }
     }
 
@@ -320,32 +320,32 @@ public:
     {
         state = std::move(o.state);
         if (!state) {
-            abort();
+            std::terminate();
         }
         return *this;
     }
 
     inline weak_subscription add(subscription s) const {
         if (!state) {
-            abort();
+            std::terminate();
         }
         return state->add(std::move(s));
     }
     inline void remove(weak_subscription w) const {
         if (!state) {
-            abort();
+            std::terminate();
         }
         state->remove(std::move(w));
     }
     inline void clear() const {
         if (!state) {
-            abort();
+            std::terminate();
         }
         state->clear();
     }
     inline void unsubscribe() {
         if (!state) {
-            abort();
+            std::terminate();
         }
         state->unsubscribe();
     }
@@ -413,7 +413,7 @@ public:
     inline weak_subscription add(subscription s) const {
         if (s == static_cast<const subscription&>(*this)) {
             // do not nest the same subscription
-            abort();
+            std::terminate();
             //return s.get_weak();
         }
         auto that = this->subscription::state.get();

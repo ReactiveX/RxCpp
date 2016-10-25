@@ -179,7 +179,7 @@ class blocking_observable
         {
             ~tracking()
             {
-                if (!disposed || !wakened) abort();
+                if (!disposed || !wakened) std::terminate();
             }
             tracking()
             {
@@ -237,7 +237,7 @@ class blocking_observable
                 return true;
             });
         track->wakened = true;
-        if (!track->disposed || !track->wakened) abort();
+        if (!track->disposed || !track->wakened) std::terminate();
 
         if (error) {std::rethrow_exception(error);}
     }
@@ -311,7 +311,8 @@ public:
         \snippet blocking_observable.cpp blocking first empty sample
         \snippet output.txt blocking first empty sample
     */
-    T first() {
+    template<class... AN>
+    auto first(AN**...) -> delayed_type_t<T, AN...> const {
         rxu::maybe<T> result;
         composite_subscription cs;
         subscribe_with_rethrow(
@@ -320,6 +321,7 @@ public:
         if (result.empty())
             throw rxcpp::empty_error("first() requires a stream with at least one value");
         return result.get();
+        static_assert(sizeof...(AN) == 0, "first() was passed too many arguments.");
     }
 
     /*! Return the last item emitted by this blocking_observable, or throw an std::runtime_error exception if it emits no items.
@@ -337,13 +339,15 @@ public:
         \snippet blocking_observable.cpp blocking last empty sample
         \snippet output.txt blocking last empty sample
     */
-    T last() const {
+    template<class... AN>
+    auto last(AN**...) -> delayed_type_t<T, AN...> const {
         rxu::maybe<T> result;
         subscribe_with_rethrow(
             [&](T v){result.reset(v);});
         if (result.empty())
             throw rxcpp::empty_error("last() requires a stream with at least one value");
         return result.get();
+        static_assert(sizeof...(AN) == 0, "last() was passed too many arguments.");
     }
 
     /*! Return the total number of items emitted by this blocking_observable.
@@ -967,7 +971,7 @@ public:
 
         \return  Observable that emits the same items as the source observable to both the subscriber and the observer.
 
-        \note If an on_error method is not supplied the observer will ignore errors rather than call std::abort()
+        \note If an on_error method is not supplied the observer will ignore errors rather than call std::terminate()
 
         \sample
         \snippet tap.cpp tap sample
@@ -2224,6 +2228,8 @@ public:
                                                                                                                                       rxo::detail::concat_map<this_type, CollectionSelector, ResultSelector, Coordination>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<Coordination>(cn)));
     }
 
+    /*! @copydoc rx-with_latest_from.hpp
+     */
     template<class... AN>
     auto with_latest_from(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
@@ -2234,7 +2240,7 @@ public:
     }
 
 
-    /*! @copydoc rx-zip.hpp
+    /*! @copydoc rx-combine_latest.hpp
      */
     template<class... AN>
     auto combine_latest(AN... an) const
@@ -2672,217 +2678,98 @@ public:
         return                    lift<T>(rxo::detail::observe_on<T, Coordination>(std::move(cn)));
     }
 
-    /*! For each item from this observable use Accumulator to combine items, when completed use ResultSelector to produce a value that will be emitted from the new observable that is returned.
-
-        \tparam Seed            the type of the initial value for the accumulator
-        \tparam Accumulator     the type of the data accumulating function
-        \tparam ResultSelector  the type of the result producing function
-
-        \param seed  the initial value for the accumulator
-        \param a     an accumulator function to be invoked on each item emitted by the source observable, the result of which will be used in the next accumulator call
-        \param rs    a result producing function that makes the final value from the last accumulator call result
-
-        \return  An observable that emits a single item that is the result of accumulating the output from the items emitted by the source observable.
-
-        Some basic reduce-type operators have already been implemented:
-        - rxcpp::observable::count
-        - rxcpp::observable::sum
-        - rxcpp::observable::average
-        - rxcpp::observable::min
-        - rxcpp::observable::max
-
-        \sample
-        Geometric mean of source values:
-        \snippet reduce.cpp reduce sample
-        \snippet output.txt reduce sample
-
-        If the source observable completes without emitting any items, the resulting observable emits the result of passing the initial seed to the result selector:
-        \snippet reduce.cpp reduce empty sample
-        \snippet output.txt reduce empty sample
-
-        If the accumulator raises an exception, it is returned by the resulting observable in on_error:
-        \snippet reduce.cpp reduce exception from accumulator sample
-        \snippet output.txt reduce exception from accumulator sample
-
-        The same for exceptions raised by the result selector:
-        \snippet reduce.cpp reduce exception from result selector sample
-        \snippet output.txt reduce exception from result selector sample
-    */
-    template<class Seed, class Accumulator, class ResultSelector>
-    auto reduce(Seed seed, Accumulator&& a, ResultSelector&& rs) const
+    /*! @copydoc rx-reduce.hpp
+     */
+    template<class... AN>
+    auto reduce(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        ->      observable<rxu::value_type_t<rxo::detail::reduce<T, source_operator_type, Accumulator, ResultSelector, Seed>>,    rxo::detail::reduce<T, source_operator_type, Accumulator, ResultSelector, Seed>>
+        -> decltype(observable_member(reduce_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return  observable<rxu::value_type_t<rxo::detail::reduce<T, source_operator_type, Accumulator, ResultSelector, Seed>>,    rxo::detail::reduce<T, source_operator_type, Accumulator, ResultSelector, Seed>>(
-                                                                                                                                  rxo::detail::reduce<T, source_operator_type, Accumulator, ResultSelector, Seed>(source_operator, std::forward<Accumulator>(a), std::forward<ResultSelector>(rs), seed));
+        return      observable_member(reduce_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /// \cond SHOW_SERVICE_MEMBERS
-    template<class Seed, class Accumulator, class ResultSelector>
-    struct defer_reduce : public defer_observable<
-        rxu::all_true<
-            rxu::defer_trait<rxo::detail::is_accumulate_function_for, T, Seed, Accumulator>::value,
-            rxu::defer_trait<rxo::detail::is_result_function_for, Seed, ResultSelector>::value>,
-        void,
-        rxo::detail::reduce, T, source_operator_type, Accumulator, ResultSelector, Seed>
+    /*! @copydoc rxcpp::operators::first
+     */
+    template<class... AN>
+    auto first(AN**...) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(observable_member(delayed_type<first_tag, AN...>::value(), *(this_type*)nullptr))
+        /// \endcond
     {
-    };
-    /// \endcond
+        return      observable_member(delayed_type<first_tag, AN...>::value(),                *this);
+        static_assert(sizeof...(AN) == 0, "first() was passed too many arguments.");
+    }
 
-    /*! For each item from this observable reduce it by sending only the first item.
+    /*! @copydoc rxcpp::operators::last
+     */
+    template<class... AN>
+    auto last(AN**...) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(observable_member(delayed_type<last_tag, AN...>::value(), *(this_type*)nullptr))
+        /// \endcond
+    {
+        return      observable_member(delayed_type<last_tag, AN...>::value(),                *this);
+        static_assert(sizeof...(AN) == 0, "last() was passed too many arguments.");
+    }
 
-        \return  An observable that emits only the very first item emitted by the source observable.
-
-        \sample
-        \snippet math.cpp first sample
-        \snippet output.txt first sample
-
-        When the source observable calls on_error:
-        \snippet math.cpp first empty sample
-        \snippet output.txt first empty sample
-    */
-    auto first() const
-        -> observable<T>;
-
-    /*! For each item from this observable reduce it by sending only the last item.
-
-        \return  An observable that emits only the very last item emitted by the source observable.
-
-        \sample
-        \snippet math.cpp last sample
-        \snippet output.txt last sample
-
-        When the source observable calls on_error:
-        \snippet math.cpp last empty sample
-        \snippet output.txt last empty sample
-    */
-    auto last() const
-        -> observable<T>;
-
-    /*! For each item from this observable reduce it by incrementing a count.
-
-        \return  An observable that emits a single item: the number of elements emitted by the source observable.
-
-        \sample
-        \snippet math.cpp count sample
-        \snippet output.txt count sample
-
-        When the source observable calls on_error:
-        \snippet math.cpp count error sample
-        \snippet output.txt count error sample
-    */
+    /*! @copydoc rxcpp::operators::count
+     */
     template<class... AN>
     auto count(AN**...) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> typename defer_reduce<int, rxu::count, rxu::defer_type<identity_for, int>>::observable_type
+        -> decltype(observable_member(delayed_type<reduce_tag, AN...>::value(), *(this_type*)nullptr, 0, rxu::count(), identity_for<int>()))
         /// \endcond
     {
-        return      defer_reduce<int, rxu::count, rxu::defer_type<identity_for, int>>::make(source_operator, rxu::count(), identity_for<int>(), 0);
+        return      observable_member(delayed_type<reduce_tag, AN...>::value(),                *this, 0, rxu::count(), identity_for<int>());
         static_assert(sizeof...(AN) == 0, "count() was passed too many arguments.");
     }
 
-    /*! For each item from this observable reduce it by adding to the previous items.
-
-        \return  An observable that emits a single item: the sum of elements emitted by the source observable.
-
-        \sample
-        \snippet math.cpp sum sample
-        \snippet output.txt sum sample
-
-        When the source observable completes without emitting any items:
-        \snippet math.cpp sum empty sample
-        \snippet output.txt sum empty sample
-
-        When the source observable calls on_error:
-        \snippet math.cpp sum error sample
-        \snippet output.txt sum error sample
-    */
+    /*! @copydoc rxcpp::operators::sum
+     */
     template<class... AN>
     auto sum(AN**...) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> typename defer_reduce<rxu::defer_seed_type<rxo::detail::sum, T>, rxu::defer_type<rxo::detail::sum, T>, rxu::defer_type<rxo::detail::sum, T>>::observable_type
+        -> decltype(observable_member(delayed_type<sum_tag, AN...>::value(), *(this_type*)nullptr))
         /// \endcond
     {
-        return      defer_reduce<rxu::defer_seed_type<rxo::detail::sum, T>, rxu::defer_type<rxo::detail::sum, T>, rxu::defer_type<rxo::detail::sum, T>>::make(source_operator, rxo::detail::sum<T>(), rxo::detail::sum<T>(), rxo::detail::sum<T>().seed());
+        return      observable_member(delayed_type<sum_tag, AN...>::value(),                *this);
         static_assert(sizeof...(AN) == 0, "sum() was passed too many arguments.");
     }
 
-    /*! For each item from this observable reduce it by adding to the previous values and then dividing by the number of items at the end.
-
-        \return  An observable that emits a single item: the average of elements emitted by the source observable.
-
-        \sample
-        \snippet math.cpp average sample
-        \snippet output.txt average sample
-
-        When the source observable completes without emitting any items:
-        \snippet math.cpp average empty sample
-        \snippet output.txt average empty sample
-
-        When the source observable calls on_error:
-        \snippet math.cpp average error sample
-        \snippet output.txt average error sample
-    */
+    /*! @copydoc rxcpp::operators::average
+     */
     template<class... AN>
     auto average(AN**...) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> typename defer_reduce<rxu::defer_seed_type<rxo::detail::average, T>, rxu::defer_type<rxo::detail::average, T>, rxu::defer_type<rxo::detail::average, T>>::observable_type
+        -> decltype(observable_member(delayed_type<average_tag, AN...>::value(), *(this_type*)nullptr))
         /// \endcond
     {
-        return      defer_reduce<rxu::defer_seed_type<rxo::detail::average, T>, rxu::defer_type<rxo::detail::average, T>, rxu::defer_type<rxo::detail::average, T>>::make(source_operator, rxo::detail::average<T>(), rxo::detail::average<T>(), rxo::detail::average<T>().seed());
+        return      observable_member(delayed_type<average_tag, AN...>::value(),                *this);
         static_assert(sizeof...(AN) == 0, "average() was passed too many arguments.");
     }
 
-    /*! For each item from this observable reduce it by taking the max value of the previous items.
-
-        \return  An observable that emits a single item: the max of elements emitted by the source observable.
-
-        \sample
-        \snippet math.cpp max sample
-        \snippet output.txt max sample
-
-        When the source observable completes without emitting any items:
-        \snippet math.cpp max empty sample
-        \snippet output.txt max empty sample
-
-        When the source observable calls on_error:
-        \snippet math.cpp max error sample
-        \snippet output.txt max error sample
-    */
+    /*! @copydoc rxcpp::operators::max
+     */
     template<class... AN>
     auto max(AN**...) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> typename defer_reduce<rxu::defer_seed_type<rxo::detail::max, T>, rxu::defer_type<rxo::detail::max, T>, rxu::defer_type<rxo::detail::max, T>>::observable_type
+        -> decltype(observable_member(delayed_type<max_tag, AN...>::value(), *(this_type*)nullptr))
         /// \endcond
     {
-        return      defer_reduce<rxu::defer_seed_type<rxo::detail::max, T>, rxu::defer_type<rxo::detail::max, T>, rxu::defer_type<rxo::detail::max, T>>::make(source_operator, rxo::detail::max<T>(), rxo::detail::max<T>(), rxo::detail::max<T>().seed());
+        return      observable_member(delayed_type<max_tag, AN...>::value(),                *this);
         static_assert(sizeof...(AN) == 0, "max() was passed too many arguments.");
     }
 
-    /*! For each item from this observable reduce it by taking the min value of the previous items.
-
-        \return  An observable that emits a single item: the min of elements emitted by the source observable.
-
-        \sample
-        \snippet math.cpp min sample
-        \snippet output.txt min sample
-
-        When the source observable completes without emitting any items:
-        \snippet math.cpp min empty sample
-        \snippet output.txt min empty sample
-
-        When the source observable calls on_error:
-        \snippet math.cpp min error sample
-        \snippet output.txt min error sample
-    */
+    /*! @copydoc rxcpp::operators::min
+     */
     template<class... AN>
     auto min(AN**...) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> typename defer_reduce<rxu::defer_seed_type<rxo::detail::min, T>, rxu::defer_type<rxo::detail::min, T>, rxu::defer_type<rxo::detail::min, T>>::observable_type
+        -> decltype(observable_member(delayed_type<min_tag, AN...>::value(), *(this_type*)nullptr))
         /// \endcond
     {
-        return      defer_reduce<rxu::defer_seed_type<rxo::detail::min, T>, rxu::defer_type<rxo::detail::min, T>, rxu::defer_type<rxo::detail::min, T>>::make(source_operator, rxo::detail::min<T>(), rxo::detail::min<T>(), rxo::detail::min<T>().seed());
+        return      observable_member(delayed_type<min_tag, AN...>::value(),                *this);
         static_assert(sizeof...(AN) == 0, "min() was passed too many arguments.");
     }
 
@@ -3330,26 +3217,6 @@ public:
 };
 
 template<class T, class SourceOperator>
-auto observable<T, SourceOperator>::last() const
-    -> observable<T> {
-    rxu::maybe<T> seed;
-    return this->reduce(
-        seed,
-        [](rxu::maybe<T>, T t){return rxu::maybe<T>(std::move(t));},
-        [](rxu::maybe<T> result){return result.empty() ? throw rxcpp::empty_error("last() requires a stream with at least one value") : result.get();});
-}
-
-template<class T, class SourceOperator>
-auto observable<T, SourceOperator>::first() const
-    -> observable<T> {
-    rxu::maybe<T> seed;
-    return this->take(1).reduce(
-        seed,
-        [](rxu::maybe<T>, T t){return rxu::maybe<T>(std::move(t));},
-        [](rxu::maybe<T> result){return result.empty() ? throw rxcpp::empty_error("first() requires a stream with at least one value") : result.get();});
-}
-
-template<class T, class SourceOperator>
 inline bool operator==(const observable<T, SourceOperator>& lhs, const observable<T, SourceOperator>& rhs) {
     return lhs.source_operator == rhs.source_operator;
 }
@@ -3586,9 +3453,11 @@ public:
         \snippet interval.cpp immediate interval sample
         \snippet output.txt immediate interval sample
     */
-    static auto interval(rxsc::scheduler::clock_type::duration period)
+    template<class... AN>
+    static auto interval(rxsc::scheduler::clock_type::duration period, AN**...)
         -> decltype(rxs::interval(period)) {
         return      rxs::interval(period);
+        static_assert(sizeof...(AN) == 0, "interval(period) was passed too many arguments.");
     }
     /*! Returns an observable that emits a sequential integer every specified time interval, on the specified scheduler.
 
@@ -3619,9 +3488,11 @@ public:
         \snippet interval.cpp interval sample
         \snippet output.txt interval sample
     */
-    static auto interval(rxsc::scheduler::clock_type::time_point initial, rxsc::scheduler::clock_type::duration period)
+    template<class... AN>
+    static auto interval(rxsc::scheduler::clock_type::time_point initial, rxsc::scheduler::clock_type::duration period, AN**...)
         -> decltype(rxs::interval(initial, period)) {
         return      rxs::interval(initial, period);
+        static_assert(sizeof...(AN) == 0, "interval(initial, period) was passed too many arguments.");
     }
     /*! Returns an observable that emits a sequential integer every specified time interval starting from the specified time point, on the specified scheduler.
 
@@ -3652,9 +3523,11 @@ public:
         \snippet timer.cpp timepoint timer sample
         \snippet output.txt timepoint timer sample
     */
-    static auto timer(rxsc::scheduler::clock_type::time_point when)
-        -> decltype(rxs::timer(when)) {
-        return      rxs::timer(when);
+    template<class... AN>
+    static auto timer(rxsc::scheduler::clock_type::time_point at, AN**...)
+        -> decltype(rxs::timer(at)) {
+        return      rxs::timer(at);
+        static_assert(sizeof...(AN) == 0, "timer(at) was passed too many arguments.");
     }
     /*! Returns an observable that emits an integer in the specified time interval.
 
@@ -3666,9 +3539,11 @@ public:
         \snippet timer.cpp duration timer sample
         \snippet output.txt duration timer sample
     */
-    static auto timer(rxsc::scheduler::clock_type::duration when)
-        -> decltype(rxs::timer(when)) {
-        return      rxs::timer(when);
+    template<class... AN>
+    static auto timer(rxsc::scheduler::clock_type::duration after, AN**...)
+        -> decltype(rxs::timer(after)) {
+        return      rxs::timer(after);
+        static_assert(sizeof...(AN) == 0, "timer(after) was passed too many arguments.");
     }
     /*! Returns an observable that emits an integer at the specified time point, on the specified scheduler.
 
