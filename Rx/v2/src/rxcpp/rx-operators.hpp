@@ -53,6 +53,12 @@ struct member_overload
     }
 };
 
+template<class T, class... AN>
+struct delayed_type{using value_type = T; static T value(AN**...) {return T{};}};
+
+template<class T, class... AN>
+using delayed_type_t = rxu::value_type_t<delayed_type<T, AN...>>;
+
 template<class Tag, class... AN, class Overload = member_overload<rxu::decay_t<Tag>>>
 auto observable_member(Tag, AN&&... an) -> 
     decltype(Overload::member(std::forward<AN>(an)...)) {
@@ -115,7 +121,6 @@ public:
 #include "operators/rx-on_error_resume_next.hpp"
 #include "operators/rx-pairwise.hpp"
 #include "operators/rx-publish.hpp"
-#include "operators/rx-reduce.hpp"
 #include "operators/rx-ref_count.hpp"
 #include "operators/rx-repeat.hpp"
 #include "operators/rx-replay.hpp"
@@ -158,6 +163,26 @@ struct group_by_tag {
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-group_by.hpp>");
     };
 };
+
+class empty_error: public std::runtime_error
+{
+    public:
+        explicit empty_error(const std::string& msg):
+            std::runtime_error(msg)
+        {}
+};
+struct reduce_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-reduce.hpp>");
+    };
+};
+struct first_tag  {};
+struct last_tag : reduce_tag {};
+struct sum_tag : reduce_tag {};
+struct average_tag : reduce_tag {};
+struct min_tag : reduce_tag {};
+struct max_tag : reduce_tag {};
 
 struct with_latest_from_tag {
     template<class Included>

@@ -56,20 +56,20 @@ public:
     }
     static bool empty() {
         if (!current_thread_queue()) {
-            abort();
+            std::terminate();
         }
         return current_thread_queue()->q.empty();
     }
     static queue_item_time::const_reference top() {
         if (!current_thread_queue()) {
-            abort();
+            std::terminate();
         }
         return current_thread_queue()->q.top();
     }
     static void pop() {
         auto& state = current_thread_queue();
         if (!state) {
-            abort();
+            std::terminate();
         }
         state->q.pop();
         if (state->q.empty()) {
@@ -80,7 +80,7 @@ public:
     static void push(item_type item) {
         auto& state = current_thread_queue();
         if (!state) {
-            abort();
+            std::terminate();
         }
         if (!item.what.is_subscribed()) {
             return;
@@ -91,7 +91,7 @@ public:
     }
     static std::shared_ptr<worker_interface> ensure(std::shared_ptr<worker_interface> w) {
         if (!!current_thread_queue()) {
-            abort();
+            std::terminate();
         }
         // create and publish new queue
         current_thread_queue() = new current_thread_queue_type();
@@ -105,7 +105,7 @@ public:
     }
     static void set(current_thread_queue_type* q) {
         if (!!current_thread_queue()) {
-            abort();
+            std::terminate();
         }
         // publish new queue
         current_thread_queue() = q;
@@ -115,7 +115,7 @@ public:
     }
     static void destroy() {
         if (!current_thread_queue()) {
-            abort();
+            std::terminate();
         }
 #if defined(RXCPP_THREAD_LOCAL)
          destroy(current_thread_queue());

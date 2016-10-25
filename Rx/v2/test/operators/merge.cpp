@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-reduce.hpp>
 
 const int static_onnextcalls = 1000000;
 

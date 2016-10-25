@@ -147,7 +147,7 @@ public:
         queue_type::destroy();
 
         auto expired = std::move(state->q);
-        if (!state->q.empty()) abort();
+        if (!state->q.empty()) std::terminate();
     }
 
     clock_type::time_point now() const {

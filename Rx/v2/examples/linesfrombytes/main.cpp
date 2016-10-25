@@ -33,9 +33,9 @@ int main()
             return w |
                 reduce(
                     vector<uint8_t>(),
-                    [](vector<uint8_t>& v, uint8_t b){
+                    [](vector<uint8_t> v, uint8_t b){
                         v.push_back(b);
-                        return move(v);
+                        return v;
                     }) |
                 as_dynamic();
         }) |
