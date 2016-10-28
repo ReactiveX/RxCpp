@@ -1,5 +1,6 @@
 #include "../test.h"
 #include <rxcpp/operators/rx-reduce.hpp>
+#include <rxcpp/operators/rx-filter.hpp>
 
 static const int static_tripletCount = 100;
 
