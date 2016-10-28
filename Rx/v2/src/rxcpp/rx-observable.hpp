@@ -800,25 +800,15 @@ public:
         static_assert(sizeof...(AN) == 0, "contains(value) was passed too many arguments.");
     }
 
-    /*! For each item from this observable use Predicate to select which items to emit from the new observable that is returned.
-
-        \tparam Predicate  the type of the filter function
-
-        \param p  the filter function
-
-        \return  Observable that emits only those items emitted by the source observable that the filter evaluates as true.
-
-        \sample
-        \snippet filter.cpp filter sample
-        \snippet output.txt filter sample
-    */
-    template<class Predicate>
-    auto filter(Predicate p) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::filter<T, Predicate>(std::move(p))))
-        /// \endcond
+    /*! @copydoc rx-filter.hpp
+     */
+    template<class... AN>
+    auto filter(AN&&... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(filter_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
     {
-        return                    lift<T>(rxo::detail::filter<T, Predicate>(std::move(p)));
+        return  observable_member(filter_tag{}, *this,                std::forward<AN>(an)...);
     }
 
     /*! If the source Observable terminates without emitting any items, emits items from a backup Observable.

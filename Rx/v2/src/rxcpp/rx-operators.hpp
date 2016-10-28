@@ -108,7 +108,6 @@ public:
 #include "operators/rx-distinct.hpp"
 #include "operators/rx-distinct_until_changed.hpp"
 #include "operators/rx-element_at.hpp"
-#include "operators/rx-filter.hpp"
 #include "operators/rx-finally.hpp"
 #include "operators/rx-flat_map.hpp"
 #include "operators/rx-ignore_elements.hpp"
@@ -160,6 +159,13 @@ struct debounce_tag {
     template<class Included>
     struct include_header{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-debounce.hpp>");
+    };
+};
+
+struct filter_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-filter.hpp>");
     };
 };
 
