@@ -43,27 +43,13 @@ SCENARIO("filter stops on completion", "[filter][operators]"){
         WHEN("filtered to ints that are primes"){
             auto res = w.start(
                 [&xs, &invoked]() {
-#if 0 && RXCPP_USE_OBSERVABLE_MEMBERS
                     return xs
-                        .filter([&invoked](int x) {
+                        | rxo::filter([&invoked](int x) {
                             invoked++;
                             return IsPrime(x);
                         })
                         // forget type to workaround lambda deduction bug on msvc 2013
-                        .as_dynamic();
-#else
-                    return xs
-                        >> rxo::filter([&invoked](int x) {
-                            invoked++;
-                            return IsPrime(x);
-                        })
-                        // demonstrates insertion of user definied operator
-                        >> [](rx::observable<int> o)->rx::observable<int>{
-                            return rxo::filter([](int){return true;})(o);
-                        }
-                        // forget type to workaround lambda deduction bug on msvc 2013
-                        >> rxo::as_dynamic();
-#endif
+                        | rxo::as_dynamic();
                 }
             );
             THEN("the output only contains primes"){
@@ -121,7 +107,6 @@ SCENARIO("filter stops on disposal", "[where][filter][operators]"){
 
             auto res = w.start(
                 [&xs, &invoked]() {
-#if RXCPP_USE_OBSERVABLE_MEMBERS
                     return xs
                         .filter([&invoked](int x) {
                             invoked++;
@@ -129,15 +114,6 @@ SCENARIO("filter stops on disposal", "[where][filter][operators]"){
                         })
                         // forget type to workaround lambda deduction bug on msvc 2013
                         .as_dynamic();
-#else
-                    return xs
-                        >> rxo::filter([&invoked](int x) {
-                            invoked++;
-                            return IsPrime(x);
-                        })
-                        // forget type to workaround lambda deduction bug on msvc 2013
-                        >> rxo::as_dynamic();
-#endif
                 },
                 400
             );
@@ -199,7 +175,6 @@ SCENARIO("filter stops on error", "[where][filter][operators]"){
 
             auto res = w.start(
                 [xs, &invoked]() {
-#if RXCPP_USE_OBSERVABLE_MEMBERS
                     return xs
                         .filter([&invoked](int x) {
                             invoked++;
@@ -207,15 +182,6 @@ SCENARIO("filter stops on error", "[where][filter][operators]"){
                         })
                         // forget type to workaround lambda deduction bug on msvc 2013
                         .as_dynamic();
-#else
-                    return xs
-                        >> rxo::filter([&invoked](int x) {
-                            invoked++;
-                            return IsPrime(x);
-                        })
-                        // forget type to workaround lambda deduction bug on msvc 2013
-                        >> rxo::as_dynamic();
-#endif
                 }
             );
 
@@ -278,7 +244,6 @@ SCENARIO("filter stops on throw from predicate", "[where][filter][operators]"){
 
             auto res = w.start(
                 [ex, xs, &invoked]() {
-#if RXCPP_USE_OBSERVABLE_MEMBERS
                     return xs
                         .filter([ex, &invoked](int x) {
                             invoked++;
@@ -289,18 +254,6 @@ SCENARIO("filter stops on throw from predicate", "[where][filter][operators]"){
                         })
                         // forget type to workaround lambda deduction bug on msvc 2013
                         .as_dynamic();
-#else
-                    return xs
-                        >> rxo::filter([ex, &invoked](int x) {
-                            invoked++;
-                            if (x > 5) {
-                                throw ex;
-                            }
-                            return IsPrime(x);
-                        })
-                        // forget type to workaround lambda deduction bug on msvc 2013
-                        >> rxo::as_dynamic();
-#endif
                 }
             );
 
@@ -363,7 +316,6 @@ SCENARIO("filter stops on dispose from predicate", "[where][filter][operators]")
 
             w.schedule_absolute(rxsc::test::created_time,
                 [&invoked, &res, &ys, &xs](const rxsc::schedulable&) {
-#if RXCPP_USE_OBSERVABLE_MEMBERS
                     ys = xs
                         .filter([&invoked, &res](int x) {
                             invoked++;
@@ -371,15 +323,6 @@ SCENARIO("filter stops on dispose from predicate", "[where][filter][operators]")
                                 res.unsubscribe();
                             return IsPrime(x);
                         });
-#else
-                    ys = xs
-                        >> rxo::filter([&invoked, &res](int x) {
-                            invoked++;
-                            if (x == 8)
-                                res.unsubscribe();
-                            return IsPrime(x);
-                        });
-#endif
                 });
 
             w.schedule_absolute(rxsc::test::subscribed_time, [&ys, &res](const rxsc::schedulable&) {
