@@ -95,20 +95,6 @@ struct filter
     }
 };
 
-template<class Predicate>
-class filter_factory
-{
-    typedef rxu::decay_t<Predicate> test_type;
-    test_type predicate;
-public:
-    filter_factory(test_type p) : predicate(std::move(p)) {}
-    template<class Observable>
-    auto operator()(Observable&& source)
-        -> decltype(source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(filter<rxu::value_type_t<rxu::decay_t<Observable>>, test_type>(predicate))) {
-        return      source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(filter<rxu::value_type_t<rxu::decay_t<Observable>>, test_type>(predicate));
-    }
-};
-
 }
 
 /*! @copydoc rx-filter.hpp
