@@ -2,6 +2,19 @@
 
 #pragma once
 
+/*! \file rx-distinct.hpp
+
+    \brief For each item from this observable, filter out repeated values and emit only items that have not already been emitted.
+
+    \return Observable that emits those items from the source observable that are distinct.
+
+    \note istinct keeps an unordered_set<T> of past values. Due to an issue in multiple implementations of std::hash<T>, rxcpp maintains a whitelist of hashable types. new types can be added by specializing rxcpp::filtered_hash<T>
+
+    \sample
+    \snippet distinct.cpp distinct sample
+    \snippet output.txt distinct sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_DISTINCT_HPP)
 #define RXCPP_OPERATORS_RX_DISTINCT_HPP
 
@@ -13,11 +26,18 @@ namespace operators {
 
 namespace detail {
 
-template<class T, class Enable = void>
-struct distinct {};
+template<class... AN>
+struct distinct_invalid_arguments {};
+
+template<class... AN>
+struct distinct_invalid : public rxo::operator_base<distinct_invalid_arguments<AN...>> {
+    using type = observable<distinct_invalid_arguments<AN...>, distinct_invalid<AN...>>;
+};
+template<class... AN>
+using distinct_invalid_t = typename distinct_invalid<AN...>::type;
 
 template<class T>
-struct distinct<T, typename std::enable_if<is_hashable<T>::value>::type>
+struct distinct
 {
     typedef rxu::decay_t<T> source_value_type;
 
@@ -60,24 +80,37 @@ struct distinct<T, typename std::enable_if<is_hashable<T>::value>::type>
     }
 };
 
-class distinct_factory
+}
+
+/*! @copydoc rx-distinct.hpp
+*/
+template<class... AN>
+auto distinct(AN&&... an)
+    ->     operator_factory<distinct_tag, AN...> {
+    return operator_factory<distinct_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<distinct_tag>
 {
-public:
-    template<class Observable>
-    auto operator()(Observable&& source)
-        -> decltype(source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(distinct<rxu::value_type_t<rxu::decay_t<Observable>>>())) {
-        return      source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(distinct<rxu::value_type_t<rxu::decay_t<Observable>>>());
+    template<class Observable,
+            class SourceValue = rxu::value_type_t<Observable>,
+            class Enabled = typename std::enable_if<is_hashable<SourceValue>::value>::type,
+            class Distinct = rxo::detail::distinct<SourceValue>>
+    static auto member(Observable&& o)
+    -> decltype(o.template lift<SourceValue>(Distinct())) {
+        return  o.template lift<SourceValue>(Distinct());
+    }
+
+    template<class... AN>
+    static operators::detail::distinct_invalid_t<AN...> member(const AN&...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "distinct takes no arguments");
     }
 };
-
-}
-
-inline auto distinct()
-->      detail::distinct_factory {
-    return  detail::distinct_factory();
-}
-
-}
 
 }
 

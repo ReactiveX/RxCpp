@@ -184,6 +184,7 @@
 #if !defined(RXCPP_LITE)
 #include "operators/rx-combine_latest.hpp"
 #include "operators/rx-debounce.hpp"
+#include "operators/rx-distinct.hpp"
 #include "operators/rx-filter.hpp"
 #include "operators/rx-group_by.hpp"
 #include "operators/rx-reduce.hpp"

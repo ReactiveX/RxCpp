@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-distinct.hpp>
 
 SCENARIO("distinct - never", "[distinct][operators]"){
     GIVEN("a source"){
