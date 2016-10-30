@@ -419,8 +419,8 @@ inline auto last()
     \snippet output.txt count error sample
 */
 inline auto count()
-    ->     operator_factory<reduce_tag, rxu::count, rxu::detail::take_at<0>, int> {
-    return operator_factory<reduce_tag, rxu::count, rxu::detail::take_at<0>, int>(std::make_tuple(rxu::count(), rxu::take_at<0>(), 0));
+    ->     operator_factory<reduce_tag, int, rxu::count, rxu::detail::take_at<0>> {
+    return operator_factory<reduce_tag, int, rxu::count, rxu::detail::take_at<0>>(std::make_tuple(0, rxu::count(), rxu::take_at<0>()));
 }
 
 /*! \brief For each item from this observable reduce it by adding to the previous values and then dividing by the number of items at the end.
