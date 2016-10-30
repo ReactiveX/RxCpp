@@ -15,7 +15,9 @@ SCENARIO("distinct - never", "[distinct][operators]"){
 
             auto res = w.start(
                 [xs]() {
-                    return xs.distinct();
+                    return xs.distinct()
+                            // forget type to workaround lambda deduction bug on msvc 2013
+                            .as_dynamic();
                 }
             );
 
@@ -51,7 +53,9 @@ SCENARIO("distinct - empty", "[distinct][operators]"){
 
             auto res = w.start(
                 [xs]() {
-                    return xs.distinct();
+                    return xs.distinct()
+                            // forget type to workaround lambda deduction bug on msvc 2013
+                            .as_dynamic();
                 }
             );
 
@@ -91,7 +95,9 @@ SCENARIO("distinct - return", "[distinct][operators]"){
 
             auto res = w.start(
                 [xs]() {
-                    return xs.distinct();
+                    return xs.distinct()
+                            // forget type to workaround lambda deduction bug on msvc 2013
+                            .as_dynamic();
                 }
             );
 
@@ -133,7 +139,9 @@ SCENARIO("distinct - throw", "[distinct][operators]"){
 
             auto res = w.start(
                 [xs]() {
-                    return xs.distinct();
+                    return xs.distinct()
+                            // forget type to workaround lambda deduction bug on msvc 2013
+                            .as_dynamic();
                 }
             );
 
@@ -176,7 +184,9 @@ SCENARIO("distinct - all changes", "[distinct][operators]"){
 
             auto res = w.start(
                 [xs]() {
-                    return xs.distinct();
+                    return xs.distinct()
+                            // forget type to workaround lambda deduction bug on msvc 2013
+                            .as_dynamic();
                 }
             );
 
@@ -223,7 +233,9 @@ SCENARIO("distinct - all same", "[distinct][operators]"){
 
             auto res = w.start(
                 [xs]() {
-                    return xs.distinct();
+                    return xs.distinct()
+                            // forget type to workaround lambda deduction bug on msvc 2013
+                            .as_dynamic();
                 }
             );
 
@@ -270,7 +282,9 @@ SCENARIO("distinct - some changes", "[distinct][operators]"){
 
             auto res = w.start(
                 [xs]() {
-                    return xs.distinct();
+                    return xs.distinct()
+                    // forget type to workaround lambda deduction bug on msvc 2013
+                    .as_dynamic();
                 }
             );
 
@@ -316,7 +330,9 @@ SCENARIO("distinct - strings", "[distinct][operators]"){
 
             auto res = w.start(
                     [xs]() {
-                        return xs.distinct();
+                        return xs.distinct()
+                                // forget type to workaround lambda deduction bug on msvc 2013
+                                .as_dynamic();
                     }
             );
 
@@ -361,7 +377,9 @@ SCENARIO("distinct - system_clock's duration", "[distinct][operators]") {
 
             auto res = w.start(
                 [xs]() {
-                return xs.distinct();
+                return xs.distinct()
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
             }
             );
 
@@ -407,7 +425,9 @@ SCENARIO("distinct - high_resolution_clock's duration", "[distinct][operators]")
 
             auto res = w.start(
                 [xs]() {
-                return xs.distinct();
+                return xs.distinct()
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
             }
             );
 
@@ -453,7 +473,9 @@ SCENARIO("distinct - steady_clock's duration", "[distinct][operators]") {
 
             auto res = w.start(
                 [xs]() {
-                return xs.distinct();
+                return xs.distinct()
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
             }
             );
 
@@ -499,7 +521,9 @@ SCENARIO("distinct - system_clock's time_point", "[distinct][operators]") {
 
             auto res = w.start(
                 [xs]() {
-                return xs.distinct();
+                return xs.distinct()
+                    // forget type to workaround lambda deduction bug on msvc 2013
+                    .as_dynamic();
             }
             );
 
@@ -545,7 +569,9 @@ SCENARIO("distinct - high_resolution_clock's time_point", "[distinct][operators]
 
             auto res = w.start(
                 [xs]() {
-                return xs.distinct();
+                return xs.distinct()
+                    // forget type to workaround lambda deduction bug on msvc 2013
+                    .as_dynamic();
             }
             );
 
@@ -591,7 +617,9 @@ SCENARIO("distinct - steady_clock's time_point", "[distinct][operators]") {
 
             auto res = w.start(
                 [xs]() {
-                return xs.distinct();
+                return xs.distinct()
+                    // forget type to workaround lambda deduction bug on msvc 2013
+                    .as_dynamic();
             }
             );
 
@@ -641,7 +669,9 @@ SCENARIO("distinct - enum", "[distinct][operators]"){
 
             auto res = w.start(
                     [xs]() {
-                        return xs.distinct();
+                        return xs.distinct()
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
                     }
             );
 
