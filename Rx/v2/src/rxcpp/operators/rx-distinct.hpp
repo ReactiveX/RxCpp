@@ -107,7 +107,7 @@ struct member_overload<distinct_tag>
     }
 
     template<class... AN>
-    static operators::detail::distinct_invalid_t<AN...> member(const AN&...) {
+    static operators::detail::distinct_invalid_t<AN...> member(AN...) {
         std::terminate();
         return {};
         static_assert(sizeof...(AN) == 10000, "distinct takes no arguments");

@@ -15,9 +15,10 @@ SCENARIO("distinct - never", "[distinct][operators]"){
 
             auto res = w.start(
                 [xs]() {
-                    return xs.distinct()
-                            // forget type to workaround lambda deduction bug on msvc 2013
-                            .as_dynamic();
+                    return xs
+                        | rxo::distinct()
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        | rxo::as_dynamic();
                 }
             );
 
