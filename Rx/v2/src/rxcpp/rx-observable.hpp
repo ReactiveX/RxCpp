@@ -1228,24 +1228,15 @@ public:
         return                    lift<T>(rxo::detail::delay<T, Duration, identity_one_worker>(period, identity_current_thread()));
     }
 
-    /*! For each item from this observable, filter out repeated values and emit only items that have not already been emitted.
-
-        \return  Observable that emits those items from the source observable that are distinct.
-
-        \note distinct keeps an unordered_set<T> of past values. Due to an issue in multiple implementations of std::hash<T>, rxcpp maintains a whitelist of hashable types. new types can be added by specializing rxcpp::filtered_hash<T>
-
-        \sample
-        \snippet distinct.cpp distinct sample
-        \snippet output.txt distinct sample
-    */
+    /*! @copydoc rx-distinct.hpp
+     */
     template<class... AN>
-    auto distinct(AN**...) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::distinct<T>()))
-        /// \endcond
+    auto distinct(AN&&... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(distinct_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
     {
-        return                    lift<T>(rxo::detail::distinct<T>());
-        static_assert(sizeof...(AN) == 0, "distinct() was passed too many arguments.");
+        return  observable_member(distinct_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! For each item from this observable, filter out consequentially repeated values and emit only changes from the new observable that is returned.
