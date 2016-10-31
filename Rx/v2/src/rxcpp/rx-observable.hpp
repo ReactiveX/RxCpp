@@ -1236,7 +1236,7 @@ public:
     -> decltype(observable_member(distinct_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
     /// \endcond
     {
-        return  observable_member(distinct_tag{}, *this,                std::forward<AN>(an)...);
+        return  observable_member(distinct_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! For each item from this observable, filter out consequentially repeated values and emit only changes from the new observable that is returned.

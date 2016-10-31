@@ -97,7 +97,9 @@ struct member_overload<distinct_tag>
 {
     template<class Observable,
             class SourceValue = rxu::value_type_t<Observable>,
-            class Enabled = typename std::enable_if<is_hashable<SourceValue>::value>::type,
+            class Enabled = rxu::enable_if_all_true_type_t<
+                is_observable<Observable>,
+                is_hashable<SourceValue>>,
             class Distinct = rxo::detail::distinct<SourceValue>>
     static auto member(Observable&& o)
     -> decltype(o.template lift<SourceValue>(Distinct())) {
