@@ -471,7 +471,25 @@ public:
 
     // TODO: skip_while(pred)
 
-    // TODO: sum
+    template<typename ITEM = typename element_type>
+    typename std::enable_if<std::is_default_constructible<ITEM>::value, ITEM>::type sum() const {
+        ITEM seed{};
+        return sum(seed);
+    }
+
+    typename element_type sum(typename element_type seed) const {
+        return std::accumulate(begin(), end(), seed);
+    }
+
+    template <typename Selector, typename Result = std::result_of<Selector(typename element_type)>::type>
+    typename std::enable_if<std::is_default_constructible<Result>::value, Result>::type sum(Selector sel) const {
+        return from(begin(), end()).select(sel).sum();			
+    }
+
+    template <typename Selector, typename Result = std::result_of<Selector(typename element_type)>::type>
+    Result sum(Selector sel, Result seed) const {
+        return from(begin(), end()).select(sel).sum(seed);			
+    }
 
     linq_driver<linq_take<Collection>> take(std::size_t n) const {
         return linq_take<Collection>(c, n);

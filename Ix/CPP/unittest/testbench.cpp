@@ -8,6 +8,7 @@
 #include <numeric>
 #include <iterator>
 #include <string>
+#include <complex>
 
 #include <ctime>
 #include <cstddef>
@@ -511,6 +512,87 @@ TEST(test_performance)
     test_perf(task);
     cout << endl;
 #endif
+}
+
+// SUM TESTS
+
+TEST(test_sum_ints)
+{
+    vector<int> numbers{1, 2, 3, 4, 5};
+
+	auto result = cpplinq::from(numbers);
+    auto r2 = result.sum();
+
+	VERIFY_EQ(15, r2);
+}
+
+TEST(test_sum_ints_with_seed)
+{
+    vector<int> numbers{1, 2, 3, 4, 5};
+
+	auto result = cpplinq::from(numbers).sum(10);
+
+	VERIFY_EQ(25, result);
+}
+
+TEST(test_sum_floats) {
+	vector<float> numbers{ 1.0f,2.0f,3.0f,4.0f,5.0f };
+
+	auto result = cpplinq::from(numbers).sum();
+
+	VERIFY_EQ(15.0f, result);
+}
+
+TEST(test_sum_doubles) {
+	vector<double> numbers { 1.0,2.0,3.0,4.0,5.0 };
+
+	auto result = cpplinq::from(numbers).sum();
+
+	VERIFY_EQ(15.0, result);
+}
+
+TEST(test_sum_complex) {
+	using namespace std::complex_literals;
+
+	vector<complex<double>> numbers{ 1i, 1.0 + 2i, 2.0 + 3i };
+
+	auto sum = cpplinq::from(numbers).sum();
+
+	VERIFY_EQ(3.0, sum.real());
+	VERIFY_EQ(6.0, sum.imag());
+}
+
+TEST(test_sum_with_projection_lambda) {
+	vector<tuple<int>> numbers { std::tuple<int>(0), std::tuple<int>(1), std::tuple<int>(2) };
+
+	auto result = cpplinq::from(numbers).sum([](std::tuple<int>& x){
+                return std::get<0>(x);
+        });
+
+	VERIFY_EQ(3.0, result);
+}
+
+TEST(test_sum_with_projection_lambda_and_seed) {
+	vector<tuple<int>> numbers { std::tuple<int>(0), std::tuple<int>(1), std::tuple<int>(2) };
+
+	auto result = cpplinq::from(numbers).sum([](std::tuple<int>& x){
+                return std::get<0>(x);
+        }, 10);
+
+	VERIFY_EQ(13.0, result);
+}
+
+int getValue(std::tuple<int> x)
+{
+    return std::get<0>(x);
+}
+
+TEST(test_sum_with_projection_function_pointer) {
+	vector<tuple<int>> numbers { std::tuple<int>(0), std::tuple<int>(1), std::tuple<int>(2) };
+
+	auto result = cpplinq::from(numbers).sum(getValue);
+
+	VERIFY_EQ(3.0, result);
 }
 
 int main(int argc, char** argv)
