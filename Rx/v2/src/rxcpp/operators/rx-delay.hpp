@@ -2,8 +2,25 @@
 
 #pragma once
 
-#if !defined(RXCPP_OPERATORS_RX_delay_HPP)
-#define RXCPP_OPERATORS_RX_delay_HPP
+/*! \file rx-delay.hpp
+
+    \brief Return an observable that emits each item emitted by the source observable after the specified delay.
+
+    \tparam Duration      the type of time interval
+    \tparam Coordination  the type of the scheduler
+
+    \param period        the period of time each item is delayed
+    \param coordination  the scheduler for the delays
+
+    \return  Observable that emits each item emitted by the source observable after the specified delay.
+
+    \sample
+    \snippet delay.cpp delay period+coordination sample
+    \snippet output.txt delay period+coordination sample
+*/
+
+#if !defined(RXCPP_OPERATORS_RX_DELAY_HPP)
+#define RXCPP_OPERATORS_RX_DELAY_HPP
 
 #include "../rx-includes.hpp"
 
@@ -13,6 +30,16 @@ namespace operators {
 
 namespace detail {
 
+template<class... AN>
+struct delay_invalid_arguments {};
+
+template<class... AN>
+struct delay_invalid : public rxo::operator_base<delay_invalid_arguments<AN...>> {
+    using type = observable<delay_invalid_arguments<AN...>, delay_invalid<AN...>>;
+};
+template<class... AN>
+using delay_invalid_t = typename delay_invalid<AN...>::type;
+    
 template<class T, class Duration, class Coordination>
 struct delay
 {
@@ -147,39 +174,64 @@ struct delay
     }
 };
 
-template<class Duration, class Coordination>
-class delay_factory
+}
+
+/*! @copydoc rx-delay.hpp
+*/
+template<class... AN>
+auto delay(AN&&... an)
+    ->      operator_factory<delay_tag, AN...> {
+     return operator_factory<delay_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<delay_tag>
 {
-    typedef rxu::decay_t<Duration> duration_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
-
-    duration_type period;
-    coordination_type coordination;
-public:
-    delay_factory(duration_type p, coordination_type c) : period(p), coordination(c) {}
-    template<class Observable>
-    auto operator()(Observable&& source)
-        -> decltype(source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(delay<rxu::value_type_t<rxu::decay_t<Observable>>, Duration, Coordination>(period, coordination))) {
-        return      source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(delay<rxu::value_type_t<rxu::decay_t<Observable>>, Duration, Coordination>(period, coordination));
+    template<class Observable, class Duration,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            rxu::is_duration<Duration>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class delay = rxo::detail::delay<SourceValue, rxu::decay_t<Duration>, identity_one_worker>>
+    static auto member(Observable&& o, Duration&& d)
+        -> decltype(o.template lift<SourceValue>(delay(std::forward<Duration>(d), identity_current_thread()))) {
+        return      o.template lift<SourceValue>(delay(std::forward<Duration>(d), identity_current_thread()));
     }
-};
 
-}
+    template<class Observable, class Coordination, class Duration,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            is_coordination<Coordination>,
+            rxu::is_duration<Duration>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class delay = rxo::detail::delay<SourceValue, rxu::decay_t<Duration>, rxu::decay_t<Coordination>>>
+    static auto member(Observable&& o, Coordination&& cn, Duration&& d)
+        -> decltype(o.template lift<SourceValue>(delay(std::forward<Duration>(d), std::forward<Coordination>(cn)))) {
+        return      o.template lift<SourceValue>(delay(std::forward<Duration>(d), std::forward<Coordination>(cn)));
+    }
 
-template<class Duration, class Coordination>
-inline auto delay(Duration period, Coordination coordination)
-    ->      detail::delay_factory<Duration, Coordination> {
-    return  detail::delay_factory<Duration, Coordination>(period, coordination);
-}
+    template<class Observable, class Coordination, class Duration,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            is_coordination<Coordination>,
+            rxu::is_duration<Duration>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class delay = rxo::detail::delay<SourceValue, rxu::decay_t<Duration>, rxu::decay_t<Coordination>>>
+    static auto member(Observable&& o, Duration&& d, Coordination&& cn)
+        -> decltype(o.template lift<SourceValue>(delay(std::forward<Duration>(d), std::forward<Coordination>(cn)))) {
+        return      o.template lift<SourceValue>(delay(std::forward<Duration>(d), std::forward<Coordination>(cn)));
+    }
 
-template<class Duration>
-inline auto delay(Duration period)
-    ->      detail::delay_factory<Duration, identity_one_worker> {
-    return  detail::delay_factory<Duration, identity_one_worker>(period, identity_current_thread());
-}
-
-}
-
+    template<class... AN>
+    static operators::detail::delay_invalid_t<AN...> member(const AN&...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "delay takes (optional Coordination, required Duration) or (required Duration, optional Coordination)");
+    }
+}; 
+    
 }
 
 #endif
