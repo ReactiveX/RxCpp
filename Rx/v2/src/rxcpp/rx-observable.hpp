@@ -1181,51 +1181,18 @@ public:
     -> decltype(observable_member(debounce_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
     /// \endcond
     {
-        return  observable_member(debounce_tag{}, *this,                std::forward<AN>(an)...);
+        return  observable_member(debounce_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /*! Return an observable that emits each item emitted by the source observable after the specified delay.
-
-        \tparam Duration      the type of time interval
-        \tparam Coordination  the type of the scheduler
-
-        \param period        the period of time each item is delayed
-        \param coordination  the scheduler for the delays
-
-        \return  Observable that emits each item emitted by the source observable after the specified delay.
-
-        \sample
-        \snippet delay.cpp delay period+coordination sample
-        \snippet output.txt delay period+coordination sample
-    */
-    template<class Duration, class Coordination>
-    auto delay(Duration period, Coordination coordination) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::delay<T, Duration, Coordination>(period, coordination)))
-        /// \endcond
+    /*! @copydoc rx-debounce.hpp
+     */
+    template<class... AN>
+    auto delay(AN&&... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(delay_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
     {
-        return                    lift<T>(rxo::detail::delay<T, Duration, Coordination>(period, coordination));
-    }
-
-    /*! Return an observable that emits each item emitted by the source observable after the specified delay.
-
-        \tparam Duration      the type of time interval
-
-        \param period        the period of time each item is delayed
-
-        \return  Observable that emits each item emitted by the source observable after the specified delay.
-
-        \sample
-        \snippet delay.cpp delay period sample
-        \snippet output.txt delay period sample
-    */
-    template<class Duration>
-    auto delay(Duration period) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::delay<T, Duration, identity_one_worker>(period, identity_current_thread())))
-        /// \endcond
-    {
-        return                    lift<T>(rxo::detail::delay<T, Duration, identity_one_worker>(period, identity_current_thread()));
+        return  observable_member(delay_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-distinct.hpp

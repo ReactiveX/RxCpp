@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-delay.hpp>
 
 using namespace std::chrono;
 
@@ -17,7 +18,7 @@ SCENARIO("delay - never", "[delay][operators]"){
 
             auto res = w.start(
                 [so, xs]() {
-                    return xs.delay(milliseconds(10), so);
+                    return xs | rxo::delay(milliseconds(10), so);
                 }
             );
 
@@ -54,7 +55,7 @@ SCENARIO("delay - empty", "[delay][operators]"){
 
             auto res = w.start(
                 [so, xs]() {
-                    return xs.delay(milliseconds(10), so);
+                    return xs.delay(so, milliseconds(10));
                 }
             );
 
