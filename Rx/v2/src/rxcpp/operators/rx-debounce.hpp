@@ -205,23 +205,6 @@ struct debounce
     }
 };
 
-template<class Duration, class Coordination>
-class debounce_factory
-{
-    typedef rxu::decay_t<Duration> duration_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
-
-    duration_type period;
-    coordination_type coordination;
-public:
-    debounce_factory(duration_type p, coordination_type c) : period(p), coordination(c) {}
-    template<class Observable>
-    auto operator()(Observable&& source)
-        -> decltype(source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(debounce<rxu::value_type_t<rxu::decay_t<Observable>>, Duration, Coordination>(period, coordination))) {
-        return      source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(debounce<rxu::value_type_t<rxu::decay_t<Observable>>, Duration, Coordination>(period, coordination));
-    }
-};
-
 }
 
 /*! @copydoc rx-debounce.hpp
