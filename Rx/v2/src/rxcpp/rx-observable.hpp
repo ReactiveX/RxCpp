@@ -1206,22 +1206,15 @@ public:
         return  observable_member(distinct_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /*! For each item from this observable, filter out consequentially repeated values and emit only changes from the new observable that is returned.
-
-        \return  Observable that emits those items from the source observable that are distinct from their immediate predecessors.
-
-        \sample
-        \snippet distinct_until_changed.cpp distinct_until_changed sample
-        \snippet output.txt distinct_until_changed sample
-    */
+    /*! @copydoc rx-distinct_until_changed.hpp
+     */
     template<class... AN>
-    auto distinct_until_changed(AN**...) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::distinct_until_changed<T>()))
-        /// \endcond
+    auto distinct_until_changed(AN&&... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(distinct_until_changed_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
     {
-        return                    lift<T>(rxo::detail::distinct_until_changed<T>());
-        static_assert(sizeof...(AN) == 0, "distinct_until_changed() was passed too many arguments.");
+        return  observable_member(distinct_until_changed_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! Pulls an item located at a specified index location in the sequence of items and emits that item as its own sole emission.
