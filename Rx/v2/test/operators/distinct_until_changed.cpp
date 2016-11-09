@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-distinct_until_changed.hpp>
 
 SCENARIO("distinct_until_changed - never", "[distinct_until_changed][operators]"){
     GIVEN("a source"){
@@ -14,7 +15,7 @@ SCENARIO("distinct_until_changed - never", "[distinct_until_changed][operators]"
 
             auto res = w.start(
                 [xs]() {
-                    return xs.distinct_until_changed();
+                    return xs | rxo::distinct_until_changed();
                 }
             );
 

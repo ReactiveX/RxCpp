@@ -2,6 +2,17 @@
 
 #pragma once
 
+/*! \file rx-distinct_until_changed.hpp
+
+    \brief For each item from this observable, filter out consequentially repeated values and emit only changes from the new observable that is returned.
+
+    \return  Observable that emits those items from the source observable that are distinct from their immediate predecessors.
+
+    \sample
+    \snippet distinct_until_changed.cpp distinct_until_changed sample
+    \snippet output.txt distinct_until_changed sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_DISTINCT_UNTIL_CHANGED_HPP)
 #define RXCPP_OPERATORS_RX_DISTINCT_UNTIL_CHANGED_HPP
 
@@ -12,6 +23,16 @@ namespace rxcpp {
 namespace operators {
 
 namespace detail {
+
+template<class... AN>
+struct distinct_until_changed_invalid_arguments {};
+
+template<class... AN>
+struct distinct_until_changed_invalid : public rxo::operator_base<distinct_until_changed_invalid_arguments<AN...>> {
+    using type = observable<distinct_until_changed_invalid_arguments<AN...>, distinct_until_changed_invalid<AN...>>;
+};
+template<class... AN>
+using distinct_until_changed_invalid_t = typename distinct_until_changed_invalid<AN...>::type;
 
 template<class T>
 struct distinct_until_changed
@@ -45,7 +66,7 @@ struct distinct_until_changed
             dest.on_completed();
         }
 
-        static subscriber<value_type, observer<value_type, this_type>> make(dest_type d) {
+        static subscriber<value_type, observer_type> make(dest_type d) {
             return make_subscriber<value_type>(d, this_type(d));
         }
     };
@@ -57,24 +78,39 @@ struct distinct_until_changed
     }
 };
 
-class distinct_until_changed_factory
+}
+
+/*! @copydoc rx-distinct_until_changed.hpp
+*/
+template<class... AN>
+auto distinct_until_changed(AN&&... an)
+    ->      operator_factory<distinct_until_changed_tag, AN...> {
+     return operator_factory<distinct_until_changed_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<distinct_until_changed_tag>
 {
-public:
-    template<class Observable>
-    auto operator()(Observable&& source)
-        -> decltype(source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(distinct_until_changed<rxu::value_type_t<rxu::decay_t<Observable>>>())) {
-        return      source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(distinct_until_changed<rxu::value_type_t<rxu::decay_t<Observable>>>());
+    template<class Observable,
+            class SourceValue = rxu::value_type_t<Observable>,
+            class Enabled = rxu::enable_if_all_true_type_t<
+                is_observable<Observable>,
+                is_hashable<SourceValue>>,
+            class DistinctUntilChanged = rxo::detail::distinct_until_changed<SourceValue>>
+    static auto member(Observable&& o)
+    -> decltype(o.template lift<SourceValue>(DistinctUntilChanged())) {
+        return  o.template lift<SourceValue>(DistinctUntilChanged());
+    }
+
+    template<class... AN>
+    static operators::detail::distinct_until_changed_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "distinct_until_changed takes no arguments");
     }
 };
-
-}
-
-inline auto distinct_until_changed()
-    ->      detail::distinct_until_changed_factory {
-    return  detail::distinct_until_changed_factory();
-}
-
-}
 
 }
 
