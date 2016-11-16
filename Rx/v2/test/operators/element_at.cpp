@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-element_at.hpp>
 
 SCENARIO("element_at - never", "[element_at][operators]"){
     GIVEN("a source"){
@@ -14,7 +15,7 @@ SCENARIO("element_at - never", "[element_at][operators]"){
 
             auto res = w.start(
                 [xs]() {
-                    return xs.element_at(3);
+                    return xs | rxo::element_at(3);
                 }
             );
 

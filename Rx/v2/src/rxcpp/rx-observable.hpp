@@ -1217,24 +1217,15 @@ public:
         return  observable_member(distinct_until_changed_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /*! Pulls an item located at a specified index location in the sequence of items and emits that item as its own sole emission.
-
-        \param  index  the index of the element to return.
-
-        \return  An observable that emit an item located at a specified index location.
-
-        \sample
-        \snippet element_at.cpp element_at sample
-        \snippet output.txt element_at sample
-    */
+    /*! @copydoc rx-element_at.hpp
+     */
     template<class... AN>
-    auto element_at(int index, AN**...) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        ->      decltype(EXPLICIT_THIS lift<T>(rxo::detail::element_at<T>(index)))
-        /// \endcond
+    auto element_at(AN&&... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(element_at_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
     {
-        return                    lift<T>(rxo::detail::element_at<T>(index));
-        static_assert(sizeof...(AN) == 0, "element_at(index) was passed too many arguments.");
+        return  observable_member(element_at_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! Return an observable that emits connected, non-overlapping windows, each containing at most count items from the source observable.
