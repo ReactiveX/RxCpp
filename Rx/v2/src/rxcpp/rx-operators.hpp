@@ -104,7 +104,6 @@ public:
 #include "operators/rx-concat.hpp"
 #include "operators/rx-concat_map.hpp"
 #include "operators/rx-connect_forever.hpp"
-#include "operators/rx-element_at.hpp"
 #include "operators/rx-finally.hpp"
 #include "operators/rx-flat_map.hpp"
 #include "operators/rx-ignore_elements.hpp"
@@ -177,6 +176,13 @@ struct distinct_until_changed_tag {
     template<class Included>
     struct include_header{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-distinct_until_changed.hpp>");
+    };
+};
+
+struct element_at_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-element_at.hpp>");
     };
 };
 

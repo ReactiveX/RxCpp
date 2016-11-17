@@ -187,6 +187,7 @@
 #include "operators/rx-delay.hpp"
 #include "operators/rx-distinct.hpp"
 #include "operators/rx-distinct_until_changed.hpp"
+#include "operators/rx-element_at.hpp"
 #include "operators/rx-filter.hpp"
 #include "operators/rx-group_by.hpp"
 #include "operators/rx-reduce.hpp"
