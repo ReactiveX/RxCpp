@@ -190,6 +190,7 @@
 #include "operators/rx-element_at.hpp"
 #include "operators/rx-filter.hpp"
 #include "operators/rx-group_by.hpp"
+#include "operators/rx-ignore_elements.hpp"
 #include "operators/rx-reduce.hpp"
 #include "operators/rx-with_latest_from.hpp"
 #include "operators/rx-zip.hpp"

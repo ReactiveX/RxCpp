@@ -1,5 +1,5 @@
 #include "../test.h"
-
+#include <rxcpp/operators/rx-ignore_elements.hpp>
 
 SCENARIO("ignore_elements - never", "[ignore_elements][operators]"){
     GIVEN("a source"){
@@ -15,7 +15,7 @@ SCENARIO("ignore_elements - never", "[ignore_elements][operators]"){
 
             auto res = w.start(
                 [xs]() {
-                    return xs.ignore_elements();
+                    return xs | rxo::ignore_elements();
                 }
             );
 
