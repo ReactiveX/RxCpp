@@ -2,6 +2,17 @@
 
 #pragma once
 
+/*! \file rx-ignore_elements.hpp
+
+    \brief Do not emit any items from the source Observable, but allow termination notification (either onError or onCompleted) to pass through unchanged.
+
+    \return Observable that emits termination notification from the source observable.
+
+    \sample
+    \snippet ignore_elements.cpp ignore_elements sample
+    \snippet output.txt ignore_elements sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_IGNORE_ELEMENTS_HPP)
 #define RXCPP_OPERATORS_RX_IGNORE_ELEMENTS_HPP
 
@@ -12,6 +23,16 @@ namespace rxcpp {
 namespace operators {
 
 namespace detail {
+
+template<class... AN>
+struct ignore_elements_invalid_arguments {};
+
+template<class... AN>
+struct ignore_elements_invalid : public rxo::operator_base<ignore_elements_invalid_arguments<AN...>> {
+    using type = observable<ignore_elements_invalid_arguments<AN...>, ignore_elements_invalid<AN...>>;
+};
+template<class... AN>
+using ignore_elements_invalid_t = typename ignore_elements_invalid<AN...>::type;
 
 template<class T>
 struct ignore_elements {
@@ -43,7 +64,7 @@ struct ignore_elements {
             dest.on_completed();
         }
 
-        static subscriber<value_type, observer<value_type, this_type>> make(dest_type d) {
+        static subscriber<value_type, observer_type> make(dest_type d) {
             return make_subscriber<value_type>(d, this_type(d));
         }
     };
@@ -55,24 +76,38 @@ struct ignore_elements {
     }
 };
 
-class ignore_elements_factory
+}
+
+/*! @copydoc rx-ignore_elements.hpp
+*/
+template<class... AN>
+auto ignore_elements(AN&&... an)
+->     operator_factory<ignore_elements_tag, AN...> {
+    return operator_factory<ignore_elements_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<ignore_elements_tag>
 {
-    template<class Observable>
-    auto operator()(Observable&& source)
-        -> decltype(source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(ignore_elements<rxu::value_type_t<rxu::decay_t<Observable>>>())) {
-        return      source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(ignore_elements<rxu::value_type_t<rxu::decay_t<Observable>>>());
+    template<class Observable,
+            class SourceValue = rxu::value_type_t<Observable>,
+            class Enabled = rxu::enable_if_all_true_type_t<
+                is_observable<Observable>>,
+            class IgnoreElements = rxo::detail::ignore_elements<SourceValue>>
+    static auto member(Observable&& o)
+    -> decltype(o.template lift<SourceValue>(IgnoreElements())) {
+        return  o.template lift<SourceValue>(IgnoreElements());
+    }
+
+    template<class... AN>
+    static operators::detail::ignore_elements_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "ignore_elements takes no arguments");
     }
 };
-
-}
-
-
-inline auto ignore_elements()
-    ->      detail::ignore_elements_factory {
-    return  detail::ignore_elements_factory();
-}
-
-}
 
 }
 

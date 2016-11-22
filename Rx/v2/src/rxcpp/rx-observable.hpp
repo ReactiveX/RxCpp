@@ -2205,24 +2205,16 @@ public:
         return      observable_member(group_by_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /*! Do not emit any items from the source Observable, but allow termination notification (either onError or onCompleted) to pass through unchanged.
-
-        \return  Observable that emits termination notification from the source observable.
-
-        \sample
-        \snippet ignore_elements.cpp ignore_elements sample
-        \snippet output.txt ignore_elements sample
-    */
+    /*! @copydoc rx-ignore_elements.hpp
+     */
     template<class... AN>
-    auto ignore_elements(AN**...) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::ignore_elements<T>()))
-        /// \endcond
+    auto ignore_elements(AN&&... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(ignore_elements_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
     {
-        return                    lift<T>(rxo::detail::ignore_elements<T>());
-        static_assert(sizeof...(AN) == 0, "ignore_elements() takes no arguments");
+        return  observable_member(ignore_elements_tag{},                *this, std::forward<AN>(an)...);
     }
-
 
     /// \cond SHOW_SERVICE_MEMBERS
     /// multicast ->
