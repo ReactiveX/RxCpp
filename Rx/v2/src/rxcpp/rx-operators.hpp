@@ -95,7 +95,6 @@ public:
 
 }
 
-#include "operators/rx-all.hpp"
 #include "operators/rx-amb.hpp"
 #include "operators/rx-any.hpp"
 #include "operators/rx-buffer_count.hpp"
@@ -142,6 +141,13 @@ public:
 #include "operators/rx-window_toggle.hpp"
 
 namespace rxcpp {
+
+struct all_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-all.hpp>");
+    };
+};
 
 struct combine_latest_tag {
     template<class Included>

@@ -182,6 +182,7 @@
 #include "rx-grouped_observable.hpp"
 
 #if !defined(RXCPP_LITE)
+#include "operators/rx-all.hpp"
 #include "operators/rx-combine_latest.hpp"
 #include "operators/rx-debounce.hpp"
 #include "operators/rx-delay.hpp"
