@@ -2,6 +2,22 @@
 
 #pragma once
 
+/*! \file rx-all.hpp
+
+    \brief Returns an Observable that emits true if every item emitted by the source Observable satisfies a specified condition, otherwise false.
+           Emits true if the source Observable terminates without emitting any item.
+
+    \tparam Predicate  the type of the test function.
+
+    \param p  the test function to test items emitted by the source Observable.
+
+    \return  Observable that emits true if every item emitted by the source observable satisfies a specified condition, otherwise false.
+
+    \sample
+    \snippet all.cpp all sample
+    \snippet output.txt all sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_ALL_HPP)
 #define RXCPP_OPERATORS_RX_ALL_HPP
 
@@ -13,12 +29,24 @@ namespace operators {
 
 namespace detail {
 
+template<class... AN>
+struct all_invalid_arguments {};
+
+template<class... AN>
+struct all_invalid : public rxo::operator_base<all_invalid_arguments<AN...>> {
+    using type = observable<all_invalid_arguments<AN...>, all_invalid<AN...>>;
+};
+template<class... AN>
+using all_invalid_t = typename all_invalid<AN...>::type;
+
 template<class T, class Predicate>
 struct all
 {
     typedef rxu::decay_t<T> source_value_type;
     typedef rxu::decay_t<Predicate> test_type;
     test_type test;
+
+    typedef bool value_type;
 
     all(test_type t)
         : test(std::move(t))
@@ -66,7 +94,7 @@ struct all
             }
         }
 
-        static subscriber<value_type, observer<value_type, this_type>> make(dest_type d, test_type t) {
+        static subscriber<value_type, observer_type> make(dest_type d, test_type t) {
             return make_subscriber<value_type>(d, this_type(d, std::move(t)));
         }
     };
@@ -78,31 +106,39 @@ struct all
     }
 };
 
-template <class Predicate>
-class all_factory
+}
+
+/*! @copydoc rx-all.hpp
+*/
+template<class... AN>
+auto all(AN&&... an)
+    ->     operator_factory<all_tag, AN...> {
+    return operator_factory<all_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<all_tag>
 {
-    typedef rxu::decay_t<Predicate> test_type;
+    template<class Observable, class Predicate,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>>,
+        class All = rxo::detail::all<SourceValue, rxu::decay_t<Predicate>>,
+        class Value = rxu::value_type_t<All>>
+    static auto member(Observable&& o, Predicate&& p)
+        -> decltype(o.template lift<Value>(All(std::forward<Predicate>(p)))) {
+        return      o.template lift<Value>(All(std::forward<Predicate>(p)));
+    }
 
-    test_type test;
-public:
-    all_factory(test_type t) : test(t) { }
-
-    template<class Observable>
-    auto operator()(Observable&& source)
-        -> decltype(source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(all<rxu::value_type_t<rxu::decay_t<Observable>>, Predicate>(test))) {
-        return      source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(all<rxu::value_type_t<rxu::decay_t<Observable>>, Predicate>(test));
+    template<class... AN>
+    static operators::detail::all_invalid_t<AN...> member(const AN&...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "all takes (Predicate)");
     }
 };
-
-}
-
-template <class Predicate>
-inline auto all(Predicate test)
-->      detail::all_factory<Predicate> {
-return  detail::all_factory<Predicate>(test);
-}
-
-}
 
 }
 

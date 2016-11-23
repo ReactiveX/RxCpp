@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-all.hpp>
 
 SCENARIO("all emits true if every item emitted by the source observable evaluated as true", "[all][operators]") {
     GIVEN("a source") {
@@ -19,8 +20,8 @@ SCENARIO("all emits true if every item emitted by the source observable evaluate
             auto res = w.start(
                 [xs]() {
                     return xs
-                        .all([](int n) { return n == 2; })
-                        .as_dynamic(); // forget type to workaround lambda deduction bug on msvc 2013
+                        | rxo::all([](int n) { return n == 2; })
+                        | rxo::as_dynamic(); // forget type to workaround lambda deduction bug on msvc 2013
                 }
             );
 
