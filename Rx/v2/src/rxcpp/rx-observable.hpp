@@ -742,51 +742,26 @@ public:
         return  observable_member(all_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /*! Returns an Observable that emits true if any item emitted by the source Observable satisfies a specified condition, otherwise false.
-        Emits false if the source Observable terminates without emitting any item.
-
-        \tparam Predicate  the type of the test function.
-
-        \param p  the test function to test items emitted by the source Observable.
-
-        \return  Observable that emits true if any item emitted by the source observable satisfies a specified condition, otherwise false.
-
-        \sample
-        \snippet exists.cpp exists sample
-        \snippet output.txt exists sample
-    */
-    template<class Predicate>
-    auto exists(Predicate p) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<bool>(rxo::detail::any<T, Predicate>(std::move(p))))
-        /// \endcond
+    /*! @copydoc rxcpp::operators::exists
+     */
+    template<class... AN>
+    auto exists(AN&&... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(exists_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
     {
-        return                    lift<bool>(rxo::detail::any<T, Predicate>(std::move(p)));
+        return  observable_member(exists_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    // workaround for - rx-observable.hpp(799): error C2066: cast to function type is illegal 
-    // 799 was: decltype(EXPLICIT_THIS lift<bool>(rxo::detail::any<T, std::function<bool(T)>>(std::function<bool(T)>{})))
-    typedef std::function<bool(T)> boolFromT;
-
-    /*! Returns an Observable that emits true if the source Observable emitted a specified item, otherwise false.
-        Emits false if the source Observable terminates without emitting any item.
-
-        \param value  the item to search for.
-
-        \return  Observable that emits true if the source Observable emitted a specified item, otherwise false.
-
-        \sample
-        \snippet contains.cpp contains sample
-        \snippet output.txt contains sample
-    */
+    /*! @copydoc rxcpp::operators::contains
+     */
     template<class... AN>
-    auto contains(T value, AN**...) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<bool>(rxo::detail::any<T, boolFromT>(nullptr)))
-        /// \endcond
+    auto contains(AN&&... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(contains_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
     {
-        return                    lift<bool>(rxo::detail::any<T, boolFromT>([value](T n) { return n == value; }));
-        static_assert(sizeof...(AN) == 0, "contains(value) was passed too many arguments.");
+        return  observable_member(contains_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-filter.hpp

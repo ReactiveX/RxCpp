@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-any.hpp>
 
 SCENARIO("exists emits true if an item satisfies the given condition", "[exists][operators]"){
     GIVEN("a source") {
@@ -18,8 +19,8 @@ SCENARIO("exists emits true if an item satisfies the given condition", "[exists]
             auto res = w.start(
                 [xs]() {
                     return xs
-                        .exists([](int n) { return n == 2; })
-                        .as_dynamic(); // forget type to workaround lambda deduction bug on msvc 2013
+                        | rxo::exists([](int n) { return n == 2; })
+                        | rxo::as_dynamic(); // forget type to workaround lambda deduction bug on msvc 2013
                 }
             );
 
