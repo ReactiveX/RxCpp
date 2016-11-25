@@ -1,5 +1,7 @@
 #include "../test.h"
 
+#include <rxcpp/operators/rx-reduce.hpp>
+
 SCENARIO("window count, basic", "[window][operators]"){
     GIVEN("1 hot observable of ints."){
         auto sc = rxsc::make_test();
@@ -963,6 +965,61 @@ SCENARIO("window with time or count, only time triggered", "[window_with_time_or
                     on.next(506, 3),
                     on.next(606, 4),
                     on.next(611, 5),
+                    on.completed(851)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription to the observable"){
+                auto required = rxu::to_vector({
+                    o_on.subscribe(200, 850)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("window with time or count, only count triggered", "[window_with_time_or_count][operators]"){
+    GIVEN("1 hot observable of ints."){
+        auto sc = rxsc::make_test();
+        auto so = rx::synchronize_in_one_worker(sc);
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+        const rxsc::test::messages<rx::observable<int>> o_on;
+
+        auto xs = sc.make_hot_observable({
+            on.next(205, 1),
+            on.next(305, 2),
+            on.next(505, 3),
+            on.next(605, 4),
+            on.next(610, 5),
+            on.completed(850)
+        });
+
+        WHEN("group each int with the next 2 ints"){
+            using namespace std::chrono;
+
+            auto res = w.start(
+                [&]() {
+                    return xs
+                        .window_with_time_or_count(milliseconds(370), 2, so)
+                        .map([](rx::observable<int> w){
+                            return w.count();
+                        })
+                        .merge()
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
+                }
+            );
+
+            THEN("the output contains merged groups of ints"){
+                auto required = rxu::to_vector({
+                    on.next(306, 2),
+                    on.next(606, 2),
+                    on.next(851, 1),
                     on.completed(851)
                 });
                 auto actual = res.get_observer().messages();
