@@ -162,7 +162,7 @@ auto contains(AN&&... an)
 }
 
 template<>
-struct member_overload<exists_tag>
+struct member_overload<any_tag>
 {
     template<class Observable, class Predicate,
             class SourceValue = rxu::value_type_t<Observable>,
@@ -174,6 +174,20 @@ struct member_overload<exists_tag>
     -> decltype(o.template lift<Value>(Any(std::forward<Predicate>(p)))) {
         return  o.template lift<Value>(Any(std::forward<Predicate>(p)));
     }
+
+    template<class... AN>
+    static operators::detail::any_invalid_t<AN...> member(const AN&...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "any takes (Predicate)");
+    }
+};
+
+template<>
+struct member_overload<exists_tag>
+    : member_overload<any_tag>
+{
+    using member_overload<any_tag>::member;
 
     template<class... AN>
     static operators::detail::any_invalid_t<AN...> member(const AN&...) {
