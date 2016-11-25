@@ -1,5 +1,18 @@
 
-#include "rxcpp/rx.hpp"
+#include <rxcpp/rx-lite.hpp>
+#include <rxcpp/operators/rx-reduce.hpp>
+#include <rxcpp/operators/rx-filter.hpp>
+#include <rxcpp/operators/rx-map.hpp>
+#include <rxcpp/operators/rx-tap.hpp>
+#include <rxcpp/operators/rx-concat_map.hpp>
+#include <rxcpp/operators/rx-flat_map.hpp>
+#include <rxcpp/operators/rx-concat.hpp>
+#include <rxcpp/operators/rx-merge.hpp>
+#include <rxcpp/operators/rx-repeat.hpp>
+#include <rxcpp/operators/rx-publish.hpp>
+#include <rxcpp/operators/rx-ref_count.hpp>
+#include <rxcpp/operators/rx-window.hpp>
+#include <rxcpp/operators/rx-window_toggle.hpp>
 namespace Rx {
 using namespace rxcpp;
 using namespace rxcpp::sources;
