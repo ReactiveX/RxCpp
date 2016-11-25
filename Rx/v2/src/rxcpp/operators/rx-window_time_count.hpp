@@ -135,10 +135,10 @@ struct window_with_time_or_count
 
         void on_next(T v) const {
             auto localState = state;
-            auto work = [v, localState](const rxsc::schedulable&){
+            auto work = [v, localState](const rxsc::schedulable& self){
                 localState->subj.get_subscriber().on_next(v);
                 if (++localState->cursor == localState->count) {
-                    release_window(localState->subj_id, localState->worker.now(), localState);
+                    release_window(localState->subj_id, localState->worker.now(), localState)(self);
                 }
             };
             auto selectedWork = on_exception(
