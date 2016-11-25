@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-any.hpp>
 
 SCENARIO("contains emits true if an item satisfies the given condition", "[contains][operators]"){
     GIVEN("a source") {
@@ -18,8 +19,8 @@ SCENARIO("contains emits true if an item satisfies the given condition", "[conta
             auto res = w.start(
                 [xs]() {
                     return xs
-                        .contains(2)
-                        .as_dynamic(); // forget type to workaround lambda deduction bug on msvc 2013
+                        | rxo::contains(2)
+                        | rxo::as_dynamic(); // forget type to workaround lambda deduction bug on msvc 2013
                 }
             );
 

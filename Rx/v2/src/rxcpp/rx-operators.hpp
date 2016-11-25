@@ -96,7 +96,6 @@ public:
 }
 
 #include "operators/rx-amb.hpp"
-#include "operators/rx-any.hpp"
 #include "operators/rx-buffer_count.hpp"
 #include "operators/rx-buffer_time.hpp"
 #include "operators/rx-buffer_time_count.hpp"
@@ -148,7 +147,17 @@ struct all_tag {
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-all.hpp>");
     };
 };
+    
+struct any_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-any.hpp>");
+    };
+};
 
+struct exists_tag : any_tag {};
+struct contains_tag : any_tag {};
+    
 struct combine_latest_tag {
     template<class Included>
     struct include_header{
