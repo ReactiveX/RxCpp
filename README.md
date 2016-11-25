@@ -1,4 +1,4 @@
-The Reactive Extensions for Native (__RxCpp__) is a library for composing asynchronous and event-based programs using observable sequences and LINQ-style query operators in C++.
+The Reactive Extensions for C++ (__RxCpp__) is a library of algorithms for values-distributed-in-time. The [__Range-v3__](https://github.com/ericniebler/range-v3) library does the same for values-distributed-in-space.
 
 Platform    | Status | 
 ----------- | :------------ |
@@ -7,26 +7,30 @@ Linux & OSX | [![Linux & Osx Status](http://img.shields.io/travis/Reactive-Exten
 
 Source        | Badges |
 ------------- | :--------------- |
-Github | [![GitHub license](https://img.shields.io/github/license/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp) <br/> [![GitHub release](https://img.shields.io/github/release/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp/releases) [![GitHub commits](https://img.shields.io/github/commits-since/Reactive-Extensions/RxCpp/v2.3.0.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp)
+Github | [![GitHub license](https://img.shields.io/github/license/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp) <br/> [![GitHub release](https://img.shields.io/github/release/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp/releases) <br/> [![GitHub commits](https://img.shields.io/github/commits-since/Reactive-Extensions/RxCpp/v3.0.0.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp)
 Gitter.im | [![Join in on gitter.im](https://img.shields.io/gitter/room/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://gitter.im/Reactive-Extensions/RxCpp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-NuGet | [![NuGet version](http://img.shields.io/nuget/v/RxCpp.svg?style=flat-square)](http://www.nuget.org/packages/RxCpp/)
+Packages | [![NuGet version](http://img.shields.io/nuget/v/RxCpp.svg?style=flat-square)](http://www.nuget.org/packages/RxCpp/) [![vcpkg port](https://img.shields.io/badge/vcpkg-port-blue.svg?style=flat-square)](https://github.com/Microsoft/vcpkg/tree/master/ports/rxcpp)
 Documentation | [![rxcpp doxygen documentation](https://img.shields.io/badge/rxcpp-latest-brightgreen.svg?style=flat-square)](http://reactive-extensions.github.io/RxCpp) <br/> [![reactivex intro](https://img.shields.io/badge/reactivex.io-intro-brightgreen.svg?style=flat-square)](http://reactivex.io/intro.html) [![rx marble diagrams](https://img.shields.io/badge/rxmarbles-diagrams-brightgreen.svg?style=flat-square)](http://rxmarbles.com/)
 
-#Example
+# Example
 Add ```Rx/v2/src``` to the include paths
 
 [![lines from bytes](https://img.shields.io/badge/blog%20post-lines%20from%20bytes-blue.svg?style=flat-square)](http://kirkshoop.github.io/async/rxcpp/c++/2015/07/07/rxcpp_-_parsing_bytes_to_lines_of_text.html)
 
 ```cpp
 #include "rxcpp/rx.hpp"
+namespace Rx {
 using namespace rxcpp;
 using namespace rxcpp::sources;
 using namespace rxcpp::operators;
 using namespace rxcpp::util;
+}
+using namespace Rx;
 
 #include <regex>
 #include <random>
 using namespace std;
+using namespace std::chrono;
 
 int main()
 {
@@ -35,7 +39,7 @@ int main()
     uniform_int_distribution<> dist(4, 18);
 
     // for testing purposes, produce byte stream that from lines of text
-    auto bytes = range(1, 10) |
+    auto bytes = range(0, 10) |
         flat_map([&](int i){
             auto body = from((uint8_t)('A' + i)) |
                 repeat(dist(gen)) |
@@ -48,9 +52,9 @@ int main()
             return w |
                 reduce(
                     vector<uint8_t>(),
-                    [](vector<uint8_t>& v, uint8_t b){
+                    [](vector<uint8_t> v, uint8_t b){
                         v.push_back(b);
-                        return move(v);
+                        return v;
                     }) |
                 as_dynamic();
         }) |
@@ -63,33 +67,44 @@ int main()
     //
     // recover lines of text from byte stream
     //
+    
+    auto removespaces = [](string s){
+        s.erase(remove_if(s.begin(), s.end(), ::isspace), s.end());
+        return s;
+    };
 
     // create strings split on \r
     auto strings = bytes |
         concat_map([](vector<uint8_t> v){
             string s(v.begin(), v.end());
             regex delim(R"/(\r)/");
-            sregex_token_iterator cursor(s.begin(), s.end(), delim, {-1, 0});
-            sregex_token_iterator end;
+            cregex_token_iterator cursor(&s[0], &s[0] + s.size(), delim, {-1, 0});
+            cregex_token_iterator end;
             vector<string> splits(cursor, end);
             return iterate(move(splits));
         }) |
-        filter([](string& s){
+        filter([](const string& s){
             return !s.empty();
-        });
+        }) |
+        publish() |
+        ref_count();
+
+    // filter to last string in each line
+    auto closes = strings |
+        filter(
+            [](const string& s){
+                return s.back() == '\r';
+            }) |
+        Rx::map([](const string&){return 0;});
 
     // group strings by line
-    int group = 0;
     auto linewindows = strings |
-        group_by(
-            [=](string& s) mutable {
-                return s.back() == '\r' ? group++ : group;
-            });
+        window_toggle(closes | start_with(0), [=](int){return closes;});
 
     // reduce the strings for a line into one string
     auto lines = linewindows |
-        flat_map([](grouped_observable<int, string> w){
-            return w | sum();
+        flat_map([&](observable<string> w) {
+            return w | start_with<string>("") | sum() | Rx::map(removespaces);
         });
 
     // print result
@@ -100,26 +115,26 @@ int main()
 }
 ```
 
-#Reactive Extensions
+# Reactive Extensions
 
 >The ReactiveX Observable model allows you to treat streams of asynchronous events with the same sort of simple, composable operations that you use for collections of data items like arrays. It frees you from tangled webs of callbacks, and thereby makes your code more readable and less prone to bugs.
 
 Credit [ReactiveX.io](http://reactivex.io/intro.html)
 
-###Other language implementations
+### Other language implementations
 
 * Java: [RxJava](https://github.com/ReactiveX/RxJava)
 * JavaScript: [RxJS](https://github.com/Reactive-Extensions/RxJS)
 * C#: [Rx.NET](https://github.com/Reactive-Extensions/Rx.NET)
 * [More..](http://reactivex.io/languages.html)
 
-###Resources
+### Resources
 
 * [Intro](http://reactivex.io/intro.html)
 * [Tutorials](http://reactivex.io/tutorials.html)
 * [Marble Diagrams](http://rxmarbles.com/)
 
-#Cloning RxCpp
+# Cloning RxCpp
 
 RxCpp uses a git submodule (in `ext/catch`) for the excellent [Catch](https://github.com/philsquared/Catch) library. The easiest way to ensure that the submodules are included in the clone is to add `--recursive` in the clone command.
 
@@ -128,7 +143,7 @@ git clone --recursive https://github.com/Reactive-Extensions/RxCpp.git
 cd RxCpp
 ```
 
-#Building RxCpp
+# Building RxCpp
 
 * RxCpp is regularly tested on OSX and Windows.
 * RxCpp is regularly built with Clang, Gcc and VC
@@ -136,16 +151,16 @@ cd RxCpp
 
 RxCpp uses CMake to create build files for several platforms and IDE's
 
-###ide builds
+### ide builds
 
-####XCode
+#### XCode
 ```shell
 mkdir projects/build
 cd projects/build
 cmake -G"Xcode" ../CMake -B.
 ```
 
-####Visual Studio 2013
+#### Visual Studio 2013
 ```batch
 mkdir projects\build
 cd projects\build
@@ -153,9 +168,9 @@ cmake -G"Visual Studio 14" ..\CMake -B.
 msbuild rxcpp.sln
 ```
 
-###makefile builds
+### makefile builds
 
-####OSX
+#### OSX
 ```shell
 mkdir projects/build
 cd projects/build
@@ -163,7 +178,7 @@ cmake -G"Unix Makefiles" -DCMAKE_BUILD_TYPE=RelWithDebInfo -B. ../CMake
 make
 ```
 
-####Linux --- Clang
+#### Linux --- Clang
 ```shell
 mkdir projects/build
 cd projects/build
@@ -171,7 +186,7 @@ cmake -G"Unix Makefiles" -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -
 make
 ```
 
-####Linux --- GCC
+#### Linux --- GCC
 ```shell
 mkdir projects/build
 cd projects/build
@@ -179,7 +194,7 @@ cmake -G"Unix Makefiles" -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DCMAKE
 make
 ```
 
-####Windows
+#### Windows
 ```batch
 mkdir projects\build
 cd projects\build
@@ -189,7 +204,7 @@ nmake
 
 The build only produces test and example binaries.
 
-#Running tests
+# Running tests
 
 * You can use the CMake test runner `ctest`
 * You can run the test binaries directly `rxcppv2_test_*`
@@ -198,7 +213,7 @@ Example of by-tag
 
 `rxcppv2_test_subscription [perf]`
 
-#Documentation
+# Documentation
 
 RxCpp uses Doxygen to generate project [documentation](http://reactive-extensions.github.io/RxCpp).
 
@@ -206,8 +221,11 @@ When Doxygen+Graphviz is installed, CMake creates a special build task named `do
 
 [Developers Material](DeveloperManual.md)
 
-#Contributing Code
+# Contributing Code
 
 Before submitting a feature or substantial code contribution please  discuss it with the team and ensure it follows the product roadmap. Note that all code submissions will be rigorously reviewed and tested by the Rx Team, and only those that meet an extremely high bar for both quality and design/roadmap appropriateness will be merged into the source.
 
 You will be prompted to submit a Contributor License Agreement form after submitting your pull request. This needs to only be done once for any Microsoft OSS project. Fill in the [Contributor License Agreement](https://cla2.msopentech.com/) (CLA).
+
+# Microsoft Open Source Code of Conduct
+This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments. 
