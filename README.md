@@ -133,6 +133,11 @@ Credit [ReactiveX.io](http://reactivex.io/intro.html)
 * [Intro](http://reactivex.io/intro.html)
 * [Tutorials](http://reactivex.io/tutorials.html)
 * [Marble Diagrams](http://rxmarbles.com/)
+* [twitter stream analysis app](https://github.com/kirkshoop/twitter)
+  * [![baldwin pass to wilson](https://img.youtube.com/vi/QkvCzShHyVU/0.jpg)](https://www.youtube.com/watch?v=QkvCzShHyVU)
+* _Algorithm Design For Values Distributed In Time_
+  * [![C++ Russia 2016](https://img.youtube.com/vi/Re6DS5Ff0uE/0.jpg)](https://www.youtube.com/watch?v=Re6DS5Ff0uE)
+  * [![CppCon 2016](https://img.youtube.com/vi/FcQURwM806o/0.jpg)](https://www.youtube.com/watch?v=FcQURwM806o)
 
 # Cloning RxCpp
 
