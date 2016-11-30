@@ -1070,29 +1070,15 @@ public:
         static_assert(sizeof...(AN) == 0, "timestamp() was passed too many arguments.");
     }
 
-    /*! Add a new action at the end of the new observable that is returned.
-
-        \tparam LastCall  the type of the action function
-
-        \param lc  the action function
-
-        \return  Observable that emits the same items as the source observable, then invokes the given action.
-
-        \sample
-        \snippet finally.cpp finally sample
-        \snippet output.txt finally sample
-
-        If the source observable generates an error, the final action is still being called:
-        \snippet finally.cpp error finally sample
-        \snippet output.txt error finally sample
-    */
-    template<class LastCall>
-    auto finally(LastCall lc) const
+    /*! @copydoc rx-finally.hpp
+     */
+    template<class... AN>
+    auto finally(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::finally<T, LastCall>(std::move(lc))))
+        -> decltype(observable_member(finally_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return                    lift<T>(rxo::detail::finally<T, LastCall>(std::move(lc)));
+        return      observable_member(finally_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! If an error occurs, take the result from the Selector and subscribe to that instead.

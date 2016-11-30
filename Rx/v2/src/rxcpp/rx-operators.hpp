@@ -102,7 +102,6 @@ public:
 #include "operators/rx-concat.hpp"
 #include "operators/rx-concat_map.hpp"
 #include "operators/rx-connect_forever.hpp"
-#include "operators/rx-finally.hpp"
 #include "operators/rx-flat_map.hpp"
 #include "operators/rx-lift.hpp"
 #include "operators/rx-map.hpp"
@@ -204,6 +203,13 @@ struct filter_tag {
     template<class Included>
     struct include_header{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-filter.hpp>");
+    };
+};
+
+struct finally_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-finally.hpp>");
     };
 };
 
