@@ -1,6 +1,7 @@
 #include "../test.h"
 #include <rxcpp/operators/rx-group_by.hpp>
 #include <rxcpp/operators/rx-reduce.hpp>
+#include <rxcpp/operators/rx-map.hpp>
 
 #include <locale>
 
