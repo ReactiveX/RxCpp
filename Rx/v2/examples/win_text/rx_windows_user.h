@@ -98,7 +98,7 @@ namespace rxcpp { namespace windows_user {
     {
         static LRESULT send_call(HWND w, std::function<LRESULT(Derived&)> f) {
             auto fp = reinterpret_cast<LPARAM>(std::addressof(f));
-            return SendMessage(w, WM_USER+1, 0, fp);
+            return SendMessage(w, WM, 0, fp);
         }
 
         void OnSendCall() {
