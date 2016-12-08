@@ -54,7 +54,7 @@ struct distinct_until_changed
         {
         }
         void on_next(source_value_type v) const {
-            if (remembered.empty() || v != remembered.get()) {
+            if (remembered.empty() || !(v == remembered.get())) {
                 remembered.reset(v);
                 dest.on_next(v);
             }
@@ -96,8 +96,7 @@ struct member_overload<distinct_until_changed_tag>
     template<class Observable,
             class SourceValue = rxu::value_type_t<Observable>,
             class Enabled = rxu::enable_if_all_true_type_t<
-                is_observable<Observable>,
-                is_hashable<SourceValue>>,
+                is_observable<Observable>>,
             class DistinctUntilChanged = rxo::detail::distinct_until_changed<SourceValue>>
     static auto member(Observable&& o)
     -> decltype(o.template lift<SourceValue>(DistinctUntilChanged())) {
