@@ -1,8 +1,9 @@
 #include "../test.h"
 
 namespace {
-    struct not_equal_to {
-        const int value;
+    class not_equal_to {
+        int value;
+    public:
         not_equal_to(int value) : value(value) { }
         bool operator()(int i) const {
             return i != value;
