@@ -4,7 +4,7 @@ namespace {
     struct not_equal_to {
         const int value;
         not_equal_to(int value) : value(value) { }
-        bool operator()(int i) const noexcept {
+        bool operator()(int i) const {
             return i != value;
         }
     };
