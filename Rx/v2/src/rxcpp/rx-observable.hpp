@@ -2940,6 +2940,24 @@ public:
         return  take_until(rxs::timer(when, cn), cn);
     }
 
+    /*! For the first items fulfilling the predicate from this observable emit them from the new observable that is returned.
+
+    \tparam Predicate  the type of the predicate
+
+    \param t  the predicate
+
+    \return  An observable that emits only the first items emitted by the source Observable fulfilling the predicate, or all of the items from the source observable if the predicate never returns false
+*/
+    template<class Predicate>
+    auto take_while(Predicate t) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    ->      observable<T,   rxo::detail::take_while<T, this_type, Predicate>>
+    /// \endcond
+    {
+        return  observable<T,   rxo::detail::take_while<T, this_type, Predicate>>(
+                rxo::detail::take_while<T, this_type, Predicate>(*this, t));
+    }
+
     /*! Infinitely repeat this observable.
 
         \return  An observable that emits the items emitted by the source observable repeatedly and in sequence.
