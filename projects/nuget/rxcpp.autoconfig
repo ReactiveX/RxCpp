@@ -1,19 +1,19 @@
 nuget {
     nuspec {
         id = rxcpp;
-        version : 2.1.1;
+        version : 3.0.1;
         title: Reactive Extensions for C++;
         authors: {Microsoft Open Technologies Inc.};
         owners: {Microsoft Open Technologies Inc.};
-        licenseUrl: "http://rxcpp.codeplex.com/license";
-        projectUrl: "https://rxcpp.codeplex.com/";
+        licenseUrl: "https://github.com/Reactive-Extensions/RxCpp/blob/master/license.md";
+        projectUrl: "https://github.com/Reactive-Extensions/RxCpp";
         iconUrl: "http://go.microsoft.com/fwlink/?LinkId=261274";
         requireLicenseAcceptance:false;
-        summary: "The Reactive Extensions (Rx) asynchronous programming library";
-        description: @"The Reactive Extensions (Rx) is a library for composing asynchronous and event-based programs using observable sequences and operators. Operators are the asynchronous form of standard library algorithms and they operate on Observables instead of iterators. Using Rx, developers represent asynchronous data streams with Observables, query asynchronous data streams using operators, and parameterize the concurrency in the asynchronous data streams using Schedulers.
+        summary: "The Reactive Extensions (Rx) asynchronous algorithm library";
+        description: @"The Reactive Extensions for C++ (RxCpp) is a library of algorithms for values-distributed-in-time. The Range-v3 library does the same for values-distributed-in-space.
         Compiles for gcc, clang and VisualStudio on Linux, OSX and Windows.";
-        releaseNotes: "bug fixes, blocking_observable, tracing hooks and new operators; subscribe_on/observe_on, repeat, skip, finally, group_by, window, retry, scope, start_with, first, last, count";
-        copyright: Copyright 2014;
+        releaseNotes: "rx lite, bug fixes, debounce, exists, contains, any, timeout, with_latest_from, all, timestamp, window_toggle, take_last, skip_last, time_interval, switch_if_empty, default_if_empty, sequence_equal";
+        copyright: Copyright 2016;
         tags: { RxCpp, RxC++, Rx, Reactive, Observable, Functional, native, nativepackage};
     };
 
