@@ -13,26 +13,33 @@ using namespace std;
 using namespace std::chrono;
 
 future<void> intervals(){
-    try {
+
+    {
         printf("early exit from interval on thread\n");
         for co_await (auto c : interval(seconds(1), observe_on_event_loop())) {
             printf("%d\n", c);
             break;
         }
+    }
 
-        printf("interval loop on thread\n");
+    {
+        printf("interval on thread\n");
         for co_await (auto c : interval(seconds(1), observe_on_event_loop()) | take(3)) {
             printf("%d\n", c);
         }
+    }
 
-        printf("current thread loop\n");
+    {
+        printf("current thread\n");
         int last = 0;
         for co_await (auto c : range(1, 100000)) {
             last = c;
         }
         printf("reached %d\n", last);
+    }
 
-        printf("error loop\n");
+    try {
+        printf("error in observable\n");
         for co_await (auto c : error<long>(runtime_error("stopped by error"))) {
             printf("%d\n", c);
         }

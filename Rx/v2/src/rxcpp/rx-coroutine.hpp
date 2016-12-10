@@ -2,6 +2,16 @@
 
 #pragma once
 
+/*! \file rx-coroutine.hpp
+
+    \brief The proposal to add couroutines to the standard adds `co_await`, `for co_await`, `co_yield` and `co_return`. This file adds `begin(observable<>)` & `end(observable<>)` which enables `for co_await` to work with the `observable<>` type.
+
+    for co_await (auto c : interval(seconds(1), observe_on_event_loop()) | take(3)) {
+        printf("%d\n", c);
+    }
+
+*/
+
 #if !defined(RXCPP_RX_COROUTINE_HPP)
 #define RXCPP_RX_COROUTINE_HPP
 
@@ -59,7 +69,7 @@ struct co_observable_inc_awaiter
 };
 
 template<typename Source>
-struct co_observable_iterator
+struct co_observable_iterator : public iterator<input_iterator_tag, typename Source::value_type>
 {
     using value_type = typename Source::value_type;
 
@@ -124,19 +134,19 @@ struct co_observable_iterator_awaiter
         auto st=it.state;
         st->caller = handle;
         st->o |
-            finally([=](){
+            rxo::finally([=](){
                 if (!!st->caller) {
                     auto caller = st->caller;
                     st->caller = nullptr;
                     caller();
                 }
             }) |
-            subscribe<value_type>(
+            rxo::subscribe<value_type>(
                 st->lifetime,
                 // next
                 [=](const value_type& v){
                     if (!st->caller) {terminate();}
-                    st->value = &v;
+                    st->value = addressof(v);
                     auto caller = st->caller;
                     st->caller = nullptr;
                     caller();

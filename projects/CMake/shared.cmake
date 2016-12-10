@@ -5,6 +5,7 @@ FIND_PACKAGE(Threads)
 MESSAGE( STATUS "CMAKE_CXX_COMPILER_ID: " ${CMAKE_CXX_COMPILER_ID} )
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    MESSAGE( STATUS "clang compiler version: " ${CMAKE_CXX_COMPILER_VERSION} )
     MESSAGE( STATUS "using clang settings" )
     set(RX_COMPILE_OPTIONS
         -Wall -Wextra -Werror -Wunused
@@ -12,11 +13,13 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         -ftemplate-depth=1024
         )
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    MESSAGE( STATUS "gnu compiler version: " ${CMAKE_CXX_COMPILER_VERSION} )
     MESSAGE( STATUS "using gnu settings" )
     set(RX_COMPILE_OPTIONS
         -Wall -Wextra -Werror -Wunused
         )
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    MESSAGE( STATUS "msvc compiler version: " ${CMAKE_CXX_COMPILER_VERSION} )
     MESSAGE( STATUS "using msvc settings" )
     set(RX_COMPILE_OPTIONS
         /W4 /WX
@@ -25,6 +28,12 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         /bigobj
         /DUNICODE /D_UNICODE # it is a new millenium
         )
+    if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "19.0.23506.0")
+        set(RX_COMPILE_OPTIONS
+            ${RX_COMPILE_OPTIONS}
+            /AWAIT # enable coroutines
+            )
+    endif()
 endif()
 
 set(RX_COMPILE_FEATURES
