@@ -84,6 +84,7 @@ set(RX_SOURCES
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-zip.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/rx-connectable_observable.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/rx-coordination.hpp
+   ${RXCPP_DIR}/Rx/v2/src/rxcpp/rx-coroutine.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/rx-grouped_observable.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/rx-includes.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/rx-notification.hpp
