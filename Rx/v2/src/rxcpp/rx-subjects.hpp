@@ -17,6 +17,7 @@ namespace rxsub=subjects;
 }
 
 #include "subjects/rx-subject.hpp"
+#include "subjects/rx-async-subject.hpp"
 #include "subjects/rx-behavior.hpp"
 #include "subjects/rx-replaysubject.hpp"
 #include "subjects/rx-synchronize.hpp"

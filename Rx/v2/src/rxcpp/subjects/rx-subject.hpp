@@ -13,12 +13,9 @@ namespace subjects {
 
 namespace detail {
 
-template<class T>
-class multicast_observer
+struct multicast_sync_state_type
+    : public std::enable_shared_from_this<multicast_sync_state_type>
 {
-    typedef subscriber<T> observer_type;
-    typedef std::vector<observer_type> list_type;
-
     struct mode
     {
         enum type {
@@ -30,21 +27,30 @@ class multicast_observer
         };
     };
 
-    struct state_type
-        : public std::enable_shared_from_this<state_type>
+    explicit multicast_sync_state_type(composite_subscription cs)
+        : generation(0)
+        , current(mode::Casting)
+        , lifetime(cs)
     {
-        explicit state_type(composite_subscription cs)
-            : generation(0)
-            , current(mode::Casting)
-            , lifetime(cs)
-        {
-        }
-        std::atomic<int> generation;
-        std::mutex lock;
-        typename mode::type current;
-        std::exception_ptr error;
-        composite_subscription lifetime;
-    };
+    }
+    std::atomic<int> generation;
+    std::mutex lock;
+    typename mode::type current;
+    std::exception_ptr error;
+    composite_subscription lifetime;
+
+    template<class F,class observer_type>
+    void map( std::vector<observer_type> &l, F f ) { for (auto& o : l) f(o); }
+
+};
+
+
+template<class T,class state_type=multicast_sync_state_type>
+class multicast_observer
+{
+    typedef subscriber<T> observer_type;
+    typedef std::vector<observer_type> list_type;
+    typedef typename state_type::mode mode;
 
     struct completer_type
         : public std::enable_shared_from_this<completer_type>
@@ -104,7 +110,7 @@ class multicast_observer
     std::shared_ptr<binder_type> b;
 
 public:
-    typedef subscriber<T, observer<T, detail::multicast_observer<T>>> input_subscriber_type;
+    typedef subscriber<T, observer<T, detail::multicast_observer<T,state_type>>> input_subscriber_type;
 
     explicit multicast_observer(composite_subscription cs)
         : b(std::make_shared<binder_type>(cs))
@@ -127,7 +133,7 @@ public:
         return b->state->lifetime;
     }
     input_subscriber_type get_subscriber() const {
-        return make_subscriber<T>(get_id(), get_subscription(), observer<T, detail::multicast_observer<T>>(*this));
+        return make_subscriber<T>(get_id(), get_subscription(), observer<T, detail::multicast_observer<T,state_type>>(*this));
     }
     bool has_observers() const {
         std::unique_lock<std::mutex> guard(b->state->lock);
@@ -193,11 +199,7 @@ public:
         if (!current_completer || current_completer->observers.empty()) {
             return;
         }
-        for (auto& o : current_completer->observers) {
-            if (o.is_subscribed()) {
-                o.on_next(v);
-            }
-        }
+        current_completer->state->map( current_completer->observers, [&](observer_type &o) { if (o.is_subscribed( )) o.on_next(v); } );
     }
     void on_error(std::exception_ptr e) const {
         std::unique_lock<std::mutex> guard(b->state->lock);
@@ -210,11 +212,7 @@ public:
             ++b->state->generation;
             guard.unlock();
             if (c) {
-                for (auto& o : c->observers) {
-                    if (o.is_subscribed()) {
-                        o.on_error(e);
-                    }
-                }
+                c->state->map( c->observers, [&](observer_type &o) { if (o.is_subscribed( )) o.on_error(e); } );
             }
             s.unsubscribe();
         }
@@ -229,11 +227,7 @@ public:
             ++b->state->generation;
             guard.unlock();
             if (c) {
-                for (auto& o : c->observers) {
-                    if (o.is_subscribed()) {
-                        o.on_completed();
-                    }
-                }
+                c->state->map( c->observers, [&](observer_type &o) { if (o.is_subscribed( )) o.on_completed( ); } );
             }
             s.unsubscribe();
         }
