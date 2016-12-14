@@ -34,10 +34,13 @@ template<typename Source>
 struct co_observable_iterator;
 
 template<typename Source>
-struct co_observable_iterator_state
+struct co_observable_iterator_state : std::enable_shared_from_this<co_observable_iterator_state<Source>>
 {
     using value_type = typename Source::value_type;
 
+    ~co_observable_iterator_state() {
+        lifetime.unsubscribe();
+    }
     explicit co_observable_iterator_state(const Source& o) : o(o) {}
 
     coroutine_handle<> caller{};
@@ -54,18 +57,15 @@ struct co_observable_inc_awaiter
         return false;
     }
 
-    bool await_suspend(const coroutine_handle<>& handle) {
-        if (!it.state->lifetime.is_subscribed()) {return false;}
-        it.state->caller = handle;
+    bool await_suspend(coroutine_handle<> handle) {
+        if (!state->lifetime.is_subscribed()) {return false;}
+        state->caller = handle;
         return true;
     }
 
-    co_observable_iterator<Source>& await_resume() {
-        if (!!it.state->error) {rethrow_exception(it.state->error);}
-        return it;
-    }
+    co_observable_iterator<Source> await_resume();
 
-    co_observable_iterator<Source>& it;
+    shared_ptr<co_observable_iterator_state<Source>> state;
 };
 
 template<typename Source>
@@ -73,22 +73,17 @@ struct co_observable_iterator : public iterator<input_iterator_tag, typename Sou
 {
     using value_type = typename Source::value_type;
 
-    ~co_observable_iterator(){
-        if (!!state) {
-            state->lifetime.unsubscribe();
-        }
-    }
-
     co_observable_iterator() {}
 
     explicit co_observable_iterator(const Source& o) : state(make_shared<co_observable_iterator_state<Source>>(o)) {}
+    explicit co_observable_iterator(const shared_ptr<co_observable_iterator_state<Source>>& o) : state(o) {}
 
     co_observable_iterator(co_observable_iterator&&)=default;
     co_observable_iterator& operator=(co_observable_iterator&&)=default;
 
     co_observable_inc_awaiter<Source> operator++()
     {
-        return co_observable_inc_awaiter<Source>{*this};
+        return co_observable_inc_awaiter<Source>{state};
     }
 
     co_observable_iterator& operator++(int) = delete;
@@ -118,6 +113,12 @@ struct co_observable_iterator : public iterator<input_iterator_tag, typename Sou
 };
 
 template<typename Source>
+co_observable_iterator<Source> co_observable_inc_awaiter<Source>::await_resume() {
+    if (!!state->error) {rethrow_exception(state->error);}
+    return co_observable_iterator<Source>{state};
+}
+
+template<typename Source>
 struct co_observable_iterator_awaiter
 {
     using iterator=co_observable_iterator<Source>;
@@ -130,30 +131,33 @@ struct co_observable_iterator_awaiter
         return false;
     }
 
-    void await_suspend(const coroutine_handle<>& handle) {
-        auto st=it.state;
-        st->caller = handle;
-        st->o |
-            rxo::finally([=](){
-                if (!!st->caller) {
+    void await_suspend(coroutine_handle<> handle) {
+        weak_ptr<co_observable_iterator_state<Source>> wst=it.state;
+        it.state->caller = handle;
+        it.state->o |
+            rxo::finally([wst](){
+                auto st = wst.lock();
+                if (st && !!st->caller) {
                     auto caller = st->caller;
                     st->caller = nullptr;
                     caller();
                 }
             }) |
             rxo::subscribe<value_type>(
-                st->lifetime,
+                it.state->lifetime,
                 // next
-                [=](const value_type& v){
-                    if (!st->caller) {terminate();}
+                [wst](const value_type& v){
+                    auto st = wst.lock();
+                    if (!st || !st->caller) {terminate();}
                     st->value = addressof(v);
                     auto caller = st->caller;
                     st->caller = nullptr;
                     caller();
                 },
                 // error
-                [=](exception_ptr e){
-                    if (!st->caller) {terminate();}
+                [wst](exception_ptr e){
+                    auto st = wst.lock();
+                    if (!st || !st->caller) {terminate();}
                     st->error = e;
                     auto caller = st->caller;
                     st->caller = nullptr;

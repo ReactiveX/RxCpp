@@ -11,6 +11,7 @@ SCENARIO("coroutine completes", "[coroutine]"){
         const rxsc::test::messages<int> on;
 
         auto xs = sc.make_hot_observable({
+            on.next(110, 1),
             on.next(210, 2),
             on.next(310, 10),
             on.completed(350)
@@ -19,6 +20,8 @@ SCENARIO("coroutine completes", "[coroutine]"){
         WHEN("for co_await"){
 
             std::vector<typename rxsc::test::messages<int>::recorded_type> messages;
+
+            w.advance_to(rxsc::test::subscribed_time);
 
             auto d = [&]() -> std::future<void> {
                 try {
@@ -31,7 +34,7 @@ SCENARIO("coroutine completes", "[coroutine]"){
                 }
             }();
 
-            w.advance_to(1000);
+            w.advance_to(rxsc::test::unsubscribed_time);
 
             THEN("the function completed"){
                 REQUIRE(d.wait_for(std::chrono::seconds(0)) == std::future_status::ready);
@@ -49,7 +52,7 @@ SCENARIO("coroutine completes", "[coroutine]"){
 
             THEN("there was 1 subscription/unsubscription to the source"){
                 auto required = rxu::to_vector({
-                    on.subscribe(0, 350)
+                    on.subscribe(200, 350)
                 });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
@@ -68,6 +71,7 @@ SCENARIO("coroutine errors", "[coroutine]"){
         std::runtime_error ex("error in source");
 
         auto xs = sc.make_hot_observable({
+            on.next(110, 1),
             on.next(210, 2),
             on.error(310, ex),
             on.next(310, 10),
@@ -77,6 +81,8 @@ SCENARIO("coroutine errors", "[coroutine]"){
         WHEN("for co_await"){
 
             std::vector<typename rxsc::test::messages<int>::recorded_type> messages;
+
+            w.advance_to(rxsc::test::subscribed_time);
 
             auto d = [&]() -> std::future<void> {
                 try {
@@ -89,7 +95,7 @@ SCENARIO("coroutine errors", "[coroutine]"){
                 }
             }();
 
-            w.advance_to(1000);
+            w.advance_to(rxsc::test::unsubscribed_time);
 
             THEN("the function completed"){
                 REQUIRE(d.wait_for(std::chrono::seconds(0)) == std::future_status::ready);
@@ -106,7 +112,7 @@ SCENARIO("coroutine errors", "[coroutine]"){
 
             THEN("there was 1 subscription/unsubscription to the source"){
                 auto required = rxu::to_vector({
-                    on.subscribe(0, 310)
+                    on.subscribe(200, 310)
                 });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);

@@ -31,7 +31,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "19.0.23506.0")
         set(RX_COMPILE_OPTIONS
             ${RX_COMPILE_OPTIONS}
-            /AWAIT # enable coroutines
+            /await # enable coroutines
             )
     endif()
 endif()
