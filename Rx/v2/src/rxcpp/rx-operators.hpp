@@ -253,7 +253,7 @@ struct reduce_tag {
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-reduce.hpp>");
     };
 };
-struct first_tag  {};
+struct first_tag : reduce_tag {};
 struct last_tag : reduce_tag {};
 struct sum_tag : reduce_tag {};
 struct average_tag : reduce_tag {};
