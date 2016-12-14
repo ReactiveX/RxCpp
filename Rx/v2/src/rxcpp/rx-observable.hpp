@@ -1081,25 +1081,15 @@ public:
         return      observable_member(finally_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /*! If an error occurs, take the result from the Selector and subscribe to that instead.
-
-        \tparam Selector  the actual type of a function of the form `observable<T>(std::exception_ptr)`
-
-        \param s  the function of the form `observable<T>(std::exception_ptr)`
-
-        \return  Observable that emits the items from the source observable and switches to a new observable on error.
-
-        \sample
-        \snippet on_error_resume_next.cpp on_error_resume_next sample
-        \snippet output.txt on_error_resume_next sample
+    /*! @copydoc rx-on_error_resume_next.hpp
     */
-    template<class Selector>
-    auto on_error_resume_next(Selector s) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<rxu::value_type_t<rxo::detail::on_error_resume_next<T, Selector>>>(rxo::detail::on_error_resume_next<T, Selector>(std::move(s))))
-        /// \endcond
+    template<class... AN>
+    auto on_error_resume_next(AN&&... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(on_error_resume_next_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
     {
-        return                    lift<rxu::value_type_t<rxo::detail::on_error_resume_next<T, Selector>>>(rxo::detail::on_error_resume_next<T, Selector>(std::move(s)));
+        return  observable_member(on_error_resume_next_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-map.hpp

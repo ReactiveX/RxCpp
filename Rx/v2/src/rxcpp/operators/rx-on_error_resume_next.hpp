@@ -2,6 +2,21 @@
 
 #pragma once
 
+/*! \file rx-on_error_resume_next.hpp
+
+    \brief If an error occurs, take the result from the Selector and subscribe to that instead.
+
+    \tparam Selector the actual type of a function of the form `observable<T>(std::exception_ptr)`
+
+    \param s the function of the form `observable<T>(std::exception_ptr)`
+
+    \return Observable that emits the items from the source observable and switches to a new observable on error.
+
+    \sample
+    \snippet on_error_resume_next.cpp on_error_resume_next sample
+    \snippet output.txt on_error_resume_next sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_ON_ERROR_RESUME_NEXT_HPP)
 #define RXCPP_OPERATORS_RX_ON_ERROR_RESUME_NEXT_HPP
 
@@ -12,6 +27,16 @@ namespace rxcpp {
 namespace operators {
 
 namespace detail {
+
+template<class... AN>
+struct on_error_resume_next_invalid_arguments {};
+
+template<class... AN>
+struct on_error_resume_next_invalid : public rxo::operator_base<on_error_resume_next_invalid_arguments<AN...>> {
+    using type = observable<on_error_resume_next_invalid_arguments<AN...>, on_error_resume_next_invalid<AN...>>;
+};
+template<class... AN>
+using on_error_resume_next_invalid_t = typename on_error_resume_next_invalid<AN...>::type;
 
 
 template<class T, class Selector>
@@ -77,29 +102,37 @@ struct on_error_resume_next
     }
 };
 
-template<class Selector>
-class on_error_resume_next_factory
+}
+
+/*! @copydoc rx-on_error_resume_next.hpp
+*/
+template<class... AN>
+auto on_error_resume_next(AN&&... an)
+    ->     operator_factory<on_error_resume_next_tag, AN...> {
+    return operator_factory<on_error_resume_next_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<on_error_resume_next_tag>
 {
-    typedef rxu::decay_t<Selector> select_type;
-    select_type selector;
-public:
-    on_error_resume_next_factory(select_type s) : selector(std::move(s)) {}
-    template<class Observable>
-    auto operator()(Observable&& source)
-        -> decltype(source.template lift<rxu::value_type_t<on_error_resume_next<rxu::value_type_t<rxu::decay_t<Observable>>, select_type>>>(on_error_resume_next<rxu::value_type_t<rxu::decay_t<Observable>>, select_type>(selector))) {
-        return      source.template lift<rxu::value_type_t<on_error_resume_next<rxu::value_type_t<rxu::decay_t<Observable>>, select_type>>>(on_error_resume_next<rxu::value_type_t<rxu::decay_t<Observable>>, select_type>(selector));
+    template<class Observable, class Selector,
+            class SourceValue = rxu::value_type_t<Observable>,
+            class OnErrorResumeNext = rxo::detail::on_error_resume_next<SourceValue, rxu::decay_t<Selector>>,
+            class Value = rxu::value_type_t<OnErrorResumeNext>>
+    static auto member(Observable&& o, Selector&& p)
+    -> decltype(o.template lift<Value>(OnErrorResumeNext(std::forward<Selector>(p)))) {
+        return      o.template lift<Value>(OnErrorResumeNext(std::forward<Selector>(p)));
+    }
+
+    template<class... AN>
+    static operators::detail::on_error_resume_next_invalid_t<AN...> member(const AN&...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "on_error_resume_next takes (Selector)");
     }
 };
-
-}
-
-template<class Selector>
-auto on_error_resume_next(Selector&& p)
-    ->      detail::on_error_resume_next_factory<Selector> {
-    return  detail::on_error_resume_next_factory<Selector>(std::forward<Selector>(p));
-}
-
-}
 
 }
 
