@@ -112,7 +112,6 @@ public:
 #include "operators/rx-ref_count.hpp"
 #include "operators/rx-repeat.hpp"
 #include "operators/rx-replay.hpp"
-#include "operators/rx-retry.hpp"
 #include "operators/rx-sample_time.hpp"
 #include "operators/rx-scan.hpp"
 #include "operators/rx-sequence_equal.hpp"
@@ -259,6 +258,13 @@ struct sum_tag : reduce_tag {};
 struct average_tag : reduce_tag {};
 struct min_tag : reduce_tag {};
 struct max_tag : reduce_tag {};
+
+struct retry_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-retry.hpp>");
+    };
+};
 
 struct with_latest_from_tag {
     template<class Included>

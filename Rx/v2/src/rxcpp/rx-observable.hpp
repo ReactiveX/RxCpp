@@ -2995,47 +2995,15 @@ public:
             rxo::detail::repeat<T, this_type, Count>(*this, t));
     }
 
-    /*! Infinitely retry this observable.
-
-        \return  An observable that mirrors the source observable, resubscribing to it if it calls on_error.
-
-        \sample
-        \snippet retry.cpp retry sample
-        \snippet output.txt retry sample
-    */
+    /*! @copydoc rx-retry.hpp
+     */
     template<class... AN>
-    auto retry(AN**...) const
+    auto retry(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        ->      observable<T, rxo::detail::retry<T, this_type, int>>
+        -> decltype(observable_member(retry_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return  observable<T, rxo::detail::retry<T, this_type, int>>(
-            rxo::detail::retry<T, this_type, int>(*this, 0));
-        static_assert(sizeof...(AN) == 0, "retry() was passed too many arguments.");
-    }
-
-    /*! Retry this observable for the given number of times.
-
-        \tparam Count  the type of the counter
-
-        \param t  the number of retries
-
-        \return  An observable that mirrors the source observable, resubscribing to it if it calls on_error up to a specified number of retries.
-
-        Call to retry(0) infinitely retries the source observable.
-
-        \sample
-        \snippet retry.cpp retry count sample
-        \snippet output.txt retry count sample
-    */
-    template<class Count>
-    auto retry(Count t) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        ->      observable<T, rxo::detail::retry<T, this_type, Count>>
-        /// \endcond
-    {
-        return  observable<T, rxo::detail::retry<T, this_type, Count>>(
-            rxo::detail::retry<T, this_type, Count>(*this, t));
+        return      observable_member(retry_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! Start with the supplied values, then concatenate this observable.
