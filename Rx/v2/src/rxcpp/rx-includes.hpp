@@ -196,6 +196,7 @@
 #include "operators/rx-ignore_elements.hpp"
 #include "operators/rx-map.hpp"
 #include "operators/rx-reduce.hpp"
+#include "operators/rx-take_while.hpp"
 #include "operators/rx-with_latest_from.hpp"
 #include "operators/rx-zip.hpp"
 #endif

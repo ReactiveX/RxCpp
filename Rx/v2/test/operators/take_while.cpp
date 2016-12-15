@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-take_while.hpp>
 
 namespace {
     class not_equal_to {
