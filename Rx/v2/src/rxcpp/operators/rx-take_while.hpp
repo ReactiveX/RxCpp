@@ -2,6 +2,17 @@
 
 #pragma once
 
+/*! \file rx-take_while.hpp
+
+    \brief For the first items fulfilling the predicate from this observable emit them from the new observable that is returned.
+
+    \tparam Predicate  the type of the predicate
+
+    \param t  the predicate
+
+    \return  An observable that emits only the first items emitted by the source Observable fulfilling the predicate, or all of the items from the source observable if the predicate never returns false
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_TAKE_WHILE_HPP)
 #define RXCPP_OPERATORS_RX_TAKE_WHILE_HPP
 
@@ -13,116 +24,99 @@ namespace operators {
 
 namespace detail {
 
-template<class T, class Observable, class Predicate>
-struct take_while : public operator_base<T>
-{
-    typedef rxu::decay_t<Observable> source_type;
-    typedef rxu::decay_t<Predicate> test_type;
-    struct values
-    {
-        values(source_type s, test_type t)
-            : source(std::move(s))
-            , test(std::move(t))
-        {
-        }
-        source_type source;
-        test_type test;
-    };
-    values initial;
+template<class... AN>
+struct take_while_invalid_arguments {};
 
-    take_while(source_type s, test_type t)
-        : initial(std::move(s), std::move(t))
+template<class... AN>
+struct take_while_invalid : public rxo::operator_base<take_while_invalid_arguments<AN...>> {
+    using type = observable<take_while_invalid_arguments<AN...>, take_while_invalid<AN...>>;
+};
+template<class... AN>
+using take_while_invalid_t = typename take_while_invalid<AN...>::type;
+
+template<class T, class Predicate>
+struct take_while
+{
+    typedef rxu::decay_t<T> source_value_type;
+    typedef rxu::decay_t<Predicate> test_type;
+    test_type test;
+
+
+    take_while(test_type t)
+        : test(std::move(t))
     {
     }
 
-    struct mode
+    template<class Subscriber>
+    struct take_while_observer
     {
-        enum type {
-            taking,    // capture messages
-            triggered, // ignore messages
-            errored,   // error occured
-            stopped    // observable completed
-        };
+        typedef take_while_observer<Subscriber> this_type;
+        typedef source_value_type value_type;
+        typedef rxu::decay_t<Subscriber> dest_type;
+        typedef observer<value_type, this_type> observer_type;
+        dest_type dest;
+        test_type test;
+
+        take_while_observer(dest_type d, test_type t)
+                : dest(std::move(d))
+                , test(std::move(t))
+        {
+        }
+        void on_next(source_value_type v) const {
+            if (test(v)) {
+                dest.on_next(v);
+            } else {
+                dest.on_completed();
+            }
+        }
+        void on_error(std::exception_ptr e) const {
+            dest.on_error(e);
+        }
+        void on_completed() const {
+            dest.on_completed();
+        }
+
+        static subscriber<value_type, observer_type> make(dest_type d, test_type t) {
+            return make_subscriber<value_type>(d, this_type(d, std::move(t)));
+        }
     };
 
     template<class Subscriber>
-    void on_subscribe(const Subscriber& s) const {
-
-        typedef Subscriber output_type;
-        struct state_type
-            : public std::enable_shared_from_this<state_type>
-            , public values
-        {
-            state_type(const values& i, const output_type& oarg)
-                : values(i)
-                , mode_value(mode::taking)
-                , out(oarg)
-            {
-            }
-            typename mode::type mode_value;
-            output_type out;
-        };
-        // take a copy of the values for each subscription
-        auto state = std::make_shared<state_type>(initial, s);
-
-        composite_subscription source_lifetime;
-
-        s.add(source_lifetime);
-
-        state->source.subscribe(
-        // split subscription lifetime
-            source_lifetime,
-        // on_next
-            [state, source_lifetime](T t) {
-                if (state->mode_value < mode::triggered) {
-                    if (state->test(t)) {
-                        state->out.on_next(t);
-                    } else {
-                        state->mode_value = mode::triggered;
-                        // must shutdown source before signaling completion
-                        source_lifetime.unsubscribe();
-                        state->out.on_completed();
-                    }
-                }
-            },
-        // on_error
-            [state](std::exception_ptr e) {
-                state->mode_value = mode::errored;
-                state->out.on_error(e);
-            },
-        // on_completed
-            [state]() {
-                state->mode_value = mode::stopped;
-                state->out.on_completed();
-            }
-        );
+    auto operator()(Subscriber dest) const
+    -> decltype(take_while_observer<Subscriber>::make(std::move(dest), test)) {
+        return  take_while_observer<Subscriber>::make(std::move(dest), test);
     }
 };
 
-template<class T>
-class take_while_factory
+}
+
+template<class... AN>
+auto take_while(AN&&... an)
+    ->      operator_factory<take_while_tag, AN...> {
+        return operator_factory<take_while_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+    }
+
+}
+
+template<>
+struct member_overload<take_while_tag>
 {
-    typedef rxu::decay_t<T> test_type;
-    test_type test;
-public:
-    take_while_factory(test_type t) : test(std::move(t)) {}
-    template<class Observable>
-    auto operator()(Observable&& source)
-        ->      observable<rxu::value_type_t<rxu::decay_t<Observable>>,   take_while<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, test_type>> {
-        return  observable<rxu::value_type_t<rxu::decay_t<Observable>>,   take_while<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, test_type>>(
-                                                                          take_while<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, test_type>(std::forward<Observable>(source), test));
+    template<class Observable, class Predicate,
+            class SourceValue = rxu::value_type_t<Observable>,
+            class TakeWhile = rxo::detail::take_while<SourceValue, rxu::decay_t<Predicate>>>
+    static auto member(Observable&& o, Predicate&& p)
+    -> decltype(o.template lift<SourceValue>(TakeWhile(std::forward<Predicate>(p)))) {
+        return      o.template lift<SourceValue>(TakeWhile(std::forward<Predicate>(p)));
+    }
+
+    template<class... AN>
+    static operators::detail::take_while_invalid_t<AN...> member(const AN&...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "take_while takes (Predicate)");
     }
 };
 
-}
-
-template<class T>
-auto take_while(T&& t)
-    ->      detail::take_while_factory<T> {
-    return  detail::take_while_factory<T>(std::forward<T>(t));
-}
-
-}
 
 }
 
