@@ -107,7 +107,6 @@ public:
 #include "operators/rx-merge.hpp"
 #include "operators/rx-multicast.hpp"
 #include "operators/rx-observe_on.hpp"
-#include "operators/rx-on_error_resume_next.hpp"
 #include "operators/rx-pairwise.hpp"
 #include "operators/rx-publish.hpp"
 #include "operators/rx-ref_count.hpp"
@@ -234,6 +233,13 @@ struct map_tag {
     };
 };
 
+struct on_error_resume_next_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-on_error_resume_next.hpp>");
+    };
+};
+
 class empty_error: public std::runtime_error
 {
     public:
@@ -247,7 +253,7 @@ struct reduce_tag {
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-reduce.hpp>");
     };
 };
-struct first_tag  {};
+struct first_tag : reduce_tag {};
 struct last_tag : reduce_tag {};
 struct sum_tag : reduce_tag {};
 struct average_tag : reduce_tag {};

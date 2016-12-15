@@ -108,6 +108,7 @@ Desktop.ini
 build/*
 dest/*
 .vscode/*
+nmake/*
 projects/*
 !projects/CMake/CMakeLists.txt
 !projects/CMake/shared.cmake
