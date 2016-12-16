@@ -126,7 +126,6 @@ public:
 #include "operators/rx-take.hpp"
 #include "operators/rx-take_last.hpp"
 #include "operators/rx-take_until.hpp"
-#include "operators/rx-take_while.hpp"
 #include "operators/rx-tap.hpp"
 #include "operators/rx-time_interval.hpp"
 #include "operators/rx-timeout.hpp"
@@ -258,6 +257,13 @@ struct sum_tag : reduce_tag {};
 struct average_tag : reduce_tag {};
 struct min_tag : reduce_tag {};
 struct max_tag : reduce_tag {};
+
+struct take_while_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-take_while.hpp>");
+    };
+};
 
 struct retry_tag {
     template<class Included>
