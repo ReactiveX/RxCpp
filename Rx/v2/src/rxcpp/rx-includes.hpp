@@ -198,6 +198,7 @@
 #include "operators/rx-on_error_resume_next.hpp"
 #include "operators/rx-reduce.hpp"
 #include "operators/rx-take_while.hpp"
+#include "operators/rx-retry.hpp"
 #include "operators/rx-with_latest_from.hpp"
 #include "operators/rx-zip.hpp"
 #endif

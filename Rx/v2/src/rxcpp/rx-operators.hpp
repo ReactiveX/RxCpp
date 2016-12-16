@@ -112,7 +112,6 @@ public:
 #include "operators/rx-ref_count.hpp"
 #include "operators/rx-repeat.hpp"
 #include "operators/rx-replay.hpp"
-#include "operators/rx-retry.hpp"
 #include "operators/rx-sample_time.hpp"
 #include "operators/rx-scan.hpp"
 #include "operators/rx-sequence_equal.hpp"
@@ -263,6 +262,13 @@ struct take_while_tag {
     template<class Included>
     struct include_header{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-take_while.hpp>");
+    };
+};
+
+struct retry_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-retry.hpp>");
     };
 };
 
