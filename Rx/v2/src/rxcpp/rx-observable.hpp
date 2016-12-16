@@ -742,6 +742,28 @@ public:
         return  observable_member(all_tag{},                *this, std::forward<AN>(an)...);
     }
 
+    /*! @copydoc rxcpp::operators::is_empty
+     */
+    template<class... AN>
+    auto is_empty(AN&&... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(is_empty_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
+    {
+        return  observable_member(is_empty_tag{},                *this, std::forward<AN>(an)...);
+    }
+
+    /*! @copydoc rx-any.hpp
+     */
+    template<class... AN>
+    auto any(AN&&... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(any_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
+    {
+        return  observable_member(any_tag{},                *this, std::forward<AN>(an)...);
+    }
+
     /*! @copydoc rxcpp::operators::exists
      */
     template<class... AN>

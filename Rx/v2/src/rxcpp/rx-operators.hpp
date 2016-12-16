@@ -145,7 +145,9 @@ struct all_tag {
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-all.hpp>");
     };
 };
-    
+
+struct is_empty_tag : all_tag {};
+
 struct any_tag {
     template<class Included>
     struct include_header{
@@ -155,7 +157,7 @@ struct any_tag {
 
 struct exists_tag : any_tag {};
 struct contains_tag : any_tag {};
-    
+
 struct combine_latest_tag {
     template<class Included>
     struct include_header{

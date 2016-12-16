@@ -30,6 +30,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/sources/scope.cpp
     ${TEST_DIR}/sources/timer.cpp
     ${TEST_DIR}/operators/all.cpp
+    ${TEST_DIR}/operators/any.cpp
     ${TEST_DIR}/operators/amb.cpp
     ${TEST_DIR}/operators/amb_variadic.cpp
     ${TEST_DIR}/operators/buffer.cpp
@@ -49,6 +50,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/flat_map.cpp
     ${TEST_DIR}/operators/group_by.cpp
     ${TEST_DIR}/operators/ignore_elements.cpp
+    ${TEST_DIR}/operators/is_empty.cpp
     ${TEST_DIR}/operators/lift.cpp
     ${TEST_DIR}/operators/map.cpp
     ${TEST_DIR}/operators/merge.cpp
