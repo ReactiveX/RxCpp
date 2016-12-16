@@ -170,7 +170,7 @@ struct member_overload<is_empty_tag>
     }
 
     template<class... AN>
-    static operators::detail::all_invalid_t<AN...> member(const AN&...) {
+    static operators::detail::all_invalid_t<AN...> member(AN...) {
         std::terminate();
         return {};
         static_assert(sizeof...(AN) == 10000, "is_empty takes no arguments");
