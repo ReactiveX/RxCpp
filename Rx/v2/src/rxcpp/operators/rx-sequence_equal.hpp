@@ -230,17 +230,17 @@ struct member_overload<sequence_equal_tag>
     }
 
     template<class Observable, class OtherObservable, class BinaryPredicate,
+        class IsCoordination = is_coordination<BinaryPredicate>,
         class Enabled = rxu::enable_if_all_true_type_t<
             is_observable<Observable>,
             is_observable<OtherObservable>,
-            rxu::negation<is_coordination<BinaryPredicate>>>,
+            rxu::negation<IsCoordination>>,
         class SourceValue = rxu::value_type_t<Observable>,
         class SequenceEqual = rxo::detail::sequence_equal<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<OtherObservable>, rxu::decay_t<BinaryPredicate>, identity_one_worker>,
         class Value = rxu::value_type_t<SequenceEqual>,
         class Result = observable<Value, SequenceEqual>>
-    static auto member(Observable&& o, OtherObservable&& t, BinaryPredicate&& pred)
-    -> decltype(Result(SequenceEqual(std::forward<Observable>(o), std::forward<OtherObservable>(t), std::forward<BinaryPredicate>(pred), identity_current_thread()))) {
-        return  Result(SequenceEqual(std::forward<Observable>(o), std::forward<OtherObservable>(t), std::forward<BinaryPredicate>(pred), identity_current_thread()));
+    static Result member(Observable&& o, OtherObservable&& t, BinaryPredicate&& pred) {
+        return Result(SequenceEqual(std::forward<Observable>(o), std::forward<OtherObservable>(t), std::forward<BinaryPredicate>(pred), identity_current_thread()));
     }
 
     template<class Observable, class OtherObservable, class Coordination,
@@ -252,9 +252,8 @@ struct member_overload<sequence_equal_tag>
         class SequenceEqual = rxo::detail::sequence_equal<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<OtherObservable>, rxu::equal_to<>, rxu::decay_t<Coordination>>,
         class Value = rxu::value_type_t<SequenceEqual>,
         class Result = observable<Value, SequenceEqual>>
-    static auto member(Observable&& o, OtherObservable&& t, Coordination&& cn)
-    -> decltype(Result(SequenceEqual(std::forward<Observable>(o), std::forward<OtherObservable>(t), rxu::equal_to<>(), std::forward<Coordination>(cn)))) {
-        return  Result(SequenceEqual(std::forward<Observable>(o), std::forward<OtherObservable>(t), rxu::equal_to<>(), std::forward<Coordination>(cn)));
+    static Result member(Observable&& o, OtherObservable&& t, Coordination&& cn) {
+        return Result(SequenceEqual(std::forward<Observable>(o), std::forward<OtherObservable>(t), rxu::equal_to<>(), std::forward<Coordination>(cn)));
     }
 
     template<class Observable, class OtherObservable, class BinaryPredicate, class Coordination,
