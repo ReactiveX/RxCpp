@@ -114,7 +114,6 @@ public:
 #include "operators/rx-replay.hpp"
 #include "operators/rx-sample_time.hpp"
 #include "operators/rx-scan.hpp"
-#include "operators/rx-sequence_equal.hpp"
 #include "operators/rx-skip.hpp"
 #include "operators/rx-skip_last.hpp"
 #include "operators/rx-skip_until.hpp"
@@ -271,6 +270,13 @@ struct retry_tag {
     template<class Included>
     struct include_header{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-retry.hpp>");
+    };
+};
+
+struct sequence_equal_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-sequence_equal.hpp>");
     };
 };
 

@@ -1,4 +1,5 @@
 #include "../test.h"
+#include "rxcpp/operators/rx-sequence_equal.hpp"
 
 SCENARIO("sequence_equal - source never emits", "[sequence_equal][operators]"){
     GIVEN("two sources"){
@@ -24,8 +25,8 @@ SCENARIO("sequence_equal - source never emits", "[sequence_equal][operators]"){
             auto res = w.start(
                 [xs, ys]() {
                     return xs
-                            .sequence_equal(ys)
-                            .as_dynamic(); // forget type to workaround lambda deduction bug on msvc 2013
+                            | rxo::sequence_equal(ys)
+                            | rxo::as_dynamic(); // forget type to workaround lambda deduction bug on msvc 2013
                 }
             );
 
