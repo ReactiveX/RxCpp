@@ -116,6 +116,20 @@ auto all(AN&&... an)
     return operator_factory<all_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
 }
 
+/*! \brief Returns an Observable that emits true if the source Observable is empty, otherwise false.
+
+    \return An observable that emits a boolean value.
+
+    \sample
+    \snippet is_empty.cpp is_empty sample
+    \snippet output.txt is_empty sample
+*/
+template<class... AN>
+auto is_empty(AN&&... an)
+->     operator_factory<is_empty_tag, AN...> {
+    return operator_factory<is_empty_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
 }
 
 template<>
@@ -137,6 +151,29 @@ struct member_overload<all_tag>
         std::terminate();
         return {};
         static_assert(sizeof...(AN) == 10000, "all takes (Predicate)");
+    }
+};
+
+template<>
+struct member_overload<is_empty_tag>
+{
+    template<class Observable,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>>,
+        class Predicate = std::function<bool(SourceValue)>,
+        class IsEmpty = rxo::detail::all<SourceValue, rxu::decay_t<Predicate>>,
+        class Value = rxu::value_type_t<IsEmpty>>
+    static auto member(Observable&& o)
+    -> decltype(o.template lift<Value>(IsEmpty(nullptr))) {
+        return  o.template lift<Value>(IsEmpty([](SourceValue) { return false; }));
+    }
+
+    template<class... AN>
+    static operators::detail::all_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "is_empty takes no arguments");
     }
 };
 
