@@ -780,6 +780,17 @@ namespace detail {
 template <class T, class Decayed = decay_t<T>>
 struct is_duration : detail::is_duration<Decayed> {};
 
+
+// C++17 negation
+namespace detail {
+    template<class T>
+    struct not_value : std::conditional<T::value, std::false_type, std::true_type>::type {
+    };
+}
+
+template <class T>
+struct negation : detail::not_value<T> {};
+
 }
 namespace rxu=util;
 
