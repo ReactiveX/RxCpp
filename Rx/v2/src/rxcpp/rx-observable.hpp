@@ -2958,26 +2958,15 @@ public:
         return      rxo::start_with(std::move(v0), std::move(vn)...)(*this);
     }
 
-    /*! Take values pairwise from this observable.
-
-        \return  Observable that emits tuples of two the most recent items emitted by the source observable.
-
-        \sample
-        \snippet pairwise.cpp pairwise sample
-        \snippet output.txt pairwise sample
-
-        If the source observable emits less than two items, no pairs are emitted  by the source observable:
-        \snippet pairwise.cpp pairwise short sample
-        \snippet output.txt pairwise short sample
-    */
+    /*! @copydoc rx-pairwise.hpp
+     */
     template<class... AN>
-    auto pairwise(AN**...) const
+    auto pairwise(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<rxu::value_type_t<rxo::detail::pairwise<T>>>(rxo::detail::pairwise<T>()))
+        -> decltype(observable_member(pairwise_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return                    lift<rxu::value_type_t<rxo::detail::pairwise<T>>>(rxo::detail::pairwise<T>());
-        static_assert(sizeof...(AN) == 0, "pairwise() was passed too many arguments.");
+        return      observable_member(pairwise_tag{},                *this, std::forward<AN>(an)...);
     }
 };
 
