@@ -2,6 +2,21 @@
 
 #pragma once
 
+/*! \file rx-pairwise.hpp
+
+    \brief Take values pairwise from this observable.
+
+    \return Observable that emits tuples of two the most recent items emitted by the source observable.
+
+    \sample
+    \snippet pairwise.cpp pairwise sample
+    \snippet output.txt pairwise sample
+
+    If the source observable emits less than two items, no pairs are emitted  by the source observable:
+    \snippet pairwise.cpp pairwise short sample
+    \snippet output.txt pairwise short sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_PAIRWISE_HPP)
 #define RXCPP_OPERATORS_RX_PAIRWISE_HPP
 
@@ -12,6 +27,16 @@ namespace rxcpp {
 namespace operators {
 
 namespace detail {
+
+template<class... AN>
+struct pairwise_invalid_arguments {};
+
+template<class... AN>
+struct pairwise_invalid : public rxo::operator_base<pairwise_invalid_arguments<AN...>> {
+    using type = observable<pairwise_invalid_arguments<AN...>, pairwise_invalid<AN...>>;
+};
+template<class... AN>
+using pairwise_invalid_t = typename pairwise_invalid<AN...>::type;
 
 template<class T>
 struct pairwise
@@ -62,24 +87,39 @@ struct pairwise
     }
 };
 
-class pairwise_factory
+}
+
+/*! @copydoc rx-pairwise.hpp
+*/
+template<class... AN>
+auto pairwise(AN&&... an)
+    ->     operator_factory<pairwise_tag, AN...> {
+    return operator_factory<pairwise_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<pairwise_tag>
 {
-public:
-    template<class Observable>
-    auto operator()(Observable&& source)
-        -> decltype(source.template lift<rxu::value_type_t<pairwise<rxu::value_type_t<rxu::decay_t<Observable>>>>>(pairwise<rxu::value_type_t<rxu::decay_t<Observable>>>())) {
-        return      source.template lift<rxu::value_type_t<pairwise<rxu::value_type_t<rxu::decay_t<Observable>>>>>(pairwise<rxu::value_type_t<rxu::decay_t<Observable>>>());
+    template<class Observable,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Pairwise = rxo::detail::pairwise<SourceValue>,
+        class Value = rxu::value_type_t<Pairwise>>
+    static auto member(Observable&& o)
+    -> decltype(o.template lift<Value>(Pairwise())) {
+        return  o.template lift<Value>(Pairwise());
+    }
+
+    template<class... AN>
+    static operators::detail::pairwise_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "pairwise takes no arguments");
     }
 };
-
-}
-
-inline auto pairwise()
-    ->      detail::pairwise_factory {
-    return  detail::pairwise_factory();
-}
-
-}
 
 }
 
