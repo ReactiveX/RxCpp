@@ -100,6 +100,7 @@ if(DOXYGEN_FOUND)
         ${DOXY_EXAMPLES_SRC_DIR}/take.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/take_last.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/take_until.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/take_while.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/tap.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/time_interval.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/timeout.cpp
@@ -107,8 +108,7 @@ if(DOXYGEN_FOUND)
         ${DOXY_EXAMPLES_SRC_DIR}/timestamp.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/with_latest_from.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/window.cpp
-        ${DOXY_EXAMPLES_SRC_DIR}/zip.cpp
-    )
+        ${DOXY_EXAMPLES_SRC_DIR}/zip.cpp)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${DOXY_EXAMPLES_BIN_DIR})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG ${DOXY_EXAMPLES_BIN_DIR})
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE ${DOXY_EXAMPLES_BIN_DIR})

@@ -11,6 +11,10 @@
     \param t  the predicate
 
     \return  An observable that emits only the first items emitted by the source Observable fulfilling the predicate, or all of the items from the source observable if the predicate never returns false
+
+    \sample
+    \snippet take_while.cpp take_while sample
+    \snippet output.txt take_while sample
 */
 
 #if !defined(RXCPP_OPERATORS_RX_TAKE_WHILE_HPP)
