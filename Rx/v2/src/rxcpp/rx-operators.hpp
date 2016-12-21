@@ -265,7 +265,6 @@ struct take_while_tag {
     };
 };
 
-
 struct pairwise_tag {
     template<class Included>
     struct include_header{
