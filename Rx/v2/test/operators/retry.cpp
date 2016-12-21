@@ -1,4 +1,6 @@
 #include "../test.h"
+#include "rxcpp/operators/rx-retry.hpp"
+
 
 SCENARIO("retry, basic test", "[retry][operators]") {
     GIVEN("hot observable of 3x4x7 ints with errors inbetween the groups. Infinite retry.") {
@@ -32,9 +34,9 @@ SCENARIO("retry, basic test", "[retry][operators]") {
             auto res = w.start(
                 [&]() {
                 return xs
-                    .retry()
+                    | rxo::retry()
                     // forget type to workaround lambda deduction bug on msvc 2013
-                    .as_dynamic();
+                    | rxo::as_dynamic();
             }
             );
 

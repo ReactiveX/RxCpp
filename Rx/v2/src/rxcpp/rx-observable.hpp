@@ -742,6 +742,28 @@ public:
         return  observable_member(all_tag{},                *this, std::forward<AN>(an)...);
     }
 
+    /*! @copydoc rxcpp::operators::is_empty
+     */
+    template<class... AN>
+    auto is_empty(AN&&... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(is_empty_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
+    {
+        return  observable_member(is_empty_tag{},                *this, std::forward<AN>(an)...);
+    }
+
+    /*! @copydoc rx-any.hpp
+     */
+    template<class... AN>
+    auto any(AN&&... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(any_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
+    {
+        return  observable_member(any_tag{},                *this, std::forward<AN>(an)...);
+    }
+
     /*! @copydoc rxcpp::operators::exists
      */
     template<class... AN>
@@ -816,105 +838,15 @@ public:
         return                  switch_if_empty(rxs::from(std::move(v)));
     }
 
-    /*! Determine whether two Observables emit the same sequence of items.
-
-        \tparam OtherSource      the type of the other observable.
-        \tparam BinaryPredicate  the type of the value comparing function. The signature should be equivalent to the following: bool pred(const T1& a, const T2& b);
-        \tparam Coordination  the type of the scheduler.
-
-        \param t     the other Observable that emits items to compare.
-        \param pred  the function that implements comparison of two values.
-        \param cn    the scheduler.
-
-        \return  Observable that emits true only if both sequences terminate normally after emitting the same sequence of items in the same order; otherwise it will emit false.
-
-        \sample
-        \snippet sequence_equal.cpp sequence_equal sample
-        \snippet output.txt sequence_equal sample
-    */
-    template<class OtherSource, class BinaryPredicate, class Coordination>
-    auto sequence_equal(OtherSource&& t, BinaryPredicate&& pred, Coordination&& cn) const
-    /// \cond SHOW_SERVICE_MEMBERS
-    -> typename std::enable_if<is_observable<OtherSource>::value,
-                observable<bool, rxo::detail::sequence_equal<T, this_type, OtherSource, BinaryPredicate, Coordination>>>::type
-    /// \endcond
+    /*! @copydoc rx-sequence_equal.hpp
+     */
+    template<class... AN>
+    auto sequence_equal(AN... an) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(observable_member(sequence_equal_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        /// \endcond
     {
-        return  observable<bool, rxo::detail::sequence_equal<T, this_type, OtherSource, BinaryPredicate, Coordination>>(
-                rxo::detail::sequence_equal<T, this_type, OtherSource, BinaryPredicate, Coordination>(*this, std::forward<OtherSource>(t), std::forward<BinaryPredicate>(pred), std::forward<Coordination>(cn)));
-    }
-
-
-    /*! Determine whether two Observables emit the same sequence of items.
-
-        \tparam OtherSource      the type of the other observable.
-        \tparam BinaryPredicate  the type of the value comparing function. The signature should be equivalent to the following: bool pred(const T1& a, const T2& b);
-
-        \param t     the other Observable that emits items to compare.
-        \param pred  the function that implements comparison of two values.
-
-        \return  Observable that emits true only if both sequences terminate normally after emitting the same sequence of items in the same order; otherwise it will emit false.
-
-        \sample
-        \snippet sequence_equal.cpp sequence_equal sample
-        \snippet output.txt sequence_equal sample
-    */
-    template<class OtherSource, class BinaryPredicate>
-    auto sequence_equal(OtherSource&& t, BinaryPredicate&& pred) const
-    /// \cond SHOW_SERVICE_MEMBERS
-    -> typename std::enable_if<is_observable<OtherSource>::value && !is_coordination<BinaryPredicate>::value,
-                observable<bool, rxo::detail::sequence_equal<T, this_type, OtherSource, BinaryPredicate, identity_one_worker>>>::type
-    /// \endcond
-    {
-        return  observable<bool, rxo::detail::sequence_equal<T, this_type, OtherSource, BinaryPredicate, identity_one_worker>>(
-                rxo::detail::sequence_equal<T, this_type, OtherSource, BinaryPredicate, identity_one_worker>(*this, std::forward<OtherSource>(t), std::forward<BinaryPredicate>(pred), identity_one_worker(rxsc::make_current_thread())));
-    }
-
-    /*! Determine whether two Observables emit the same sequence of items.
-
-        \tparam OtherSource   the type of the other observable.
-        \tparam Coordination  the type of the scheduler.
-
-        \param t  the other Observable that emits items to compare.
-        \param cn the scheduler.
-
-        \return  Observable that emits true only if both sequences terminate normally after emitting the same sequence of items in the same order; otherwise it will emit false.
-
-        \sample
-        \snippet sequence_equal.cpp sequence_equal sample
-        \snippet output.txt sequence_equal sample
-    */
-    template<class OtherSource, class Coordination>
-    auto sequence_equal(OtherSource&& t, Coordination&& cn) const
-    /// \cond SHOW_SERVICE_MEMBERS
-    -> typename std::enable_if<is_observable<OtherSource>::value && is_coordination<Coordination>::value,
-                observable<bool, rxo::detail::sequence_equal<T, this_type, OtherSource, rxu::equal_to<>, Coordination>>>::type
-    /// \endcond
-    {
-        return  observable<bool, rxo::detail::sequence_equal<T, this_type, OtherSource, rxu::equal_to<>, Coordination>>(
-                rxo::detail::sequence_equal<T, this_type, OtherSource, rxu::equal_to<>, Coordination>(*this, std::forward<OtherSource>(t), rxu::equal_to<>(), std::forward<Coordination>(cn)));
-    }
-
-    /*! Determine whether two Observables emit the same sequence of items.
-
-        \tparam OtherSource  the type of the other observable.
-
-        \param t  the other Observable that emits items to compare.
-
-        \return  Observable that emits true only if both sequences terminate normally after emitting the same sequence of items in the same order; otherwise it will emit false.
-
-        \sample
-        \snippet sequence_equal.cpp sequence_equal sample
-        \snippet output.txt sequence_equal sample
-    */
-    template<class OtherSource>
-    auto sequence_equal(OtherSource&& t) const
-    /// \cond SHOW_SERVICE_MEMBERS
-    -> typename std::enable_if<is_observable<OtherSource>::value,
-                observable<bool, rxo::detail::sequence_equal<T, this_type, OtherSource, rxu::equal_to<>, identity_one_worker>>>::type
-    /// \endcond
-    {
-        return  observable<bool, rxo::detail::sequence_equal<T, this_type, OtherSource, rxu::equal_to<>, identity_one_worker>>(
-                rxo::detail::sequence_equal<T, this_type, OtherSource, rxu::equal_to<>, identity_one_worker>(*this, std::forward<OtherSource>(t), rxu::equal_to<>(), identity_one_worker(rxsc::make_current_thread())));
+        return      observable_member(sequence_equal_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! inspect calls to on_next, on_error and on_completed.
@@ -2988,47 +2920,15 @@ public:
             rxo::detail::repeat<T, this_type, Count>(*this, t));
     }
 
-    /*! Infinitely retry this observable.
-
-        \return  An observable that mirrors the source observable, resubscribing to it if it calls on_error.
-
-        \sample
-        \snippet retry.cpp retry sample
-        \snippet output.txt retry sample
-    */
+    /*! @copydoc rx-retry.hpp
+     */
     template<class... AN>
-    auto retry(AN**...) const
+    auto retry(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        ->      observable<T, rxo::detail::retry<T, this_type, int>>
+        -> decltype(observable_member(retry_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return  observable<T, rxo::detail::retry<T, this_type, int>>(
-            rxo::detail::retry<T, this_type, int>(*this, 0));
-        static_assert(sizeof...(AN) == 0, "retry() was passed too many arguments.");
-    }
-
-    /*! Retry this observable for the given number of times.
-
-        \tparam Count  the type of the counter
-
-        \param t  the number of retries
-
-        \return  An observable that mirrors the source observable, resubscribing to it if it calls on_error up to a specified number of retries.
-
-        Call to retry(0) infinitely retries the source observable.
-
-        \sample
-        \snippet retry.cpp retry count sample
-        \snippet output.txt retry count sample
-    */
-    template<class Count>
-    auto retry(Count t) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        ->      observable<T, rxo::detail::retry<T, this_type, Count>>
-        /// \endcond
-    {
-        return  observable<T, rxo::detail::retry<T, this_type, Count>>(
-            rxo::detail::retry<T, this_type, Count>(*this, t));
+        return      observable_member(retry_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! Start with the supplied values, then concatenate this observable.
@@ -3058,26 +2958,15 @@ public:
         return      rxo::start_with(std::move(v0), std::move(vn)...)(*this);
     }
 
-    /*! Take values pairwise from this observable.
-
-        \return  Observable that emits tuples of two the most recent items emitted by the source observable.
-
-        \sample
-        \snippet pairwise.cpp pairwise sample
-        \snippet output.txt pairwise sample
-
-        If the source observable emits less than two items, no pairs are emitted  by the source observable:
-        \snippet pairwise.cpp pairwise short sample
-        \snippet output.txt pairwise short sample
-    */
+    /*! @copydoc rx-pairwise.hpp
+     */
     template<class... AN>
-    auto pairwise(AN**...) const
+    auto pairwise(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<rxu::value_type_t<rxo::detail::pairwise<T>>>(rxo::detail::pairwise<T>()))
+        -> decltype(observable_member(pairwise_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return                    lift<rxu::value_type_t<rxo::detail::pairwise<T>>>(rxo::detail::pairwise<T>());
-        static_assert(sizeof...(AN) == 0, "pairwise() was passed too many arguments.");
+        return      observable_member(pairwise_tag{},                *this, std::forward<AN>(an)...);
     }
 };
 

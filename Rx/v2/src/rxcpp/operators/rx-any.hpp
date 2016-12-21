@@ -165,11 +165,11 @@ template<>
 struct member_overload<any_tag>
 {
     template<class Observable, class Predicate,
-            class SourceValue = rxu::value_type_t<Observable>,
-            class Enabled = rxu::enable_if_all_true_type_t<
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Enabled = rxu::enable_if_all_true_type_t<
             is_observable<Observable>>,
-            class Any = rxo::detail::any<SourceValue, rxu::decay_t<Predicate>>,
-            class Value = rxu::value_type_t<Any>>
+        class Any = rxo::detail::any<SourceValue, rxu::decay_t<Predicate>>,
+        class Value = rxu::value_type_t<Any>>
     static auto member(Observable&& o, Predicate&& p)
     -> decltype(o.template lift<Value>(Any(std::forward<Predicate>(p)))) {
         return  o.template lift<Value>(Any(std::forward<Predicate>(p)));
@@ -201,12 +201,12 @@ template<>
 struct member_overload<contains_tag>
 {
     template<class Observable, class T,
-            class SourceValue = rxu::value_type_t<Observable>,
-            class Enabled = rxu::enable_if_all_true_type_t<
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Enabled = rxu::enable_if_all_true_type_t<
             is_observable<Observable>>,
-            class Predicate = std::function<bool(T)>,
-            class Any = rxo::detail::any<SourceValue, rxu::decay_t<Predicate>>,
-            class Value = rxu::value_type_t<Any>>
+        class Predicate = std::function<bool(T)>,
+        class Any = rxo::detail::any<SourceValue, rxu::decay_t<Predicate>>,
+        class Value = rxu::value_type_t<Any>>
     static auto member(Observable&& o, T&& value)
     -> decltype(o.template lift<Value>(Any(nullptr))) {
         return  o.template lift<Value>(Any([value](T n) { return n == value; }));

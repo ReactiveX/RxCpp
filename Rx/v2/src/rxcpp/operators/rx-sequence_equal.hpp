@@ -2,6 +2,25 @@
 
 #pragma once
 
+/*! \file rx-sequence_equal.hpp
+
+    \brief Determine whether two Observables emit the same sequence of items.
+
+    \tparam OtherSource      the type of the other observable.
+    \tparam BinaryPredicate  the type of the value comparing function (optional). The signature should be equivalent to the following: bool pred(const T1& a, const T2& b);
+    \tparam Coordination  the type of the scheduler (optional).
+
+    \param t     the other Observable that emits items to compare.
+    \param pred  the function that implements comparison of two values (optional).
+    \param cn    the scheduler (optional).
+
+    \return  Observable that emits true only if both sequences terminate normally after emitting the same sequence of items in the same order; otherwise it will emit false.
+
+    \sample
+    \snippet sequence_equal.cpp sequence_equal sample
+    \snippet output.txt sequence_equal sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_SEQUENCE_EQUAL_HPP)
 #define RXCPP_OPERATORS_RX_SEQUENCE_EQUAL_HPP
 
@@ -12,6 +31,16 @@ namespace rxcpp {
 namespace operators {
 
 namespace detail {
+
+template<class... AN>
+struct sequence_equal_invalid_arguments {};
+
+template<class... AN>
+struct sequence_equal_invalid : public rxo::operator_base<sequence_equal_invalid_arguments<AN...>> {
+    using type = observable<sequence_equal_invalid_arguments<AN...>, sequence_equal_invalid<AN...>>;
+};
+template<class... AN>
+using sequence_equal_invalid_t = typename sequence_equal_invalid<AN...>::type;
 
 template<class T, class Observable, class OtherObservable, class BinaryPredicate, class Coordination>
 struct sequence_equal : public operator_base<bool>
@@ -173,60 +202,80 @@ struct sequence_equal : public operator_base<bool>
     }
 };
 
-template<class OtherObservable, class BinaryPredicate, class Coordination>
-class sequence_equal_factory
+}
+
+/*! @copydoc rx-sequence_equal.hpp
+*/
+template<class... AN>
+auto sequence_equal(AN&&... an)
+    ->     operator_factory<sequence_equal_tag, AN...> {
+    return operator_factory<sequence_equal_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<sequence_equal_tag>
 {
-    typedef rxu::decay_t<OtherObservable> other_source_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
-    typedef rxu::decay_t<BinaryPredicate> predicate_type;
-    
-    other_source_type other_source;
-    coordination_type coordination;
-    predicate_type pred;
-    
-public:
-    sequence_equal_factory(other_source_type t, predicate_type p, coordination_type sf)
-        : other_source(std::move(t))
-        , coordination(std::move(sf))
-        , pred(std::move(p))
-    {
+    template<class Observable, class OtherObservable,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            is_observable<OtherObservable>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class SequenceEqual = rxo::detail::sequence_equal<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<OtherObservable>, rxu::equal_to<>, identity_one_worker>,
+        class Value = rxu::value_type_t<SequenceEqual>,
+        class Result = observable<Value, SequenceEqual>>
+    static Result member(Observable&& o, OtherObservable&& t) {
+        return Result(SequenceEqual(std::forward<Observable>(o), std::forward<OtherObservable>(t), rxu::equal_to<>(), identity_current_thread()));
     }
-    
-    template<class Observable>
-    auto operator()(Observable&& source)
-        ->      observable<bool, sequence_equal<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, other_source_type, BinaryPredicate, Coordination>> {
-        return  observable<bool, sequence_equal<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, other_source_type, BinaryPredicate, Coordination>>(
-                                 sequence_equal<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, other_source_type, BinaryPredicate, Coordination>(std::forward<Observable>(source), other_source, pred, coordination));
+
+    template<class Observable, class OtherObservable, class BinaryPredicate,
+        class IsCoordination = is_coordination<BinaryPredicate>,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            is_observable<OtherObservable>,
+            rxu::negation<IsCoordination>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class SequenceEqual = rxo::detail::sequence_equal<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<OtherObservable>, rxu::decay_t<BinaryPredicate>, identity_one_worker>,
+        class Value = rxu::value_type_t<SequenceEqual>,
+        class Result = observable<Value, SequenceEqual>>
+    static Result member(Observable&& o, OtherObservable&& t, BinaryPredicate&& pred) {
+        return Result(SequenceEqual(std::forward<Observable>(o), std::forward<OtherObservable>(t), std::forward<BinaryPredicate>(pred), identity_current_thread()));
+    }
+
+    template<class Observable, class OtherObservable, class Coordination,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            is_observable<OtherObservable>,
+            is_coordination<Coordination>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class SequenceEqual = rxo::detail::sequence_equal<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<OtherObservable>, rxu::equal_to<>, rxu::decay_t<Coordination>>,
+        class Value = rxu::value_type_t<SequenceEqual>,
+        class Result = observable<Value, SequenceEqual>>
+    static Result member(Observable&& o, OtherObservable&& t, Coordination&& cn) {
+        return Result(SequenceEqual(std::forward<Observable>(o), std::forward<OtherObservable>(t), rxu::equal_to<>(), std::forward<Coordination>(cn)));
+    }
+
+    template<class Observable, class OtherObservable, class BinaryPredicate, class Coordination,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            is_observable<OtherObservable>,
+            is_coordination<Coordination>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class SequenceEqual = rxo::detail::sequence_equal<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<OtherObservable>, rxu::decay_t<BinaryPredicate>, rxu::decay_t<Coordination>>,
+        class Value = rxu::value_type_t<SequenceEqual>,
+        class Result = observable<Value, SequenceEqual>>
+    static Result member(Observable&& o, OtherObservable&& t, BinaryPredicate&& pred, Coordination&& cn) {
+        return Result(SequenceEqual(std::forward<Observable>(o), std::forward<OtherObservable>(t), std::forward<BinaryPredicate>(pred), std::forward<Coordination>(cn)));
+    }
+
+    template<class... AN>
+    static operators::detail::sequence_equal_invalid_t<AN...> member(const AN&...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "sequence_equal takes (OtherObservable, optional BinaryPredicate, optional Coordination)");
     }
 };
-
-}
-
-template<class OtherObservable>
-inline auto sequence_equal(OtherObservable&& t)
-    ->      detail::sequence_equal_factory<OtherObservable, rxu::equal_to<>, identity_one_worker> {
-    return  detail::sequence_equal_factory<OtherObservable, rxu::equal_to<>, identity_one_worker>(std::forward<OtherObservable>(t), rxu::equal_to<>(), identity_current_thread());
-}
-
-template<class OtherObservable, class BinaryPredicate, class Check = typename std::enable_if<!is_coordination<BinaryPredicate>::value>::type>
-inline auto sequence_equal(OtherObservable&& t, BinaryPredicate&& pred)
-    ->      detail::sequence_equal_factory<OtherObservable, BinaryPredicate, identity_one_worker> {
-    return  detail::sequence_equal_factory<OtherObservable, BinaryPredicate, identity_one_worker>(std::forward<OtherObservable>(t), std::forward<BinaryPredicate>(pred), identity_current_thread());
-}
-
-template<class OtherObservable, class Coordination, class Check = typename std::enable_if<is_coordination<Coordination>::value>::type>
-inline auto sequence_equal(OtherObservable&& t, Coordination&& cn)
-    ->      detail::sequence_equal_factory<OtherObservable, rxu::equal_to<>, Coordination> {
-    return  detail::sequence_equal_factory<OtherObservable, rxu::equal_to<>, Coordination>(std::forward<OtherObservable>(t), rxu::equal_to<>(), std::forward<Coordination>(cn));
-}
-
-template<class OtherObservable, class BinaryPredicate, class Coordination>
-inline auto sequence_equal(OtherObservable&& t, BinaryPredicate&& pred, Coordination&& cn)
-    ->      detail::sequence_equal_factory<OtherObservable, BinaryPredicate, Coordination> {
-    return  detail::sequence_equal_factory<OtherObservable, BinaryPredicate, Coordination>(std::forward<OtherObservable>(t), std::forward<BinaryPredicate>(pred), std::forward<Coordination>(cn));
-}
-
-}
 
 }
 

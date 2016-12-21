@@ -107,15 +107,12 @@ public:
 #include "operators/rx-merge.hpp"
 #include "operators/rx-multicast.hpp"
 #include "operators/rx-observe_on.hpp"
-#include "operators/rx-pairwise.hpp"
 #include "operators/rx-publish.hpp"
 #include "operators/rx-ref_count.hpp"
 #include "operators/rx-repeat.hpp"
 #include "operators/rx-replay.hpp"
-#include "operators/rx-retry.hpp"
 #include "operators/rx-sample_time.hpp"
 #include "operators/rx-scan.hpp"
-#include "operators/rx-sequence_equal.hpp"
 #include "operators/rx-skip.hpp"
 #include "operators/rx-skip_last.hpp"
 #include "operators/rx-skip_until.hpp"
@@ -144,7 +141,9 @@ struct all_tag {
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-all.hpp>");
     };
 };
-    
+
+struct is_empty_tag : all_tag {};
+
 struct any_tag {
     template<class Included>
     struct include_header{
@@ -154,7 +153,7 @@ struct any_tag {
 
 struct exists_tag : any_tag {};
 struct contains_tag : any_tag {};
-    
+
 struct combine_latest_tag {
     template<class Included>
     struct include_header{
@@ -263,6 +262,28 @@ struct take_while_tag {
     template<class Included>
     struct include_header{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-take_while.hpp>");
+    };
+};
+
+
+struct pairwise_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-pairwise.hpp>");
+    };
+};
+
+struct retry_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-retry.hpp>");
+    };
+};
+
+struct sequence_equal_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-sequence_equal.hpp>");
     };
 };
 
