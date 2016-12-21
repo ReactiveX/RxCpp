@@ -2873,51 +2873,15 @@ public:
         return  observable_member(take_while_tag{}, *this,                std::forward<AN>(an)...);
     }
 
-    /*! Infinitely repeat this observable.
-
-        \return  An observable that emits the items emitted by the source observable repeatedly and in sequence.
-
-        \sample
-        \snippet repeat.cpp repeat sample
-        \snippet output.txt repeat sample
-
-        If the source observable calls on_error, repeat stops:
-        \snippet repeat.cpp repeat error sample
-        \snippet output.txt repeat error sample
-    */
+    /*! @copydoc rx-repeat.hpp
+     */
     template<class... AN>
-    auto repeat(AN**...) const
+    auto repeat(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        ->      observable<T, rxo::detail::repeat<T, this_type, int>>
+        -> decltype(observable_member(repeat_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return  observable<T, rxo::detail::repeat<T, this_type, int>>(
-            rxo::detail::repeat<T, this_type, int>(*this, 0));
-        static_assert(sizeof...(AN) == 0, "repeat() was passed too many arguments.");
-    }
-
-    /*! Repeat this observable for the given number of times.
-
-        \tparam Count  the type of the counter
-
-        \param t  the number of times the source observable items are repeated
-
-        \return  An observable that repeats the sequence of items emitted by the source observable for t times.
-
-        Call to repeat(0) infinitely repeats the source observable.
-
-        \sample
-        \snippet repeat.cpp repeat count sample
-        \snippet output.txt repeat count sample
-    */
-    template<class Count>
-    auto repeat(Count t) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        ->      observable<T, rxo::detail::repeat<T, this_type, Count>>
-        /// \endcond
-    {
-        return  observable<T, rxo::detail::repeat<T, this_type, Count>>(
-            rxo::detail::repeat<T, this_type, Count>(*this, t));
+        return      observable_member(repeat_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-retry.hpp

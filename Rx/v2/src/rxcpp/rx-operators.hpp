@@ -109,7 +109,6 @@ public:
 #include "operators/rx-observe_on.hpp"
 #include "operators/rx-publish.hpp"
 #include "operators/rx-ref_count.hpp"
-#include "operators/rx-repeat.hpp"
 #include "operators/rx-replay.hpp"
 #include "operators/rx-sample_time.hpp"
 #include "operators/rx-scan.hpp"
@@ -269,6 +268,13 @@ struct pairwise_tag {
     template<class Included>
     struct include_header{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-pairwise.hpp>");
+    };
+};
+
+struct repeat_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-repeat.hpp>");
     };
 };
 
