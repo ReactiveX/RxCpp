@@ -163,7 +163,7 @@ struct member_overload<repeat_tag>
     }
 
     template<class... AN>
-    static operators::detail::repeat_invalid_t<AN...> member(const AN&...) {
+    static operators::detail::repeat_invalid_t<AN...> member(AN...) {
         std::terminate();
         return {};
         static_assert(sizeof...(AN) == 10000, "repeat takes (optional Count)");
