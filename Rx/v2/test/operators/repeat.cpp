@@ -1,4 +1,6 @@
 #include "../test.h"
+#include "rxcpp/operators/rx-repeat.hpp"
+
 
 SCENARIO("repeat, basic test", "[repeat][operators]"){
     GIVEN("cold observable of 3 ints."){
@@ -18,9 +20,9 @@ SCENARIO("repeat, basic test", "[repeat][operators]"){
             auto res = w.start(
                 [&]() {
                     return xs
-                        .repeat()
+                        | rxo::repeat()
                         // forget type to workaround lambda deduction bug on msvc 2013
-                        .as_dynamic();
+                        | rxo::as_dynamic();
                 }
             );
 
