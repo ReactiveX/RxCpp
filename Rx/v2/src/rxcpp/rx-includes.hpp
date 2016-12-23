@@ -182,6 +182,7 @@
 #include "rx-grouped_observable.hpp"
 
 #if !defined(RXCPP_LITE)
+#include "operators/rx-amb.hpp"
 #include "operators/rx-all.hpp"
 #include "operators/rx-any.hpp"
 #include "operators/rx-combine_latest.hpp"

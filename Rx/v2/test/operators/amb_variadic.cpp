@@ -1,4 +1,5 @@
 #include "../test.h"
+#include "rxcpp/operators/rx-amb.hpp"
 
 SCENARIO("variadic amb never 3", "[amb][join][operators]"){
     GIVEN("3 hot observables of ints."){
@@ -23,9 +24,9 @@ SCENARIO("variadic amb never 3", "[amb][join][operators]"){
             auto res = w.start(
                 [&]() {
                     return ys1
-                        .amb(ys2, ys3)
+                        | rxo::amb(ys2, ys3)
                         // forget type to workaround lambda deduction bug on msvc 2013
-                        .as_dynamic();
+                        | rxo::as_dynamic();
                 }
             );
 
@@ -544,6 +545,44 @@ SCENARIO("variadic amb loser&owner throws", "[amb][join][operators]"){
                     on.subscribe(200, 210)
                 });
                 auto actual = ys3.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("variadic amb never empty, custom coordination", "[amb][join][operators]"){
+    GIVEN("2 hot observables of ints."){
+        auto sc = rxsc::make_test();
+        auto so = rx::synchronize_in_one_worker(sc);
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+
+        auto ys1 = sc.make_hot_observable({
+            on.next(100, 1)
+        });
+
+        auto ys2 = sc.make_hot_observable({
+            on.next(110, 2),
+            on.completed(400)
+        });
+
+        WHEN("the first observable is selected to produce ints"){
+
+            auto res = w.start(
+                [&]() {
+                    return ys1
+                        .amb(so, ys2)
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
+                }
+            );
+
+            THEN("the output contains only complete message"){
+                auto required = rxu::to_vector({
+                    on.completed(401)
+                });
+                auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
         }

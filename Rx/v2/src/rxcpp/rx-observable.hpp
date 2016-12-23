@@ -1668,123 +1668,15 @@ public:
         return          defer_merge_from<Coordination, Value0>::make(*this, rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), std::move(cn));
     }
 
-    /// \cond SHOW_SERVICE_MEMBERS
-    template<class Coordination>
-    struct defer_amb : public defer_observable<
-        is_observable<value_type>,
-        this_type,
-        rxo::detail::amb, value_type, observable<value_type>, Coordination>
-    {
-    };
-    /// \endcond
-
-    /*! For each item from only the first of the nested observables deliver from the new observable that is returned.
-
-        \return  Observable that emits the same sequence as whichever of the observables emitted from this observable that first emitted an item or sent a termination notification.
-
-        \note All sources must be synchronized! This means that calls across all the subscribers must be serial.
-
-        \sample
-        \snippet amb.cpp implicit amb sample
-        \snippet output.txt implicit amb sample
-    */
+    /*! @copydoc rx-amb.hpp
+     */
     template<class... AN>
-    auto amb(AN**...) const
+    auto amb(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> typename defer_amb<identity_one_worker>::observable_type
+        -> decltype(observable_member(amb_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return      defer_amb<identity_one_worker>::make(*this, *this, identity_current_thread());
-        static_assert(sizeof...(AN) == 0, "amb() was passed too many arguments.");
-    }
-
-    /*! For each item from only the first of the nested observables deliver from the new observable that is returned, on the specified scheduler.
-
-        \tparam Coordination  the type of the scheduler
-
-        \param  cn  the scheduler to synchronize sources from different contexts.
-
-        \return  Observable that emits the same sequence as whichever of the observables emitted from this observable that first emitted an item or sent a termination notification.
-
-        \sample
-        \snippet amb.cpp threaded implicit amb sample
-        \snippet output.txt threaded implicit amb sample
-    */
-    template<class Coordination>
-    auto amb(Coordination cn) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        ->  typename std::enable_if<
-                        defer_amb<Coordination>::value,
-            typename    defer_amb<Coordination>::observable_type>::type
-        /// \endcond
-    {
-        return          defer_amb<Coordination>::make(*this, *this, std::move(cn));
-    }
-
-    /// \cond SHOW_SERVICE_MEMBERS
-    template<class Coordination, class Value0>
-    struct defer_amb_from : public defer_observable<
-        rxu::all_true<
-            is_coordination<Coordination>::value,
-            is_observable<Value0>::value>,
-        this_type,
-        rxo::detail::amb, observable<value_type>, observable<observable<value_type>>, Coordination>
-    {
-    };
-    /// \endcond
-
-    /*! For each item from only the first of the given observables deliver from the new observable that is returned.
-
-        \tparam Value0      ...
-        \tparam ValueN      types of source observables
-
-        \param  v0  ...
-        \param  vn  source observables
-
-        \return  Observable that emits the same sequence as whichever of the source observables first emitted an item or sent a termination notification.
-
-        \note All sources must be synchronized! This means that calls across all the subscribers must be serial.
-
-        \sample
-        \snippet amb.cpp amb sample
-        \snippet output.txt amb sample
-    */
-    template<class Value0, class... ValueN>
-    auto amb(Value0 v0, ValueN... vn) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        ->  typename std::enable_if<
-                        defer_amb_from<identity_one_worker, Value0>::value,
-            typename    defer_amb_from<identity_one_worker, Value0>::observable_type>::type
-        /// \endcond
-    {
-        return          defer_amb_from<identity_one_worker, Value0>::make(*this, rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), identity_current_thread());
-    }
-
-    /*! For each item from only the first of the given observables deliver from the new observable that is returned, on the specified scheduler.
-
-        \tparam Coordination  the type of the scheduler
-        \tparam Value0        ...
-        \tparam ValueN        types of source observables
-
-        \param  cn  the scheduler to synchronize sources from different contexts.
-        \param  v0  ...
-        \param  vn  source observables
-
-        \return  Observable that emits the same sequence as whichever of the source observables first emitted an item or sent a termination notification.
-
-        \sample
-        \snippet amb.cpp threaded amb sample
-        \snippet output.txt threaded amb sample
-    */
-    template<class Coordination, class Value0, class... ValueN>
-    auto amb(Coordination cn, Value0 v0, ValueN... vn) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        ->  typename std::enable_if<
-                        defer_amb_from<Coordination, Value0>::value,
-            typename    defer_amb_from<Coordination, Value0>::observable_type>::type
-        /// \endcond
-    {
-        return          defer_amb_from<Coordination, Value0>::make(*this, rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), std::move(cn));
+        return      observable_member(amb_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! For each item from this observable use the CollectionSelector to produce an observable and subscribe to that observable.

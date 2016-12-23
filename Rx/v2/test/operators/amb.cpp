@@ -1,4 +1,5 @@
 #include "../test.h"
+#include "rxcpp/operators/rx-amb.hpp"
 
 SCENARIO("amb never 3", "[amb][join][operators]"){
     GIVEN("1 cold observable with 3 hot observables of ints."){
@@ -31,9 +32,9 @@ SCENARIO("amb never 3", "[amb][join][operators]"){
             auto res = w.start(
                 [&]() {
                     return xs
-                        .amb()
+                        | rxo::amb()
                         // forget type to workaround lambda deduction bug on msvc 2013
-                        .as_dynamic();
+                        | rxo::as_dynamic();
                 }
             );
 
@@ -900,6 +901,51 @@ SCENARIO("amb source throws after selection", "[amb][join][operators]"){
                     on.subscribe(300, 310)
                 });
                 auto actual = ys3.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("amb never empty, custom coordination", "[amb][join][operators]"){
+    GIVEN("1 cold observable with 2 hot observables of ints."){
+        auto sc = rxsc::make_test();
+        auto so = rx::synchronize_in_one_worker(sc);
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+        const rxsc::test::messages<rx::observable<int>> o_on;
+
+        auto ys1 = sc.make_hot_observable({
+            on.next(100, 1)
+        });
+
+        auto ys2 = sc.make_hot_observable({
+            on.next(110, 2),
+            on.completed(400)
+        });
+
+        auto xs = sc.make_cold_observable({
+            o_on.next(100, ys1),
+            o_on.next(100, ys2),
+            o_on.completed(150)
+        });
+
+        WHEN("the first observable is selected to produce ints"){
+
+            auto res = w.start(
+                [&]() {
+                    return xs
+                        .amb(so)
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
+                }
+            );
+
+            THEN("the output contains only complete message"){
+                auto required = rxu::to_vector({
+                    on.completed(401)
+                });
+                auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
         }

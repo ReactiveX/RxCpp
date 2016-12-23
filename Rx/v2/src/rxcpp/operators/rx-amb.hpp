@@ -2,6 +2,40 @@
 
 #pragma once
 
+/*! \file rx-amb.hpp
+
+    \brief For each item from only the first of the given observables deliver from the new observable that is returned, on the specified scheduler.
+
+           There are 2 variants of the operator:
+           - The source observable emits nested observables, one of the nested observables is selected.
+           - The source observable and the arguments v0...vn are used to provide the observables to select from.
+
+    \tparam Coordination  the type of the scheduler (optional).
+    \tparam Value0        ... (optional).
+    \tparam ValueN        types of source observables (optional).
+
+    \param  cn  the scheduler to synchronize sources from different contexts (optional).
+    \param  v0  ... (optional).
+    \param  vn  source observables (optional).
+
+    \return  Observable that emits the same sequence as whichever of the source observables first emitted an item or sent a termination notification.
+
+    If scheduler is omitted, identity_current_thread is used.
+
+    \sample
+    \snippet amb.cpp threaded implicit amb sample
+    \snippet output.txt threaded implicit amb sample
+
+    \snippet amb.cpp implicit amb sample
+    \snippet output.txt implicit amb sample
+
+    \snippet amb.cpp amb sample
+    \snippet output.txt amb sample
+
+    \snippet amb.cpp threaded amb sample
+    \snippet output.txt threaded amb sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_AMB_HPP)
 #define RXCPP_OPERATORS_RX_AMB_HPP
 
@@ -12,6 +46,16 @@ namespace rxcpp {
 namespace operators {
 
 namespace detail {
+
+template<class... AN>
+struct amb_invalid_arguments {};
+
+template<class... AN>
+struct amb_invalid : public rxo::operator_base<amb_invalid_arguments<AN...>> {
+    using type = observable<amb_invalid_arguments<AN...>, amb_invalid<AN...>>;
+};
+template<class... AN>
+using amb_invalid_t = typename amb_invalid<AN...>::type;
 
 template<class T, class Observable, class Coordination>
 struct amb
@@ -172,35 +216,88 @@ struct amb
     }
 };
 
-template<class Coordination>
-class amb_factory
+}
+
+/*! @copydoc rx-amb.hpp
+*/
+template<class... AN>
+auto amb(AN&&... an)
+    ->     operator_factory<amb_tag, AN...> {
+    return operator_factory<amb_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<class SourceObservable, class Observable, class Coordination>
+struct defer_amb : public defer_observable<
+        is_observable<SourceObservable>,
+        Observable,
+        rxo::detail::amb, SourceObservable, observable<SourceObservable>, Coordination>
 {
-    typedef rxu::decay_t<Coordination> coordination_type;
-
-    coordination_type coordination;
-public:
-    amb_factory(coordination_type sf)
-        : coordination(std::move(sf))
-    {
-    }
-
-    template<class Observable>
-    auto operator()(Observable source)
-        ->      observable<rxu::value_type_t<amb<rxu::value_type_t<Observable>, Observable, Coordination>>,   amb<rxu::value_type_t<Observable>, Observable, Coordination>> {
-        return  observable<rxu::value_type_t<amb<rxu::value_type_t<Observable>, Observable, Coordination>>,   amb<rxu::value_type_t<Observable>, Observable, Coordination>>(
-                                                                                                              amb<rxu::value_type_t<Observable>, Observable, Coordination>(std::move(source), coordination));
-    }
 };
 
-}
+template<class T, class Observable, class Coordination, class Value0>
+struct defer_amb_from : public defer_observable<
+    rxu::all_true<
+        is_coordination<Coordination>::value,
+        is_observable<Value0>::value>,
+    Observable,
+    rxo::detail::amb, observable<T>, observable<observable<T>>, Coordination>
+{
+};
 
-template<class Coordination>
-auto amb(Coordination&& sf)
-    ->      detail::amb_factory<Coordination> {
-    return  detail::amb_factory<Coordination>(std::forward<Coordination>(sf));
-}
+template<>
+struct member_overload<amb_tag>
+{
+    template<class Observable,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class DeferAmb = defer_amb<SourceValue, rxu::decay_t<Observable>, identity_one_worker>,
+        class Result = typename DeferAmb::observable_type>
+    static Result member(Observable&& o) {
+        return DeferAmb::make(std::forward<Observable>(o), std::forward<Observable>(o), identity_current_thread());
+    }
 
-}
+    template<class Observable, class Coordination,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            is_coordination<Coordination>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class DeferAmb = defer_amb<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<Coordination>>,
+        class Result = typename DeferAmb::observable_type>
+    static Result member(Observable&& o, Coordination&& cn) {
+        return DeferAmb::make(std::forward<Observable>(o), std::forward<Observable>(o), std::forward<Coordination>(cn));
+    }
+
+    template<class Observable, class Value0, class... ValueN,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            all_observables<Observable, Value0, ValueN...>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class DeferAmbFrom = defer_amb_from<SourceValue, rxu::decay_t<Observable>, identity_one_worker, Value0>,
+        class Result = typename DeferAmbFrom::observable_type>
+    static Result member(Observable&& o, Value0&& v0, ValueN&&... vn) {
+        return DeferAmbFrom::make(std::forward<Observable>(o), rxs::from(o.as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), identity_current_thread());
+    }
+
+     template<class Observable, class Coordination, class Value0, class... ValueN,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            all_observables<Observable, Value0, ValueN...>,
+            is_coordination<Coordination>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class DeferAmbFrom = defer_amb_from<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<Coordination>, Value0>,
+        class Result = typename DeferAmbFrom::observable_type>
+    static Result member(Observable&& o, Coordination&& cn, Value0&& v0, ValueN&&... vn) {
+        return DeferAmbFrom::make(std::forward<Observable>(o), rxs::from(o.as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), std::forward<Coordination>(cn));
+    }
+
+    template<class... AN>
+    static operators::detail::amb_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "amb takes (optional Coordination, optional Value0, optional ValueN...)");
+    }
+};
 
 }
 
