@@ -228,24 +228,6 @@ auto amb(AN&&... an)
 
 }
 
-template<class SourceObservable, class Observable, class Coordination>
-struct defer_amb : public defer_observable<
-        is_observable<SourceObservable>,
-        Observable,
-        rxo::detail::amb, SourceObservable, observable<SourceObservable>, Coordination>
-{
-};
-
-template<class T, class Observable, class Coordination, class Value0>
-struct defer_amb_from : public defer_observable<
-    rxu::all_true<
-        is_coordination<Coordination>::value,
-        is_observable<Value0>::value>,
-    Observable,
-    rxo::detail::amb, observable<T>, observable<observable<T>>, Coordination>
-{
-};
-
 template<>
 struct member_overload<amb_tag>
 {
@@ -253,10 +235,12 @@ struct member_overload<amb_tag>
         class Enabled = rxu::enable_if_all_true_type_t<
             is_observable<Observable>>,
         class SourceValue = rxu::value_type_t<Observable>,
-        class DeferAmb = defer_amb<SourceValue, rxu::decay_t<Observable>, identity_one_worker>,
-        class Result = typename DeferAmb::observable_type>
+        class Amb = rxo::detail::amb<SourceValue, rxu::decay_t<Observable>, identity_one_worker>,
+        class Value = rxu::value_type_t<SourceValue>,
+        class Result = observable<Value, Amb>
+    >
     static Result member(Observable&& o) {
-        return DeferAmb::make(std::forward<Observable>(o), std::forward<Observable>(o), identity_current_thread());
+        return Result(Amb(std::forward<Observable>(o), identity_current_thread()));
     }
 
     template<class Observable, class Coordination,
@@ -264,31 +248,41 @@ struct member_overload<amb_tag>
             is_observable<Observable>,
             is_coordination<Coordination>>,
         class SourceValue = rxu::value_type_t<Observable>,
-        class DeferAmb = defer_amb<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<Coordination>>,
-        class Result = typename DeferAmb::observable_type>
+        class Amb = rxo::detail::amb<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<Coordination>>,
+        class Value = rxu::value_type_t<SourceValue>,
+        class Result = observable<Value, Amb>
+    >
     static Result member(Observable&& o, Coordination&& cn) {
-        return DeferAmb::make(std::forward<Observable>(o), std::forward<Observable>(o), std::forward<Coordination>(cn));
+        return Result(Amb(std::forward<Observable>(o), std::forward<Coordination>(cn)));
     }
 
     template<class Observable, class Value0, class... ValueN,
         class Enabled = rxu::enable_if_all_true_type_t<
             all_observables<Observable, Value0, ValueN...>>,
-        class SourceValue = rxu::value_type_t<Observable>,
-        class DeferAmbFrom = defer_amb_from<SourceValue, rxu::decay_t<Observable>, identity_one_worker, Value0>,
-        class Result = typename DeferAmbFrom::observable_type>
+        class EmittedValue = rxu::value_type_t<Observable>,
+        class SourceValue = observable<EmittedValue>,
+        class ObservableObservable = observable<SourceValue>,
+        class Amb = typename rxu::defer_type<rxo::detail::amb, SourceValue, ObservableObservable, identity_one_worker>::type,
+        class Value = rxu::value_type_t<Amb>,
+        class Result = observable<Value, Amb>
+    >
     static Result member(Observable&& o, Value0&& v0, ValueN&&... vn) {
-        return DeferAmbFrom::make(std::forward<Observable>(o), rxs::from(o.as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), identity_current_thread());
+        return Result(Amb(rxs::from(o.as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), identity_current_thread()));
     }
 
-     template<class Observable, class Coordination, class Value0, class... ValueN,
+    template<class Observable, class Coordination, class Value0, class... ValueN,
         class Enabled = rxu::enable_if_all_true_type_t<
             all_observables<Observable, Value0, ValueN...>,
             is_coordination<Coordination>>,
-        class SourceValue = rxu::value_type_t<Observable>,
-        class DeferAmbFrom = defer_amb_from<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<Coordination>, Value0>,
-        class Result = typename DeferAmbFrom::observable_type>
+        class EmittedValue = rxu::value_type_t<Observable>,
+        class SourceValue = observable<EmittedValue>,
+        class ObservableObservable = observable<SourceValue>,
+        class Amb = typename rxu::defer_type<rxo::detail::amb, SourceValue, ObservableObservable, rxu::decay_t<Coordination>>::type,
+        class Value = rxu::value_type_t<Amb>,
+        class Result = observable<Value, Amb>
+    >
     static Result member(Observable&& o, Coordination&& cn, Value0&& v0, ValueN&&... vn) {
-        return DeferAmbFrom::make(std::forward<Observable>(o), rxs::from(o.as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), std::forward<Coordination>(cn));
+        return Result(Amb(rxs::from(o.as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), std::forward<Coordination>(cn)));
     }
 
     template<class... AN>
