@@ -95,7 +95,6 @@ public:
 
 }
 
-#include "operators/rx-amb.hpp"
 #include "operators/rx-buffer_count.hpp"
 #include "operators/rx-buffer_time.hpp"
 #include "operators/rx-buffer_time_count.hpp"
@@ -133,6 +132,13 @@ public:
 #include "operators/rx-window_toggle.hpp"
 
 namespace rxcpp {
+
+struct amb_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-amb.hpp>");
+    };
+};
 
 struct all_tag {
     template<class Included>
