@@ -1,4 +1,5 @@
 #include "../test.h"
+#include "rxcpp/operators/rx-timestamp.hpp"
 
 using namespace std::chrono;
 
@@ -18,7 +19,8 @@ SCENARIO("should not emit timestamped items if the source never emits any items"
 
             auto res = w.start(
                 [xs]() {
-                    return xs.timestamp();
+                    return xs
+                            | rxo::timestamp();
                 }
             );
 

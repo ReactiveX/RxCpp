@@ -961,45 +961,15 @@ public:
         return                    lift<T>(rxo::detail::timeout<T, Duration, identity_one_worker>(period, identity_current_thread()));
     }
 
-    /*! Returns an observable that attaches a timestamp to each item emitted by the source observable indicating when it was emitted.
-
-        \tparam Coordination  the type of the scheduler
-
-        \param coordination  the scheduler to manage timeout for each event
-
-        \return  Observable that emits a pair: { item emitted by the source observable, time_point representing the current value of the clock }.
-
-        \sample
-        \snippet timestamp.cpp timestamp sample
-        \snippet output.txt timestamp sample
-    */
-    template<class Coordination>
-    auto timestamp(Coordination coordination) const
-    /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(EXPLICIT_THIS lift<std::pair<T, rxsc::scheduler::clock_type::time_point>>(rxo::detail::timestamp<T, Coordination>{coordination}))
-    /// \endcond
-    {
-        return                lift<std::pair<T, rxsc::scheduler::clock_type::time_point>>(rxo::detail::timestamp<T, Coordination>{coordination});
-    }
-
-    /*! Returns an observable that attaches a timestamp to each item emitted by the source observable indicating when it was emitted.
-
-        \tparam ClockType    the type of the clock to return a time_point.
-
-        \return  Observable that emits a pair: { item emitted by the source observable, time_point representing the current value of the clock }.
-
-        \sample
-        \snippet timestamp.cpp timestamp sample
-        \snippet output.txt timestamp sample
-    */
+    /*! @copydoc rx-timestamp.hpp
+     */
     template<class... AN>
-    auto timestamp(AN**...) const
+    auto timestamp(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(EXPLICIT_THIS lift<std::pair<T, rxsc::scheduler::clock_type::time_point>>(rxo::detail::timestamp<T, identity_one_worker>{identity_current_thread()}))
+    -> decltype(observable_member(timestamp_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
     /// \endcond
     {
-        return                lift<std::pair<T, rxsc::scheduler::clock_type::time_point>>(rxo::detail::timestamp<T, identity_one_worker>{identity_current_thread()});
-        static_assert(sizeof...(AN) == 0, "timestamp() was passed too many arguments.");
+        return  observable_member(timestamp_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-finally.hpp
