@@ -1,4 +1,5 @@
 #include "../test.h"
+#include "rxcpp/operators/rx-time_interval.hpp"
 
 using namespace std::chrono;
 
@@ -18,7 +19,8 @@ SCENARIO("should not emit time intervals if the source never emits any items", "
 
             auto res = w.start(
                 [xs]() {
-                    return xs.time_interval();
+                    return xs
+                        | rxo::time_interval();
                 }
             );
 
