@@ -876,45 +876,15 @@ public:
         return                    lift<T>(rxo::detail::tap<T, std::tuple<MakeObserverArgN...>>(std::make_tuple(std::forward<MakeObserverArgN>(an)...)));
     }
 
-    /*! Returns an observable that emits indications of the amount of time lapsed between consecutive emissions of the source observable.
-        The first emission from this new Observable indicates the amount of time lapsed between the time when the observer subscribed to the Observable and the time when the source Observable emitted its first item.
-
-        \tparam Coordination  the type of the scheduler
-
-        \param coordination  the scheduler for itme intervals
-
-        \return  Observable that emits a time_duration to indicate the amount of time lapsed between pairs of emissions.
-
-        \sample
-        \snippet time_interval.cpp time_interval sample
-        \snippet output.txt time_interval sample
-    */
-    template<class Coordination>
-    auto time_interval(Coordination coordination) const
-    /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(EXPLICIT_THIS lift<rxsc::scheduler::clock_type::time_point::duration>(rxo::detail::time_interval<T, Coordination>{coordination}))
-    /// \endcond
-    {
-        return                lift<rxsc::scheduler::clock_type::time_point::duration>(rxo::detail::time_interval<T, Coordination>{coordination});
-    }
-
-    /*! Returns an observable that emits indications of the amount of time lapsed between consecutive emissions of the source observable.
-        The first emission from this new Observable indicates the amount of time lapsed between the time when the observer subscribed to the Observable and the time when the source Observable emitted its first item.
-
-        \return  Observable that emits a time_duration to indicate the amount of time lapsed between pairs of emissions.
-
-        \sample
-        \snippet time_interval.cpp time_interval sample
-        \snippet output.txt time_interval sample
-    */
+    /*! @copydoc rx-time_interval.hpp
+     */
     template<class... AN>
-    auto time_interval(AN**...) const
+    auto time_interval(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(EXPLICIT_THIS lift<rxsc::scheduler::clock_type::time_point::duration>(rxo::detail::time_interval<T, identity_one_worker>{identity_current_thread()}))
+    -> decltype(observable_member(time_interval_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
     /// \endcond
     {
-        return                lift<rxsc::scheduler::clock_type::time_point::duration>(rxo::detail::time_interval<T, identity_one_worker>{identity_current_thread()});
-        static_assert(sizeof...(AN) == 0, "time_interval() was passed too many arguments.");
+        return  observable_member(time_interval_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-timeout.hpp

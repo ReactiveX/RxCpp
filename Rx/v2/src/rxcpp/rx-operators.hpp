@@ -124,6 +124,7 @@ public:
 #include "operators/rx-take_until.hpp"
 #include "operators/rx-tap.hpp"
 #include "operators/rx-time_interval.hpp"
+#include "operators/rx-timeout.hpp"
 #include "operators/rx-window.hpp"
 #include "operators/rx-window_time.hpp"
 #include "operators/rx-window_time_count.hpp"
@@ -300,6 +301,13 @@ struct timeout_tag {
     template<class Included>
     struct include_header{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-timeout.hpp>");
+    };
+};
+
+struct time_interval_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-time_interval.hpp>");
     };
 };
 

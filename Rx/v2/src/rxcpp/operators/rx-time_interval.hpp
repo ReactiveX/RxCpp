@@ -2,6 +2,22 @@
 
 #pragma once
 
+/*! \file rx-time_interval.hpp
+
+    \brief Returns an observable that emits indications of the amount of time lapsed between consecutive emissions of the source observable.
+           The first emission from this new Observable indicates the amount of time lapsed between the time when the observer subscribed to the Observable and the time when the source Observable emitted its first item.
+
+    \tparam Coordination  the type of the scheduler.
+
+    \param coordination  the scheduler for time intervals.
+
+    \return  Observable that emits a time_duration to indicate the amount of time lapsed between pairs of emissions.
+
+    \sample
+    \snippet time_interval.cpp time_interval sample
+    \snippet output.txt time_interval sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_TIME_INTERVAL_HPP)
 #define RXCPP_OPERATORS_RX_TIME_INTERVAL_HPP
 
@@ -13,11 +29,19 @@ namespace operators {
 
 namespace detail {
 
+template<class... AN>
+struct time_interval_invalid_arguments {};
+
+template<class... AN>
+struct time_interval_invalid : public rxo::operator_base<time_interval_invalid_arguments<AN...>> {
+    using type = observable<time_interval_invalid_arguments<AN...>, time_interval_invalid<AN...>>;
+};
+template<class... AN>
+using time_interval_invalid_t = typename time_interval_invalid<AN...>::type;
+
 template<class T, class Coordination>
 struct time_interval
 {
-    static_assert(is_coordination<Coordination>::value, "Coordination parameter must satisfy the requirements for a Coordination");
-
     typedef rxu::decay_t<T> source_value_type;
     typedef rxu::decay_t<Coordination> coordination_type;
 
@@ -67,7 +91,7 @@ struct time_interval
             dest.on_completed();
         }
 
-        static subscriber<value_type, observer<value_type, this_type>> make(dest_type d, time_interval_values v) {
+        static subscriber<value_type, observer_type> make(dest_type d, time_interval_values v) {
             return make_subscriber<value_type>(d, this_type(d, v.coordination));
         }
     };
@@ -79,38 +103,51 @@ struct time_interval
     }
 };
 
-template <class Coordination>
-class time_interval_factory
+}
+
+/*! @copydoc rx-time_interval.hpp
+*/
+template<class... AN>
+auto time_interval(AN&&... an)
+    ->      operator_factory<time_interval_tag, AN...> {
+     return operator_factory<time_interval_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<time_interval_tag>
 {
-    typedef rxu::decay_t<Coordination> coordination_type;
-
-    coordination_type coordination;
-public:
-    time_interval_factory(coordination_type ct)
-        : coordination(std::move(ct)) { }
-
-    template<class Observable>
-    auto operator()(Observable&& source)
-        -> decltype(source.template lift<typename rxsc::scheduler::clock_type::time_point::duration>(time_interval<rxu::value_type_t<rxu::decay_t<Observable>>, Coordination>(coordination))) {
-        return      source.template lift<typename rxsc::scheduler::clock_type::time_point::duration>(time_interval<rxu::value_type_t<rxu::decay_t<Observable>>, Coordination>(coordination));
+    template<class Observable,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class TimeInterval = rxo::detail::time_interval<SourceValue, identity_one_worker>,
+        class Value = typename rxsc::scheduler::clock_type::time_point::duration>
+    static auto member(Observable&& o)
+        -> decltype(o.template lift<Value>(TimeInterval(identity_current_thread()))) {
+        return      o.template lift<Value>(TimeInterval(identity_current_thread()));
     }
 
+    template<class Observable, class Coordination,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            is_coordination<Coordination>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class TimeInterval = rxo::detail::time_interval<SourceValue, rxu::decay_t<Coordination>>,
+        class Value = typename rxsc::scheduler::clock_type::time_point::duration>
+    static auto member(Observable&& o, Coordination&& cn)
+        -> decltype(o.template lift<Value>(TimeInterval(std::forward<Coordination>(cn)))) {
+        return      o.template lift<Value>(TimeInterval(std::forward<Coordination>(cn)));
+    }
+
+    template<class... AN>
+    static operators::detail::time_interval_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "time_interval takes (optional Coordination)");
+    }
 };
-
-}
-
-template <class Coordination>
-inline auto time_interval(Coordination ct)
-->      detail::time_interval_factory<Coordination> {
-    return  detail::time_interval_factory<Coordination>(std::move(ct));
-}
-
-inline auto time_interval()
-->      detail::time_interval_factory<identity_one_worker> {
-    return  detail::time_interval_factory<identity_one_worker>(identity_current_thread());
-}
-
-}
 
 }
 
