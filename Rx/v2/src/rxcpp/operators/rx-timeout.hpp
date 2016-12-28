@@ -2,6 +2,23 @@
 
 #pragma once
 
+/*! \file rx-timeout.hpp
+
+    \brief Return an observable that terminates with timeout_error if a particular timespan has passed without emitting another item from the source observable.
+
+    \tparam Duration      the type of time interval.
+    \tparam Coordination  the type of the scheduler (optional).
+
+    \param period        the period of time wait for another item from the source observable.
+    \param coordination  the scheduler to manage timeout for each event (optional).
+
+    \return  Observable that terminates with an error if a particular timespan has passed without emitting another item from the source observable.
+
+    \sample
+    \snippet timeout.cpp timeout sample
+    \snippet output.txt timeout sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_TIMEOUT_HPP)
 #define RXCPP_OPERATORS_RX_TIMEOUT_HPP
 
@@ -20,6 +37,16 @@ class timeout_error: public std::runtime_error
 namespace operators {
 
 namespace detail {
+
+template<class... AN>
+struct timeout_invalid_arguments {};
+
+template<class... AN>
+struct timeout_invalid : public rxo::operator_base<timeout_invalid_arguments<AN...>> {
+    using type = observable<timeout_invalid_arguments<AN...>, timeout_invalid<AN...>>;
+};
+template<class... AN>
+using timeout_invalid_t = typename timeout_invalid<AN...>::type;
 
 template<class T, class Duration, class Coordination>
 struct timeout
@@ -180,38 +207,63 @@ struct timeout
     }
 };
 
-template<class Duration, class Coordination>
-class timeout_factory
-{
-    typedef rxu::decay_t<Duration> duration_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
+}
 
-    duration_type period;
-    coordination_type coordination;
-public:
-    timeout_factory(duration_type p, coordination_type c) : period(p), coordination(c) {}
-    template<class Observable>
-    auto operator()(Observable&& source)
-        -> decltype(source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(timeout<rxu::value_type_t<rxu::decay_t<Observable>>, Duration, Coordination>(period, coordination))) {
-        return      source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(timeout<rxu::value_type_t<rxu::decay_t<Observable>>, Duration, Coordination>(period, coordination));
+/*! @copydoc rx-timeout.hpp
+*/
+template<class... AN>
+auto timeout(AN&&... an)
+    ->      operator_factory<timeout_tag, AN...> {
+     return operator_factory<timeout_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<timeout_tag>
+{
+    template<class Observable, class Duration,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            rxu::is_duration<Duration>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Timeout = rxo::detail::timeout<SourceValue, rxu::decay_t<Duration>, identity_one_worker>>
+    static auto member(Observable&& o, Duration&& d)
+        -> decltype(o.template lift<SourceValue>(Timeout(std::forward<Duration>(d), identity_current_thread()))) {
+        return      o.template lift<SourceValue>(Timeout(std::forward<Duration>(d), identity_current_thread()));
+    }
+
+    template<class Observable, class Coordination, class Duration,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            is_coordination<Coordination>,
+            rxu::is_duration<Duration>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Timeout = rxo::detail::timeout<SourceValue, rxu::decay_t<Duration>, rxu::decay_t<Coordination>>>
+    static auto member(Observable&& o, Coordination&& cn, Duration&& d)
+        -> decltype(o.template lift<SourceValue>(Timeout(std::forward<Duration>(d), std::forward<Coordination>(cn)))) {
+        return      o.template lift<SourceValue>(Timeout(std::forward<Duration>(d), std::forward<Coordination>(cn)));
+    }
+
+    template<class Observable, class Coordination, class Duration,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            is_coordination<Coordination>,
+            rxu::is_duration<Duration>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Timeout = rxo::detail::timeout<SourceValue, rxu::decay_t<Duration>, rxu::decay_t<Coordination>>>
+    static auto member(Observable&& o, Duration&& d, Coordination&& cn)
+        -> decltype(o.template lift<SourceValue>(Timeout(std::forward<Duration>(d), std::forward<Coordination>(cn)))) {
+        return      o.template lift<SourceValue>(Timeout(std::forward<Duration>(d), std::forward<Coordination>(cn)));
+    }
+
+    template<class... AN>
+    static operators::detail::timeout_invalid_t<AN...> member(const AN&...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "timeout takes (optional Coordination, required Duration) or (required Duration, optional Coordination)");
     }
 };
-
-}
-
-template<class Duration, class Coordination>
-inline auto timeout(Duration period, Coordination coordination)
-    ->      detail::timeout_factory<Duration, Coordination> {
-    return  detail::timeout_factory<Duration, Coordination>(period, coordination);
-}
-
-template<class Duration>
-inline auto timeout(Duration period)
-    ->      detail::timeout_factory<Duration, identity_one_worker> {
-    return  detail::timeout_factory<Duration, identity_one_worker>(period, identity_current_thread());
-}
-
-}
 
 }
 

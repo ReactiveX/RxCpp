@@ -1,4 +1,5 @@
 #include "../test.h"
+#include "rxcpp/operators/rx-timeout.hpp"
 
 using namespace std::chrono;
 
@@ -17,7 +18,8 @@ SCENARIO("should not timeout if the source never emits any items", "[timeout][op
 
             auto res = w.start(
                 [so, xs]() {
-                    return xs.timeout(milliseconds(10), so);
+                    return xs
+                        | rxo::timeout(milliseconds(10), so);
                 }
             );
 
@@ -54,7 +56,7 @@ SCENARIO("should not timeout if the source observable is empty", "[timeout][oper
 
             auto res = w.start(
                 [so, xs]() {
-                    return xs.timeout(milliseconds(10), so);
+                    return xs.timeout(so, milliseconds(10));
                 }
             );
 

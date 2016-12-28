@@ -917,48 +917,15 @@ public:
         static_assert(sizeof...(AN) == 0, "time_interval() was passed too many arguments.");
     }
 
-    /*! Return an observable that terminates with timeout_error if a particular timespan has passed without emitting another item from the source observable.
-
-        \tparam Duration      the type of time interval
-        \tparam Coordination  the type of the scheduler
-
-        \param period        the period of time wait for another item from the source observable.
-        \param coordination  the scheduler to manage timeout for each event
-
-        \return  Observable that terminates with an error if a particular timespan has passed without emitting another item from the source observable.
-
-        \sample
-        \snippet timeout.cpp timeout sample
-        \snippet output.txt timeout sample
-    */
-    template<class Duration, class Coordination>
-    auto timeout(Duration period, Coordination coordination) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::timeout<T, Duration, Coordination>(period, coordination)))
-        /// \endcond
+    /*! @copydoc rx-timeout.hpp
+     */
+    template<class... AN>
+    auto timeout(AN&&... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(timeout_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
     {
-        return                    lift<T>(rxo::detail::timeout<T, Duration, Coordination>(period, coordination));
-    }
-
-    /*! Return an observable that terminates with timeout_error if a particular timespan has passed without emitting another item from the source observable.
-
-        \tparam Duration      the type of time interval
-
-        \param period        the period of time wait for another item from the source observable.
-
-        \return  Observable that terminates with an error if a particular timespan has passed without emitting another item from the source observable.
-
-        \sample
-        \snippet timeout.cpp timeout sample
-        \snippet output.txt timeout sample
-    */
-    template<class Duration>
-    auto timeout(Duration period) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::timeout<T, Duration, identity_one_worker>(period, identity_current_thread())))
-        /// \endcond
-    {
-        return                    lift<T>(rxo::detail::timeout<T, Duration, identity_one_worker>(period, identity_current_thread()));
+        return  observable_member(timeout_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-timestamp.hpp
