@@ -203,6 +203,7 @@
 #include "operators/rx-retry.hpp"
 #include "operators/rx-sequence_equal.hpp"
 #include "operators/rx-take_while.hpp"
+#include "operators/rx-timeout.hpp"
 #include "operators/rx-time_interval.hpp"
 #include "operators/rx-timestamp.hpp"
 #include "operators/rx-with_latest_from.hpp"

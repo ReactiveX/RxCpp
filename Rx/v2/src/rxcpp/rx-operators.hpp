@@ -123,7 +123,6 @@ public:
 #include "operators/rx-take_last.hpp"
 #include "operators/rx-take_until.hpp"
 #include "operators/rx-tap.hpp"
-#include "operators/rx-timeout.hpp"
 #include "operators/rx-window.hpp"
 #include "operators/rx-window_time.hpp"
 #include "operators/rx-window_time_count.hpp"
@@ -293,6 +292,13 @@ struct sequence_equal_tag {
     template<class Included>
     struct include_header{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-sequence_equal.hpp>");
+    };
+};
+
+struct timeout_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-timeout.hpp>");
     };
 };
 
