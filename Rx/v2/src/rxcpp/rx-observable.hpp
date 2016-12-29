@@ -1222,45 +1222,15 @@ public:
         return                    lift<observable<T>>(rxo::detail::window_toggle<T, Openings, ClosingSelector, identity_one_worker>(opens, closes, identity_current_thread()));
     }
 
-    /*! Return an observable that emits connected, non-overlapping buffer, each containing at most count items from the source observable.
-
-        \param count  the maximum size of each buffer before it should be emitted
-
-        \return  Observable that emits connected, non-overlapping buffers, each containing at most count items from the source observable.
-
-        \sample
-        \snippet buffer.cpp buffer count sample
-        \snippet output.txt buffer count sample
-    */
+    /*! @copydoc rx-buffer_count.hpp
+     */
     template<class... AN>
-    auto buffer(int count, AN**...) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift_if<std::vector<T>>(rxo::detail::buffer_count<T>(count, count)))
-        /// \endcond
+    auto buffer(AN&&... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(buffer_count_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
     {
-        return                    lift_if<std::vector<T>>(rxo::detail::buffer_count<T>(count, count));
-        static_assert(sizeof...(AN) == 0, "buffer(count) was passed too many arguments.");
-    }
-
-    /*! Return an observable that emits buffers every skip items containing at most count items from the source observable.
-
-        \param count  the maximum size of each buffers before it should be emitted
-        \param skip   how many items need to be skipped before starting a new buffers
-
-        \return  Observable that emits buffers every skip items containing at most count items from the source observable.
-
-        \sample
-        \snippet buffer.cpp buffer count+skip sample
-        \snippet output.txt buffer count+skip sample
-    */
-    template<class... AN>
-    auto buffer(int count, int skip, AN**...) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift_if<std::vector<T>>(rxo::detail::buffer_count<T>(count, skip)))
-        /// \endcond
-    {
-        return                    lift_if<std::vector<T>>(rxo::detail::buffer_count<T>(count, skip));
-        static_assert(sizeof...(AN) == 0, "buffer(count, skip) was passed too many arguments.");
+        return  observable_member(buffer_count_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! Return an observable that emits buffers every skip time interval and collects items from this observable for period of time into each produced buffer, on the specified scheduler.

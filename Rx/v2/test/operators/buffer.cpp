@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-buffer_count.hpp>
 #include <rxcpp/operators/rx-take.hpp>
 
 SCENARIO("buffer count partial window", "[buffer][operators]"){
@@ -22,9 +23,9 @@ SCENARIO("buffer count partial window", "[buffer][operators]"){
             auto res = w.start(
                 [&]() {
                     return xs
-                        .buffer(5)
+                        | rxo::buffer(5)
                         // forget type to workaround lambda deduction bug on msvc 2013
-                        .as_dynamic();
+                        | rxo::as_dynamic();
                 }
             );
 
