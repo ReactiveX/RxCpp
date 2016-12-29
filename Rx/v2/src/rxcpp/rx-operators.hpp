@@ -119,7 +119,6 @@ public:
 #include "operators/rx-subscribe_on.hpp"
 #include "operators/rx-switch_if_empty.hpp"
 #include "operators/rx-switch_on_next.hpp"
-#include "operators/rx-take.hpp"
 #include "operators/rx-take_last.hpp"
 #include "operators/rx-take_until.hpp"
 #include "operators/rx-tap.hpp"
@@ -260,13 +259,6 @@ struct average_tag : reduce_tag {};
 struct min_tag : reduce_tag {};
 struct max_tag : reduce_tag {};
 
-struct take_while_tag {
-    template<class Included>
-    struct include_header{
-        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-take_while.hpp>");
-    };
-};
-
 struct pairwise_tag {
     template<class Included>
     struct include_header{
@@ -292,6 +284,20 @@ struct sequence_equal_tag {
     template<class Included>
     struct include_header{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-sequence_equal.hpp>");
+    };
+};
+
+struct take_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-take.hpp>");
+    };
+};
+
+struct take_while_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-take_while.hpp>");
     };
 };
 

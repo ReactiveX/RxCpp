@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-take.hpp>
 
 SCENARIO("buffer count partial window", "[buffer][operators]"){
     GIVEN("1 hot observable of ints."){
