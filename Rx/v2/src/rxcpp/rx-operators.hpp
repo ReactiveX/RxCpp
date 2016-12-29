@@ -95,7 +95,6 @@ public:
 
 }
 
-#include "operators/rx-buffer_count.hpp"
 #include "operators/rx-buffer_time.hpp"
 #include "operators/rx-buffer_time_count.hpp"
 #include "operators/rx-concat.hpp"
@@ -154,6 +153,13 @@ struct any_tag {
 
 struct exists_tag : any_tag {};
 struct contains_tag : any_tag {};
+
+struct buffer_count_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-buffer_count.hpp>");
+    };
+};
 
 struct combine_latest_tag {
     template<class Included>

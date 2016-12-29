@@ -2,6 +2,26 @@
 
 #pragma once
 
+/*! \file rx-buffer_count.hpp
+
+    \brief Return an observable that emits connected, non-overlapping buffer, each containing at most count items from the source observable.
+           If the skip parameter is set, return an observable that emits buffers every skip items containing at most count items from the source observable.
+
+    \param count  the maximum size of each buffers before it should be emitted.
+    \param skip   how many items need to be skipped before starting a new buffers (optional).
+
+    \return  Observable that emits connected, non-overlapping buffers, each containing at most count items from the source observable.
+             If the skip parameter is set, return an Observable that emits buffers every skip items containing at most count items from the source observable.
+
+    \sample
+    \snippet buffer.cpp buffer count sample
+    \snippet output.txt buffer count sample
+
+    \sample
+    \snippet buffer.cpp buffer count+skip sample
+    \snippet output.txt buffer count+skip sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_BUFFER_COUNT_HPP)
 #define RXCPP_OPERATORS_RX_BUFFER_COUNT_HPP
 
@@ -13,11 +33,22 @@ namespace operators {
 
 namespace detail {
 
+template<class... AN>
+struct buffer_count_invalid_arguments {};
+
+template<class... AN>
+struct buffer_count_invalid : public rxo::operator_base<buffer_count_invalid_arguments<AN...>> {
+    using type = observable<buffer_count_invalid_arguments<AN...>, buffer_count_invalid<AN...>>;
+};
+template<class... AN>
+using buffer_count_invalid_t = typename buffer_count_invalid<AN...>::type;
 
 template<class T>
 struct buffer_count
 {
     typedef rxu::decay_t<T> source_value_type;
+    typedef std::vector<source_value_type> value_type;
+
     struct buffer_count_values
     {
         buffer_count_values(int c, int s)
@@ -97,31 +128,50 @@ struct buffer_count
     }
 };
 
-class buffer_count_factory
+}
+
+/*! @copydoc rx-buffer_count.hpp
+*/
+template<class... AN>
+auto buffer(AN&&... an)
+    ->      operator_factory<buffer_count_tag, AN...> {
+     return operator_factory<buffer_count_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<buffer_count_tag>
 {
-    int count;
-    int skip;
-public:
-    buffer_count_factory(int c, int s) : count(c), skip(s) {}
-    template<class Observable>
-    auto operator()(Observable&& source)
-        -> decltype(source.template lift<std::vector<rxu::value_type_t<rxu::decay_t<Observable>>>>(buffer_count<rxu::value_type_t<rxu::decay_t<Observable>>>(count, skip))) {
-        return      source.template lift<std::vector<rxu::value_type_t<rxu::decay_t<Observable>>>>(buffer_count<rxu::value_type_t<rxu::decay_t<Observable>>>(count, skip));
+    template<class Observable,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class BufferCount = rxo::detail::buffer_count<SourceValue>,
+        class Value = rxu::value_type_t<BufferCount>>
+    static auto member(Observable&& o, int count, int skip)
+        -> decltype(o.template lift<Value>(BufferCount(count, skip))) {
+        return      o.template lift<Value>(BufferCount(count, skip));
+    }
+
+     template<class Observable,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class BufferCount = rxo::detail::buffer_count<SourceValue>,
+        class Value = rxu::value_type_t<BufferCount>>
+    static auto member(Observable&& o, int count)
+        -> decltype(o.template lift<Value>(BufferCount(count, count))) {
+        return      o.template lift<Value>(BufferCount(count, count));
+    }
+
+    template<class... AN>
+    static operators::detail::buffer_count_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "buffer takes (Count, optional Skip)");
     }
 };
-
-}
-
-inline auto buffer(int count)
-    ->      detail::buffer_count_factory {
-    return  detail::buffer_count_factory(count, count);
-}
-inline auto buffer(int count, int skip)
-    ->      detail::buffer_count_factory {
-    return  detail::buffer_count_factory(count, skip);
-}
-
-}
 
 }
 
