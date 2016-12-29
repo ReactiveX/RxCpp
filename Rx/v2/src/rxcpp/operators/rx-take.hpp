@@ -2,6 +2,21 @@
 
 #pragma once
 
+/*! \file rx-take.hpp
+
+    \brief For the first count items from this observable emit them from the new observable that is returned.
+
+    \tparam Count the type of the items counter.
+
+    \param t the number of items to take.
+
+    \return An observable that emits only the first t items emitted by the source Observable, or all of the items from the source observable if that observable emits fewer than t items.
+
+    \sample
+    \snippet take.cpp take sample
+    \snippet output.txt take sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_TAKE_HPP)
 #define RXCPP_OPERATORS_RX_TAKE_HPP
 
@@ -12,6 +27,16 @@ namespace rxcpp {
 namespace operators {
 
 namespace detail {
+
+template<class... AN>
+struct take_invalid_arguments {};
+
+template<class... AN>
+struct take_invalid : public rxo::operator_base<take_invalid_arguments<AN...>> {
+    using type = observable<take_invalid_arguments<AN...>, take_invalid<AN...>>;
+};
+template<class... AN>
+using take_invalid_t = typename take_invalid<AN...>::type;
 
 template<class T, class Observable, class Count>
 struct take : public operator_base<T>
@@ -100,30 +125,40 @@ struct take : public operator_base<T>
     }
 };
 
-template<class T>
-class take_factory
+}
+
+/*! @copydoc rx-take.hpp
+*/
+template<class... AN>
+auto take(AN&&... an)
+    ->     operator_factory<take_tag, AN...> {
+    return operator_factory<take_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<take_tag>
 {
-    typedef rxu::decay_t<T> count_type;
-    count_type count;
-public:
-    take_factory(count_type t) : count(std::move(t)) {}
-    template<class Observable>
-    auto operator()(Observable&& source)
-        ->      observable<rxu::value_type_t<rxu::decay_t<Observable>>,   take<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, count_type>> {
-        return  observable<rxu::value_type_t<rxu::decay_t<Observable>>,   take<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, count_type>>(
-                                                                          take<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, count_type>(std::forward<Observable>(source), count));
+    template<class Observable,
+        class Count,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Take = rxo::detail::take<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<Count>>,
+        class Value = rxu::value_type_t<Take>,
+        class Result = observable<Value, Take>>
+    static Result member(Observable&& o, Count&& c) {
+        return Result(Take(std::forward<Observable>(o), std::forward<Count>(c)));
+    }
+
+    template<class... AN>
+    static operators::detail::take_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "take takes (optional Count)");
     }
 };
-
-}
-
-template<class T>
-auto take(T&& t)
-    ->      detail::take_factory<T> {
-    return  detail::take_factory<T>(std::forward<T>(t));
-}
-
-}
 
 }
 

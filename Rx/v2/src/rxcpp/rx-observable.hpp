@@ -2517,26 +2517,15 @@ public:
                                 rxo::detail::skip_until<T, this_type, TriggerSource, Coordination>(*this, std::forward<TriggerSource>(t), std::forward<Coordination>(cn)));
     }
 
-    /*! For the first count items from this observable emit them from the new observable that is returned.
-
-        \tparam Count  the type of the items counter
-
-        \param t  the number of items to take
-
-        \return  An observable that emits only the first t items emitted by the source Observable, or all of the items from the source observable if that observable emits fewer than t items.
-
-        \sample
-        \snippet take.cpp take sample
-        \snippet output.txt take sample
-    */
-    template<class Count>
-    auto take(Count t) const
+    /*! @copydoc rx-take.hpp
+     */
+    template<class... AN>
+    auto take(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        ->      observable<T,   rxo::detail::take<T, this_type, Count>>
+        -> decltype(observable_member(take_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return  observable<T,   rxo::detail::take<T, this_type, Count>>(
-                                rxo::detail::take<T, this_type, Count>(*this, t));
+        return      observable_member(take_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! Emit only the final t items emitted by the source Observable.

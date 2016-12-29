@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-take.hpp>
 
 SCENARIO("take 2", "[take][operators]"){
     GIVEN("a source"){
@@ -20,9 +21,9 @@ SCENARIO("take 2", "[take][operators]"){
             auto res = w.start(
                 [xs]() {
                     return xs
-                        .take(2)
+                        | rxo::take(2)
                         // forget type to workaround lambda deduction bug on msvc 2013
-                        .as_dynamic();
+                        | rxo::as_dynamic();
                 }
             );
 
