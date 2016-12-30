@@ -1244,47 +1244,15 @@ public:
         return  observable_member(buffer_with_time_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /*! Return an observable that emits connected, non-overlapping buffers of items from the source observable that were emitted during a fixed duration of time or when the buffer has reached maximum capacity (whichever occurs first), on the specified scheduler.
-
-        \tparam Coordination  the type of the scheduler
-
-        \param period        the period of time each buffer collects items before it is emitted and replaced with a new buffer
-        \param count         the maximum size of each buffer before it is emitted and new buffer is created
-        \param coordination  the scheduler for the buffers
-
-        \return  Observable that emits connected, non-overlapping buffers of items from the source observable that were emitted during a fixed duration of time or when the buffer has reached maximum capacity (whichever occurs first).
-
-        \sample
-        \snippet buffer.cpp buffer period+count+coordination sample
-        \snippet output.txt buffer period+count+coordination sample
-    */
-    template<class Coordination>
-    auto buffer_with_time_or_count(rxsc::scheduler::clock_type::duration period, int count, Coordination coordination) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift_if<std::vector<T>>(rxo::detail::buffer_with_time_or_count<T, rxsc::scheduler::clock_type::duration, Coordination>(period, count, coordination)))
-        /// \endcond
+    /*! @copydoc rx-buffer_time.hpp
+     */
+    template<class... AN>
+    auto buffer_with_time_or_count(AN&&... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(buffer_with_time_or_count_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
     {
-        return                    lift_if<std::vector<T>>(rxo::detail::buffer_with_time_or_count<T, rxsc::scheduler::clock_type::duration, Coordination>(period, count, coordination));
-    }
-
-    /*! Return an observable that emits connected, non-overlapping buffers of items from the source observable that were emitted during a fixed duration of time or when the buffer has reached maximum capacity (whichever occurs first).
-
-        \param period        the period of time each buffer collects items before it is emitted and replaced with a new buffer
-        \param count         the maximum size of each buffer before it is emitted and new buffer is created
-
-        \return  Observable that emits connected, non-overlapping buffers of items from the source observable that were emitted during a fixed duration of time or when the buffer has reached maximum capacity (whichever occurs first).
-
-        \sample
-        \snippet buffer.cpp buffer period+count sample
-        \snippet output.txt buffer period+count sample
-    */
-    template<class Duration>
-    auto buffer_with_time_or_count(Duration period, int count) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift_if<std::vector<T>>(rxo::detail::buffer_with_time_or_count<T, Duration, identity_one_worker>(period, count, identity_current_thread())))
-        /// \endcond
-    {
-        return                    lift_if<std::vector<T>>(rxo::detail::buffer_with_time_or_count<T, Duration, identity_one_worker>(period, count, identity_current_thread()));
+        return  observable_member(buffer_with_time_or_count_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /// \cond SHOW_SERVICE_MEMBERS

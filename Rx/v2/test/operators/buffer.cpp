@@ -1,6 +1,7 @@
 #include "../test.h"
 #include <rxcpp/operators/rx-buffer_count.hpp>
 #include <rxcpp/operators/rx-buffer_time.hpp>
+#include <rxcpp/operators/rx-buffer_time_count.hpp>
 #include <rxcpp/operators/rx-take.hpp>
 
 SCENARIO("buffer count partial window", "[buffer][operators]"){
@@ -979,9 +980,9 @@ SCENARIO("buffer with time or count, basic", "[buffer_with_time_or_count][operat
             auto res = w.start(
                 [&]() {
                     return xs
-                        .buffer_with_time_or_count(milliseconds(70), 3, so)
+                        | rxo::buffer_with_time_or_count(milliseconds(70), 3, so)
                         // forget type to workaround lambda deduction bug on msvc 2013
-                        .as_dynamic();
+                        | rxo::as_dynamic();
                 }
             );
 
