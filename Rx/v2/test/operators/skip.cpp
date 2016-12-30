@@ -1,4 +1,5 @@
 #include "../test.h"
+#include "rxcpp/operators/rx-skip.hpp"
 
 SCENARIO("skip, complete after", "[skip][operators]"){
     GIVEN("a source"){
@@ -93,9 +94,9 @@ SCENARIO("skip, complete same", "[skip][operators]"){
             auto res = w.start(
                 [xs]() {
                     return xs
-                        .skip(17)
+                        | rxo::skip(17)
                         // forget type to workaround lambda deduction bug on msvc 2013
-                        .as_dynamic();
+                        | rxo::as_dynamic();
                 }
             );
 
