@@ -2,6 +2,46 @@
 
 #pragma once
 
+/*! \file rx-buffer_time.hpp
+
+    \brief Return an observable that emits buffers every period time interval and collects items from this observable for period of time into each produced buffer.
+           If the skip parameter is set, Return an observable that emits buffers every skip time interval and collects items from this observable for period of time into each produced buffer, on the specified scheduler.
+
+    \tparam Duration      the type of the time interval
+    \tparam Coordination  the type of the scheduler (optional).
+
+    \param period        the period of time each buffer collects items before it is emitted.
+    \param skip          the period of time after which a new buffer will be created (optional).
+    \param coordination  the scheduler for the buffers (optional).
+
+    \return  Observable that emits buffers every period time interval and collect items from this observable for period of time into each produced buffer.
+             If the skip parameter is set, return an Observable that emits buffers every skip time interval and collect items from this observable for period of time into each produced buffer.
+
+    \sample
+    \snippet buffer.cpp buffer period+skip+coordination sample
+    \snippet output.txt buffer period+skip+coordination sample
+
+    \sample
+    \snippet buffer.cpp buffer period+skip sample
+    \snippet output.txt buffer period+skip sample
+
+    Overlapping buffers are allowed:
+    \snippet buffer.cpp buffer period+skip overlapping sample
+    \snippet output.txt buffer period+skip overlapping sample
+
+    If no items are emitted, an empty buffer is returned:
+    \snippet buffer.cpp buffer period+skip empty sample
+    \snippet output.txt buffer period+skip empty sample
+
+    \sample
+    \snippet buffer.cpp buffer period+coordination sample
+    \snippet output.txt buffer period+coordination sample
+
+    \sample
+    \snippet buffer.cpp buffer period sample
+    \snippet output.txt buffer period sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_BUFFER_WITH_TIME_HPP)
 #define RXCPP_OPERATORS_RX_BUFFER_WITH_TIME_HPP
 
@@ -13,13 +53,21 @@ namespace operators {
 
 namespace detail {
 
+template<class... AN>
+struct buffer_with_time_invalid_arguments {};
+
+template<class... AN>
+struct buffer_with_time_invalid : public rxo::operator_base<buffer_with_time_invalid_arguments<AN...>> {
+    using type = observable<buffer_with_time_invalid_arguments<AN...>, buffer_with_time_invalid<AN...>>;
+};
+template<class... AN>
+using buffer_with_time_invalid_t = typename buffer_with_time_invalid<AN...>::type;
+
 template<class T, class Duration, class Coordination>
 struct buffer_with_time
 {
-    static_assert(std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>::value, "Duration parameter must convert to rxsc::scheduler::clock_type::duration");
-    static_assert(is_coordination<Coordination>::value, "Coordination parameter must satisfy the requirements for a Coordination");
-
     typedef rxu::decay_t<T> source_value_type;
+    typedef std::vector<source_value_type> value_type;
     typedef rxu::decay_t<Coordination> coordination_type;
     typedef typename coordination_type::coordinator_type coordinator_type;
     typedef rxu::decay_t<Duration> duration_type;
@@ -200,39 +248,78 @@ struct buffer_with_time
     }
 };
 
-template<class Duration, class Coordination>
-class buffer_with_time_factory
-{
-    typedef rxu::decay_t<Duration> duration_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
+}
 
-    duration_type period;
-    duration_type skip;
-    coordination_type coordination;
-public:
-    buffer_with_time_factory(duration_type p, duration_type s, coordination_type c) : period(p), skip(s), coordination(c) {}
-    template<class Observable>
-    auto operator()(Observable&& source)
-        -> decltype(source.template lift<std::vector<rxu::value_type_t<rxu::decay_t<Observable>>>>(buffer_with_time<rxu::value_type_t<rxu::decay_t<Observable>>, Duration, Coordination>(period, skip, coordination))) {
-        return      source.template lift<std::vector<rxu::value_type_t<rxu::decay_t<Observable>>>>(buffer_with_time<rxu::value_type_t<rxu::decay_t<Observable>>, Duration, Coordination>(period, skip, coordination));
+/*! @copydoc rx-buffer_with_time.hpp
+*/
+template<class... AN>
+auto buffer_with_time(AN&&... an)
+    ->      operator_factory<buffer_with_time_tag, AN...> {
+     return operator_factory<buffer_with_time_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<buffer_with_time_tag>
+{
+    template<class Observable, class Duration,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class BufferWithTime = rxo::detail::buffer_with_time<SourceValue, rxu::decay_t<Duration>, identity_one_worker>,
+        class Value = rxu::value_type_t<BufferWithTime>>
+    static auto member(Observable&& o, Duration period)
+        -> decltype(o.template lift<Value>(BufferWithTime(period, period, identity_current_thread()))) {
+        return      o.template lift<Value>(BufferWithTime(period, period, identity_current_thread()));
+    }
+
+    template<class Observable, class Duration, class Coordination,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>,
+            is_coordination<Coordination>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class BufferWithTime = rxo::detail::buffer_with_time<SourceValue, rxu::decay_t<Duration>, rxu::decay_t<Coordination>>,
+        class Value = rxu::value_type_t<BufferWithTime>>
+    static auto member(Observable&& o, Duration period, Coordination&& cn)
+        -> decltype(o.template lift<Value>(BufferWithTime(period, period, std::forward<Coordination>(cn)))) {
+        return      o.template lift<Value>(BufferWithTime(period, period, std::forward<Coordination>(cn)));
+    }
+
+    template<class Observable, class Duration,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class BufferWithTime = rxo::detail::buffer_with_time<SourceValue, rxu::decay_t<Duration>, identity_one_worker>,
+        class Value = rxu::value_type_t<BufferWithTime>>
+    static auto member(Observable&& o, Duration&& period, Duration&& skip)
+        -> decltype(o.template lift<Value>(BufferWithTime(std::forward<Duration>(period), std::forward<Duration>(skip), identity_current_thread()))) {
+        return      o.template lift<Value>(BufferWithTime(std::forward<Duration>(period), std::forward<Duration>(skip), identity_current_thread()));
+    }
+
+    template<class Observable, class Duration, class Coordination,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>,
+            is_coordination<Coordination>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class BufferWithTime = rxo::detail::buffer_with_time<SourceValue, rxu::decay_t<Duration>, rxu::decay_t<Coordination>>,
+        class Value = rxu::value_type_t<BufferWithTime>>
+    static auto member(Observable&& o, Duration&& period, Duration&& skip, Coordination&& cn)
+        -> decltype(o.template lift<Value>(BufferWithTime(std::forward<Duration>(period), std::forward<Duration>(skip), std::forward<Coordination>(cn)))) {
+        return      o.template lift<Value>(BufferWithTime(std::forward<Duration>(period), std::forward<Duration>(skip), std::forward<Coordination>(cn)));
+    }
+
+    template<class... AN>
+    static operators::detail::buffer_with_time_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "buffer takes (Duration, optional Duration, optional Coordination)");
     }
 };
-
-}
-
-template<class Duration, class Coordination>
-inline auto buffer_with_time(Duration period, Coordination coordination)
-    ->      detail::buffer_with_time_factory<Duration, Coordination> {
-    return  detail::buffer_with_time_factory<Duration, Coordination>(period, period, coordination);
-}
-
-template<class Duration, class Coordination>
-inline auto buffer_with_time(Duration period, Duration skip, Coordination coordination)
-    ->      detail::buffer_with_time_factory<Duration, Coordination> {
-    return  detail::buffer_with_time_factory<Duration, Coordination>(period, skip, coordination);
-}
-
-}
 
 }
 

@@ -1,5 +1,6 @@
 #include "../test.h"
 #include <rxcpp/operators/rx-buffer_count.hpp>
+#include <rxcpp/operators/rx-buffer_time.hpp>
 #include <rxcpp/operators/rx-take.hpp>
 
 SCENARIO("buffer count partial window", "[buffer][operators]"){
@@ -473,9 +474,11 @@ SCENARIO("buffer with time on intervals", "[buffer_with_time][operators][long][h
             auto start = sc.now() + TIME(5 UNIT);
             auto period = TIME(2 UNIT);
 
-            rx::observable<>::interval(start, period, so)
-                .take(7)
-                .buffer_with_time(TIME(3 UNIT), so)
+            auto bufSource = rxs::interval(start, period, so)
+                | rxo::take(7)
+                | rxo::buffer_with_time(TIME(3 UNIT), so);
+
+            bufSource
                 .subscribe(
                     [](std::vector<long> counter){
                         printf("on_next: ");
