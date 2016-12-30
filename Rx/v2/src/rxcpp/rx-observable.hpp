@@ -1233,97 +1233,15 @@ public:
         return  observable_member(buffer_count_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /*! Return an observable that emits buffers every skip time interval and collects items from this observable for period of time into each produced buffer, on the specified scheduler.
-
-        \tparam Coordination  the type of the scheduler
-
-        \param period        the period of time each buffer collects items before it is emitted
-        \param skip          the period of time after which a new buffer will be created
-        \param coordination  the scheduler for the buffers
-
-        \return  Observable that emits buffers every skip time interval and collect items from this observable for period of time into each produced buffer.
-
-        \sample
-        \snippet buffer.cpp buffer period+skip+coordination sample
-        \snippet output.txt buffer period+skip+coordination sample
-    */
-    template<class Coordination>
-    auto buffer_with_time(rxsc::scheduler::clock_type::duration period, rxsc::scheduler::clock_type::duration skip, Coordination coordination) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift_if<std::vector<T>>(rxo::detail::buffer_with_time<T, rxsc::scheduler::clock_type::duration, Coordination>(period, skip, coordination)))
-        /// \endcond
+    /*! @copydoc rx-buffer_time.hpp
+     */
+    template<class... AN>
+    auto buffer_with_time(AN&&... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(buffer_with_time_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
     {
-        return                    lift_if<std::vector<T>>(rxo::detail::buffer_with_time<T, rxsc::scheduler::clock_type::duration, Coordination>(period, skip, coordination));
-    }
-
-    /*! Return an observable that emits buffers every skip time interval and collects items from this observable for period of time into each produced buffer.
-
-        \param period        the period of time each buffer collects items before it is emitted
-        \param skip          the period of time after which a new buffer will be created
-
-        \return  Observable that emits buffers every skip time interval and collect items from this observable for period of time into each produced buffer.
-
-        \sample
-        \snippet buffer.cpp buffer period+skip sample
-        \snippet output.txt buffer period+skip sample
-
-        Overlapping buffers are allowed:
-        \snippet buffer.cpp buffer period+skip overlapping sample
-        \snippet output.txt buffer period+skip overlapping sample
-
-        If no items are emitted, an empty buffer is returned:
-        \snippet buffer.cpp buffer period+skip empty sample
-        \snippet output.txt buffer period+skip empty sample
-    */
-    template<class Duration>
-    auto buffer_with_time(Duration period, Duration skip) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift_if<std::vector<T>>(rxo::detail::buffer_with_time<T, Duration, identity_one_worker>(period, skip, identity_current_thread())))
-        /// \endcond
-    {
-        return                    lift_if<std::vector<T>>(rxo::detail::buffer_with_time<T, Duration, identity_one_worker>(period, skip, identity_current_thread()));
-    }
-
-    /*! Return an observable that emits buffers every period time interval and collects items from this observable for period of time into each produced buffer, on the specified scheduler.
-
-        \tparam Coordination  the type of the scheduler
-
-        \param period        the period of time each buffer collects items before it is emitted and replaced with a new buffer
-        \param coordination  the scheduler for the buffers
-
-        \return  Observable that emits buffers every period time interval and collect items from this observable for period of time into each produced buffer.
-
-        \sample
-        \snippet buffer.cpp buffer period+coordination sample
-        \snippet output.txt buffer period+coordination sample
-    */
-    template<class Coordination,
-        class Requires = typename std::enable_if<is_coordination<Coordination>::value, rxu::types_checked>::type>
-    auto buffer_with_time(rxsc::scheduler::clock_type::duration period, Coordination coordination) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift_if<std::vector<T>>(rxo::detail::buffer_with_time<T, rxsc::scheduler::clock_type::duration, Coordination>(period, period, coordination)))
-        /// \endcond
-    {
-        return                    lift_if<std::vector<T>>(rxo::detail::buffer_with_time<T, rxsc::scheduler::clock_type::duration, Coordination>(period, period, coordination));
-    }
-
-    /*! Return an observable that emits buffers every period time interval and collects items from this observable for period of time into each produced buffer.
-
-        \param period  the period of time each buffer collects items before it is emitted and replaced with a new buffer
-
-        \return  Observable that emits buffers every period time interval and collect items from this observable for period of time into each produced buffer.
-
-        \sample
-        \snippet buffer.cpp buffer period sample
-        \snippet output.txt buffer period sample
-    */
-    template<class Duration>
-    auto buffer_with_time(Duration period) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift_if<std::vector<T>>(rxo::detail::buffer_with_time<T, Duration, identity_one_worker>(period, period, identity_current_thread())))
-        /// \endcond
-    {
-        return                    lift_if<std::vector<T>>(rxo::detail::buffer_with_time<T, Duration, identity_one_worker>(period, period, identity_current_thread()));
+        return  observable_member(buffer_with_time_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! Return an observable that emits connected, non-overlapping buffers of items from the source observable that were emitted during a fixed duration of time or when the buffer has reached maximum capacity (whichever occurs first), on the specified scheduler.
