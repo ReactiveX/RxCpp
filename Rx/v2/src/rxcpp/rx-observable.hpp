@@ -2311,26 +2311,15 @@ public:
         static_assert(sizeof...(AN) == 0, "sample_with_time(period) was passed too many arguments.");
     }
 
-    /*! Make new observable with skipped first count items from this observable.
-
-        \tparam  Count  the type of the items counter
-
-        \param  t  the number of items to skip
-
-        \return  An observable that is identical to the source observable except that it does not emit the first t items that the source observable emits.
-
-        \sample
-        \snippet skip.cpp skip sample
-        \snippet output.txt skip sample
+    /*! @copydoc rx-skip.hpp
     */
-    template<class Count>
-    auto skip(Count t) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        ->      observable<T,   rxo::detail::skip<T, this_type, Count>>
-        /// \endcond
+    template<class... AN>
+    auto skip(AN... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(skip_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
     {
-        return  observable<T,   rxo::detail::skip<T, this_type, Count>>(
-                                rxo::detail::skip<T, this_type, Count>(*this, t));
+        return      observable_member(skip_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! Make new observable with skipped last count items from this observable.
