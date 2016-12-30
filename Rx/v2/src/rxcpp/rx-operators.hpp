@@ -95,7 +95,6 @@ public:
 
 }
 
-#include "operators/rx-buffer_time_count.hpp"
 #include "operators/rx-concat.hpp"
 #include "operators/rx-concat_map.hpp"
 #include "operators/rx-connect_forever.hpp"
@@ -164,6 +163,13 @@ struct buffer_with_time_tag {
     template<class Included>
     struct include_header{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-buffer_time.hpp>");
+    };
+};
+
+struct buffer_with_time_or_count_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-buffer_time_count.hpp>");
     };
 };
 

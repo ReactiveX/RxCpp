@@ -2,6 +2,28 @@
 
 #pragma once
 
+/*! \file rx-buffer_with_time_or_count.hpp
+
+    \brief Return an observable that emits connected, non-overlapping buffers of items from the source observable that were emitted during a fixed duration of time or when the buffer has reached maximum capacity (whichever occurs first), on the specified scheduler.
+
+    \tparam Duration      the type of the time interval.
+    \tparam Coordination  the type of the scheduler (optional).
+
+    \param period        the period of time each buffer collects items before it is emitted and replaced with a new buffer.
+    \param count         the maximum size of each buffer before it is emitted and new buffer is created.
+    \param coordination  the scheduler for the buffers (optional).
+
+    \return  Observable that emits connected, non-overlapping buffers of items from the source observable that were emitted during a fixed duration of time or when the buffer has reached maximum capacity (whichever occurs first).
+
+    \sample
+    \snippet buffer.cpp buffer period+count+coordination sample
+    \snippet output.txt buffer period+count+coordination sample
+    
+    \sample
+    \snippet buffer.cpp buffer period+count sample
+    \snippet output.txt buffer period+count sample    
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_BUFFER_WITH_TIME_OR_COUNT_HPP)
 #define RXCPP_OPERATORS_RX_BUFFER_WITH_TIME_OR_COUNT_HPP
 
@@ -13,13 +35,21 @@ namespace operators {
 
 namespace detail {
 
+template<class... AN>
+struct buffer_with_time_or_count_tag_invalid_arguments {};
+
+template<class... AN>
+struct buffer_with_time_or_count_tag_invalid : public rxo::operator_base<buffer_with_time_or_count_tag_invalid_arguments<AN...>> {
+    using type = observable<buffer_with_time_or_count_tag_invalid_arguments<AN...>, buffer_with_time_or_count_tag_invalid<AN...>>;
+};
+template<class... AN>
+using buffer_with_time_or_count_tag_invalid_t = typename buffer_with_time_or_count_tag_invalid<AN...>::type;
+    
 template<class T, class Duration, class Coordination>
 struct buffer_with_time_or_count
 {
-    static_assert(std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>::value, "Duration parameter must convert to rxsc::scheduler::clock_type::duration");
-    static_assert(is_coordination<Coordination>::value, "Coordination parameter must satisfy the requirements for a Coordination");
-
     typedef rxu::decay_t<T> source_value_type;
+    typedef std::vector<source_value_type> value_type;
     typedef rxu::decay_t<Coordination> coordination_type;
     typedef typename coordination_type::coordinator_type coordinator_type;
     typedef rxu::decay_t<Duration> duration_type;
@@ -192,34 +222,54 @@ struct buffer_with_time_or_count
     }
 };
 
-template<class Duration, class Coordination>
-class buffer_with_time_or_count_factory
+}
+
+/*! @copydoc rx-buffer_time_count.hpp
+*/
+template<class... AN>
+auto buffer_with_time_or_count(AN&&... an)
+    ->      operator_factory<buffer_with_time_or_count_tag, AN...> {
+     return operator_factory<buffer_with_time_or_count_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+} 
+    
+}
+
+template<>
+struct member_overload<buffer_with_time_or_count_tag>
 {
-    typedef rxu::decay_t<Duration> duration_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
-
-    duration_type period;
-    duration_type skip;
-    coordination_type coordination;
-public:
-    buffer_with_time_or_count_factory(duration_type p, duration_type s, coordination_type c) : period(p), skip(s), coordination(c) {}
-    template<class Observable>
-    auto operator()(Observable&& source)
-        -> decltype(source.template lift<std::vector<rxu::value_type_t<rxu::decay_t<Observable>>>>(buffer_with_time_or_count<rxu::value_type_t<rxu::decay_t<Observable>>, Duration, Coordination>(period, skip, coordination))) {
-        return      source.template lift<std::vector<rxu::value_type_t<rxu::decay_t<Observable>>>>(buffer_with_time_or_count<rxu::value_type_t<rxu::decay_t<Observable>>, Duration, Coordination>(period, skip, coordination));
+    template<class Observable, class Duration,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class BufferTimeCount = rxo::detail::buffer_with_time_or_count<SourceValue, rxu::decay_t<Duration>, identity_one_worker>,
+        class Value = rxu::value_type_t<BufferTimeCount>>
+    static auto member(Observable&& o, Duration&& period, int count)
+        -> decltype(o.template lift<Value>(BufferTimeCount(std::forward<Duration>(period), count, identity_current_thread()))) {
+        return      o.template lift<Value>(BufferTimeCount(std::forward<Duration>(period), count, identity_current_thread()));
     }
-};
 
-}
+    template<class Observable, class Duration, class Coordination,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>,
+            is_coordination<Coordination>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class BufferTimeCount = rxo::detail::buffer_with_time_or_count<SourceValue, rxu::decay_t<Duration>, rxu::decay_t<Coordination>>,
+        class Value = rxu::value_type_t<BufferTimeCount>>
+    static auto member(Observable&& o, Duration&& period, int count, Coordination&& cn)
+        -> decltype(o.template lift<Value>(BufferTimeCount(std::forward<Duration>(period), count, std::forward<Coordination>(cn)))) {
+        return      o.template lift<Value>(BufferTimeCount(std::forward<Duration>(period), count, std::forward<Coordination>(cn)));
+    }
 
-template<class Duration, class Coordination>
-inline auto buffer_with_time_or_count(Duration period, int count, Coordination coordination)
-    ->      detail::buffer_with_time_or_count_factory<Duration, Coordination> {
-    return  detail::buffer_with_time_or_count_factory<Duration, Coordination>(period, count, coordination);
-}
-
-}
-
+    template<class... AN>
+    static operators::detail::buffer_count_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "buffer_with_time_or_count takes (Duration, Count, optional Coordination)");
+    }
+};    
+    
 }
 
 #endif

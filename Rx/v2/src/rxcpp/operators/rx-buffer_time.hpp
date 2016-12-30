@@ -317,7 +317,7 @@ struct member_overload<buffer_with_time_tag>
     static operators::detail::buffer_with_time_invalid_t<AN...> member(AN...) {
         std::terminate();
         return {};
-        static_assert(sizeof...(AN) == 10000, "buffer takes (Duration, optional Duration, optional Coordination)");
+        static_assert(sizeof...(AN) == 10000, "buffer_with_time takes (Duration, optional Duration, optional Coordination)");
     }
 };
 
