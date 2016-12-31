@@ -2,6 +2,26 @@
 
 #pragma once
 
+/*! \file rx-window.hpp
+
+    \brief Return an observable that emits connected, non-overlapping windows, each containing at most count items from the source observable.
+           If the skip parameter is set, return an observable that emits windows every skip items containing at most count items from the source observable.
+
+    \param count  the maximum size of each window before it should be completed
+    \param skip   how many items need to be skipped before starting a new window
+
+    \return  Observable that emits connected, non-overlapping windows, each containing at most count items from the source observable.
+             If the skip parameter is set, return an Observable that emits windows every skip items containing at most count items from the source observable.
+
+    \sample
+    \snippet window.cpp window count+skip sample
+    \snippet output.txt window count+skip sample
+
+    \sample
+    \snippet window.cpp window count sample
+    \snippet output.txt window count sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_WINDOW_HPP)
 #define RXCPP_OPERATORS_RX_WINDOW_HPP
 
@@ -13,10 +33,22 @@ namespace operators {
 
 namespace detail {
 
+template<class... AN>
+struct window_invalid_arguments {};
+
+template<class... AN>
+struct window_invalid : public rxo::operator_base<window_invalid_arguments<AN...>> {
+    using type = observable<window_invalid_arguments<AN...>, window_invalid<AN...>>;
+};
+template<class... AN>
+using window_invalid_t = typename window_invalid<AN...>::type;
+
 template<class T>
 struct window
 {
     typedef rxu::decay_t<T> source_value_type;
+    typedef observable<source_value_type> value_type;
+
     struct window_values
     {
         window_values(int c, int s)
@@ -98,31 +130,50 @@ struct window
     }
 };
 
-class window_factory
+}
+
+/*! @copydoc rx-window.hpp
+*/
+template<class... AN>
+auto window(AN&&... an)
+    ->      operator_factory<window_tag, AN...> {
+     return operator_factory<window_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<window_tag>
 {
-    int count;
-    int skip;
-public:
-    window_factory(int c, int s) : count(c), skip(s) {}
-    template<class Observable>
-    auto operator()(Observable&& source)
-        -> decltype(source.template lift<observable<rxu::value_type_t<rxu::decay_t<Observable>>>>(window<rxu::value_type_t<rxu::decay_t<Observable>>>(count, skip))) {
-        return      source.template lift<observable<rxu::value_type_t<rxu::decay_t<Observable>>>>(window<rxu::value_type_t<rxu::decay_t<Observable>>>(count, skip));
+    template<class Observable,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Window = rxo::detail::window<SourceValue>,
+        class Value = rxu::value_type_t<Window>>
+    static auto member(Observable&& o, int count, int skip)
+        -> decltype(o.template lift<Value>(Window(count, skip))) {
+        return      o.template lift<Value>(Window(count, skip));
+    }
+
+     template<class Observable,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Window = rxo::detail::window<SourceValue>,
+        class Value = rxu::value_type_t<Window>>
+    static auto member(Observable&& o, int count)
+        -> decltype(o.template lift<Value>(Window(count, count))) {
+        return      o.template lift<Value>(Window(count, count));
+    }
+
+    template<class... AN>
+    static operators::detail::window_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "window takes (Count, optional Skip)");
     }
 };
-
-}
-
-inline auto window(int count)
-    ->      detail::window_factory {
-    return  detail::window_factory(count, count);
-}
-inline auto window(int count, int skip)
-    ->      detail::window_factory {
-    return  detail::window_factory(count, skip);
-}
-
-}
 
 }
 
