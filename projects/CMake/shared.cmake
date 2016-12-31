@@ -10,6 +10,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     set(RX_COMPILE_OPTIONS
         -Wall -Wextra -Werror -Wunused
         -stdlib=libc++
+        -Wno-error=unused-command-line-argument
         -ftemplate-depth=1024
         )
 elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")

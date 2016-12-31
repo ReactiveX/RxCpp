@@ -10,14 +10,15 @@ env:
 matrix:
   include:
 
-  - env: BUILD_TYPE=Release CPP=11 ASAN=On LIBCXX=On RUN_TEST=On 
+  - env: BUILD_TYPE=Debug ASAN=Off RUN_TEST=On
     os: osx
+    osx_image: xcode8
+
+  - env: BUILD_TYPE=Debug ASAN=Off LLVM_VERSION=3.8.0 RUN_TEST=On
+    os: linux
     compiler: clang
 
-  - env: BUILD_TYPE=Release CPP=11 ASAN=Off LLVM_VERSION=3.8.0 RUN_TEST=On CMAKE_VERSION=3.5 CMAKE_VERSION_MINOR=2
-    os: linux
-
-  - env: BUILD_TYPE=Release CPP=11 ASAN=Off GCC_VERSION=4.9 RUN_TEST=On CMAKE_VERSION=3.5 CMAKE_VERSION_MINOR=2
+  - env: BUILD_TYPE=Release ASAN=Off GCC_VERSION=4.9 RUN_TEST=On
     os: linux
     compiler: gcc
     addons:
@@ -27,8 +28,9 @@ matrix:
         sources:
         - ubuntu-toolchain-r-test
 
-  - env: BUILD_TYPE=Release CPP=11 ASAN=Off PROJECT=doc PUBLISH_DOCS=On LLVM_VERSION=3.8.0 CMAKE_VERSION=3.5 CMAKE_VERSION_MINOR=2
+  - env: BUILD_TYPE=Debug ASAN=Off LLVM_VERSION=3.8.0 RUN_TEST=Off PROJECT=doc PUBLISH_DOCS=On DOXYGEN_VERSION=1.8.11
     os: linux
+    compiler: clang
     addons:
       apt:
         packages:
@@ -38,100 +40,132 @@ matrix:
 
 cache:
   directories:
-    - llvm-3.8.0
-    - cmake-3.5.2
-    
-before_install:
+    - ${TRAVIS_BUILD_DIR}/deps/llvm-3.8.0
+    - ${TRAVIS_BUILD_DIR}/deps/cmake-3.5.2
+    - ${TRAVIS_BUILD_DIR}/deps/doxygen-1.8.11
+
+install:
   ############################################################################
-  # Install llvm
+  # All the dependencies are installed in ${TRAVIS_BUILD_DIR}/deps/
+  ############################################################################
+  - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
+  - mkdir -p ${DEPS_DIR} && cd ${DEPS_DIR}
+
+  ############################################################################
+  # Install Clang, libc++ and libc++abi
   ############################################################################
   - |
-    if [ -n "$LLVM_VERSION" ]; then
-      if [ -z "$(ls -A llvm-$LLVM_VERSION)" ]; then
-        travis_retry wget -O llvm-$LLVM_VERSION.tar.xz http://llvm.org/releases/$LLVM_VERSION/clang+llvm-$LLVM_VERSION-x86_64-linux-gnu-ubuntu-14.04.tar.xz;
-        mkdir llvm-$LLVM_VERSION;
-        xzcat llvm-$LLVM_VERSION.tar.xz | tar -xvf - --strip 1 -C llvm-$LLVM_VERSION;
-      fi;
-      llvm-$LLVM_VERSION/bin/llvm-config --version;
-      export LLVM_CONFIG="llvm-$LLVM_VERSION/bin/llvm-config";
-    fi  
+    if [[ "${LLVM_VERSION}" != "" ]]; then
+      LLVM_DIR=${DEPS_DIR}/llvm-${LLVM_VERSION}
+      if [[ -z "$(ls -A ${LLVM_DIR})" ]]; then
+        LLVM_URL="http://llvm.org/releases/${LLVM_VERSION}/llvm-${LLVM_VERSION}.src.tar.xz"
+        LIBCXX_URL="http://llvm.org/releases/${LLVM_VERSION}/libcxx-${LLVM_VERSION}.src.tar.xz"
+        LIBCXXABI_URL="http://llvm.org/releases/${LLVM_VERSION}/libcxxabi-${LLVM_VERSION}.src.tar.xz"
+        CLANG_URL="http://llvm.org/releases/${LLVM_VERSION}/clang+llvm-${LLVM_VERSION}-x86_64-linux-gnu-ubuntu-14.04.tar.xz"
+        mkdir -p ${LLVM_DIR} ${LLVM_DIR}/build ${LLVM_DIR}/projects/libcxx ${LLVM_DIR}/projects/libcxxabi ${LLVM_DIR}/clang
+        travis_retry wget --quiet -O - ${LLVM_URL}      | tar --strip-components=1 -xJ -C ${LLVM_DIR}
+        travis_retry wget --quiet -O - ${LIBCXX_URL}    | tar --strip-components=1 -xJ -C ${LLVM_DIR}/projects/libcxx
+        travis_retry wget --quiet -O - ${LIBCXXABI_URL} | tar --strip-components=1 -xJ -C ${LLVM_DIR}/projects/libcxxabi
+        travis_retry wget --quiet -O - ${CLANG_URL}     | tar --strip-components=1 -xJ -C ${LLVM_DIR}/clang
+        (cd ${LLVM_DIR}/build && cmake .. -DCMAKE_INSTALL_PREFIX=${LLVM_DIR}/install -DCMAKE_CXX_COMPILER=clang++)
+        (cd ${LLVM_DIR}/build/projects/libcxx && make install -j2)
+        (cd ${LLVM_DIR}/build/projects/libcxxabi && make install -j2)
+      fi
+      export CXXFLAGS="-nostdinc++ -isystem ${LLVM_DIR}/install/include/c++/v1"
+      export LDFLAGS="-L ${LLVM_DIR}/install/lib -l c++ -l c++abi"
+      export LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${LLVM_DIR}/install/lib"
+      export PATH="${LLVM_DIR}/clang/bin:${PATH}"
+      $LLVM_DIR/clang/bin/clang++ --version
+    fi
+
   ############################################################################
   # Use gcc
   ############################################################################
   - |
-    if [ -n "$GCC_VERSION" ]; then 
-      export CXX="g++-${GCC_VERSION}" CC="gcc-${GCC_VERSION}";
-    fi
-  ############################################################################
-  # Install publish tools (doxygen)
-  ############################################################################
-  - |
-    if [[ "$PUBLISH_DOCS" == "On" ]]; then
-      sudo apt-add-repository -y ppa:libreoffice/libreoffice-4-2;
-      sudo apt-get update || echo "ignore update failure";
-      sudo apt-get install doxygen;
-    fi
-  ############################################################################
-  # Install a recent CMake
-  ############################################################################
-  - |
-    if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
-      if [ -z "$(ls -A cmake-$CMAKE_VERSION.$CMAKE_VERSION_MINOR)" ]; then
-        CMAKE_URL="http://www.cmake.org/files/v$CMAKE_VERSION/cmake-$CMAKE_VERSION.$CMAKE_VERSION_MINOR-Linux-x86_64.tar.gz";
-        mkdir cmake-$CMAKE_VERSION.$CMAKE_VERSION_MINOR;
-        travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake-$CMAKE_VERSION.$CMAKE_VERSION_MINOR;
-      fi;
-      export PATH=cmake-$CMAKE_VERSION.$CMAKE_VERSION_MINOR/bin:${PATH};
-    else
-      xcode-select --install;
-      brew update || echo "suppress failures in order to ignore warnings";
-      brew doctor || echo "suppress failures in order to ignore warnings";
-      brew list cmake || echo "suppress failures in order to ignore warnings";
-      sudo brew uninstall --force cmake || "suppress failures in order to ignore warnings";
-      brew search cmake || echo "suppress failures in order to ignore warnings";
-      brew install cmake || echo "suppress failures in order to ignore warnings";
-      brew upgrade cmake || echo "suppress failures in order to ignore warnings";
-    fi;
-    cmake --version;
-install:
-  - |
-    export CXX_FLAGS="";
-    export CXX_LINKER_FLAGS="";
-    if [ -z "$BUILD_TYPE" ]; then 
-      export BUILD_TYPE=Release; 
-    fi;
-    if [ "$ASAN" == "On"]; then 
-      export CXX_FLAGS="${CXX_FLAGS} -fsanitize=address,undefined,integer -fno-omit-frame-pointer -fno-sanitize=unsigned-integer-overflow"; 
-    fi;
-    if [ -n "$LLVM_VERSION" ]; then 
-      CXX_FLAGS="${CXX_FLAGS} -D__extern_always_inline=inline";
-    fi;
-  ############################################################################
-  # Run cmake
-  ############################################################################
-  - |
     if [ -n "$GCC_VERSION" ]; then
-      cmake . -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_CXX_FLAGS="${CXX_FLAGS}" -DCMAKE_EXE_LINKER_FLAGS="${CXX_LINKER_FLAGS}"; 
+      export CXX="g++-${GCC_VERSION}" CC="gcc-${GCC_VERSION}";
+      g++-${GCC_VERSION} --version
+    fi
+
+  - $CXX --version
+
+  ############################################################################
+  # Install a recent Doxygen
+  ############################################################################
+  - |
+    if [ -n "$DOXYGEN_VERSION" ]; then
+      DOXYGEN_DIR=${DEPS_DIR}/doxygen-${DOXYGEN_VERSION}
+      if [[ -z "$(ls -A ${DOXYGEN_DIR})" ]]; then
+        DOXYGEN_URL="http://ftp.stack.nl/pub/users/dimitri/doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz"
+        mkdir -p ${DOXYGEN_DIR} && travis_retry wget --quiet -O - ${DOXYGEN_URL} | tar --strip-components=1 -xz -C ${DOXYGEN_DIR}
+      fi
+      export PATH=${DOXYGEN_DIR}/bin:${PATH}
+      doxygen --version
+    fi
+
+  ############################################################################
+  # Install a recent CMake (unless already installed on OS X)
+  ############################################################################
+  - |
+    if [ -z "$CMAKE_VERSION" ]; then
+      CMAKE_VERSION=3.5.2;
+    fi;
+    if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
+      CMAKE_DIR=${DEPS_DIR}/cmake-${CMAKE_VERSION}
+      if [[ -z "$(ls -A ${CMAKE_DIR})" ]]; then
+        CMAKE_URL="http://www.cmake.org/files/v3.5/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz"
+        mkdir -p ${CMAKE_DIR} && travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C ${CMAKE_DIR}
+      fi
+      export PATH=${CMAKE_DIR}/bin:${PATH}
+    else
+      if ! brew ls --version cmake &>/dev/null; then brew install cmake; fi
+    fi
+    cmake --version
+
+before_script:
+  - |
+    if [ -z "$BUILD_TYPE" ]; then
+      BUILD_TYPE=Release;
+    fi;
+    if [[ "${ASAN}" == "On" ]]; then
+      export CXXFLAGS="${CXXFLAGS} -fsanitize=address,undefined,integer -fno-omit-frame-pointer -fno-sanitize=unsigned-integer-overflow";
     fi;
     if [ -n "$LLVM_VERSION" ]; then
-      cmake . -DLLVM_CONFIG=$(which ${LLVM_CONFIG}) -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_CXX_FLAGS="${CXX_FLAGS}" -DCMAKE_EXE_LINKER_FLAGS="${CXX_LINKER_FLAGS}"; 
+      export CXXFLAGS="${CXXFLAGS} -D__extern_always_inline=inline";
     fi;
+
+  ############################################################################
+  # generate build
+  ############################################################################
+  - cd ${TRAVIS_BUILD_DIR}
+  - cmake . -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+
 script:
-  - |
-    make VERBOSE=1 $PROJECT;
-    if [[ "$RUN_TEST" == "On" ]]; then
-      cd build/test/;
-      ctest -V;
-      cd ../../;
-    fi;
+  ############################################################################
+  # Run build
+  ############################################################################
+  - make VERBOSE=1 $PROJECT
+
+  ############################################################################
+  # Test build
+  ############################################################################
+  - cd build/test/
+  - if [[ "${RUN_TEST}" == "On" ]]; then ctest -V; fi
+  - cd ../../
+
 after_success:
+  ############################################################################
+  # Publish documentation
+  ############################################################################
   - |
-    if [[ "$PUBLISH_DOCS" == "On" ]]; then
+    if [[ "${PUBLISH_DOCS}" == "On" ]]; then
       sh projects/scripts/travis-doxygen.sh;
     fi;
+
 branches:
   only:
   - master
+
 notifications:
   email:
     recipients:
