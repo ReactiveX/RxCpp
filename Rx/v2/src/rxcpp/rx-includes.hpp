@@ -182,8 +182,8 @@
 #include "rx-grouped_observable.hpp"
 
 #if !defined(RXCPP_LITE)
-#include "operators/rx-amb.hpp"
 #include "operators/rx-all.hpp"
+#include "operators/rx-amb.hpp"
 #include "operators/rx-any.hpp"
 #include "operators/rx-buffer_count.hpp"
 #include "operators/rx-buffer_time.hpp"
@@ -208,9 +208,10 @@
 #include "operators/rx-skip.hpp"
 #include "operators/rx-take.hpp"
 #include "operators/rx-take_while.hpp"
-#include "operators/rx-timeout.hpp"
 #include "operators/rx-time_interval.hpp"
+#include "operators/rx-timeout.hpp"
 #include "operators/rx-timestamp.hpp"
+#include "operators/rx-window.hpp"
 #include "operators/rx-with_latest_from.hpp"
 #include "operators/rx-zip.hpp"
 #endif

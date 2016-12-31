@@ -997,45 +997,15 @@ public:
         return  observable_member(element_at_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /*! Return an observable that emits connected, non-overlapping windows, each containing at most count items from the source observable.
-
-        \param count  the maximum size of each window before it should be completed
-
-        \return  Observable that emits connected, non-overlapping windows, each containing at most count items from the source observable.
-
-        \sample
-        \snippet window.cpp window count sample
-        \snippet output.txt window count sample
+    /*! @copydoc rx-window.hpp
     */
     template<class... AN>
-    auto window(int count, AN**...) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<observable<T>>(rxo::detail::window<T>(count, count)))
-        /// \endcond
+    auto window(AN&&... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(window_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
     {
-        return                    lift<observable<T>>(rxo::detail::window<T>(count, count));
-        static_assert(sizeof...(AN) == 0, "window(count) was passed too many arguments.");
-    }
-
-    /*! Return an observable that emits windows every skip items containing at most count items from the source observable.
-
-        \param count  the maximum size of each window before it should be completed
-        \param skip   how many items need to be skipped before starting a new window
-
-        \return  Observable that emits windows every skip items containing at most count items from the source observable.
-
-        \sample
-        \snippet window.cpp window count+skip sample
-        \snippet output.txt window count+skip sample
-    */
-    template<class... AN>
-    auto window(int count, int skip, AN**...) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<observable<T>>(rxo::detail::window<T>(count, skip)))
-        /// \endcond
-    {
-        return                    lift<observable<T>>(rxo::detail::window<T>(count, skip));
-        static_assert(sizeof...(AN) == 0, "window(count, skip) was passed too many arguments.");
+        return  observable_member(window_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! Return an observable that emits observables every skip time interval and collects items from this observable for period of time into each produced observable, on the specified scheduler.

@@ -1,7 +1,7 @@
 #include "../test.h"
-
 #include <rxcpp/operators/rx-reduce.hpp>
 #include <rxcpp/operators/rx-map.hpp>
+#include <rxcpp/operators/rx-window.hpp>
 
 SCENARIO("window count, basic", "[window][operators]"){
     GIVEN("1 hot observable of ints."){
@@ -93,7 +93,7 @@ SCENARIO("window count, inner timings", "[window][operators]"){
                 rxsc::test::created_time,
                 [&](const rxsc::schedulable&) {
                     res = xs
-                        .window(3, 2);
+                        | rxo::window(3, 2);
                 }
             );
 
