@@ -73,6 +73,7 @@ set(RX_SOURCES
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-take.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-take_last.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-take_until.hpp
+   ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-take_while.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-tap.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-time_interval.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-timeout.hpp
