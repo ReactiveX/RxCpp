@@ -118,7 +118,6 @@ public:
 #include "operators/rx-take_last.hpp"
 #include "operators/rx-take_until.hpp"
 #include "operators/rx-tap.hpp"
-#include "operators/rx-window_time.hpp"
 #include "operators/rx-window_time_count.hpp"
 #include "operators/rx-window_toggle.hpp"
 
@@ -352,6 +351,13 @@ struct window_tag {
     };
 };
 
+struct window_with_time_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-window_time.hpp>");
+    };
+};
+    
 struct with_latest_from_tag {
     template<class Included>
     struct include_header{

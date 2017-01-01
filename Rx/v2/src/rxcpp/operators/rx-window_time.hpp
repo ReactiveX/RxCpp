@@ -2,6 +2,38 @@
 
 #pragma once
 
+/*! \file rx-window_time.hpp
+  
+    \brief Return an observable that emits observables every period time interval and collects items from this observable for period of time into each produced observable, on the specified scheduler.
+           If the skip parameter is set, return an observable that emits observables every skip time interval and collects items from this observable for period of time into each produced observable, on the specified scheduler.
+
+    \tparam Duration      the type of time intervals.
+    \tparam Coordination  the type of the scheduler (optional).
+
+    \param period        the period of time each window collects items before it is completed.
+    \param skip          the period of time after which a new window will be created.
+    \param coordination  the scheduler for the windows (optional).
+
+    \return  Observable that emits observables every period time interval and collect items from this observable for period of time into each produced observable.
+             If the skip parameter is set, return an Observable that emits observables every skip time interval and collect items from this observable for period of time into each produced observable.
+
+    \sample
+    \snippet window.cpp window period+skip+coordination sample
+    \snippet output.txt window period+skip+coordination sample
+    
+    \sample
+    \snippet window.cpp window period+skip sample
+    \snippet output.txt window period+skip sample
+
+    \sample
+    \snippet window.cpp window period+coordination sample
+    \snippet output.txt window period+coordination sample
+
+    \sample
+    \snippet window.cpp window period sample
+    \snippet output.txt window period sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_WINDOW_WITH_TIME_HPP)
 #define RXCPP_OPERATORS_RX_WINDOW_WITH_TIME_HPP
 
@@ -13,10 +45,21 @@ namespace operators {
 
 namespace detail {
 
+template<class... AN>
+struct window_with_time_invalid_arguments {};
+
+template<class... AN>
+struct window_with_time_invalid : public rxo::operator_base<window_with_time_invalid_arguments<AN...>> {
+    using type = observable<window_with_time_invalid_arguments<AN...>, window_with_time_invalid<AN...>>;
+};
+template<class... AN>
+using window_with_time_invalid_t = typename window_with_time_invalid<AN...>::type;
+    
 template<class T, class Duration, class Coordination>
 struct window_with_time
 {
     typedef rxu::decay_t<T> source_value_type;
+    typedef observable<source_value_type> value_type;    
     typedef rxu::decay_t<Coordination> coordination_type;
     typedef typename coordination_type::coordinator_type coordinator_type;
     typedef rxu::decay_t<Duration> duration_type;
@@ -201,40 +244,79 @@ struct window_with_time
     }
 };
 
-template<class Duration, class Coordination>
-class window_with_time_factory
+}
+
+/*! @copydoc rx-window_with_time.hpp
+*/
+template<class... AN>
+auto window_with_time(AN&&... an)
+    ->      operator_factory<window_with_time_tag, AN...> {
+     return operator_factory<window_with_time_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}    
+
+}
+
+template<>
+struct member_overload<window_with_time_tag>
 {
-    typedef rxu::decay_t<Duration> duration_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
-
-    duration_type period;
-    duration_type skip;
-    coordination_type coordination;
-public:
-    window_with_time_factory(duration_type p, duration_type s, coordination_type c) : period(p), skip(s), coordination(c) {}
-    template<class Observable>
-    auto operator()(Observable&& source)
-        -> decltype(source.template lift<observable<rxu::value_type_t<rxu::decay_t<Observable>>>>(window_with_time<rxu::value_type_t<rxu::decay_t<Observable>>, Duration, Coordination>(period, skip, coordination))) {
-        return      source.template lift<observable<rxu::value_type_t<rxu::decay_t<Observable>>>>(window_with_time<rxu::value_type_t<rxu::decay_t<Observable>>, Duration, Coordination>(period, skip, coordination));
+    template<class Observable, class Duration,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class WindowWithTime = rxo::detail::window_with_time<SourceValue, rxu::decay_t<Duration>, identity_one_worker>,
+        class Value = rxu::value_type_t<WindowWithTime>>
+    static auto member(Observable&& o, Duration period)
+        -> decltype(o.template lift<Value>(WindowWithTime(period, period, identity_current_thread()))) {
+        return      o.template lift<Value>(WindowWithTime(period, period, identity_current_thread()));
     }
-};
 
-}
+    template<class Observable, class Duration, class Coordination,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>,
+            is_coordination<Coordination>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class WindowWithTime = rxo::detail::window_with_time<SourceValue, rxu::decay_t<Duration>, rxu::decay_t<Coordination>>,
+        class Value = rxu::value_type_t<WindowWithTime>>
+    static auto member(Observable&& o, Duration period, Coordination&& cn)
+        -> decltype(o.template lift<Value>(WindowWithTime(period, period, std::forward<Coordination>(cn)))) {
+        return      o.template lift<Value>(WindowWithTime(period, period, std::forward<Coordination>(cn)));
+    }
 
-template<class Duration, class Coordination>
-inline auto window_with_time(Duration period, Coordination coordination)
-    ->      detail::window_with_time_factory<Duration, Coordination> {
-    return  detail::window_with_time_factory<Duration, Coordination>(period, period, coordination);
-}
+    template<class Observable, class Duration,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class WindowWithTime = rxo::detail::window_with_time<SourceValue, rxu::decay_t<Duration>, identity_one_worker>,
+        class Value = rxu::value_type_t<WindowWithTime>>
+    static auto member(Observable&& o, Duration&& period, Duration&& skip)
+        -> decltype(o.template lift<Value>(WindowWithTime(std::forward<Duration>(period), std::forward<Duration>(skip), identity_current_thread()))) {
+        return      o.template lift<Value>(WindowWithTime(std::forward<Duration>(period), std::forward<Duration>(skip), identity_current_thread()));
+    }
 
-template<class Duration, class Coordination>
-inline auto window_with_time(Duration period, Duration skip, Coordination coordination)
-    ->      detail::window_with_time_factory<Duration, Coordination> {
-    return  detail::window_with_time_factory<Duration, Coordination>(period, skip, coordination);
-}
+    template<class Observable, class Duration, class Coordination,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>,
+            is_coordination<Coordination>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class WindowWithTime = rxo::detail::window_with_time<SourceValue, rxu::decay_t<Duration>, rxu::decay_t<Coordination>>,
+        class Value = rxu::value_type_t<WindowWithTime>>
+    static auto member(Observable&& o, Duration&& period, Duration&& skip, Coordination&& cn)
+        -> decltype(o.template lift<Value>(WindowWithTime(std::forward<Duration>(period), std::forward<Duration>(skip), std::forward<Coordination>(cn)))) {
+        return      o.template lift<Value>(WindowWithTime(std::forward<Duration>(period), std::forward<Duration>(skip), std::forward<Coordination>(cn)));
+    }
 
-}
-
+    template<class... AN>
+    static operators::detail::window_with_time_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "window_with_time takes (Duration, optional Duration, optional Coordination)");
+    }
+};    
+    
 }
 
 #endif
