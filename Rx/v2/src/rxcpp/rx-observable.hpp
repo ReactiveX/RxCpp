@@ -1008,94 +1008,15 @@ public:
         return  observable_member(window_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /*! Return an observable that emits observables every skip time interval and collects items from this observable for period of time into each produced observable, on the specified scheduler.
-
-        \tparam Duration      the type of time intervals
-        \tparam Coordination  the type of the scheduler
-
-        \param period        the period of time each window collects items before it is completed
-        \param skip          the period of time after which a new window will be created
-        \param coordination  the scheduler for the windows
-
-        \return  Observable that emits observables every skip time interval and collect items from this observable for period of time into each produced observable.
-
-        \sample
-        \snippet window.cpp window period+skip+coordination sample
-        \snippet output.txt window period+skip+coordination sample
+    /*! @copydoc rx-window_time.hpp
     */
-    template<class Duration, class Coordination>
-    auto window_with_time(Duration period, Duration skip, Coordination coordination) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<observable<T>>(rxo::detail::window_with_time<T, Duration, Coordination>(period, skip, coordination)))
-        /// \endcond
+    template<class... AN>
+    auto window_with_time(AN&&... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(window_with_time_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
     {
-        return                    lift<observable<T>>(rxo::detail::window_with_time<T, Duration, Coordination>(period, skip, coordination));
-    }
-
-    /*! Return an observable that emits observables every skip time interval and collects items from this observable for period of time into each produced observable.
-
-        \tparam Duration  the type of time intervals
-
-        \param period  the period of time each window collects items before it is completed
-        \param skip    the period of time after which a new window will be created
-
-        \return  Observable that emits observables every skip time interval and collect items from this observable for period of time into each produced observable.
-
-        \sample
-        \snippet window.cpp window period+skip sample
-        \snippet output.txt window period+skip sample
-    */
-    template<class Duration>
-    auto window_with_time(Duration period, Duration skip) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<observable<T>>(rxo::detail::window_with_time<T, Duration, identity_one_worker>(period, skip, identity_current_thread())))
-        /// \endcond
-    {
-        return                    lift<observable<T>>(rxo::detail::window_with_time<T, Duration, identity_one_worker>(period, skip, identity_current_thread()));
-    }
-
-    /*! Return an observable that emits observables every period time interval and collects items from this observable for period of time into each produced observable, on the specified scheduler.
-
-        \tparam Duration      the type of time intervals
-        \tparam Coordination  the type of the scheduler
-
-        \param period        the period of time each window collects items before it is completed and replaced with a new window
-        \param coordination  the scheduler for the windows
-
-        \return  Observable that emits observables every period time interval and collect items from this observable for period of time into each produced observable.
-
-        \sample
-        \snippet window.cpp window period+coordination sample
-        \snippet output.txt window period+coordination sample
-    */
-    template<class Duration, class Coordination, class Reqiures = typename rxu::types_checked_from<typename Coordination::coordination_tag>::type>
-    auto window_with_time(Duration period, Coordination coordination) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<observable<T>>(rxo::detail::window_with_time<T, Duration, Coordination>(period, period, coordination)))
-        /// \endcond
-    {
-        return                    lift<observable<T>>(rxo::detail::window_with_time<T, Duration, Coordination>(period, period, coordination));
-    }
-
-    /*! Return an observable that emits connected, non-overlapping windows represending items emitted by the source observable during fixed, consecutive durations.
-
-        \tparam Duration  the type of time intervals
-
-        \param period  the period of time each window collects items before it is completed and replaced with a new window
-
-        \return  Observable that emits connected, non-overlapping windows represending items emitted by the source observable during fixed, consecutive durations.
-
-        \sample
-        \snippet window.cpp window period sample
-        \snippet output.txt window period sample
-    */
-    template<class Duration>
-    auto window_with_time(Duration period) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<observable<T>>(rxo::detail::window_with_time<T, Duration, identity_one_worker>(period, period, identity_current_thread())))
-        /// \endcond
-    {
-        return                    lift<observable<T>>(rxo::detail::window_with_time<T, Duration, identity_one_worker>(period, period, identity_current_thread()));
+        return  observable_member(window_with_time_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! Return an observable that emits connected, non-overlapping windows of items from the source observable that were emitted during a fixed duration of time or when the window has reached maximum capacity (whichever occurs first), on the specified scheduler.
@@ -3174,7 +3095,7 @@ public:
 //
 // support range() >> filter() >> subscribe() syntax
 // '>>' is spelled 'stream'
-//
+//K
 template<class T, class SourceOperator, class OperatorFactory>
 auto operator >> (const rxcpp::observable<T, SourceOperator>& source, OperatorFactory&& of)
     -> decltype(source.op(std::forward<OperatorFactory>(of))) {
