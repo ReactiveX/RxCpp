@@ -129,7 +129,7 @@ struct any_value_true {
 
     template<class Value0, class... ValueN>
     bool operator()(Value0 v0, ValueN... vn) const {
-        return v0 || all_values_true()(vn...);
+        return v0 || any_value_true()(vn...);
     }
 };
 
