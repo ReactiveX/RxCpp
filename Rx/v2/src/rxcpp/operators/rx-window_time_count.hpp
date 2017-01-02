@@ -2,6 +2,28 @@
 
 #pragma once
 
+/*! \file rx-window_time_count.hpp
+
+    \brief Return an observable that emits connected, non-overlapping windows of items from the source observable that were emitted during a fixed duration of time or when the window has reached maximum capacity (whichever occurs first), on the specified scheduler.
+
+    \tparam Duration      the type of time intervals.
+    \tparam Coordination  the type of the scheduler (optional).
+
+    \param period        the period of time each window collects items before it is completed and replaced with a new window.
+    \param count         the maximum size of each window before it is completed and new window is created.
+    \param coordination  the scheduler for the windows (optional).
+
+    \return  Observable that emits connected, non-overlapping windows of items from the source observable that were emitted during a fixed duration of time or when the window has reached maximum capacity (whichever occurs first).
+
+    \sample
+    \snippet window.cpp window period+count+coordination sample
+    \snippet output.txt window period+count+coordination sample
+
+    \sample
+    \snippet window.cpp window period+count sample
+    \snippet output.txt window period+count sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_WINDOW_WITH_TIME_OR_COUNT_HPP)
 #define RXCPP_OPERATORS_RX_WINDOW_WITH_TIME_OR_COUNT_HPP
 
@@ -13,10 +35,21 @@ namespace operators {
 
 namespace detail {
 
+template<class... AN>
+struct window_with_time_or_count_invalid_arguments {};
+
+template<class... AN>
+struct window_with_time_or_count_invalid : public rxo::operator_base<window_with_time_or_count_invalid_arguments<AN...>> {
+    using type = observable<window_with_time_or_count_invalid_arguments<AN...>, window_with_time_or_count_invalid<AN...>>;
+};
+template<class... AN>
+using window_with_time_or_count_invalid_t = typename window_with_time_or_count_invalid<AN...>::type;
+
 template<class T, class Duration, class Coordination>
 struct window_with_time_or_count
 {
     typedef rxu::decay_t<T> source_value_type;
+    typedef observable<source_value_type> value_type;
     typedef rxu::decay_t<Coordination> coordination_type;
     typedef typename coordination_type::coordinator_type coordinator_type;
     typedef rxu::decay_t<Duration> duration_type;
@@ -195,33 +228,53 @@ struct window_with_time_or_count
     }
 };
 
-template<class Duration, class Coordination>
-class window_with_time_or_count_factory
-{
-    typedef rxu::decay_t<Duration> duration_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
+}
 
-    duration_type period;
-    int count;
-    coordination_type coordination;
-public:
-    window_with_time_or_count_factory(duration_type p, int n, coordination_type c) : period(p), count(n), coordination(c) {}
-    template<class Observable>
-    auto operator()(Observable&& source)
-        -> decltype(source.template lift<observable<rxu::value_type_t<rxu::decay_t<Observable>>>>(window_with_time_or_count<rxu::value_type_t<rxu::decay_t<Observable>>, Duration, Coordination>(period, count, coordination))) {
-        return      source.template lift<observable<rxu::value_type_t<rxu::decay_t<Observable>>>>(window_with_time_or_count<rxu::value_type_t<rxu::decay_t<Observable>>, Duration, Coordination>(period, count, coordination));
+/*! @copydoc rx-window_time_count.hpp
+*/
+template<class... AN>
+auto window_with_time_or_count(AN&&... an)
+    ->      operator_factory<window_with_time_or_count_tag, AN...> {
+     return operator_factory<window_with_time_or_count_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<window_with_time_or_count_tag>
+{
+    template<class Observable, class Duration,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class WindowTimeCount = rxo::detail::window_with_time_or_count<SourceValue, rxu::decay_t<Duration>, identity_one_worker>,
+        class Value = rxu::value_type_t<WindowTimeCount>>
+    static auto member(Observable&& o, Duration&& period, int count)
+        -> decltype(o.template lift<Value>(WindowTimeCount(std::forward<Duration>(period), count, identity_current_thread()))) {
+        return      o.template lift<Value>(WindowTimeCount(std::forward<Duration>(period), count, identity_current_thread()));
+    }
+
+    template<class Observable, class Duration, class Coordination,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>,
+            is_coordination<Coordination>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class WindowTimeCount = rxo::detail::window_with_time_or_count<SourceValue, rxu::decay_t<Duration>, rxu::decay_t<Coordination>>,
+        class Value = rxu::value_type_t<WindowTimeCount>>
+    static auto member(Observable&& o, Duration&& period, int count, Coordination&& cn)
+        -> decltype(o.template lift<Value>(WindowTimeCount(std::forward<Duration>(period), count, std::forward<Coordination>(cn)))) {
+        return      o.template lift<Value>(WindowTimeCount(std::forward<Duration>(period), count, std::forward<Coordination>(cn)));
+    }
+
+    template<class... AN>
+    static operators::detail::window_with_time_or_count_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "window_with_time_or_count takes (Duration, Count, optional Coordination)");
     }
 };
-
-}
-
-template<class Duration, class Coordination>
-inline auto window_with_time_or_count(Duration period, int count, Coordination coordination)
-    ->      detail::window_with_time_or_count_factory<Duration, Coordination> {
-    return  detail::window_with_time_or_count_factory<Duration, Coordination>(period, count, coordination);
-}
-
-}
 
 }
 
