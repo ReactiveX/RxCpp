@@ -36,14 +36,14 @@ namespace operators {
 namespace detail {
 
 template<class... AN>
-struct window_with_time_or_count_tag_invalid_arguments {};
+struct window_with_time_or_count_invalid_arguments {};
 
 template<class... AN>
-struct window_with_time_or_count_tag_invalid : public rxo::operator_base<window_with_time_or_count_tag_invalid_arguments<AN...>> {
-    using type = observable<window_with_time_or_count_tag_invalid_arguments<AN...>, window_with_time_or_count_tag_invalid<AN...>>;
+struct window_with_time_or_count_invalid : public rxo::operator_base<window_with_time_or_count_invalid_arguments<AN...>> {
+    using type = observable<window_with_time_or_count_invalid_arguments<AN...>, window_with_time_or_count_invalid<AN...>>;
 };
 template<class... AN>
-using window_with_time_or_count_tag_invalid_t = typename window_with_time_or_count_tag_invalid<AN...>::type;
+using window_with_time_or_count_invalid_t = typename window_with_time_or_count_invalid<AN...>::type;
 
 template<class T, class Duration, class Coordination>
 struct window_with_time_or_count
@@ -269,7 +269,7 @@ struct member_overload<window_with_time_or_count_tag>
     }
 
     template<class... AN>
-    static operators::detail::window_with_time_or_count_tag_invalid_t<AN...> member(AN...) {
+    static operators::detail::window_with_time_or_count_invalid_t<AN...> member(AN...) {
         std::terminate();
         return {};
         static_assert(sizeof...(AN) == 10000, "window_with_time_or_count takes (Duration, Count, optional Coordination)");

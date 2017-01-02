@@ -36,14 +36,14 @@ namespace operators {
 namespace detail {
 
 template<class... AN>
-struct buffer_with_time_or_count_tag_invalid_arguments {};
+struct buffer_with_time_or_count_invalid_arguments {};
 
 template<class... AN>
-struct buffer_with_time_or_count_tag_invalid : public rxo::operator_base<buffer_with_time_or_count_tag_invalid_arguments<AN...>> {
-    using type = observable<buffer_with_time_or_count_tag_invalid_arguments<AN...>, buffer_with_time_or_count_tag_invalid<AN...>>;
+struct buffer_with_time_or_count_invalid : public rxo::operator_base<buffer_with_time_or_count_invalid_arguments<AN...>> {
+    using type = observable<buffer_with_time_or_count_invalid_arguments<AN...>, buffer_with_time_or_count_invalid<AN...>>;
 };
 template<class... AN>
-using buffer_with_time_or_count_tag_invalid_t = typename buffer_with_time_or_count_tag_invalid<AN...>::type;
+using buffer_with_time_or_count_invalid_t = typename buffer_with_time_or_count_invalid<AN...>::type;
     
 template<class T, class Duration, class Coordination>
 struct buffer_with_time_or_count
@@ -263,7 +263,7 @@ struct member_overload<buffer_with_time_or_count_tag>
     }
 
     template<class... AN>
-    static operators::detail::buffer_with_time_or_count_tag_invalid_t<AN...> member(AN...) {
+    static operators::detail::buffer_with_time_or_count_invalid_t<AN...> member(AN...) {
         std::terminate();
         return {};
         static_assert(sizeof...(AN) == 10000, "buffer_with_time_or_count takes (Duration, Count, optional Coordination)");
