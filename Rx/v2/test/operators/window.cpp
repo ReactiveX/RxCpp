@@ -3,6 +3,7 @@
 #include <rxcpp/operators/rx-map.hpp>
 #include <rxcpp/operators/rx-window.hpp>
 #include <rxcpp/operators/rx-window_time.hpp>
+#include <rxcpp/operators/rx-window_time_count.hpp>
 
 SCENARIO("window count, basic", "[window][operators]"){
     GIVEN("1 hot observable of ints."){
@@ -771,10 +772,10 @@ SCENARIO("window with time or count, basic", "[window_with_time_or_count][operat
             auto res = w.start(
                 [&]() {
                     return xs
-                        .window_with_time_or_count(milliseconds(70), 3, so)
-                        .merge()
+                        | rxo::window_with_time_or_count(milliseconds(70), 3, so)
+                        | rxo::merge()
                         // forget type to workaround lambda deduction bug on msvc 2013
-                        .as_dynamic();
+                        | rxo::as_dynamic();
                 }
             );
 

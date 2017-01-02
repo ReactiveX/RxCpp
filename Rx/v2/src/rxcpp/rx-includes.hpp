@@ -213,6 +213,7 @@
 #include "operators/rx-timestamp.hpp"
 #include "operators/rx-window.hpp"
 #include "operators/rx-window_time.hpp"
+#include "operators/rx-window_time_count.hpp"
 #include "operators/rx-with_latest_from.hpp"
 #include "operators/rx-zip.hpp"
 #endif

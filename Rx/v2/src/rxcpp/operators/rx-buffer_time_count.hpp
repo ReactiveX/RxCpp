@@ -2,7 +2,7 @@
 
 #pragma once
 
-/*! \file rx-buffer_with_time_or_count.hpp
+/*! \file rx-buffer_time_count.hpp
 
     \brief Return an observable that emits connected, non-overlapping buffers of items from the source observable that were emitted during a fixed duration of time or when the buffer has reached maximum capacity (whichever occurs first), on the specified scheduler.
 
@@ -263,7 +263,7 @@ struct member_overload<buffer_with_time_or_count_tag>
     }
 
     template<class... AN>
-    static operators::detail::buffer_count_invalid_t<AN...> member(AN...) {
+    static operators::detail::buffer_with_time_or_count_tag_invalid_t<AN...> member(AN...) {
         std::terminate();
         return {};
         static_assert(sizeof...(AN) == 10000, "buffer_with_time_or_count takes (Duration, Count, optional Coordination)");
