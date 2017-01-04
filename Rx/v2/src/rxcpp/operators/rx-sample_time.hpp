@@ -2,6 +2,23 @@
 
 #pragma once
 
+/*! \file rx-sample_time.hpp
+
+    \brief Return an Observable that emits the most recent items emitted by the source Observable within periodic time intervals.
+
+    \tparam Duration      the type of time interval.
+    \tparam Coordination  the type of the scheduler (optional).
+
+    \param period  the period of time to sample the source observable.
+    \param coordination  the scheduler for the items (optional).
+
+    \return  Observable that emits the most recently emitted item since the previous sampling.
+
+    \sample
+    \snippet sample.cpp sample period sample
+    \snippet output.txt sample period sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_SAMPLE_WITH_TIME_HPP)
 #define RXCPP_OPERATORS_RX_SAMPLE_WITH_TIME_HPP
 
@@ -13,12 +30,19 @@ namespace operators {
 
 namespace detail {
 
+template<class... AN>
+struct sample_with_time_invalid_arguments {};
+
+template<class... AN>
+struct sample_with_time_invalid : public rxo::operator_base<sample_with_time_invalid_arguments<AN...>> {
+    using type = observable<sample_with_time_invalid_arguments<AN...>, sample_with_time_invalid<AN...>>;
+};
+template<class... AN>
+using sample_with_time_invalid_t = typename sample_with_time_invalid<AN...>::type;
+
 template<class T, class Duration, class Coordination>
 struct sample_with_time
 {
-    static_assert(std::is_convertible<Duration, rxsc::scheduler::clock_type::duration>::value, "Duration parameter must convert to rxsc::scheduler::clock_type::duration");
-    static_assert(is_coordination<Coordination>::value, "Coordination parameter must satisfy the requirements for a Coordination");
-
     typedef rxu::decay_t<T> source_value_type;
     typedef rxu::decay_t<Coordination> coordination_type;
     typedef typename coordination_type::coordinator_type coordinator_type;
@@ -169,38 +193,63 @@ struct sample_with_time
     }
 };
 
-template<class Duration, class Coordination>
-class sample_with_time_factory
-{
-    typedef rxu::decay_t<Duration> duration_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
+}
 
-    duration_type period;
-    coordination_type coordination;
-public:
-    sample_with_time_factory(duration_type p, coordination_type c) : period(p), coordination(c) {}
-    template<class Observable>
-    auto operator()(Observable&& source)
-        -> decltype(source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(sample_with_time<rxu::value_type_t<rxu::decay_t<Observable>>, Duration, Coordination>(period, coordination))) {
-        return      source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(sample_with_time<rxu::value_type_t<rxu::decay_t<Observable>>, Duration, Coordination>(period, coordination));
+/*! @copydoc rx-sample_time.hpp
+*/
+template<class... AN>
+auto sample_with_time(AN&&... an)
+    ->      operator_factory<sample_with_time_tag, AN...> {
+     return operator_factory<sample_with_time_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<sample_with_time_tag>
+{
+    template<class Observable, class Duration,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            rxu::is_duration<Duration>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class SampleWithTime = rxo::detail::sample_with_time<SourceValue, rxu::decay_t<Duration>, identity_one_worker>>
+    static auto member(Observable&& o, Duration&& d)
+        -> decltype(o.template lift<SourceValue>(SampleWithTime(std::forward<Duration>(d), identity_current_thread()))) {
+        return      o.template lift<SourceValue>(SampleWithTime(std::forward<Duration>(d), identity_current_thread()));
+    }
+
+    template<class Observable, class Coordination, class Duration,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            is_coordination<Coordination>,
+            rxu::is_duration<Duration>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class SampleWithTime = rxo::detail::sample_with_time<SourceValue, rxu::decay_t<Duration>, rxu::decay_t<Coordination>>>
+    static auto member(Observable&& o, Coordination&& cn, Duration&& d)
+        -> decltype(o.template lift<SourceValue>(SampleWithTime(std::forward<Duration>(d), std::forward<Coordination>(cn)))) {
+        return      o.template lift<SourceValue>(SampleWithTime(std::forward<Duration>(d), std::forward<Coordination>(cn)));
+    }
+
+    template<class Observable, class Coordination, class Duration,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            is_coordination<Coordination>,
+            rxu::is_duration<Duration>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class SampleWithTime = rxo::detail::sample_with_time<SourceValue, rxu::decay_t<Duration>, rxu::decay_t<Coordination>>>
+    static auto member(Observable&& o, Duration&& d, Coordination&& cn)
+        -> decltype(o.template lift<SourceValue>(SampleWithTime(std::forward<Duration>(d), std::forward<Coordination>(cn)))) {
+        return      o.template lift<SourceValue>(SampleWithTime(std::forward<Duration>(d), std::forward<Coordination>(cn)));
+    }
+
+    template<class... AN>
+    static operators::detail::sample_with_time_invalid_t<AN...> member(const AN&...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "sample_with_time takes (optional Coordination, required Duration) or (required Duration, optional Coordination)");
     }
 };
-
-}
-
-template<class Duration, class Coordination>
-inline auto sample_with_time(Duration period, Coordination coordination)
-    ->      detail::sample_with_time_factory<Duration, Coordination> {
-    return  detail::sample_with_time_factory<Duration, Coordination>(period, coordination);
-}
-
-template<class Duration>
-inline auto sample_with_time(Duration period)
-    ->      detail::sample_with_time_factory<Duration, identity_one_worker> {
-    return  detail::sample_with_time_factory<Duration, identity_one_worker>(period, identity_current_thread());
-}
-
-}
 
 }
 

@@ -1,4 +1,5 @@
 #include "../test.h"
+#include "rxcpp/operators/rx-sample_time.hpp"
 
 SCENARIO("sample with time, error", "[sample_with_time][operators]"){
     GIVEN("1 hot observable of ints."){
@@ -27,8 +28,8 @@ SCENARIO("sample with time, error", "[sample_with_time][operators]"){
             auto res = w.start(
                 [&]() {
                     return xs
-                        .sample_with_time(milliseconds(100), so)
-                        .as_dynamic();
+                        | rxo::sample_with_time(milliseconds(100), so)
+                        | rxo::as_dynamic();
                 }
             );
 
