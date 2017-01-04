@@ -2094,45 +2094,15 @@ public:
                                     rxo::detail::scan<T, this_type, Accumulator, Seed>(*this, std::forward<Accumulator>(a), seed));
     }
 
-    /*! Return an Observable that emits the most recent items emitted by the source Observable within periodic time intervals.
-
-        \param period  the period of time to sample the source observable.
-        \param coordination  the scheduler for the items.
-
-        \return  Observable that emits the most recently emitted item since the previous sampling.
-
-        \sample
-        \snippet sample.cpp sample period sample
-        \snippet output.txt sample period sample
-    */
-    template<class Coordination,
-        class Requires = typename std::enable_if<is_coordination<Coordination>::value, rxu::types_checked>::type>
-    auto sample_with_time(rxsc::scheduler::clock_type::duration period, Coordination coordination) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::sample_with_time<T, rxsc::scheduler::clock_type::duration, Coordination>(period, coordination)))
-        /// \endcond
-    {
-        return                    lift<T>(rxo::detail::sample_with_time<T, rxsc::scheduler::clock_type::duration, Coordination>(period, coordination));
-    }
-
-    /*! Return an Observable that emits the most recent items emitted by the source Observable within periodic time intervals.
-
-        \param period  the period of time to sample the source observable.
-
-        \return  Observable that emits the most recently emitted item since the previous sampling.
-
-        \sample
-        \snippet sample.cpp sample period sample
-        \snippet output.txt sample period sample
-    */
+    /*! @copydoc rx-sample_time.hpp
+     */
     template<class... AN>
-    auto sample_with_time(rxsc::scheduler::clock_type::duration period, AN**...) const
+    auto sample_with_time(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::sample_with_time<T, rxsc::scheduler::clock_type::duration, identity_one_worker>(period, identity_current_thread())))
+        -> decltype(observable_member(sample_with_time_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return                    lift<T>(rxo::detail::sample_with_time<T, rxsc::scheduler::clock_type::duration, identity_one_worker>(period, identity_current_thread()));
-        static_assert(sizeof...(AN) == 0, "sample_with_time(period) was passed too many arguments.");
+        return      observable_member(sample_with_time_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-skip.hpp

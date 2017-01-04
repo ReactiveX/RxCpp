@@ -204,6 +204,7 @@
 #include "operators/rx-reduce.hpp"
 #include "operators/rx-repeat.hpp"
 #include "operators/rx-retry.hpp"
+#include "operators/rx-sample_time.hpp"
 #include "operators/rx-sequence_equal.hpp"
 #include "operators/rx-skip.hpp"
 #include "operators/rx-take.hpp"
