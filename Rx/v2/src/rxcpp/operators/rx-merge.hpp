@@ -2,6 +2,44 @@
 
 #pragma once
 
+/*! \file rx-merge.hpp
+
+    \brief For each given observable subscribe.
+           For each item emitted from all of the given observables, deliver from the new observable that is returned.
+
+           There are 2 variants of the operator:
+           - The source observable emits nested observables, nested observables are merged.
+           - The source observable and the arguments v0...vn are used to provide the observables to merge.
+
+    \tparam Coordination  the type of the scheduler (optional).
+    \tparam Value0  ... (optional).
+    \tparam ValueN  types of source observables (optional).
+
+    \param  cn  the scheduler to synchronize sources from different contexts (optional).
+    \param  v0  ... (optional).
+    \param  vn  source observables (optional).
+
+    \return  Observable that emits items that are the result of flattening the observables emitted by the source observable.
+
+    If scheduler is omitted, identity_current_thread is used.
+
+    \sample
+    \snippet merge.cpp threaded implicit merge sample
+    \snippet output.txt threaded implicit merge sample
+
+    \sample
+    \snippet merge.cpp implicit merge sample
+    \snippet output.txt implicit merge sample
+
+    \sample
+    \snippet merge.cpp merge sample
+    \snippet output.txt merge sample
+
+    \sample
+    \snippet merge.cpp threaded merge sample
+    \snippet output.txt threaded merge sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_MERGE_HPP)
 #define RXCPP_OPERATORS_RX_MERGE_HPP
 
@@ -12,6 +50,16 @@ namespace rxcpp {
 namespace operators {
 
 namespace detail {
+
+template<class... AN>
+struct merge_invalid_arguments {};
+
+template<class... AN>
+struct merge_invalid : public rxo::operator_base<merge_invalid_arguments<AN...>> {
+    using type = observable<merge_invalid_arguments<AN...>, merge_invalid<AN...>>;
+};
+template<class... AN>
+using merge_invalid_t = typename merge_invalid<AN...>::type;
 
 template<class T, class Observable, class Coordination>
 struct merge
@@ -160,40 +208,82 @@ struct merge
     }
 };
 
-template<class Coordination>
-class merge_factory
-{
-    typedef rxu::decay_t<Coordination> coordination_type;
+}
 
-    coordination_type coordination;
-public:
-    merge_factory(coordination_type sf)
-        : coordination(std::move(sf))
-    {
+/*! @copydoc rx-merge.hpp
+*/
+template<class... AN>
+auto merge(AN&&... an)
+    ->     operator_factory<merge_tag, AN...> {
+    return operator_factory<merge_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<merge_tag>
+{
+    template<class Observable,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Merge = rxo::detail::merge<SourceValue, rxu::decay_t<Observable>, identity_one_worker>,
+        class Value = rxu::value_type_t<SourceValue>,
+        class Result = observable<Value, Merge>
+    >
+    static Result member(Observable&& o) {
+        return Result(Merge(std::forward<Observable>(o), identity_current_thread()));
     }
 
-    template<class Observable>
-    auto operator()(Observable source)
-        ->      observable<rxu::value_type_t<merge<rxu::value_type_t<Observable>, Observable, Coordination>>,   merge<rxu::value_type_t<Observable>, Observable, Coordination>> {
-        return  observable<rxu::value_type_t<merge<rxu::value_type_t<Observable>, Observable, Coordination>>,   merge<rxu::value_type_t<Observable>, Observable, Coordination>>(
-                                                                                                                merge<rxu::value_type_t<Observable>, Observable, Coordination>(std::move(source), coordination));
+    template<class Observable, class Coordination,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            is_coordination<Coordination>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Merge = rxo::detail::merge<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<Coordination>>,
+        class Value = rxu::value_type_t<SourceValue>,
+        class Result = observable<Value, Merge>
+    >
+    static Result member(Observable&& o, Coordination&& cn) {
+        return Result(Merge(std::forward<Observable>(o), std::forward<Coordination>(cn)));
+    }
+
+    template<class Observable, class Value0, class... ValueN,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            all_observables<Observable, Value0, ValueN...>>,
+        class EmittedValue = rxu::value_type_t<Observable>,
+        class SourceValue = observable<EmittedValue>,
+        class ObservableObservable = observable<SourceValue>,
+        class Merge = typename rxu::defer_type<rxo::detail::merge, SourceValue, ObservableObservable, identity_one_worker>::type,
+        class Value = rxu::value_type_t<Merge>,
+        class Result = observable<Value, Merge>
+    >
+    static Result member(Observable&& o, Value0&& v0, ValueN&&... vn) {
+        return Result(Merge(rxs::from(o.as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), identity_current_thread()));
+    }
+
+    template<class Observable, class Coordination, class Value0, class... ValueN,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            all_observables<Observable, Value0, ValueN...>,
+            is_coordination<Coordination>>,
+        class EmittedValue = rxu::value_type_t<Observable>,
+        class SourceValue = observable<EmittedValue>,
+        class ObservableObservable = observable<SourceValue>,
+        class Merge = typename rxu::defer_type<rxo::detail::merge, SourceValue, ObservableObservable, rxu::decay_t<Coordination>>::type,
+        class Value = rxu::value_type_t<Merge>,
+        class Result = observable<Value, Merge>
+    >
+    static Result member(Observable&& o, Coordination&& cn, Value0&& v0, ValueN&&... vn) {
+        return Result(Merge(rxs::from(o.as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), std::forward<Coordination>(cn)));
+    }
+
+    template<class... AN>
+    static operators::detail::merge_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "merge takes (optional Coordination, optional Value0, optional ValueN...)");
     }
 };
-
-}
-
-inline auto merge()
-    ->      detail::merge_factory<identity_one_worker> {
-    return  detail::merge_factory<identity_one_worker>(identity_current_thread());
-}
-
-template<class Coordination>
-auto merge(Coordination&& sf)
-    ->      detail::merge_factory<Coordination> {
-    return  detail::merge_factory<Coordination>(std::forward<Coordination>(sf));
-}
-
-}
 
 }
 

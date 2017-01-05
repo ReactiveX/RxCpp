@@ -199,6 +199,7 @@
 #include "operators/rx-group_by.hpp"
 #include "operators/rx-ignore_elements.hpp"
 #include "operators/rx-map.hpp"
+#include "operators/rx-merge.hpp"
 #include "operators/rx-on_error_resume_next.hpp"
 #include "operators/rx-pairwise.hpp"
 #include "operators/rx-reduce.hpp"

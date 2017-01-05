@@ -1,6 +1,7 @@
 #include "../test.h"
 #include <rxcpp/operators/rx-reduce.hpp>
 #include <rxcpp/operators/rx-map.hpp>
+#include <rxcpp/operators/rx-merge.hpp>
 #include <rxcpp/operators/rx-window.hpp>
 #include <rxcpp/operators/rx-window_time.hpp>
 #include <rxcpp/operators/rx-window_time_count.hpp>
