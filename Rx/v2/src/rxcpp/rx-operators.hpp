@@ -100,7 +100,6 @@ public:
 #include "operators/rx-connect_forever.hpp"
 #include "operators/rx-flat_map.hpp"
 #include "operators/rx-lift.hpp"
-#include "operators/rx-merge.hpp"
 #include "operators/rx-multicast.hpp"
 #include "operators/rx-observe_on.hpp"
 #include "operators/rx-publish.hpp"
@@ -242,6 +241,13 @@ struct map_tag {
     template<class Included>
     struct include_header{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-map.hpp>");
+    };
+};
+
+struct merge_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-merge.hpp>");
     };
 };
 

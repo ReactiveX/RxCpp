@@ -1,5 +1,6 @@
 #include "../test.h"
 #include <rxcpp/operators/rx-map.hpp>
+#include <rxcpp/operators/rx-merge.hpp>
 
 SCENARIO("window toggle, basic", "[window_toggle][operators]"){
     GIVEN("1 hot observable of ints and hot observable of opens."){

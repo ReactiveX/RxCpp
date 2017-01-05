@@ -1,5 +1,6 @@
 #include "../test.h"
 #include <rxcpp/operators/rx-reduce.hpp>
+#include <rxcpp/operators/rx-merge.hpp>
 
 const int static_onnextcalls = 1000000;
 
@@ -134,9 +135,9 @@ SCENARIO("merge completes", "[merge][join][operators]"){
             auto res = w.start(
                 [&]() {
                     return xs
-                        .merge()
+                        | rxo::merge()
                         // forget type to workaround lambda deduction bug on msvc 2013
-                        .as_dynamic();
+                        | rxo::as_dynamic();
                 }
             );
 
