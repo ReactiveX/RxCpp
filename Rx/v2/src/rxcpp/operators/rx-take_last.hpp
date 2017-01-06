@@ -2,6 +2,21 @@
 
 #pragma once
 
+/*! \file rx-take_last.hpp
+
+    \brief Emit only the final t items emitted by the source Observable.
+
+    \tparam Count  the type of the items counter.
+
+    \param t  the number of last items to take.
+
+    \return  An observable that emits only the last t items emitted by the source Observable, or all of the items from the source observable if that observable emits fewer than t items.
+
+    \sample
+    \snippet take_last.cpp take_last sample
+    \snippet output.txt take_last sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_TAKE_LAST_HPP)
 #define RXCPP_OPERATORS_RX_TAKE_LAST_HPP
 
@@ -12,6 +27,16 @@ namespace rxcpp {
 namespace operators {
 
 namespace detail {
+
+template<class... AN>
+struct take_last_invalid_arguments {};
+
+template<class... AN>
+struct take_last_invalid : public rxo::operator_base<take_last_invalid_arguments<AN...>> {
+    using type = observable<take_last_invalid_arguments<AN...>, take_last_invalid<AN...>>;
+};
+template<class... AN>
+using take_last_invalid_t = typename take_last_invalid<AN...>::type;
 
 template<class T, class Observable, class Count>
 struct take_last : public operator_base<T>
@@ -90,30 +115,40 @@ struct take_last : public operator_base<T>
     }
 };
 
-template<class T>
-class take_last_factory
+}
+
+/*! @copydoc rx-take_last.hpp
+*/
+template<class... AN>
+auto take_last(AN&&... an)
+    ->     operator_factory<take_last_tag, AN...> {
+    return operator_factory<take_last_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<take_last_tag>
 {
-    typedef rxu::decay_t<T> count_type;
-    count_type count;
-public:
-    take_last_factory(count_type t) : count(std::move(t)) {}
-    template<class Observable>
-    auto operator()(Observable&& source)
-        ->      observable<rxu::value_type_t<rxu::decay_t<Observable>>,   take_last<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, count_type>> {
-        return  observable<rxu::value_type_t<rxu::decay_t<Observable>>,   take_last<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, count_type>>(
-                                                                          take_last<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, count_type>(std::forward<Observable>(source), count));
+    template<class Observable,
+        class Count,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class TakeLast = rxo::detail::take_last<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<Count>>,
+        class Value = rxu::value_type_t<TakeLast>,
+        class Result = observable<Value, TakeLast>>
+    static Result member(Observable&& o, Count&& c) {
+        return Result(TakeLast(std::forward<Observable>(o), std::forward<Count>(c)));
+    }
+
+    template<class... AN>
+    static operators::detail::take_last_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "take_last takes (Count)");
     }
 };
-
-}
-
-template<class T>
-auto take_last(T&& t)
-    ->      detail::take_last_factory<T> {
-    return  detail::take_last_factory<T>(std::forward<T>(t));
-}
-
-}
 
 }
 
