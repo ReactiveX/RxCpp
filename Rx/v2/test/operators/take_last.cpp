@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-take_last.hpp>
 
 SCENARIO("take last 0", "[take_last][operators]"){
     GIVEN("a source"){
@@ -20,9 +21,9 @@ SCENARIO("take last 0", "[take_last][operators]"){
             auto res = w.start(
                 [xs]() {
                     return xs
-                        .take_last(0)
+                        | rxo::take_last(0)
                         // forget type to workaround lambda deduction bug on msvc 2013
-                        .as_dynamic();
+                        | rxo::as_dynamic();
                 }
             );
 
