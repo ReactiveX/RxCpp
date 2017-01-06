@@ -2,7 +2,7 @@
 
 #pragma once
 
-/*! \file rx-skip.cpp
+/*! \file rx-skip.hpp
 
     \brief Make new observable with skipped first count items from this observable.
 
