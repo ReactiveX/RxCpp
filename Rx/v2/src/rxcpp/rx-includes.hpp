@@ -210,6 +210,7 @@
 #include "operators/rx-skip.hpp"
 #include "operators/rx-take.hpp"
 #include "operators/rx-take_last.hpp"
+#include "operators/rx-take_until.hpp"
 #include "operators/rx-take_while.hpp"
 #include "operators/rx-time_interval.hpp"
 #include "operators/rx-timeout.hpp"
