@@ -113,7 +113,6 @@ public:
 #include "operators/rx-subscribe_on.hpp"
 #include "operators/rx-switch_if_empty.hpp"
 #include "operators/rx-switch_on_next.hpp"
-#include "operators/rx-take_until.hpp"
 #include "operators/rx-tap.hpp"
 #include "operators/rx-window_toggle.hpp"
 
@@ -337,6 +336,13 @@ struct take_while_tag {
     template<class Included>
     struct include_header{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-take_while.hpp>");
+    };
+};
+
+struct take_until_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-take_until.hpp>");
     };
 };
 

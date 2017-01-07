@@ -1,5 +1,6 @@
 #include "../test.h"
 #include <rxcpp/operators/rx-map.hpp>
+#include <rxcpp/operators/rx-take_until.hpp>
 
 SCENARIO("take_until trigger on_next", "[take_until][take][operators]"){
     GIVEN("2 sources"){
@@ -27,9 +28,9 @@ SCENARIO("take_until trigger on_next", "[take_until][take][operators]"){
             auto res = w.start(
                 [xs, ys]() {
                 return xs
-                    .take_until(ys)
+                    | rxo::take_until(ys)
                     // forget type to workaround lambda deduction bug on msvc 2013
-                    .as_dynamic();
+                    | rxo::as_dynamic();
             }
             );
 
@@ -738,6 +739,58 @@ SCENARIO("take_until, error some", "[take_until][take][operators]"){
                 REQUIRE(required == actual);
             }
 
+        }
+    }
+}
+
+SCENARIO("take_until trigger on time point", "[take_until][take][operators]"){
+    GIVEN("a source and a time point"){
+        using clock_type = rxsc::detail::test_type::clock_type;
+
+        auto sc = rxsc::make_test();
+        auto so = rx::synchronize_in_one_worker(sc);
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+
+        auto xs = sc.make_hot_observable({
+            on.next(150, 1),
+            on.next(210, 2),
+            on.next(220, 3),
+            on.next(230, 4),
+            on.next(240, 5),
+            on.completed(250)
+        });
+
+        clock_type::time_point t(std::chrono::milliseconds(225));
+
+        WHEN("invoked with a time point"){
+
+            auto res = w.start(
+                [&]() {
+                return xs
+                    | rxo::take_until(t, so)
+                    // forget type to workaround lambda deduction bug on msvc 2013
+                    | rxo::as_dynamic();
+            }
+            );
+
+            THEN("the output only contains items sent while subscribed"){
+                auto required = rxu::to_vector({
+                    on.next(211, 2),
+                    on.next(221, 3),
+                    on.completed(226)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was 1 subscription/unsubscription to the source"){
+                auto required = rxu::to_vector({
+                    on.subscribe(200, 226)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
         }
     }
 }

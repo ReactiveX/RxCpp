@@ -2087,105 +2087,6 @@ public:
         return      observable_member(take_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /*! For each item from this observable until on_next occurs on the trigger observable, emit them from the new observable that is returned.
-
-        \tparam  TriggerSource  the type of the trigger observable
-
-        \param  t  an observable whose first emitted item will stop emitting items from the source observable
-
-        \return  An observable that emits the items emitted by the source observable until such time as other emits its first item.
-
-        \note All sources must be synchronized! This means that calls across all the subscribers must be serial.
-
-        \sample
-        \snippet take_until.cpp take_until sample
-        \snippet output.txt take_until sample
-    */
-    template<class TriggerSource>
-    auto take_until(TriggerSource t) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> typename std::enable_if<is_observable<TriggerSource>::value,
-                observable<T,   rxo::detail::take_until<T, this_type, TriggerSource, identity_one_worker>>>::type
-        /// \endcond
-    {
-        return  observable<T,   rxo::detail::take_until<T, this_type, TriggerSource, identity_one_worker>>(
-                                rxo::detail::take_until<T, this_type, TriggerSource, identity_one_worker>(*this, std::move(t), identity_current_thread()));
-    }
-
-    /*! For each item from this observable until on_next occurs on the trigger observable, emit them from the new observable that is returned.
-
-        \tparam  TriggerSource  the type of the trigger observable
-        \tparam  Coordination   the type of the scheduler
-
-        \param  t   an observable whose first emitted item will stop emitting items from the source observable
-        \param  cn  the scheduler to use for scheduling the items
-
-        \return  An observable that emits the items emitted by the source observable until such time as other emits its first item.
-
-        \sample
-        \snippet take_until.cpp threaded take_until sample
-        \snippet output.txt threaded take_until sample
-    */
-    template<class TriggerSource, class Coordination>
-    auto take_until(TriggerSource t, Coordination cn) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> typename std::enable_if<is_observable<TriggerSource>::value && is_coordination<Coordination>::value,
-                observable<T,   rxo::detail::take_until<T, this_type, TriggerSource, Coordination>>>::type
-        /// \endcond
-    {
-        return  observable<T,   rxo::detail::take_until<T, this_type, TriggerSource, Coordination>>(
-                                rxo::detail::take_until<T, this_type, TriggerSource, Coordination>(*this, std::move(t), std::move(cn)));
-    }
-
-    /*! For each item from this observable until the specified time, emit them from the new observable that is returned.
-
-        \tparam  TimePoint  the type of the time interval
-
-        \param  when  an observable whose first emitted item will stop emitting items from the source observable
-
-        \return  An observable that emits those items emitted by the source observable before the time runs out.
-
-        \note All sources must be synchronized! This means that calls across all the subscribers must be serial.
-
-        \sample
-        \snippet take_until.cpp take_until time sample
-        \snippet output.txt take_until time sample
-    */
-    template<class TimePoint>
-    auto take_until(TimePoint when) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> typename std::enable_if<std::is_convertible<TimePoint, rxsc::scheduler::clock_type::time_point>::value,
-                observable<T,   rxo::detail::take_until<T, this_type, decltype(rxs::timer(when, identity_current_thread())), identity_one_worker>>>::type
-        /// \endcond
-    {
-        auto cn = identity_current_thread();
-        return  take_until(rxs::timer(when, cn), cn);
-    }
-
-    /*! For each item from this observable until the specified time, emit them from the new observable that is returned.
-
-        \tparam  TimePoint     the type of the time interval
-        \tparam  Coordination  the type of the scheduler
-
-        \param  when  an observable whose first emitted item will stop emitting items from the source observable
-        \param  cn    the scheduler to use for scheduling the items
-
-        \return  An observable that emits those items emitted by the source observable before the time runs out.
-
-        \sample
-        \snippet take_until.cpp threaded take_until time sample
-        \snippet output.txt threaded take_until time sample
-    */
-    template<class Coordination>
-    auto take_until(rxsc::scheduler::clock_type::time_point when, Coordination cn) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> typename std::enable_if<is_coordination<Coordination>::value,
-                observable<T,   rxo::detail::take_until<T, this_type, decltype(rxs::timer(when, cn)), Coordination>>>::type
-        /// \endcond
-    {
-        return  take_until(rxs::timer(when, cn), cn);
-    }
-
     /*! @copydoc rx-take_last.hpp
     */
     template<class... AN>
@@ -2195,6 +2096,17 @@ public:
         /// \endcond
     {
         return      observable_member(take_last_tag{},                *this, std::forward<AN>(an)...);
+    }
+
+    /*! @copydoc rx-take_until.hpp
+    */
+    template<class... AN>
+    auto take_until(AN&&... an) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(observable_member(take_until_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        /// \endcond
+    {
+        return      observable_member(take_until_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-take_while.hpp
