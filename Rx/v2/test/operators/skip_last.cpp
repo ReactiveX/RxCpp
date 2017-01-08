@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-skip_last.hpp>
 
 SCENARIO("skip last 0", "[skip_last][operators]"){
     GIVEN("a source"){
@@ -20,9 +21,9 @@ SCENARIO("skip last 0", "[skip_last][operators]"){
             auto res = w.start(
                 [xs]() {
                     return xs
-                        .skip_last(0)
+                        | rxo::skip_last(0)
                         // forget type to workaround lambda deduction bug on msvc 2013
-                        .as_dynamic();
+                        | rxo::as_dynamic();
                 }
             );
 
