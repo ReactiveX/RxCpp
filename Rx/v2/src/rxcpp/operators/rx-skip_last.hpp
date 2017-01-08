@@ -2,6 +2,21 @@
 
 #pragma once
 
+/*! \file rx-skip_last.hpp
+
+    \brief Make new observable with skipped last count items from this observable.
+
+    \tparam Count the type of the items counter.
+
+    \param  t the number of last items to skip.
+
+    \return  An observable that is identical to the source observable except that it does not emit the last t items that the source observable emits.
+
+    \sample
+    \snippet skip_last.cpp skip_last sample
+    \snippet output.txt skip_last sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_SKIP_LAST_HPP)
 #define RXCPP_OPERATORS_RX_SKIP_LAST_HPP
 
@@ -12,6 +27,16 @@ namespace rxcpp {
 namespace operators {
 
 namespace detail {
+
+template<class... AN>
+struct skip_last_invalid_arguments {};
+
+template<class... AN>
+struct skip_last_invalid : public rxo::operator_base<skip_last_invalid_arguments<AN...>> {
+    using type = observable<skip_last_invalid_arguments<AN...>, skip_last_invalid<AN...>>;
+};
+template<class... AN>
+using skip_last_invalid_t = typename skip_last_invalid<AN...>::type;
 
 template<class T, class Observable, class Count>
 struct skip_last : public operator_base<T>
@@ -89,30 +114,39 @@ struct skip_last : public operator_base<T>
     }
 };
 
-template<class T>
-class skip_last_factory
+}
+
+/*! @copydoc rx-skip_last.hpp
+*/
+template<class... AN>
+auto skip_last(AN&&... an)
+    ->     operator_factory<skip_last_tag, AN...> {
+    return operator_factory<skip_last_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<skip_last_tag>
 {
-    typedef rxu::decay_t<T> count_type;
-    count_type count;
-public:
-    skip_last_factory(count_type t) : count(std::move(t)) {}
-    template<class Observable>
-    auto operator()(Observable&& source)
-        ->      observable<rxu::value_type_t<rxu::decay_t<Observable>>, skip_last<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, count_type>> {
-        return  observable<rxu::value_type_t<rxu::decay_t<Observable>>, skip_last<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, count_type>>(
-                                                                        skip_last<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, count_type>(std::forward<Observable>(source), count));
+    template<class Observable, class Count,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class SkipLast = rxo::detail::skip_last<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<Count>>,
+        class Value = rxu::value_type_t<SkipLast>,
+        class Result = observable<Value, SkipLast>>
+    static Result member(Observable&& o, Count&& c) {
+        return Result(SkipLast(std::forward<Observable>(o), std::forward<Count>(c)));
+    }
+
+    template<class... AN>
+    static operators::detail::skip_last_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "skip_last takes (Count)");
     }
 };
-
-}
-
-template<class T>
-auto skip_last(T&& t)
-    ->      detail::skip_last_factory<T> {
-    return  detail::skip_last_factory<T>(std::forward<T>(t));
-}
-
-}
 
 }
 

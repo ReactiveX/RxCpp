@@ -1997,33 +1997,22 @@ public:
     */
     template<class... AN>
     auto skip(AN... an) const
-    /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(skip_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
-    /// \endcond
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(observable_member(skip_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        /// \endcond
     {
         return      observable_member(skip_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /*! Make new observable with skipped last count items from this observable.
-
-        \tparam  Count  the type of the items counter
-
-        \param  t  the number of last items to skip
-
-        \return  An observable that is identical to the source observable except that it does not emit the last t items that the source observable emits.
-
-        \sample
-        \snippet skip_last.cpp skip_last sample
-        \snippet output.txt skip_last sample
+     /*! @copydoc rx-skip_last.hpp
     */
-    template<class Count>
-    auto skip_last(Count t) const
+    template<class... AN>
+    auto skip_last(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        ->      observable<T,   rxo::detail::skip_last<T, this_type, Count>>
+        -> decltype(observable_member(skip_last_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return  observable<T,   rxo::detail::skip_last<T, this_type, Count>>(
-                                rxo::detail::skip_last<T, this_type, Count>(*this, t));
+        return      observable_member(skip_last_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! Make new observable with items skipped until on_next occurs on the trigger observable
