@@ -745,8 +745,6 @@ SCENARIO("take_until, error some", "[take_until][take][operators]"){
 
 SCENARIO("take_until trigger on time point", "[take_until][take][operators]"){
     GIVEN("a source and a time point"){
-        using clock_type = rxsc::detail::test_type::clock_type;
-
         auto sc = rxsc::make_test();
         auto so = rx::synchronize_in_one_worker(sc);
         auto w = sc.create_worker();
@@ -761,7 +759,7 @@ SCENARIO("take_until trigger on time point", "[take_until][take][operators]"){
             on.completed(250)
         });
 
-        clock_type::time_point t(std::chrono::milliseconds(225));
+        auto t = sc.to_time_point(225);
 
         WHEN("invoked with a time point"){
 
