@@ -561,8 +561,6 @@ SCENARIO("skip_until, never never", "[skip_until][skip][operators]"){
 
 SCENARIO("skip_until time point, some data next", "[skip_until][skip][operators]"){
     GIVEN("2 sources"){
-        using clock_type = rxsc::detail::test_type::clock_type;
-
         auto sc = rxsc::make_test();
         auto so = rx::synchronize_in_one_worker(sc);
         auto w = sc.create_worker();
@@ -577,7 +575,7 @@ SCENARIO("skip_until time point, some data next", "[skip_until][skip][operators]
             on.completed(250)
         });
 
-        clock_type::time_point t(std::chrono::milliseconds(225));
+        auto t = sc.to_time_point(225);
 
         WHEN("invoked with a time point"){
 

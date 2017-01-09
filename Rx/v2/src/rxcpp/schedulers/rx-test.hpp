@@ -141,6 +141,10 @@ public:
         return state->clock();
     }
 
+    clock_type::time_point to_time_point(long absolute) const {
+        return state->to_time_point(absolute);
+    }
+
     std::shared_ptr<test_type_worker> create_test_type_worker_interface() const {
         return std::make_shared<test_type_worker>(state);
     }
@@ -555,6 +559,10 @@ public:
 
     bool is_enabled() const {return tester->is_enabled();}
     long clock() const {return tester->clock();}
+
+    clock_type::time_point to_time_point(long absolute) const {
+        return tester->to_time_point(absolute);
+    }
 
     template<class T>
     rxt::testable_observable<T> make_hot_observable(std::vector<rxn::recorded<std::shared_ptr<rxn::detail::notification_base<T>>>> messages) const{
