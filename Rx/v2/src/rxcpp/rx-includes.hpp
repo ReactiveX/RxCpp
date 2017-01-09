@@ -209,6 +209,7 @@
 #include "operators/rx-sequence_equal.hpp"
 #include "operators/rx-skip.hpp"
 #include "operators/rx-skip_last.hpp"
+#include "operators/rx-skip_until.hpp"
 #include "operators/rx-take.hpp"
 #include "operators/rx-take_last.hpp"
 #include "operators/rx-take_until.hpp"
