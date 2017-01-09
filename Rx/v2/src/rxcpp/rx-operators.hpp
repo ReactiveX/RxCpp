@@ -106,7 +106,6 @@ public:
 #include "operators/rx-ref_count.hpp"
 #include "operators/rx-replay.hpp"
 #include "operators/rx-scan.hpp"
-#include "operators/rx-skip_until.hpp"
 #include "operators/rx-start_with.hpp"
 #include "operators/rx-subscribe.hpp"
 #include "operators/rx-subscribe_on.hpp"
@@ -321,6 +320,13 @@ struct skip_last_tag {
     template<class Included>
     struct include_header{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-skip_last.hpp>");
+    };
+};
+
+struct skip_until_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-skip_until.hpp>");
     };
 };
 

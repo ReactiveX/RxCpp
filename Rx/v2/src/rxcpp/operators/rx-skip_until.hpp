@@ -2,6 +2,28 @@
 
 #pragma once
 
+/*! \file rx-skip_until.hpp
+
+    \brief Make new observable with items skipped until on_next occurs on the trigger observable or until the specified time.
+           skip_until takes (TriggerObservable, optional Coordination) or (TimePoint, optional Coordination)
+
+    \tparam  TriggerSource  the type of the trigger observable.
+    \tparam  Coordination   the type of the scheduler (optional).
+
+    \param  t  an observable that has to emit an item before the source observable's elements begin to be mirrored by the resulting observable.
+    \param  cn  the scheduler to use for scheduling the items (optional).
+
+    \return  An observable that skips items from the source observable until the second observable emits an item or the time runs out, then emits the remaining items.
+
+    \sample
+    \snippet skip_until.cpp skip_until sample
+    \snippet output.txt skip_until sample
+
+    \sample
+    \snippet skip_until.cpp threaded skip_until sample
+    \snippet output.txt threaded skip_until sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_SKIP_UNTIL_HPP)
 #define RXCPP_OPERATORS_RX_SKIP_UNTIL_HPP
 
@@ -12,6 +34,16 @@ namespace rxcpp {
 namespace operators {
 
 namespace detail {
+
+template<class... AN>
+struct skip_until_invalid_arguments {};
+
+template<class... AN>
+struct skip_until_invalid : public rxo::operator_base<skip_until_invalid_arguments<AN...>> {
+    using type = observable<skip_until_invalid_arguments<AN...>, skip_until_invalid<AN...>>;
+};
+template<class... AN>
+using skip_until_invalid_t = typename skip_until_invalid<AN...>::type;
 
 template<class T, class Observable, class TriggerObservable, class Coordination>
 struct skip_until : public operator_base<T>
@@ -161,37 +193,83 @@ struct skip_until : public operator_base<T>
     }
 };
 
-template<class TriggerObservable, class Coordination>
-class skip_until_factory
-{
-    typedef rxu::decay_t<TriggerObservable> trigger_source_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
+}
 
-    trigger_source_type trigger_source;
-    coordination_type coordination;
-public:
-    skip_until_factory(trigger_source_type t, coordination_type sf)
-        : trigger_source(std::move(t))
-        , coordination(std::move(sf))
-    {
+/*! @copydoc rx-skip_until.hpp
+*/
+template<class... AN>
+auto skip_until(AN&&... an)
+    ->     operator_factory<skip_until_tag, AN...> {
+    return operator_factory<skip_until_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<skip_until_tag>
+{
+    template<class Observable, class TimePoint,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            std::is_convertible<TimePoint, rxsc::scheduler::clock_type::time_point>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Timer = typename rxu::defer_type<rxs::detail::timer, identity_one_worker>::type,
+        class TimerValue = rxu::value_type_t<Timer>,
+        class TriggerObservable = observable<TimerValue, Timer>,
+        class SkipUntil = rxo::detail::skip_until<SourceValue, rxu::decay_t<Observable>, TriggerObservable, identity_one_worker>,
+        class Value = rxu::value_type_t<SkipUntil>,
+        class Result = observable<Value, SkipUntil>>
+    static Result member(Observable&& o, TimePoint&& when) {
+        auto cn = identity_current_thread();
+        return Result(SkipUntil(std::forward<Observable>(o), rxs::timer(std::forward<TimePoint>(when), cn), cn));
     }
-    template<class Observable>
-    auto operator()(Observable&& source)
-        ->      observable<rxu::value_type_t<rxu::decay_t<Observable>>, skip_until<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, trigger_source_type, Coordination>> {
-        return  observable<rxu::value_type_t<rxu::decay_t<Observable>>, skip_until<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, trigger_source_type, Coordination>>(
-                                                                        skip_until<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, trigger_source_type, Coordination>(std::forward<Observable>(source), trigger_source, coordination));
+
+    template<class Observable, class TimePoint, class Coordination,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            is_coordination<Coordination>,
+            std::is_convertible<TimePoint, rxsc::scheduler::clock_type::time_point>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Timer = typename rxu::defer_type<rxs::detail::timer, rxu::decay_t<Coordination>>::type,
+        class TimerValue = rxu::value_type_t<Timer>,
+        class TriggerObservable = observable<TimerValue, Timer>,
+        class SkipUntil = rxo::detail::skip_until<SourceValue, rxu::decay_t<Observable>, TriggerObservable, rxu::decay_t<Coordination>>,
+        class Value = rxu::value_type_t<SkipUntil>,
+        class Result = observable<Value, SkipUntil>>
+    static Result member(Observable&& o, TimePoint&& when, Coordination cn) {
+        return Result(SkipUntil(std::forward<Observable>(o), rxs::timer(std::forward<TimePoint>(when), cn), cn));
+    }
+
+    template<class Observable, class TriggerObservable,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            all_observables<Observable, TriggerObservable>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class SkipUntil = rxo::detail::skip_until<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<TriggerObservable>, identity_one_worker>,
+        class Value = rxu::value_type_t<SkipUntil>,
+        class Result = observable<Value, SkipUntil>>
+    static Result member(Observable&& o, TriggerObservable&& t) {
+        return Result(SkipUntil(std::forward<Observable>(o), std::forward<TriggerObservable>(t), identity_current_thread()));
+    }
+
+     template<class Observable, class TriggerObservable, class Coordination,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            all_observables<Observable, TriggerObservable>,
+            is_coordination<Coordination>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class SkipUntil = rxo::detail::skip_until<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<TriggerObservable>, rxu::decay_t<Coordination>>,
+        class Value = rxu::value_type_t<SkipUntil>,
+        class Result = observable<Value, SkipUntil>>
+    static Result member(Observable&& o, TriggerObservable&& t, Coordination&& cn) {
+        return Result(SkipUntil(std::forward<Observable>(o), std::forward<TriggerObservable>(t), std::forward<Coordination>(cn)));
+    }
+
+    template<class... AN>
+    static operators::detail::skip_until_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "skip_until takes (TriggerObservable, optional Coordination) or (TimePoint, optional Coordination)");
     }
 };
-
-}
-
-template<class TriggerObservable, class Coordination>
-auto skip_until(TriggerObservable&& t, Coordination&& sf)
-    ->      detail::skip_until_factory<TriggerObservable, Coordination> {
-    return  detail::skip_until_factory<TriggerObservable, Coordination>(std::forward<TriggerObservable>(t), std::forward<Coordination>(sf));
-}
-
-}
 
 }
 

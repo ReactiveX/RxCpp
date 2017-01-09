@@ -2004,7 +2004,7 @@ public:
         return      observable_member(skip_tag{},                *this, std::forward<AN>(an)...);
     }
 
-     /*! @copydoc rx-skip_last.hpp
+    /*! @copydoc rx-skip_last.hpp
     */
     template<class... AN>
     auto skip_last(AN... an) const
@@ -2015,54 +2015,15 @@ public:
         return      observable_member(skip_last_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /*! Make new observable with items skipped until on_next occurs on the trigger observable
-
-        \tparam  TriggerSource  the type of the trigger observable
-
-        \param  t  an observable that has to emit an item before the source observable's elements begin to be mirrored by the resulting observable
-
-        \return  An observable that skips items from the source observable until the second observable emits an item, then emits the remaining items.
-
-        \note All sources must be synchronized! This means that calls across all the subscribers must be serial.
-
-        \sample
-        \snippet skip_until.cpp skip_until sample
-        \snippet output.txt skip_until sample
+    /*! @copydoc rx-skip_until.hpp
     */
-    template<class TriggerSource>
-    auto skip_until(TriggerSource&& t) const
+    template<class... AN>
+    auto skip_until(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> typename std::enable_if<is_observable<TriggerSource>::value,
-                observable<T,   rxo::detail::skip_until<T, this_type, TriggerSource, identity_one_worker>>>::type
+        -> decltype(observable_member(skip_until_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return  observable<T,   rxo::detail::skip_until<T, this_type, TriggerSource, identity_one_worker>>(
-                                rxo::detail::skip_until<T, this_type, TriggerSource, identity_one_worker>(*this, std::forward<TriggerSource>(t), identity_one_worker(rxsc::make_current_thread())));
-    }
-
-    /*! Make new observable with items skipped until on_next occurs on the trigger observable
-
-        \tparam  TriggerSource  the type of the trigger observable
-        \tparam  Coordination   the type of the scheduler
-
-        \param  t   an observable that has to emit an item before the source observable's elements begin to be mirrored by the resulting observable
-        \param  cn  the scheduler to use for scheduling the items
-
-        \return  An observable that skips items from the source observable until the second observable emits an item, then emits the remaining items.
-
-        \sample
-        \snippet skip_until.cpp threaded skip_until sample
-        \snippet output.txt threaded skip_until sample
-    */
-    template<class TriggerSource, class Coordination>
-    auto skip_until(TriggerSource&& t, Coordination&& cn) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> typename std::enable_if<is_observable<TriggerSource>::value && is_coordination<Coordination>::value,
-                observable<T,   rxo::detail::skip_until<T, this_type, TriggerSource, Coordination>>>::type
-        /// \endcond
-    {
-        return  observable<T,   rxo::detail::skip_until<T, this_type, TriggerSource, Coordination>>(
-                                rxo::detail::skip_until<T, this_type, TriggerSource, Coordination>(*this, std::forward<TriggerSource>(t), std::forward<Coordination>(cn)));
+        return      observable_member(skip_until_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-take.hpp
