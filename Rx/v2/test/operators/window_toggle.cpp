@@ -1,6 +1,7 @@
 #include "../test.h"
 #include <rxcpp/operators/rx-map.hpp>
 #include <rxcpp/operators/rx-merge.hpp>
+#include <rxcpp/operators/rx-window_toggle.hpp>
 
 SCENARIO("window toggle, basic", "[window_toggle][operators]"){
     GIVEN("1 hot observable of ints and hot observable of opens."){
@@ -40,19 +41,19 @@ SCENARIO("window toggle, basic", "[window_toggle][operators]"){
             auto res = w.start(
                 [&]() {
                     return xs
-                        .window_toggle(ys, [&](int y){
+                        | rxo::window_toggle(ys, [&](int y){
                             return rx::observable<>::timer(milliseconds(y), so);
                         }, so)
-                        .map([wi](rxcpp::observable<int> w) mutable {
+                        | rxo::map([wi](rxcpp::observable<int> w) mutable {
                             auto ti = wi++;
                             return w
-                                .map([ti](int x){return std::to_string(ti) + " " + std::to_string(x);})
+                                | rxo::map([ti](int x){return std::to_string(ti) + " " + std::to_string(x);})
                                 // forget type to workaround lambda deduction bug on msvc 2013
-                                .as_dynamic();
+                                | rxo::as_dynamic();
                         })
-                        .merge()
+                        | rxo::merge()
                         // forget type to workaround lambda deduction bug on msvc 2013
-                        .as_dynamic();
+                        | rxo::as_dynamic();
                 }
             );
 
@@ -114,7 +115,7 @@ SCENARIO("window toggle, basic same", "[window_toggle][operators]"){
 
         WHEN("ints are split into windows"){
             using namespace std::chrono;
-            
+
             int wi = 0;
 
             auto res = w.start(
@@ -273,7 +274,7 @@ SCENARIO("window toggle, disposed", "[window_toggle][operators]"){
 
         WHEN("ints are split into windows"){
             using namespace std::chrono;
-            
+
             int wi = 0;
 
             auto res = w.start(

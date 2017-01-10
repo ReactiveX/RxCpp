@@ -112,7 +112,6 @@ public:
 #include "operators/rx-switch_if_empty.hpp"
 #include "operators/rx-switch_on_next.hpp"
 #include "operators/rx-tap.hpp"
-#include "operators/rx-window_toggle.hpp"
 
 namespace rxcpp {
 
@@ -393,10 +392,17 @@ struct window_with_time_tag {
     };
 };
 
- struct window_with_time_or_count_tag {
+struct window_with_time_or_count_tag {
     template<class Included>
     struct include_header{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-window_time_count.hpp>");
+    };
+};
+
+struct window_toggle_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-window_toggle.hpp>");
     };
 };
 
