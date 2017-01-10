@@ -2,6 +2,29 @@
 
 #pragma once
 
+/*! \file rx-window_toggle.hpp
+
+    \brief Return an observable that emits observables every period time interval and collects items from this observable for period of time into each produced observable, on the specified scheduler.
+
+    \tparam Openings        observable<OT>
+    \tparam ClosingSelector a function of type observable<CT>(OT)
+    \tparam Coordination    the type of the scheduler (optional).
+
+    \param opens         each value from this observable opens a new window.
+    \param closes        this function is called for each opened window and returns an observable. the first value from the returned observable will close the window.
+    \param coordination  the scheduler for the windows (optional).
+
+    \return  Observable that emits an observable for each opened window.
+
+    \sample
+    \snippet window.cpp window toggle+coordination sample
+    \snippet output.txt window toggle+coordination sample
+
+    \sample
+    \snippet window.cpp window toggle sample
+    \snippet output.txt window toggle sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_WINDOW_TOGGLE_HPP)
 #define RXCPP_OPERATORS_RX_WINDOW_TOGGLE_HPP
 
@@ -13,43 +36,29 @@ namespace operators {
 
 namespace detail {
 
-template<class T, class Openings, class ClosingSelector, class Coordination>
-struct window_toggle_traits {
+template<class... AN>
+struct window_toggle_invalid_arguments {};
 
-    using source_value_type = rxu::decay_t<T>;
-    using coordination_type = rxu::decay_t<Coordination>;
-    using openings_type = rxu::decay_t<Openings>;
-    using openings_value_type = typename openings_type::value_type;
-    using closing_selector_type =  rxu::decay_t<ClosingSelector>;
-
-    static_assert(is_observable<openings_type>::value, "window_toggle Openings must be an observable");
-
-    struct tag_not_valid {};
-    template<class CS, class CV>
-    static auto check(int) -> decltype((*(CS*)nullptr)((*(CV*)nullptr)));
-    template<class CS, class CV>
-    static tag_not_valid check(...);
-
-    static_assert(is_observable<decltype(check<closing_selector_type, openings_value_type>(0))>::value, "window_toggle ClosingSelector must be a function with the signature observable<U>(Openings::value_type)");
-
-    using closings_type = rxu::decay_t<decltype(check<closing_selector_type, openings_value_type>(0))>;
-    using closings_value_type = typename closings_type::value_type;
+template<class... AN>
+struct window_toggle_invalid : public rxo::operator_base<window_toggle_invalid_arguments<AN...>> {
+    using type = observable<window_toggle_invalid_arguments<AN...>, window_toggle_invalid<AN...>>;
 };
+template<class... AN>
+using window_toggle_invalid_t = typename window_toggle_invalid<AN...>::type;
 
 template<class T, class Openings, class ClosingSelector, class Coordination>
 struct window_toggle
 {
     typedef window_toggle<T, Openings, ClosingSelector, Coordination> this_type;
 
-    typedef window_toggle_traits<T, Openings, ClosingSelector, Coordination> traits;
-
-    using source_value_type = typename traits::source_value_type;
-    using coordination_type = typename traits::coordination_type;
+    using source_value_type = rxu::decay_t<T>;
+    using coordination_type = rxu::decay_t<Coordination>;
     using coordinator_type = typename coordination_type::coordinator_type;
-    using openings_type = typename traits::openings_type;
-    using openings_value_type = typename traits::openings_value_type;
-    using closing_selector_type = typename traits::closing_selector_type;
-    using closings_value_type = typename traits::closings_value_type;
+    using openings_type = rxu::decay_t<Openings>;
+    using openings_value_type = typename openings_type::value_type;
+    using closing_selector_type = rxu::decay_t<ClosingSelector>;
+    using closings_type = rxu::result_of_t<closing_selector_type(openings_value_type)>;
+    using closings_value_type = typename closings_type::value_type;
 
     struct window_toggle_values
     {
@@ -256,40 +265,57 @@ struct window_toggle
     }
 };
 
-template<class Openings, class ClosingSelector, class Coordination>
-class window_toggle_factory
-{
-    typedef rxu::decay_t<Openings> openings_type;
-    typedef rxu::decay_t<ClosingSelector> closing_selector_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
+}
 
-    openings_type openings;
-    closing_selector_type closingSelector;
-    coordination_type coordination;
-public:
-    window_toggle_factory(openings_type opens, closing_selector_type closes, coordination_type c) : openings(opens), closingSelector(closes), coordination(c) {}
-    template<class Observable>
-    auto operator()(Observable&& source)
-        -> decltype(source.template lift<observable<rxu::value_type_t<rxu::decay_t<Observable>>>>(window_toggle<rxu::value_type_t<rxu::decay_t<Observable>>, Openings, ClosingSelector, Coordination>(openings, closingSelector, coordination))) {
-        return      source.template lift<observable<rxu::value_type_t<rxu::decay_t<Observable>>>>(window_toggle<rxu::value_type_t<rxu::decay_t<Observable>>, Openings, ClosingSelector, Coordination>(openings, closingSelector, coordination));
+/*! @copydoc rx-window_toggle.hpp
+*/
+template<class... AN>
+auto window_toggle(AN&&... an)
+    ->      operator_factory<window_toggle_tag, AN...> {
+     return operator_factory<window_toggle_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<window_toggle_tag>
+{
+    template<class Observable, class Openings, class ClosingSelector,
+        class ClosingSelectorType = rxu::decay_t<ClosingSelector>,
+        class OpeningsType = rxu::decay_t<Openings>,
+        class OpeningsValueType = typename OpeningsType::value_type,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            all_observables<Observable, Openings, rxu::result_of_t<ClosingSelectorType(OpeningsValueType)>>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class WindowToggle = rxo::detail::window_toggle<SourceValue, rxu::decay_t<Openings>, rxu::decay_t<ClosingSelector>, identity_one_worker>,
+        class Value = observable<SourceValue>>
+    static auto member(Observable&& o, Openings&& openings, ClosingSelector&& closingSelector)
+        -> decltype(o.template lift<Value>(WindowToggle(std::forward<Openings>(openings), std::forward<ClosingSelector>(closingSelector), identity_immediate()))) {
+        return      o.template lift<Value>(WindowToggle(std::forward<Openings>(openings), std::forward<ClosingSelector>(closingSelector), identity_immediate()));
+    }
+
+    template<class Observable, class Openings, class ClosingSelector, class Coordination,
+        class ClosingSelectorType = rxu::decay_t<ClosingSelector>,
+        class OpeningsType = rxu::decay_t<Openings>,
+        class OpeningsValueType = typename OpeningsType::value_type,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            all_observables<Observable, Openings, rxu::result_of_t<ClosingSelectorType(OpeningsValueType)>>,
+            is_coordination<Coordination>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class WindowToggle = rxo::detail::window_toggle<SourceValue, rxu::decay_t<Openings>, rxu::decay_t<ClosingSelector>, rxu::decay_t<Coordination>>,
+        class Value = observable<SourceValue>>
+    static auto member(Observable&& o, Openings&& openings, ClosingSelector&& closingSelector, Coordination&& cn)
+        -> decltype(o.template lift<Value>(WindowToggle(std::forward<Openings>(openings), std::forward<ClosingSelector>(closingSelector), std::forward<Coordination>(cn)))) {
+        return      o.template lift<Value>(WindowToggle(std::forward<Openings>(openings), std::forward<ClosingSelector>(closingSelector), std::forward<Coordination>(cn)));
+    }
+
+    template<class... AN>
+    static operators::detail::window_toggle_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "window_toggle takes (Openings, ClosingSelector, optional Coordination)");
     }
 };
-
-}
-
-template<class Openings, class ClosingSelector, class Coordination>
-inline auto window_toggle(Openings openings, ClosingSelector closingSelector, Coordination coordination)
-    ->      detail::window_toggle_factory<Openings, ClosingSelector, Coordination> {
-    return  detail::window_toggle_factory<Openings, ClosingSelector, Coordination>(openings, closingSelector, coordination);
-}
-
-template<class Openings, class ClosingSelector>
-inline auto window_toggle(Openings openings, ClosingSelector closingSelector)
-    ->      detail::window_toggle_factory<Openings, ClosingSelector, identity_one_worker> {
-    return  detail::window_toggle_factory<Openings, ClosingSelector, identity_one_worker>(openings, closingSelector, identity_immediate());
-}
-
-}
 
 }
 
