@@ -306,6 +306,23 @@ struct identity_for
     }
 };
 
+template<class T, class Seed, class Accumulator>
+struct is_accumulate_function_for {
+
+    typedef rxu::decay_t<Accumulator> accumulator_type;
+    typedef rxu::decay_t<Seed> seed_type;
+    typedef T source_value_type;
+
+    struct tag_not_valid {};
+    template<class CS, class CV, class CRS>
+    static auto check(int) -> decltype((*(CRS*)nullptr)(*(CS*)nullptr, *(CV*)nullptr));
+    template<class CS, class CV, class CRS>
+    static tag_not_valid check(...);
+
+    typedef decltype(check<seed_type, source_value_type, accumulator_type>(0)) type;
+    static const bool value = std::is_same<type, seed_type>::value;
+};
+
 }
 
 #endif

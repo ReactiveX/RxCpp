@@ -40,23 +40,6 @@ struct scan_invalid : public rxo::operator_base<scan_invalid_arguments<AN...>> {
 template<class... AN>
 using scan_invalid_t = typename scan_invalid<AN...>::type;
 
-template<class T, class Seed, class Accumulator>
-struct is_accumulate_function_for {
-
-    typedef rxu::decay_t<Accumulator> accumulator_type;
-    typedef rxu::decay_t<Seed> seed_type;
-    typedef T source_value_type;
-
-    struct tag_not_valid {};
-    template<class CS, class CV, class CRS>
-    static auto check(int) -> decltype((*(CRS*)nullptr)(*(CS*)nullptr, *(CV*)nullptr));
-    template<class CS, class CV, class CRS>
-    static tag_not_valid check(...);
-
-    typedef decltype(check<seed_type, source_value_type, accumulator_type>(0)) type;
-    static const bool value = std::is_same<type, seed_type>::value;
-};
-
 template<class T, class Observable, class Accumulator, class Seed>
 struct scan : public operator_base<rxu::decay_t<Seed>>
 {
@@ -136,7 +119,7 @@ struct member_overload<scan_tag>
     template<class Observable, class Seed, class Accumulator,
         class Enabled = rxu::enable_if_all_true_type_t<
             is_observable<Observable>,
-            operators::detail::is_accumulate_function_for<rxu::value_type_t<Observable>, rxu::decay_t<Seed>, rxu::decay_t<Accumulator>>>,
+            is_accumulate_function_for<rxu::value_type_t<Observable>, rxu::decay_t<Seed>, rxu::decay_t<Accumulator>>>,
         class SourceValue = rxu::value_type_t<Observable>,
         class Scan = rxo::detail::scan<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<Accumulator>, rxu::decay_t<Seed>>,
         class Value = rxu::value_type_t<Scan>,
