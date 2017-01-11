@@ -1921,28 +1921,15 @@ public:
         static_assert(sizeof...(AN) == 0, "min() was passed too many arguments.");
     }
 
-    /*! For each item from this observable use Accumulator to combine items into a value that will be emitted from the new observable that is returned.
-
-        \tparam Seed         the type of the initial value for the accumulator
-        \tparam Accumulator  the type of the data accumulating function
-
-        \param seed  the initial value for the accumulator
-        \param a     an accumulator function to be invoked on each item emitted by the source observable, whose result will be emitted and used in the next accumulator call
-
-        \return  An observable that emits the results of each call to the accumulator function.
-
-        \sample
-        \snippet scan.cpp scan sample
-        \snippet output.txt scan sample
+    /*! @copydoc rx-scan.hpp
     */
-    template<class Seed, class Accumulator>
-    auto scan(Seed seed, Accumulator&& a) const
+    template<class... AN>
+    auto scan(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        ->      observable<Seed,    rxo::detail::scan<T, this_type, Accumulator, Seed>>
+        -> decltype(observable_member(scan_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return  observable<Seed,    rxo::detail::scan<T, this_type, Accumulator, Seed>>(
-                                    rxo::detail::scan<T, this_type, Accumulator, Seed>(*this, std::forward<Accumulator>(a), seed));
+        return      observable_member(scan_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-sample_time.hpp

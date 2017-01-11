@@ -105,7 +105,6 @@ public:
 #include "operators/rx-publish.hpp"
 #include "operators/rx-ref_count.hpp"
 #include "operators/rx-replay.hpp"
-#include "operators/rx-scan.hpp"
 #include "operators/rx-start_with.hpp"
 #include "operators/rx-subscribe.hpp"
 #include "operators/rx-subscribe_on.hpp"
@@ -298,6 +297,13 @@ struct sample_with_time_tag {
     template<class Included>
     struct include_header{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-sample_time.hpp>");
+    };
+};
+
+struct scan_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-scan.hpp>");
     };
 };
 

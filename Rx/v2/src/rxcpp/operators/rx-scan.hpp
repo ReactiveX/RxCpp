@@ -2,6 +2,23 @@
 
 #pragma once
 
+/*! \file rx-scan.hpp
+
+    \brief For each item from this observable use Accumulator to combine items into a value that will be emitted from the new observable that is returned.
+
+    \tparam Seed         the type of the initial value for the accumulator.
+    \tparam Accumulator  the type of the data accumulating function.
+
+    \param seed  the initial value for the accumulator.
+    \param a     an accumulator function to be invoked on each item emitted by the source observable, whose result will be emitted and used in the next accumulator call.
+
+    \return  An observable that emits the results of each call to the accumulator function.
+
+    \sample
+    \snippet scan.cpp scan sample
+    \snippet output.txt scan sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_SCAN_HPP)
 #define RXCPP_OPERATORS_RX_SCAN_HPP
 
@@ -12,6 +29,16 @@ namespace rxcpp {
 namespace operators {
 
 namespace detail {
+
+template<class... AN>
+struct scan_invalid_arguments {};
+
+template<class... AN>
+struct scan_invalid : public rxo::operator_base<scan_invalid_arguments<AN...>> {
+    using type = observable<scan_invalid_arguments<AN...>, scan_invalid<AN...>>;
+};
+template<class... AN>
+using scan_invalid_t = typename scan_invalid<AN...>::type;
 
 template<class T, class Observable, class Accumulator, class Seed>
 struct scan : public operator_base<rxu::decay_t<Seed>>
@@ -34,16 +61,11 @@ struct scan : public operator_base<rxu::decay_t<Seed>>
     };
     scan_initial_type initial;
 
-    template<class CT, class CS, class CP>
-    static auto check(int) -> decltype((*(CP*)nullptr)(*(CS*)nullptr, *(CT*)nullptr));
-    template<class CT, class CS, class CP>
-    static void check(...);
-
     scan(source_type o, accumulator_type a, seed_type s)
         : initial(std::move(o), a, s)
     {
-        static_assert(std::is_convertible<decltype(check<T, seed_type, accumulator_type>(0)), seed_type>::value, "scan Accumulator must be a function with the signature Seed(Seed, T)");
     }
+
     template<class Subscriber>
     void on_subscribe(Subscriber o) const {
         struct scan_state_type
@@ -79,37 +101,40 @@ struct scan : public operator_base<rxu::decay_t<Seed>>
     }
 };
 
-template<class Accumulator, class Seed>
-class scan_factory
-{
-    typedef rxu::decay_t<Accumulator> accumulator_type;
-    typedef rxu::decay_t<Seed> seed_type;
+}
 
-    accumulator_type accumulator;
-    seed_type seed;
-public:
-    scan_factory(accumulator_type a, Seed s)
-        : accumulator(std::move(a))
-        , seed(s)
-    {
+/*! @copydoc rx-scan.hpp
+*/
+template<class... AN>
+auto scan(AN&&... an)
+    ->     operator_factory<scan_tag, AN...> {
+    return operator_factory<scan_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<scan_tag>
+{
+    template<class Observable, class Seed, class Accumulator,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            is_accumulate_function_for<rxu::value_type_t<Observable>, rxu::decay_t<Seed>, rxu::decay_t<Accumulator>>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Scan = rxo::detail::scan<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<Accumulator>, rxu::decay_t<Seed>>,
+        class Value = rxu::value_type_t<Scan>,
+        class Result = observable<Value, Scan>>
+    static Result member(Observable&& o, Seed s, Accumulator&& a) {
+        return Result(Scan(std::forward<Observable>(o), std::forward<Accumulator>(a), s));
     }
-    template<class Observable>
-    auto operator()(Observable&& source)
-        ->      observable<rxu::decay_t<Seed>, scan<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, Accumulator, Seed>> {
-        return  observable<rxu::decay_t<Seed>, scan<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, Accumulator, Seed>>(
-                                               scan<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, Accumulator, Seed>(std::forward<Observable>(source), accumulator, seed));
+
+    template<class... AN>
+    static operators::detail::scan_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "scan takes (Seed, Accumulator); Accumulator must be a function with the signature Seed(Seed, T)");
     }
 };
-
-}
-
-template<class Seed, class Accumulator>
-auto scan(Seed s, Accumulator&& a)
-    ->      detail::scan_factory<Accumulator, Seed> {
-    return  detail::scan_factory<Accumulator, Seed>(std::forward<Accumulator>(a), s);
-}
-
-}
 
 }
 
