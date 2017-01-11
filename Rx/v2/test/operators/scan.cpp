@@ -1,6 +1,7 @@
 #include "../test.h"
 #include <rxcpp/operators/rx-map.hpp>
 #include <rxcpp/operators/rx-take.hpp>
+#include <rxcpp/operators/rx-scan.hpp>
 
 SCENARIO("scan: issue 41", "[scan][operators][issue][hide]"){
     GIVEN("map of scan of interval"){
@@ -35,11 +36,11 @@ SCENARIO("scan: seed, never", "[scan][operators]"){
             auto res = w.start(
                 [&]() {
                     return xs
-                        .scan(seed, [](int sum, int x) {
+                        | rxo::scan(seed, [](int sum, int x) {
                             return sum + x;
                         })
                         // forget type to workaround lambda deduction bug on msvc 2013
-                        .as_dynamic();
+                        | rxo::as_dynamic();
                 }
             );
 
