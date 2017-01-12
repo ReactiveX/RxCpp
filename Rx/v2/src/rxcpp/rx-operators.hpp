@@ -95,7 +95,6 @@ public:
 
 }
 
-#include "operators/rx-concat.hpp"
 #include "operators/rx-concat_map.hpp"
 #include "operators/rx-connect_forever.hpp"
 #include "operators/rx-flat_map.hpp"
@@ -167,6 +166,13 @@ struct combine_latest_tag {
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-combine_latest.hpp>");
     };
 };
+
+struct concat_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-concat.hpp>");
+    };
+}; 
 
 struct debounce_tag {
     template<class Included>

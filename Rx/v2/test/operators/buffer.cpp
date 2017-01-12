@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-concat.hpp>
 #include <rxcpp/operators/rx-buffer_count.hpp>
 #include <rxcpp/operators/rx-buffer_time.hpp>
 #include <rxcpp/operators/rx-buffer_time_count.hpp>

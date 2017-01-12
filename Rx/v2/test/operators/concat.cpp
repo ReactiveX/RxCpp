@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-concat.hpp>
 #include <rxcpp/operators/rx-reduce.hpp>
 
 const int static_onnextcalls = 1000000;
@@ -134,9 +135,9 @@ SCENARIO("concat completes", "[concat][join][operators]"){
             auto res = w.start(
                 [&]() {
                     return xs
-                        .concat()
+                        | rxo::concat()
                         // forget type to workaround lambda deduction bug on msvc 2013
-                        .as_dynamic();
+                        | rxo::as_dynamic();
                 }
             );
 
