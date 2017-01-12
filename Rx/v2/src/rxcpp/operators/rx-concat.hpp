@@ -2,6 +2,42 @@
 
 #pragma once
 
+/*! \file rx-concat.hpp
+
+    \brief For each item from this observable subscribe to one at a time, in the order received.
+           For each item from all of the given observables deliver from the new observable that is returned.
+
+           There are 2 variants of the operator:
+           - The source observable emits nested observables, nested observables are concatenated.
+           - The source observable and the arguments v0...vn are used to provide the observables to concatenate. 
+ 
+    \tparam Coordination  the type of the scheduler (optional).
+    \tparam Value0  ... (optional).
+    \tparam ValueN  types of source observables (optional).
+        
+    \param  cn  the scheduler to synchronize sources from different contexts (optional).
+    \param  v0  ... (optional).
+    \param  vn  source observables (optional).
+ 
+    \return  Observable that emits the items emitted by each of the Observables emitted by the source observable, one after the other, without interleaving them.
+
+    \sample
+    \snippet concat.cpp implicit concat sample
+    \snippet output.txt implicit concat sample
+    
+    \sample
+    \snippet concat.cpp threaded implicit concat sample
+    \snippet output.txt threaded implicit concat sample
+    
+    \sample
+    \snippet concat.cpp concat sample
+    \snippet output.txt concat sample    
+    
+    \sample
+    \snippet concat.cpp threaded concat sample
+    \snippet output.txt threaded concat sample    
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_CONCAT_HPP)
 #define RXCPP_OPERATORS_RX_CONCAT_HPP
 
@@ -13,6 +49,16 @@ namespace operators {
 
 namespace detail {
 
+template<class... AN>
+struct concat_invalid_arguments {};
+
+template<class... AN>
+struct concat_invalid : public rxo::operator_base<concat_invalid_arguments<AN...>> {
+    using type = observable<concat_invalid_arguments<AN...>, concat_invalid<AN...>>;
+};
+template<class... AN>
+using concat_invalid_t = typename concat_invalid<AN...>::type;
+    
 template<class T, class Observable, class Coordination>
 struct concat
     : public operator_base<rxu::value_type_t<rxu::decay_t<T>>>
@@ -181,54 +227,82 @@ struct concat
     }
 };
 
-template<class Coordination>
-class concat_factory
-{
-    typedef rxu::decay_t<Coordination> coordination_type;
+}
 
-    coordination_type coordination;
-public:
-    concat_factory(coordination_type sf)
-        : coordination(std::move(sf))
-    {
+/*! @copydoc rx-concat.hpp
+*/
+template<class... AN>
+auto concat(AN&&... an)
+    ->     operator_factory<concat_tag, AN...> {
+    return operator_factory<concat_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}    
+
+}
+
+template<>
+struct member_overload<concat_tag>
+{
+    template<class Observable,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Concat = rxo::detail::concat<SourceValue, rxu::decay_t<Observable>, identity_one_worker>,
+        class Value = rxu::value_type_t<SourceValue>,
+        class Result = observable<Value, Concat>
+    >
+    static Result member(Observable&& o) {
+        return Result(Concat(std::forward<Observable>(o), identity_current_thread()));
     }
 
-    template<class Observable>
-    auto operator()(Observable source)
-        ->      observable<rxu::value_type_t<concat<rxu::value_type_t<Observable>, Observable, Coordination>>,  concat<rxu::value_type_t<Observable>, Observable, Coordination>> {
-        return  observable<rxu::value_type_t<concat<rxu::value_type_t<Observable>, Observable, Coordination>>,  concat<rxu::value_type_t<Observable>, Observable, Coordination>>(
-                                                                                                                concat<rxu::value_type_t<Observable>, Observable, Coordination>(std::move(source), coordination));
+    template<class Observable, class Coordination,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            is_coordination<Coordination>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Concat = rxo::detail::concat<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<Coordination>>,
+        class Value = rxu::value_type_t<SourceValue>,
+        class Result = observable<Value, Concat>
+    >
+    static Result member(Observable&& o, Coordination&& cn) {
+        return Result(Concat(std::forward<Observable>(o), std::forward<Coordination>(cn)));
+    }
+
+    template<class Observable, class Value0, class... ValueN,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            all_observables<Observable, Value0, ValueN...>>,
+        class EmittedValue = rxu::value_type_t<Observable>,
+        class SourceValue = observable<EmittedValue>,
+        class ObservableObservable = observable<SourceValue>,
+        class Concat = typename rxu::defer_type<rxo::detail::concat, SourceValue, ObservableObservable, identity_one_worker>::type,
+        class Value = rxu::value_type_t<Concat>,
+        class Result = observable<Value, Concat>
+    >
+    static Result member(Observable&& o, Value0&& v0, ValueN&&... vn) {
+        return Result(Concat(rxs::from(o.as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), identity_current_thread()));
+    }
+
+    template<class Observable, class Coordination, class Value0, class... ValueN,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            all_observables<Observable, Value0, ValueN...>,
+            is_coordination<Coordination>>,
+        class EmittedValue = rxu::value_type_t<Observable>,
+        class SourceValue = observable<EmittedValue>,
+        class ObservableObservable = observable<SourceValue>,
+        class Concat = typename rxu::defer_type<rxo::detail::concat, SourceValue, ObservableObservable, rxu::decay_t<Coordination>>::type,
+        class Value = rxu::value_type_t<Concat>,
+        class Result = observable<Value, Concat>
+    >
+    static Result member(Observable&& o, Coordination&& cn, Value0&& v0, ValueN&&... vn) {
+        return Result(Concat(rxs::from(o.as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), std::forward<Coordination>(cn)));
+    }
+
+    template<class... AN>
+    static operators::detail::concat_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "concat takes (optional Coordination, optional Value0, optional ValueN...)");
     }
 };
-
-}
-
-inline auto concat()
-    ->      detail::concat_factory<identity_one_worker> {
-    return  detail::concat_factory<identity_one_worker>(identity_current_thread());
-}
-
-template<class Coordination, class Check = typename std::enable_if<is_coordination<Coordination>::value>::type>
-auto concat(Coordination&& sf)
-    ->      detail::concat_factory<Coordination> {
-    return  detail::concat_factory<Coordination>(std::forward<Coordination>(sf));
-}
-
-template<class O0, class... ON, class Check = typename std::enable_if<is_observable<O0>::value>::type>
-auto concat(O0&& o0, ON&&... on)
-    ->      detail::concat_factory<identity_one_worker> {
-    return  detail::concat_factory<identity_one_worker>(identity_current_thread())(from(std::forward<O0>(o0), std::forward<ON>(on)...));
-}
-
-template<class Coordination, class O0, class... ON, 
-    class CheckC = typename std::enable_if<is_coordination<Coordination>::value>::type,
-    class CheckO = typename std::enable_if<is_observable<O0>::value>::type>
-auto concat(Coordination&& sf, O0&& o0, ON&&... on)
-    ->      detail::concat_factory<Coordination> {
-    return  detail::concat_factory<Coordination>(std::forward<Coordination>(sf))(from(std::forward<O0>(o0), std::forward<ON>(on)...));
-}
-
-}
 
 }
 

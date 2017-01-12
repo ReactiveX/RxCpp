@@ -1205,127 +1205,15 @@ public:
                                                                                                                                   rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, Coordination>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<Coordination>(cn)));
     }
 
-    /// \cond SHOW_SERVICE_MEMBERS
-    template<class Coordination>
-    struct defer_concat : public defer_observable<
-        is_observable<value_type>,
-        this_type,
-        rxo::detail::concat, value_type, observable<value_type>, Coordination>
-    {
-    };
-    /// \endcond
-
-    /*! For each item from this observable subscribe to one at a time, in the order received.
-        For each item from all of the nested observables deliver from the new observable that is returned.
-
-        \return  Observable that emits the items emitted by each of the Observables emitted by the source observable, one after the other, without interleaving them.
-
-        \note All sources must be synchronized! This means that calls across all the subscribers must be serial.
-
-        \sample
-        \snippet concat.cpp implicit concat sample
-        \snippet output.txt implicit concat sample
-    */
+    /*! @copydoc rx-concat.hpp
+     */
     template<class... AN>
-    auto concat(AN**...) const
+    auto concat(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> typename defer_concat<identity_one_worker>::observable_type
+        -> decltype(observable_member(concat_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return      defer_concat<identity_one_worker>::make(*this, *this, identity_current_thread());
-        static_assert(sizeof...(AN) == 0, "concat() was passed too many arguments.");
-    }
-
-    /*! For each item from this observable subscribe to one at a time, in the order received.
-        For each item from all of the nested observables deliver from the new observable that is returned.
-
-        \tparam  Coordination  the type of the scheduler
-
-        \param  cn  the scheduler to synchronize sources from different contexts.
-
-        \return  Observable that emits the items emitted by each of the Observables emitted by the source observable, one after the other, without interleaving them.
-
-        \note All sources must be synchronized! This means that calls across all the subscribers must be serial.
-
-        \sample
-        \snippet concat.cpp threaded implicit concat sample
-        \snippet output.txt threaded implicit concat sample
-    */
-    template<class Coordination>
-    auto concat(Coordination cn) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        ->  typename std::enable_if<
-                        defer_concat<Coordination>::value,
-            typename    defer_concat<Coordination>::observable_type>::type
-        /// \endcond
-    {
-        return          defer_concat<Coordination>::make(*this, *this, std::move(cn));
-    }
-
-    /// \cond SHOW_SERVICE_MEMBERS
-    template<class Coordination, class Value0>
-    struct defer_concat_from : public defer_observable<
-        rxu::all_true<
-            is_coordination<Coordination>::value,
-            is_observable<Value0>::value>,
-        this_type,
-        rxo::detail::concat, observable<value_type>, observable<observable<value_type>>, Coordination>
-    {
-    };
-    /// \endcond
-
-    /*! For each given observable subscribe to one at a time, in the order received.
-        For each emitted item deliver from the new observable that is returned.
-
-        \tparam Value0  ...
-        \tparam ValueN  types of source observables
-
-        \param  v0  ...
-        \param  vn  source observables
-
-        \return  Observable that emits items emitted by the source observables, one after the other, without interleaving them.
-
-        \sample
-        \snippet concat.cpp concat sample
-        \snippet output.txt concat sample
-    */
-    template<class Value0, class... ValueN>
-    auto concat(Value0 v0, ValueN... vn) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        ->  typename std::enable_if<
-                        defer_concat_from<identity_one_worker, Value0>::value,
-            typename    defer_concat_from<identity_one_worker, Value0>::observable_type>::type
-        /// \endcond
-    {
-        return          defer_concat_from<identity_one_worker, Value0>::make(*this, rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), identity_current_thread());
-    }
-
-    /*! For each given observable subscribe to one at a time, in the order received.
-        For each emitted item deliver from the new observable that is returned.
-
-        \tparam Coordination  the type of the scheduler
-        \tparam Value0        ...
-        \tparam ValueN        types of source observables
-
-        \param  cn  the scheduler to synchronize sources from different contexts.
-        \param  v0  ...
-        \param  vn  source observables
-
-        \return  Observable that emits items emitted by the source observables, one after the other, without interleaving them.
-
-        \sample
-        \snippet concat.cpp threaded concat sample
-        \snippet output.txt threaded concat sample
-    */
-    template<class Coordination, class Value0, class... ValueN>
-    auto concat(Coordination cn, Value0 v0, ValueN... vn) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        ->  typename std::enable_if<
-                        defer_concat_from<Coordination, Value0>::value,
-            typename    defer_concat_from<Coordination, Value0>::observable_type>::type
-        /// \endcond
-    {
-        return          defer_concat_from<Coordination, Value0>::make(*this, rxs::from(this->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), std::move(cn));
+        return      observable_member(concat_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! For each item from this observable use the CollectionSelector to produce an observable and subscribe to that observable.
