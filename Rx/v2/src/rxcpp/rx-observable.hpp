@@ -849,31 +849,15 @@ public:
         return      observable_member(sequence_equal_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /*! inspect calls to on_next, on_error and on_completed.
-
-        \tparam MakeObserverArgN...  these args are passed to make_observer
-
-        \param an  these args are passed to make_observer.
-
-        \return  Observable that emits the same items as the source observable to both the subscriber and the observer.
-
-        \note If an on_error method is not supplied the observer will ignore errors rather than call std::terminate()
-
-        \sample
-        \snippet tap.cpp tap sample
-        \snippet output.txt tap sample
-
-        If the source observable generates an error, the observer passed to tap is called:
-        \snippet tap.cpp error tap sample
-        \snippet output.txt error tap sample
-    */
-    template<class... MakeObserverArgN>
-    auto tap(MakeObserverArgN&&... an) const
+    /*! @copydoc rx-tap.hpp
+     */
+    template<class... AN>
+    auto tap(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::tap<T, std::tuple<MakeObserverArgN...>>(std::make_tuple(std::forward<MakeObserverArgN>(an)...))))
+        -> decltype(observable_member(tap_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return                    lift<T>(rxo::detail::tap<T, std::tuple<MakeObserverArgN...>>(std::make_tuple(std::forward<MakeObserverArgN>(an)...)));
+        return      observable_member(tap_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-time_interval.hpp
