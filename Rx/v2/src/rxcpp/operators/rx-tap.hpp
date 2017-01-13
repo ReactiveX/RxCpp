@@ -2,6 +2,27 @@
 
 #pragma once
 
+/*! \file rx-tap.hpp
+
+    \brief inspect calls to on_next, on_error and on_completed.
+
+    \tparam MakeObserverArgN...  these args are passed to make_observer.
+
+    \param an  these args are passed to make_observer.
+
+    \return  Observable that emits the same items as the source observable to both the subscriber and the observer.
+
+    \note If an on_error method is not supplied the observer will ignore errors rather than call std::terminate()
+
+    \sample
+    \snippet tap.cpp tap sample
+    \snippet output.txt tap sample
+
+    If the source observable generates an error, the observer passed to tap is called:
+    \snippet tap.cpp error tap sample
+    \snippet output.txt error tap sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_TAP_HPP)
 #define RXCPP_OPERATORS_RX_TAP_HPP
 
@@ -12,6 +33,16 @@ namespace rxcpp {
 namespace operators {
 
 namespace detail {
+
+template<class... AN>
+struct tap_invalid_arguments {};
+
+template<class... AN>
+struct tap_invalid : public rxo::operator_base<tap_invalid_arguments<AN...>> {
+    using type = observable<tap_invalid_arguments<AN...>, tap_invalid<AN...>>;
+};
+template<class... AN>
+using tap_invalid_t = typename tap_invalid<AN...>::type;
 
 template<class T, class MakeObserverArgN>
 struct tap_observer_factory;
@@ -82,29 +113,38 @@ struct tap
     }
 };
 
-template<class MakeObserverArgN>
-class tap_factory
+}
+
+/*! @copydoc rx-tap.hpp
+*/
+template<class... AN>
+auto tap(AN&&... an)
+    ->      operator_factory<tap_tag, AN...> {
+     return operator_factory<tap_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<tap_tag>
 {
-    typedef rxu::decay_t<MakeObserverArgN> args_type;
-    args_type args;
-public:
-    tap_factory(args_type a) : args(std::move(a)) {}
-    template<class Observable>
-    auto operator()(Observable&& source)
-        -> decltype(source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(tap<rxu::value_type_t<rxu::decay_t<Observable>>, args_type>(args))) {
-        return      source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(tap<rxu::value_type_t<rxu::decay_t<Observable>>, args_type>(args));
+    template<class Observable, class... MakeObserverArgN,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Tap = rxo::detail::tap<SourceValue, std::tuple<MakeObserverArgN...>>>
+    static auto member(Observable&& o, MakeObserverArgN&&... an)
+        -> decltype(o.template lift<SourceValue>(Tap(std::make_tuple(std::forward<MakeObserverArgN>(an)...)))) {
+        return      o.template lift<SourceValue>(Tap(std::make_tuple(std::forward<MakeObserverArgN>(an)...)));
+    }
+
+    template<class... AN>
+    static operators::detail::tap_invalid_t<AN...> member(const AN&...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "tap takes (MakeObserverArgN...)");
     }
 };
-
-}
-
-template<class... MakeObserverArgN>
-auto tap(MakeObserverArgN&&... an)
-    ->      detail::tap_factory<std::tuple<rxu::decay_t<MakeObserverArgN>...>> {
-    return  detail::tap_factory<std::tuple<rxu::decay_t<MakeObserverArgN>...>>(std::make_tuple(std::forward<MakeObserverArgN>(an)...));
-}
-
-}
 
 }
 

@@ -109,7 +109,6 @@ public:
 #include "operators/rx-subscribe_on.hpp"
 #include "operators/rx-switch_if_empty.hpp"
 #include "operators/rx-switch_on_next.hpp"
-#include "operators/rx-tap.hpp"
 
 namespace rxcpp {
 
@@ -366,6 +365,13 @@ struct take_until_tag {
     template<class Included>
     struct include_header{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-take_until.hpp>");
+    };
+};
+
+struct tap_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-rap.hpp>");
     };
 };
 

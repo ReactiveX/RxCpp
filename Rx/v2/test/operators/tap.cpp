@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-tap.hpp>
 
 SCENARIO("tap stops on completion", "[tap][operators]"){
     GIVEN("a test hot observable of ints"){
@@ -24,11 +25,11 @@ SCENARIO("tap stops on completion", "[tap][operators]"){
             auto res = w.start(
                 [xs, &invoked]() {
                     return xs
-                        .tap([&invoked](int) {
+                        | rxo::tap([&invoked](int) {
                             invoked++;
                         })
                         // forget type to workaround lambda deduction bug on msvc 2013
-                        .as_dynamic();
+                        | rxo::as_dynamic();
                 }
             );
 
