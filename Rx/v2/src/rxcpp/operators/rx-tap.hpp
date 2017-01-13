@@ -132,7 +132,7 @@ struct member_overload<tap_tag>
         class Enabled = rxu::enable_if_all_true_type_t<
             is_observable<Observable>>,
         class SourceValue = rxu::value_type_t<Observable>,
-        class Tap = rxo::detail::tap<SourceValue, std::tuple<MakeObserverArgN...>>>
+        class Tap = rxo::detail::tap<SourceValue, std::tuple<rxu::decay_t<MakeObserverArgN>...>>>
     static auto member(Observable&& o, MakeObserverArgN&&... an)
         -> decltype(o.template lift<SourceValue>(Tap(std::make_tuple(std::forward<MakeObserverArgN>(an)...)))) {
         return      o.template lift<SourceValue>(Tap(std::make_tuple(std::forward<MakeObserverArgN>(an)...)));

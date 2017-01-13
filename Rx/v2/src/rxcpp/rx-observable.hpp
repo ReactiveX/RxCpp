@@ -852,7 +852,7 @@ public:
     /*! @copydoc rx-tap.hpp
      */
     template<class... AN>
-    auto tap(AN... an) const
+    auto tap(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
         -> decltype(observable_member(tap_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
