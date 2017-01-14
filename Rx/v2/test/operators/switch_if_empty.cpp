@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-switch_if_empty.hpp>
 
 SCENARIO("switch_if_empty should not switch if the source is not empty", "[switch_if_empty][operators]"){
     GIVEN("a source"){
@@ -20,7 +21,8 @@ SCENARIO("switch_if_empty should not switch if the source is not empty", "[switc
 
             auto res = w.start(
                 [xs, ys]() {
-                    return xs.switch_if_empty(ys);
+                    return xs
+                        | rxo::switch_if_empty(ys);
                 }
             );
 
