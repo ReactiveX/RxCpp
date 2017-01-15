@@ -158,7 +158,7 @@ struct member_overload<default_if_empty_tag>
         class Enabled = rxu::enable_if_all_true_type_t<
             is_observable<Observable>>,
         class SourceValue = rxu::value_type_t<Observable>,
-        class BackupSource = observable<Value>,
+        class BackupSource = observable<SourceValue>,
         class DefaultIfEmpty = rxo::detail::switch_if_empty<SourceValue, BackupSource>>
     static auto member(Observable&& o, Value&& v)
         -> decltype(o.template lift<SourceValue>(DefaultIfEmpty(rxs::from(std::move(v))))) {

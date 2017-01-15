@@ -22,7 +22,9 @@ SCENARIO("switch_if_empty should not switch if the source is not empty", "[switc
             auto res = w.start(
                 [xs, ys]() {
                     return xs
-                        | rxo::switch_if_empty(ys);
+                        | rxo::switch_if_empty(ys)
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        | rxo::as_dynamic();
                 }
             );
 
@@ -72,7 +74,10 @@ SCENARIO("switch_if_empty should switch if the source is empty", "[switch_if_emp
 
             auto res = w.start(
                 [xs, ys]() {
-                    return xs.switch_if_empty(ys);
+                    return xs
+                        .switch_if_empty(ys)
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
                 }
             );
 
@@ -123,7 +128,10 @@ SCENARIO("switch_if_empty - never", "[switch_if_empty][operators]"){
 
             auto res = w.start(
                 [xs, ys]() {
-                    return xs.switch_if_empty(ys);
+                    return xs
+                        .switch_if_empty(ys)
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
                 }
             );
 
@@ -172,7 +180,10 @@ SCENARIO("switch_if_empty - source throws", "[switch_if_empty][operators]"){
 
             auto res = w.start(
                 [xs, ys]() {
-                    return xs.switch_if_empty(ys);
+                    return xs
+                        .switch_if_empty(ys)
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
                 }
             );
 
@@ -222,7 +233,10 @@ SCENARIO("switch_if_empty - backup source throws", "[switch_if_empty][operators]
 
             auto res = w.start(
                 [xs, ys]() {
-                    return xs.switch_if_empty(ys);
+                    return xs
+                        .switch_if_empty(ys)
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
                 }
             );
 
