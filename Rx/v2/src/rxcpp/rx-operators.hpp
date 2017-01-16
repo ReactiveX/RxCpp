@@ -107,7 +107,6 @@ public:
 #include "operators/rx-start_with.hpp"
 #include "operators/rx-subscribe.hpp"
 #include "operators/rx-subscribe_on.hpp"
-#include "operators/rx-switch_if_empty.hpp"
 #include "operators/rx-switch_on_next.hpp"
 
 namespace rxcpp {
@@ -339,6 +338,14 @@ struct skip_until_tag {
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-skip_until.hpp>");
     };
 };
+
+struct switch_if_empty_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-switch_if_empty.hpp>");
+    };
+};
+struct default_if_empty_tag : switch_if_empty_tag {};
 
 struct take_tag {
     template<class Included>

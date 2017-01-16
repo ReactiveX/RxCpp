@@ -797,45 +797,26 @@ public:
         return  observable_member(filter_tag{}, *this,                std::forward<AN>(an)...);
     }
 
-    /*! If the source Observable terminates without emitting any items, emits items from a backup Observable.
-
-        \tparam BackupSource  the type of the backup observable.
-
-        \param t  a backup observable that is used if the source observable is empty.
-
-        \return  Observable that emits items from a backup observable if the source observable is empty.
-
-        \sample
-        \snippet switch_if_empty.cpp switch_if_empty sample
-        \snippet output.txt switch_if_empty sample
+    /*! @copydoc rx-switch_if_empty.hpp
     */
-    template<class BackupSource>
-    auto switch_if_empty(BackupSource t) const
-    /// \cond SHOW_SERVICE_MEMBERS
-    -> typename std::enable_if<is_observable<BackupSource>::value,
-            decltype(EXPLICIT_THIS lift<T>(rxo::detail::switch_if_empty<T, BackupSource>(std::move(t))))>::type
-    /// \endcond
+    template<class... AN>
+    auto switch_if_empty(AN&&... an) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(observable_member(switch_if_empty_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        /// \endcond
     {
-        return                    lift<T>(rxo::detail::switch_if_empty<T, BackupSource>(std::move(t)));
+        return      observable_member(switch_if_empty_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /*! If the source Observable terminates without emitting any items, emits a default item and completes.
-
-        \tparam V  the type of the value to emit.
-
-        \param v  the default value to emit
-
-        \return  Observable that emits the specified default item if the source observable is empty.
-
-        \sample
-        \snippet default_if_empty.cpp default_if_empty sample
-        \snippet output.txt default_if_empty sample
+    /*! @copydoc rxcpp::operators::default_if_empty
     */
-    template <typename V>
-    auto default_if_empty(V v) const
-      -> decltype(EXPLICIT_THIS switch_if_empty(rxs::from(std::move(v))))
+    template<class... AN>
+    auto default_if_empty(AN&&... an) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(observable_member(default_if_empty_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        /// \endcond
     {
-        return                  switch_if_empty(rxs::from(std::move(v)));
+        return      observable_member(default_if_empty_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-sequence_equal.hpp

@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-switch_if_empty.hpp>
 
 SCENARIO("default_if_empty should not switch if the source is not empty", "[default_if_empty][operators]"){
     GIVEN("a source"){
@@ -15,7 +16,10 @@ SCENARIO("default_if_empty should not switch if the source is not empty", "[defa
 
             auto res = w.start(
                 [xs]() {
-                    return xs.default_if_empty(2);
+                    return xs
+                        | rxo::default_if_empty(2)
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        | rxo::as_dynamic();
                 }
             );
 
@@ -54,7 +58,10 @@ SCENARIO("default_if_empty should switch if the source is empty", "[default_if_e
 
             auto res = w.start(
                 [xs]() {
-                    return xs.default_if_empty(2);
+                    return xs
+                        .default_if_empty(2)
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
                 }
             );
 
@@ -92,7 +99,10 @@ SCENARIO("default_if_empty - never", "[default_if_empty][operators]"){
 
             auto res = w.start(
                 [xs]() {
-                    return xs.default_if_empty(2);
+                    return xs
+                        .default_if_empty(2)
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
                 }
             );
 
@@ -130,7 +140,10 @@ SCENARIO("default_if_empty - source throws", "[default_if_empty][operators]"){
 
             auto res = w.start(
                 [xs]() {
-                    return xs.default_if_empty(2);
+                    return xs
+                        .default_if_empty(2)
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
                 }
             );
 
