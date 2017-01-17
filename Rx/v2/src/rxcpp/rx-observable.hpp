@@ -1039,57 +1039,15 @@ public:
         return  observable_member(buffer_with_time_or_count_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /// \cond SHOW_SERVICE_MEMBERS
-    template<class Coordination>
-    struct defer_switch_on_next : public defer_observable<
-        is_observable<value_type>,
-        this_type,
-        rxo::detail::switch_on_next, value_type, observable<value_type>, Coordination>
-    {
-    };
-    /// \endcond
-
-    /*! Return observable that emits the items emitted by the observable most recently emitted by the source observable.
-
-        \return  Observable that emits the items emitted by the observable most recently emitted by the source observable.
-
-        \note All sources must be synchronized! This means that calls across all the subscribers must be serial.
-
-        \sample
-        \snippet switch_on_next.cpp switch_on_next sample
-        \snippet output.txt switch_on_next sample
+    /*! @copydoc rx-switch_on_next.hpp
     */
     template<class... AN>
-    auto switch_on_next(AN**...) const
+    auto switch_on_next(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> typename defer_switch_on_next<identity_one_worker>::observable_type
+        -> decltype(observable_member(switch_on_next_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return      defer_switch_on_next<identity_one_worker>::make(*this, *this, identity_current_thread());
-        static_assert(sizeof...(AN) == 0, "switch_on_next() was passed too many arguments.");
-    }
-
-    /*! Return observable that emits the items emitted by the observable most recently emitted by the source observable, on the specified scheduler.
-
-        \tparam Coordination  the type of the scheduler
-
-        \param cn  the scheduler to synchronize sources from different contexts
-
-        \return  Observable that emits the items emitted by the observable most recently emitted by the source observable.
-
-        \sample
-        \snippet switch_on_next.cpp threaded switch_on_next sample
-        \snippet output.txt threaded switch_on_next sample
-    */
-    template<class Coordination>
-    auto switch_on_next(Coordination cn) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        ->  typename std::enable_if<
-                        defer_switch_on_next<Coordination>::value,
-            typename    defer_switch_on_next<Coordination>::observable_type>::type
-        /// \endcond
-    {
-        return          defer_switch_on_next<Coordination>::make(*this, *this, std::move(cn));
+        return      observable_member(switch_on_next_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-merge.hpp

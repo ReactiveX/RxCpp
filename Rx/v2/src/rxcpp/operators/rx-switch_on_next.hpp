@@ -2,6 +2,21 @@
 
 #pragma once
 
+/*! \file rx-switch_on_next.hpp
+
+    \brief Return observable that emits the items emitted by the observable most recently emitted by the source observable.
+
+    \tparam Coordination  the type of the scheduler (optional).
+
+    \param cn  the scheduler to synchronize sources from different contexts (optional).
+
+    \return  Observable that emits the items emitted by the observable most recently emitted by the source observable.
+
+    \sample
+    \snippet switch_on_next.cpp switch_on_next sample
+    \snippet output.txt switch_on_next sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_SWITCH_ON_NEXT_HPP)
 #define RXCPP_OPERATORS_RX_SWITCH_ON_NEXT_HPP
 
@@ -12,6 +27,16 @@ namespace rxcpp {
 namespace operators {
 
 namespace detail {
+
+template<class... AN>
+struct switch_on_next_invalid_arguments {};
+
+template<class... AN>
+struct switch_on_next_invalid : public rxo::operator_base<switch_on_next_invalid_arguments<AN...>> {
+    using type = observable<switch_on_next_invalid_arguments<AN...>, switch_on_next_invalid<AN...>>;
+};
+template<class... AN>
+using switch_on_next_invalid_t = typename switch_on_next_invalid<AN...>::type;
 
 template<class T, class Observable, class Coordination>
 struct switch_on_next
@@ -169,35 +194,53 @@ struct switch_on_next
     }
 };
 
-template<class Coordination>
-class switch_on_next_factory
-{
-    typedef rxu::decay_t<Coordination> coordination_type;
+}
 
-    coordination_type coordination;
-public:
-    switch_on_next_factory(coordination_type sf)
-        : coordination(std::move(sf))
-    {
+/*! @copydoc rx-switch_on_next.hpp
+*/
+template<class... AN>
+auto switch_on_next(AN&&... an)
+    ->     operator_factory<switch_on_next_tag, AN...> {
+    return operator_factory<switch_on_next_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<switch_on_next_tag>
+{
+    template<class Observable,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class SwitchOnNext = rxo::detail::switch_on_next<SourceValue, rxu::decay_t<Observable>, identity_one_worker>,
+        class Value = rxu::value_type_t<SourceValue>,
+        class Result = observable<Value, SwitchOnNext>
+    >
+    static Result member(Observable&& o) {
+        return Result(SwitchOnNext(std::forward<Observable>(o), identity_current_thread()));
     }
 
-    template<class Observable>
-    auto operator()(Observable source)
-        ->      observable<rxu::value_type_t<switch_on_next<rxu::value_type_t<Observable>, Observable, Coordination>>,  switch_on_next<rxu::value_type_t<Observable>, Observable, Coordination>> {
-        return  observable<rxu::value_type_t<switch_on_next<rxu::value_type_t<Observable>, Observable, Coordination>>,  switch_on_next<rxu::value_type_t<Observable>, Observable, Coordination>>(
-                                                                                                                        switch_on_next<rxu::value_type_t<Observable>, Observable, Coordination>(std::move(source), coordination));
+    template<class Observable, class Coordination,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            is_coordination<Coordination>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class SwitchOnNext = rxo::detail::switch_on_next<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<Coordination>>,
+        class Value = rxu::value_type_t<SourceValue>,
+        class Result = observable<Value, SwitchOnNext>
+    >
+    static Result member(Observable&& o, Coordination&& cn) {
+        return Result(SwitchOnNext(std::forward<Observable>(o), std::forward<Coordination>(cn)));
+    }
+
+    template<class... AN>
+    static operators::detail::switch_on_next_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "switch_on_next takes (optional Coordination)");
     }
 };
-
-}
-
-template<class Coordination>
-auto switch_on_next(Coordination&& sf)
-    ->      detail::switch_on_next_factory<Coordination> {
-    return  detail::switch_on_next_factory<Coordination>(std::forward<Coordination>(sf));
-}
-
-}
 
 }
 
