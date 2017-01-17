@@ -1,4 +1,5 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-switch_on_next.hpp>
 
 SCENARIO("switch_on_next - some changes", "[switch_on_next][operators]"){
     GIVEN("a source"){
@@ -44,7 +45,8 @@ SCENARIO("switch_on_next - some changes", "[switch_on_next][operators]"){
 
             auto res = w.start(
                 [xs]() {
-                    return xs.switch_on_next();
+                    return xs
+                        | rxo::switch_on_next();
                 }
             );
 
