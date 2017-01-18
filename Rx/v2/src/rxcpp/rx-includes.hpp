@@ -190,6 +190,7 @@
 #include "operators/rx-buffer_time_count.hpp"
 #include "operators/rx-combine_latest.hpp"
 #include "operators/rx-concat.hpp"
+#include "operators/rx-concat_map.hpp"
 #include "operators/rx-debounce.hpp"
 #include "operators/rx-delay.hpp"
 #include "operators/rx-distinct.hpp"

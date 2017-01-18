@@ -3,6 +3,7 @@
 #include <rxcpp/operators/rx-filter.hpp>
 #include <rxcpp/operators/rx-map.hpp>
 #include <rxcpp/operators/rx-take.hpp>
+#include <rxcpp/operators/rx-concat_map.hpp>
 
 static const int static_tripletCount = 100;
 
@@ -223,13 +224,13 @@ SCENARIO("concat_map completes", "[concat_map][map][operators]"){
             auto res = w.start(
                 [&]() {
                     return xs
-                        .concat_map(
+                        | rxo::concat_map(
                             [&](int){
                                 return ys;},
                             [](int, std::string s){
                                 return s;})
                         // forget type to workaround lambda deduction bug on msvc 2013
-                        .as_dynamic();
+                        | rxo::as_dynamic();
                 }
             );
 
@@ -267,19 +268,19 @@ SCENARIO("concat_map completes", "[concat_map][map][operators]"){
             }
         }
 
-        WHEN("streamed each int is mapped to the strings"){
+        WHEN("each int is mapped to the strings with coordinator"){
 
             auto res = w.start(
                 [&]() {
-                    return xs >>
-                        rxo::concat_map(
+                    return xs
+                        .concat_map(
                             [&](int){
                                 return ys;},
                             [](int, std::string s){
                                 return s;},
-                            rx::identity_current_thread()) >>
+                            rx::identity_current_thread())
                         // forget type to workaround lambda deduction bug on msvc 2013
-                        rxo::as_dynamic();
+                        .as_dynamic();
                 }
             );
 
@@ -319,3 +320,143 @@ SCENARIO("concat_map completes", "[concat_map][map][operators]"){
     }
 }
 
+SCENARIO("concat_map, no result selector, no coordination", "[concat_map][map][operators]"){
+    GIVEN("two cold observables. one of ints. one of strings."){
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> i_on;
+        const rxsc::test::messages<std::string> s_on;
+
+        auto xs = sc.make_cold_observable({
+            i_on.next(100, 4),
+            i_on.next(200, 2),
+            i_on.completed(500)
+        });
+
+        auto ys = sc.make_cold_observable({
+            s_on.next(50, "foo"),
+            s_on.next(100, "bar"),
+            s_on.next(150, "baz"),
+            s_on.next(200, "qux"),
+            s_on.completed(250)
+        });
+
+        WHEN("each int is mapped to the strings"){
+
+            auto res = w.start(
+                [&]() {
+                    return xs
+                        .concat_map(
+                            [&](int){
+                                return ys;})
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
+                }
+            );
+
+            THEN("the output contains strings repeated for each int"){
+                auto required = rxu::to_vector({
+                    s_on.next(350, "foo"),
+                    s_on.next(400, "bar"),
+                    s_on.next(450, "baz"),
+                    s_on.next(500, "qux"),
+                    s_on.next(600, "foo"),
+                    s_on.next(650, "bar"),
+                    s_on.next(700, "baz"),
+                    s_on.next(750, "qux"),
+                    s_on.completed(800)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription to the ints"){
+                auto required = rxu::to_vector({
+                    i_on.subscribe(200, 700)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there were 2 subscription and unsubscription to the strings"){
+                auto required = rxu::to_vector({
+                    s_on.subscribe(300, 550),
+                    s_on.subscribe(550, 800)
+                });
+                auto actual = ys.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("concat_map, no result selector, with coordination", "[concat_map][map][operators]"){
+    GIVEN("two cold observables. one of ints. one of strings."){
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> i_on;
+        const rxsc::test::messages<std::string> s_on;
+
+        auto xs = sc.make_cold_observable({
+            i_on.next(100, 4),
+            i_on.next(200, 2),
+            i_on.completed(500)
+        });
+
+        auto ys = sc.make_cold_observable({
+            s_on.next(50, "foo"),
+            s_on.next(100, "bar"),
+            s_on.next(150, "baz"),
+            s_on.next(200, "qux"),
+            s_on.completed(250)
+        });
+
+        WHEN("each int is mapped to the strings"){
+
+            auto res = w.start(
+                [&]() {
+                    return xs
+                        .concat_map(
+                            [&](int){
+                                return ys;},
+                            rx::identity_current_thread())
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
+                }
+            );
+
+            THEN("the output contains strings repeated for each int"){
+                auto required = rxu::to_vector({
+                    s_on.next(350, "foo"),
+                    s_on.next(400, "bar"),
+                    s_on.next(450, "baz"),
+                    s_on.next(500, "qux"),
+                    s_on.next(600, "foo"),
+                    s_on.next(650, "bar"),
+                    s_on.next(700, "baz"),
+                    s_on.next(750, "qux"),
+                    s_on.completed(800)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription to the ints"){
+                auto required = rxu::to_vector({
+                    i_on.subscribe(200, 700)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there were 2 subscription and unsubscription to the strings"){
+                auto required = rxu::to_vector({
+                    s_on.subscribe(300, 550),
+                    s_on.subscribe(550, 800)
+                });
+                auto actual = ys.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
