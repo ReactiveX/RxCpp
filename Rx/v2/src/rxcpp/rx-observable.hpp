@@ -1072,60 +1072,15 @@ public:
         return      observable_member(amb_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /*! For each item from this observable use the CollectionSelector to produce an observable and subscribe to that observable.
-        For each item from all of the produced observables use the ResultSelector to produce a value to emit from the new observable that is returned.
-
-        \tparam CollectionSelector  the type of the observable producing function
-        \tparam ResultSelector      the type of the aggregation function
-
-        \param  s   a function that returns an observable for each item emitted by the source observable
-        \param  rs  a function that combines one item emitted by each of the source and collection observables and returns an item to be emitted by the resulting observable
-
-        \return  Observable that emits the results of applying a function to a pair of values emitted by the source observable and the collection observable.
-
-        Observables, produced by the CollectionSelector, are merged. There is another operator rxcpp::observable<T,SourceType>::concat_map that works similar but concatenates the observables.
-
-        \sample
-        \snippet flat_map.cpp flat_map sample
-        \snippet output.txt flat_map sample
-    */
-    template<class CollectionSelector, class ResultSelector>
-    auto flat_map(CollectionSelector&& s, ResultSelector&& rs) const
+    /*! @copydoc rx-flat_map.hpp
+     */
+    template<class... AN>
+    auto flat_map(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        ->      observable<rxu::value_type_t<rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>>,  rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>>
+        -> decltype(observable_member(flat_map_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return  observable<rxu::value_type_t<rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>>,  rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>>(
-                                                                                                                                          rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, identity_one_worker>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), identity_current_thread()));
-    }
-
-    /*! For each item from this observable use the CollectionSelector to produce an observable and subscribe to that observable.
-        For each item from all of the produced observables use the ResultSelector to produce a value to emit from the new observable that is returned.
-
-        \tparam CollectionSelector  the type of the observable producing function
-        \tparam ResultSelector      the type of the aggregation function
-        \tparam Coordination        the type of the scheduler
-
-        \param  s   a function that returns an observable for each item emitted by the source observable
-        \param  rs  a function that combines one item emitted by each of the source and collection observables and returns an item to be emitted by the resulting observable
-        \param  cn  the scheduler to synchronize sources from different contexts.
-
-        \return  Observable that emits the results of applying a function to a pair of values emitted by the source observable and the collection observable.
-
-        Observables, produced by the CollectionSelector, are merged. There is another operator rxcpp::observable<T,SourceType>::concat_map that works similar but concatenates the observables.
-
-        \sample
-        \snippet flat_map.cpp threaded flat_map sample
-        \snippet output.txt threaded flat_map sample
-    */
-    template<class CollectionSelector, class ResultSelector, class Coordination>
-    auto flat_map(CollectionSelector&& s, ResultSelector&& rs, Coordination&& cn) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        ->      observable<rxu::value_type_t<rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, Coordination>>, rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, Coordination>>
-        /// \endcond
-    {
-        return  observable<rxu::value_type_t<rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, Coordination>>, rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, Coordination>>(
-                                                                                                                                  rxo::detail::flat_map<this_type, CollectionSelector, ResultSelector, Coordination>(*this, std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<Coordination>(cn)));
+        return      observable_member(flat_map_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-concat.hpp
