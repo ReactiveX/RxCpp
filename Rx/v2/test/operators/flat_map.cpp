@@ -3,6 +3,7 @@
 #include <rxcpp/operators/rx-filter.hpp>
 #include <rxcpp/operators/rx-map.hpp>
 #include <rxcpp/operators/rx-take.hpp>
+#include <rxcpp/operators/rx-flat_map.hpp>
 
 static const int static_tripletCount = 100;
 
@@ -259,11 +260,71 @@ SCENARIO("flat_map completes", "[flat_map][map][operators]"){
             auto res = w.start(
                 [&]() {
                     return xs
-                        .flat_map(
+                        | rxo::flat_map(
                             [&](int){
                                 return ys;},
                             [](int, std::string s){
                                 return s;})
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        | rxo::as_dynamic();
+                }
+            );
+
+            THEN("the output contains strings repeated for each int"){
+                auto required = rxu::to_vector({
+                    s_on.next(350, "foo"),
+                    s_on.next(400, "bar"),
+                    s_on.next(450, "baz"),
+                    s_on.next(450, "foo"),
+                    s_on.next(500, "qux"),
+                    s_on.next(500, "bar"),
+                    s_on.next(550, "baz"),
+                    s_on.next(550, "foo"),
+                    s_on.next(600, "qux"),
+                    s_on.next(600, "bar"),
+                    s_on.next(650, "baz"),
+                    s_on.next(650, "foo"),
+                    s_on.next(700, "qux"),
+                    s_on.next(700, "bar"),
+                    s_on.next(750, "baz"),
+                    s_on.next(800, "qux"),
+                    s_on.completed(850)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription to the ints"){
+                auto required = rxu::to_vector({
+                    i_on.subscribe(200, 700)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there were four subscription and unsubscription to the strings"){
+                auto required = rxu::to_vector({
+                    s_on.subscribe(300, 550),
+                    s_on.subscribe(400, 650),
+                    s_on.subscribe(500, 750),
+                    s_on.subscribe(600, 850)
+                });
+                auto actual = ys.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+
+        WHEN("each int is mapped to the strings with coordinator"){
+
+            auto res = w.start(
+                [&]() {
+                    return xs
+                        .flat_map(
+                            [&](int){
+                                return ys;},
+                            [](int, std::string s){
+                                return s;},
+                            rx::identity_current_thread())
                         // forget type to workaround lambda deduction bug on msvc 2013
                         .as_dynamic();
                 }
@@ -312,69 +373,8 @@ SCENARIO("flat_map completes", "[flat_map][map][operators]"){
                 REQUIRE(required == actual);
             }
         }
-
-        WHEN("streamed, each int is mapped to the strings"){
-
-            auto res = w.start(
-                [&]() {
-                    return xs >>
-                        rxo::flat_map(
-                            [&](int){
-                                return ys;},
-                            [](int, std::string s){
-                                return s;},
-                            rx::identity_current_thread()) >>
-                        // forget type to workaround lambda deduction bug on msvc 2013
-                        rxo::as_dynamic();
-                }
-            );
-
-            THEN("the output contains strings repeated for each int"){
-                auto required = rxu::to_vector({
-                    s_on.next(350, "foo"),
-                    s_on.next(400, "bar"),
-                    s_on.next(450, "baz"),
-                    s_on.next(450, "foo"),
-                    s_on.next(500, "qux"),
-                    s_on.next(500, "bar"),
-                    s_on.next(550, "baz"),
-                    s_on.next(550, "foo"),
-                    s_on.next(600, "qux"),
-                    s_on.next(600, "bar"),
-                    s_on.next(650, "baz"),
-                    s_on.next(650, "foo"),
-                    s_on.next(700, "qux"),
-                    s_on.next(700, "bar"),
-                    s_on.next(750, "baz"),
-                    s_on.next(800, "qux"),
-                    s_on.completed(850)
-                });
-                auto actual = res.get_observer().messages();
-                REQUIRE(required == actual);
-            }
-
-            THEN("there was one subscription and one unsubscription to the ints"){
-                auto required = rxu::to_vector({
-                    i_on.subscribe(200, 700)
-                });
-                auto actual = xs.subscriptions();
-                REQUIRE(required == actual);
-            }
-
-            THEN("there were four subscription and unsubscription to the strings"){
-                auto required = rxu::to_vector({
-                    s_on.subscribe(300, 550),
-                    s_on.subscribe(400, 650),
-                    s_on.subscribe(500, 750),
-                    s_on.subscribe(600, 850)
-                });
-                auto actual = ys.subscriptions();
-                REQUIRE(required == actual);
-            }
-        }
     }
 }
-
 
 SCENARIO("flat_map source never ends", "[flat_map][map][operators]"){
     GIVEN("two cold observables. one of ints. one of strings."){
@@ -529,6 +529,171 @@ SCENARIO("flat_map inner error", "[flat_map][map][operators]"){
                     s_on.subscribe(400, 601),
                     s_on.subscribe(500, 601),
                     s_on.subscribe(600, 601)
+                });
+                auto actual = ys.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("flat_map, no result selector, no coordination", "[flat_map][map][operators]"){
+    GIVEN("two cold observables. one of ints. one of strings."){
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> i_on;
+        const rxsc::test::messages<std::string> s_on;
+
+        auto xs = sc.make_cold_observable({
+            i_on.next(100, 4),
+            i_on.next(200, 2),
+            i_on.next(300, 3),
+            i_on.next(400, 1),
+            i_on.completed(500)
+        });
+
+        auto ys = sc.make_cold_observable({
+            s_on.next(50, "foo"),
+            s_on.next(100, "bar"),
+            s_on.next(150, "baz"),
+            s_on.next(200, "qux"),
+            s_on.completed(250)
+        });
+
+        WHEN("each int is mapped to the strings"){
+
+            auto res = w.start(
+                [&]() {
+                    return xs
+                        .flat_map(
+                            [&](int){
+                                return ys;})
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
+                }
+            );
+
+            THEN("the output contains strings repeated for each int"){
+                auto required = rxu::to_vector({
+                    s_on.next(350, "foo"),
+                    s_on.next(400, "bar"),
+                    s_on.next(450, "baz"),
+                    s_on.next(450, "foo"),
+                    s_on.next(500, "qux"),
+                    s_on.next(500, "bar"),
+                    s_on.next(550, "baz"),
+                    s_on.next(550, "foo"),
+                    s_on.next(600, "qux"),
+                    s_on.next(600, "bar"),
+                    s_on.next(650, "baz"),
+                    s_on.next(650, "foo"),
+                    s_on.next(700, "qux"),
+                    s_on.next(700, "bar"),
+                    s_on.next(750, "baz"),
+                    s_on.next(800, "qux"),
+                    s_on.completed(850)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription to the ints"){
+                auto required = rxu::to_vector({
+                    i_on.subscribe(200, 700)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there were four subscription and unsubscription to the strings"){
+                auto required = rxu::to_vector({
+                    s_on.subscribe(300, 550),
+                    s_on.subscribe(400, 650),
+                    s_on.subscribe(500, 750),
+                    s_on.subscribe(600, 850)
+                });
+                auto actual = ys.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("flat_map, no result selector, with coordination", "[flat_map][map][operators]"){
+    GIVEN("two cold observables. one of ints. one of strings."){
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> i_on;
+        const rxsc::test::messages<std::string> s_on;
+
+        auto xs = sc.make_cold_observable({
+            i_on.next(100, 4),
+            i_on.next(200, 2),
+            i_on.next(300, 3),
+            i_on.next(400, 1),
+            i_on.completed(500)
+        });
+
+        auto ys = sc.make_cold_observable({
+            s_on.next(50, "foo"),
+            s_on.next(100, "bar"),
+            s_on.next(150, "baz"),
+            s_on.next(200, "qux"),
+            s_on.completed(250)
+        });
+
+        WHEN("each int is mapped to the strings"){
+
+            auto res = w.start(
+                [&]() {
+                    return xs
+                        .flat_map(
+                            [&](int){
+                                return ys;},
+                            rx::identity_current_thread())
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        .as_dynamic();
+                }
+            );
+
+            THEN("the output contains strings repeated for each int"){
+                auto required = rxu::to_vector({
+                    s_on.next(350, "foo"),
+                    s_on.next(400, "bar"),
+                    s_on.next(450, "baz"),
+                    s_on.next(450, "foo"),
+                    s_on.next(500, "qux"),
+                    s_on.next(500, "bar"),
+                    s_on.next(550, "baz"),
+                    s_on.next(550, "foo"),
+                    s_on.next(600, "qux"),
+                    s_on.next(600, "bar"),
+                    s_on.next(650, "baz"),
+                    s_on.next(650, "foo"),
+                    s_on.next(700, "qux"),
+                    s_on.next(700, "bar"),
+                    s_on.next(750, "baz"),
+                    s_on.next(800, "qux"),
+                    s_on.completed(850)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription to the ints"){
+                auto required = rxu::to_vector({
+                    i_on.subscribe(200, 700)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there were four subscription and unsubscription to the strings"){
+                auto required = rxu::to_vector({
+                    s_on.subscribe(300, 550),
+                    s_on.subscribe(400, 650),
+                    s_on.subscribe(500, 750),
+                    s_on.subscribe(600, 850)
                 });
                 auto actual = ys.subscriptions();
                 REQUIRE(required == actual);

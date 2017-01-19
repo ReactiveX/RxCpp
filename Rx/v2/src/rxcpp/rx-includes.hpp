@@ -198,6 +198,7 @@
 #include "operators/rx-element_at.hpp"
 #include "operators/rx-filter.hpp"
 #include "operators/rx-finally.hpp"
+#include "operators/rx-flat_map.hpp"
 #include "operators/rx-group_by.hpp"
 #include "operators/rx-ignore_elements.hpp"
 #include "operators/rx-map.hpp"
