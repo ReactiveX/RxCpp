@@ -1763,31 +1763,15 @@ public:
         return      observable_member(retry_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /*! Start with the supplied values, then concatenate this observable.
-
-        \tparam Value0      ...
-        \tparam ValueN      the type of sending values
-
-        \param  v0  ...
-        \param  vn  values to send
-
-        \return  Observable that emits the specified items and then emits the items emitted by the source observable.
-
-        \sample
-        \snippet start_with.cpp short start_with sample
-        \snippet output.txt short start_with sample
-
-        Another form of this operator, rxcpp::observable<void, void>::start_with, gets the source observable as a parameter:
-        \snippet start_with.cpp full start_with sample
-        \snippet output.txt full start_with sample
-    */
-    template<class Value0, class... ValueN>
-    auto start_with(Value0 v0, ValueN... vn) const
+    /*! @copydoc rx-start_with.hpp
+     */
+    template<class... AN>
+    auto start_with(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(rxo::start_with(std::move(v0), std::move(vn)...)(*(this_type*)nullptr))
+        -> decltype(observable_member(start_with_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return      rxo::start_with(std::move(v0), std::move(vn)...)(*this);
+        return      observable_member(start_with_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-pairwise.hpp
