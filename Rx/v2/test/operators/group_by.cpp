@@ -5,6 +5,7 @@
 #include <rxcpp/operators/rx-map.hpp>
 #include <rxcpp/operators/rx-merge.hpp>
 #include <rxcpp/operators/rx-take.hpp>
+#include <rxcpp/operators/rx-start_with.hpp>
 
 #include <locale>
 
