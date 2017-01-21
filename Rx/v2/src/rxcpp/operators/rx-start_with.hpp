@@ -62,10 +62,13 @@ struct member_overload<start_with_tag>
 {
     template<class Observable, class Value0, class... ValueN,
         class Enabled = rxu::enable_if_all_true_type_t<
-            is_observable<Observable>>>
+            is_observable<Observable>>,
+        class From = decltype(rxs::from(rxu::decay_t<Value0>(std::declval<Value0>()), rxu::decay_t<ValueN>(std::declval<ValueN>())...))
+    >
     static auto member(Observable&& o, Value0&& v0, ValueN&&... vn)
-        -> decltype(rxs::from(rxu::decay_t<Value0>(v0), rxu::decay_t<Value0>(vn)...).concat(std::forward<Observable>(o))) {
-        return      rxs::from(rxu::decay_t<Value0>(v0), rxu::decay_t<Value0>(vn)...).concat(std::forward<Observable>(o));
+     -> decltype(member_overload<concat_tag>::member(std::declval<From>(), std::forward<Observable>(o))) {
+        auto first = rxs::from(rxu::decay_t<Value0>(v0), rxu::decay_t<ValueN>(vn)...);
+        return member_overload<concat_tag>::member(first, std::forward<Observable>(o));
     }
 
     template<class... AN>
