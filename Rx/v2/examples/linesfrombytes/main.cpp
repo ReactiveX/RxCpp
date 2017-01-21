@@ -13,6 +13,7 @@
 #include <rxcpp/operators/rx-ref_count.hpp>
 #include <rxcpp/operators/rx-window.hpp>
 #include <rxcpp/operators/rx-window_toggle.hpp>
+#include <rxcpp/operators/rx-start_with.hpp>
 namespace Rx {
 using namespace rxcpp;
 using namespace rxcpp::sources;
