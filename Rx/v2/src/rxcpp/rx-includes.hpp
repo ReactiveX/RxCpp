@@ -215,6 +215,7 @@
 #include "operators/rx-skip_last.hpp"
 #include "operators/rx-skip_until.hpp"
 #include "operators/rx-start_with.hpp"
+#include "operators/rx-subscribe_on.hpp"
 #include "operators/rx-switch_if_empty.hpp"
 #include "operators/rx-switch_on_next.hpp"
 #include "operators/rx-take.hpp"

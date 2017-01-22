@@ -103,7 +103,6 @@ public:
 #include "operators/rx-ref_count.hpp"
 #include "operators/rx-replay.hpp"
 #include "operators/rx-subscribe.hpp"
-#include "operators/rx-subscribe_on.hpp"
 
 namespace rxcpp {
 
@@ -353,6 +352,13 @@ struct start_with_tag {
     template<class Included>
     struct include_header{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-start_with.hpp>");
+    };
+};
+
+struct subscribe_on_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-subscribe_on.hpp>");
     };
 };
 

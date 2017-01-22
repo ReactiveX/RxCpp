@@ -1498,29 +1498,15 @@ public:
         return      multicast(rxsub::replay<T, Coordination>(count, period, std::move(cn), cs));
     }
 
-    /*! Subscription and unsubscription are queued and delivered using the scheduler from the supplied coordination.
-
-        \tparam Coordination  the type of the scheduler
-
-        \param  cn  the scheduler to perform subscription actions on
-
-        \return  The source observable modified so that its subscriptions happen on the specified scheduler.
-
-        \sample
-        \snippet subscribe_on.cpp subscribe_on sample
-        \snippet output.txt subscribe_on sample
-
-        Invoking rxcpp::observable::observe_on operator, instead of subscribe_on, gives following results:
-        \snippet output.txt observe_on sample
-    */
-    template<class Coordination>
-    auto subscribe_on(Coordination cn) const
+    /*! @copydoc rx-subscribe_on.hpp
+     */
+    template<class... AN>
+    auto subscribe_on(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        ->      observable<rxu::value_type_t<rxo::detail::subscribe_on<T, this_type, Coordination>>,  rxo::detail::subscribe_on<T, this_type, Coordination>>
+        -> decltype(observable_member(subscribe_on_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return  observable<rxu::value_type_t<rxo::detail::subscribe_on<T, this_type, Coordination>>,  rxo::detail::subscribe_on<T, this_type, Coordination>>(
-                                                                                                      rxo::detail::subscribe_on<T, this_type, Coordination>(*this, std::move(cn)));
+        return      observable_member(subscribe_on_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! All values are queued and delivered using the scheduler from the supplied coordination.
