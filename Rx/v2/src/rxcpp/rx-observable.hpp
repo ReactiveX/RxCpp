@@ -1509,28 +1509,15 @@ public:
         return      observable_member(subscribe_on_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /*! All values are queued and delivered using the scheduler from the supplied coordination.
-
-        \tparam Coordination  the type of the scheduler
-
-        \param  cn  the scheduler to notify observers on
-
-        \return  The source observable modified so that its observers are notified on the specified scheduler.
-
-        \sample
-        \snippet observe_on.cpp observe_on sample
-        \snippet output.txt observe_on sample
-
-        Invoking rxcpp::observable::subscribe_on operator, instead of observe_on, gives following results:
-        \snippet output.txt subscribe_on sample
+    /*! @copydoc rx-observe_on.hpp
     */
-    template<class Coordination>
-    auto observe_on(Coordination cn) const
+    template<class... AN>
+    auto observe_on(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS lift<T>(rxo::detail::observe_on<T, Coordination>(std::move(cn))))
+        -> decltype(observable_member(observe_on_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return                    lift<T>(rxo::detail::observe_on<T, Coordination>(std::move(cn)));
+        return      observable_member(observe_on_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-reduce.hpp
