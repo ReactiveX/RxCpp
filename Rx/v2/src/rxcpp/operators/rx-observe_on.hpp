@@ -250,7 +250,7 @@ struct member_overload<observe_on_tag>
     }
 
     template<class... AN>
-    static operators::detail::observe_on_invalid_t<AN...> member(const AN&...) {
+    static operators::detail::observe_on_invalid_t<AN...> member(AN...) {
         std::terminate();
         return {};
         static_assert(sizeof...(AN) == 10000, "observe_on takes (Coordination)");
