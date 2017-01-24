@@ -2,6 +2,24 @@
 
 #pragma once
 
+/*! \file rx-observe_on.hpp
+
+    \brief All values are queued and delivered using the scheduler from the supplied coordination.
+
+    \tparam Coordination  the type of the scheduler.
+
+    \param  cn  the scheduler to notify observers on.
+
+    \return  The source observable modified so that its observers are notified on the specified scheduler.
+
+    \sample
+    \snippet observe_on.cpp observe_on sample
+    \snippet output.txt observe_on sample
+
+    Invoking rxcpp::observable::subscribe_on operator, instead of observe_on, gives following results:
+    \snippet output.txt subscribe_on sample
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_OBSERVE_ON_HPP)
 #define RXCPP_OPERATORS_RX_OBSERVE_ON_HPP
 
@@ -12,6 +30,16 @@ namespace rxcpp {
 namespace operators {
 
 namespace detail {
+
+template<class... AN>
+struct observe_on_invalid_arguments {};
+
+template<class... AN>
+struct observe_on_invalid : public rxo::operator_base<observe_on_invalid_arguments<AN...>> {
+    using type = observable<observe_on_invalid_arguments<AN...>, observe_on_invalid<AN...>>;
+};
+template<class... AN>
+using observe_on_invalid_t = typename observe_on_invalid<AN...>::type;
 
 template<class T, class Coordination>
 struct observe_on
@@ -195,30 +223,39 @@ struct observe_on
     }
 };
 
-template<class Coordination>
-class observe_on_factory
+}
+
+/*! @copydoc rx-observe_on.hpp
+*/
+template<class... AN>
+auto observe_on(AN&&... an)
+    ->      operator_factory<observe_on_tag, AN...> {
+     return operator_factory<observe_on_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<observe_on_tag>
 {
-    typedef rxu::decay_t<Coordination> coordination_type;
-    coordination_type coordination;
-public:
-    observe_on_factory(coordination_type cn) : coordination(std::move(cn)) {}
-    template<class Observable>
-    auto operator()(Observable&& source)
-        -> decltype(source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(observe_on<rxu::value_type_t<rxu::decay_t<Observable>>, coordination_type>(coordination))) {
-        return      source.template lift<rxu::value_type_t<rxu::decay_t<Observable>>>(observe_on<rxu::value_type_t<rxu::decay_t<Observable>>, coordination_type>(coordination));
+    template<class Observable, class Coordination,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>,
+            is_coordination<Coordination>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class ObserveOn = rxo::detail::observe_on<SourceValue, rxu::decay_t<Coordination>>>
+    static auto member(Observable&& o, Coordination&& cn)
+        -> decltype(o.template lift<SourceValue>(ObserveOn(std::forward<Coordination>(cn)))) {
+        return      o.template lift<SourceValue>(ObserveOn(std::forward<Coordination>(cn)));
+    }
+
+    template<class... AN>
+    static operators::detail::observe_on_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "observe_on takes (Coordination)");
     }
 };
-
-}
-
-template<class Coordination>
-auto observe_on(Coordination cn)
-    ->      detail::observe_on_factory<Coordination> {
-    return  detail::observe_on_factory<Coordination>(std::move(cn));
-}
-
-
-}
 
 class observe_on_one_worker : public coordination_base
 {

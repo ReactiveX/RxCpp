@@ -2,6 +2,7 @@
 #include <rxcpp/operators/rx-reduce.hpp>
 #include <rxcpp/operators/rx-map.hpp>
 #include <rxcpp/operators/rx-subscribe_on.hpp>
+#include <rxcpp/operators/rx-observe_on.hpp>
 
 static const int static_subscriptions = 50000;
 

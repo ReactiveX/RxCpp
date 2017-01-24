@@ -1,6 +1,7 @@
 #include "../test.h"
 #include <rxcpp/operators/rx-concat.hpp>
 #include <rxcpp/operators/rx-reduce.hpp>
+#include <rxcpp/operators/rx-observe_on.hpp>
 
 const int static_onnextcalls = 1000000;
 
