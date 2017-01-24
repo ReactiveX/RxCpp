@@ -100,7 +100,6 @@ public:
 #include "operators/rx-multicast.hpp"
 #include "operators/rx-publish.hpp"
 #include "operators/rx-ref_count.hpp"
-#include "operators/rx-replay.hpp"
 #include "operators/rx-subscribe.hpp"
 
 namespace rxcpp {
@@ -302,6 +301,13 @@ struct repeat_tag {
     template<class Included>
     struct include_header{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-repeat.hpp>");
+    };
+};
+
+struct replay_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-replay.hpp>");
     };
 };
 
