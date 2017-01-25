@@ -38,6 +38,7 @@
 #define RXCPP_OPERATORS_RX_TAKE_UNTIL_HPP
 
 #include "../rx-includes.hpp"
+#include "./rx-publish.hpp"
 
 namespace rxcpp {
 

@@ -32,6 +32,7 @@
 #define RXCPP_OPERATORS_RX_CONCATMAP_HPP
 
 #include "../rx-includes.hpp"
+#include "./rx-publish.hpp"
 
 namespace rxcpp {
 

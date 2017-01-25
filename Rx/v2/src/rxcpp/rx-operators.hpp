@@ -97,8 +97,6 @@ public:
 
 #include "operators/rx-connect_forever.hpp"
 #include "operators/rx-lift.hpp"
-#include "operators/rx-multicast.hpp"
-#include "operators/rx-publish.hpp"
 #include "operators/rx-ref_count.hpp"
 #include "operators/rx-subscribe.hpp"
 
@@ -256,6 +254,13 @@ struct merge_tag {
     };
 };
 
+struct multicast_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-multicast.hpp>");
+    };
+};
+
 struct observe_on_tag {
     template<class Included>
     struct include_header{
@@ -297,6 +302,14 @@ struct pairwise_tag {
     };
 };
 
+struct publish_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-publish.hpp>");
+    };
+};
+struct publish_synchronized_tag : publish_tag {};
+    
 struct repeat_tag {
     template<class Included>
     struct include_header{

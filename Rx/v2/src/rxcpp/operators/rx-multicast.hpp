@@ -2,6 +2,15 @@
 
 #pragma once
 
+/*! \file rx-multicast.hpp
+
+    \brief allows connections to the source to be independent of subscriptions.
+
+    \tparam Subject the subject to multicast the source Observable.
+
+    \param sub  the subject.
+*/
+
 #if !defined(RXCPP_OPERATORS_RX_MULTICAST_HPP)
 #define RXCPP_OPERATORS_RX_MULTICAST_HPP
 
@@ -12,6 +21,16 @@ namespace rxcpp {
 namespace operators {
 
 namespace detail {
+
+template<class... AN>
+struct multicast_invalid_arguments {};
+
+template<class... AN>
+struct multicast_invalid : public rxo::operator_base<multicast_invalid_arguments<AN...>> {
+    using type = observable<multicast_invalid_arguments<AN...>, multicast_invalid<AN...>>;
+};
+template<class... AN>
+using multicast_invalid_t = typename multicast_invalid<AN...>::type;
 
 template<class T, class Observable, class Subject>
 struct multicast : public operator_base<T>
@@ -65,32 +84,39 @@ struct multicast : public operator_base<T>
     }
 };
 
-template<class Subject>
-class multicast_factory
+}
+
+/*! @copydoc rx-multicast.hpp
+*/
+template<class... AN>
+auto multicast(AN&&... an)
+    ->      operator_factory<multicast_tag, AN...> {
+     return operator_factory<multicast_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<multicast_tag>
 {
-    Subject caster;
-public:
-    multicast_factory(Subject sub)
-        : caster(std::move(sub))
-    {
+    template<class Observable, class Subject,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_observable<Observable>>,
+        class SourceValue = rxu::value_type_t<Observable>,
+        class Multicast = rxo::detail::multicast<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<Subject>>,
+        class Value = rxu::value_type_t<Multicast>,
+        class Result = connectable_observable<Value, Multicast>>
+    static Result member(Observable&& o, Subject&& sub) {
+        return Result(Multicast(std::forward<Observable>(o), std::forward<Subject>(sub)));
     }
-    template<class Observable>
-    auto operator()(Observable&& source)
-        ->      connectable_observable<rxu::value_type_t<rxu::decay_t<Observable>>,   multicast<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, Subject>> {
-        return  connectable_observable<rxu::value_type_t<rxu::decay_t<Observable>>,   multicast<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, Subject>>(
-                                                                                      multicast<rxu::value_type_t<rxu::decay_t<Observable>>, Observable, Subject>(std::forward<Observable>(source), caster));
+
+    template<class... AN>
+    static operators::detail::multicast_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "multicast takes (Subject)");
     }
 };
-
-}
-
-template<class Subject>
-inline auto multicast(Subject sub)
-    ->      detail::multicast_factory<Subject> {
-    return  detail::multicast_factory<Subject>(std::move(sub));
-}
-
-}
 
 }
 
