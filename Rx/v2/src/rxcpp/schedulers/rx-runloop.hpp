@@ -35,6 +35,7 @@ struct run_loop_state : public std::enable_shared_from_this<run_loop_state>
     mutable std::mutex lock;
     mutable queue_item_time q;
     recursion r;
+    std::function<void()> add_task_callback;
 };
 
 }
@@ -79,6 +80,9 @@ private:
                 std::unique_lock<std::mutex> guard(st->lock);
                 st->q.push(detail::run_loop_state::item_type(when, scbl));
                 st->r.reset(false);
+                std::function<void()> callback{st->add_task_callback};
+                guard.unlock(); // So we can't get attempt to recursively lock the state
+                if (callback) callback();
             }
         }
     };
@@ -188,6 +192,11 @@ public:
 
     scheduler get_scheduler() const {
         return make_scheduler(sc);
+    }
+
+    void set_add_task_callback(std::function<void()> const& f) {
+        std::unique_lock<std::mutex> guard(state->lock);
+        state->add_task_callback = f;
     }
 };
 
