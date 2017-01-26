@@ -35,7 +35,7 @@ struct run_loop_state : public std::enable_shared_from_this<run_loop_state>
     mutable std::mutex lock;
     mutable queue_item_time q;
     recursion r;
-    std::function<void()> add_task_callback;
+    std::function<void(clock_type::time_point)> notify_earlier_wakeup;
 };
 
 }
@@ -78,11 +78,12 @@ private:
             if (scbl.is_subscribed()) {
                 auto st = state.lock();
                 std::unique_lock<std::mutex> guard(st->lock);
+                const bool need_earlier_wakeup_notification = st->notify_earlier_wakeup &&
+                                                              (st->q.empty() || when < st->q.top().when);
                 st->q.push(detail::run_loop_state::item_type(when, scbl));
                 st->r.reset(false);
-                std::function<void()> callback{st->add_task_callback};
+                if (need_earlier_wakeup_notification) st->notify_earlier_wakeup(when);
                 guard.unlock(); // So we can't get attempt to recursively lock the state
-                if (callback) callback();
             }
         }
     };
@@ -123,7 +124,6 @@ private:
     run_loop(const this_type&);
     run_loop(this_type&&);
 
-    typedef scheduler::clock_type clock_type;
     typedef detail::action_queue queue_type;
 
     typedef detail::run_loop_state::item_type item_type;
@@ -133,6 +133,7 @@ private:
     std::shared_ptr<run_loop_scheduler> sc;
 
 public:
+    typedef scheduler::clock_type clock_type;
     run_loop()
         : state(std::make_shared<detail::run_loop_state>())
         , sc(std::make_shared<run_loop_scheduler>(state))
@@ -194,9 +195,9 @@ public:
         return make_scheduler(sc);
     }
 
-    void set_add_task_callback(std::function<void()> const& f) {
+    void set_notify_earlier_wakeup(std::function<void(clock_type::time_point)> const& f) {
         std::unique_lock<std::mutex> guard(state->lock);
-        state->add_task_callback = f;
+        state->notify_earlier_wakeup = f;
     }
 };
 
