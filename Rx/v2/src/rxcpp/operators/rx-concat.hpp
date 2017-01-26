@@ -42,7 +42,6 @@
 #define RXCPP_OPERATORS_RX_CONCAT_HPP
 
 #include "../rx-includes.hpp"
-#include "./rx-publish.hpp"
 
 namespace rxcpp {
 

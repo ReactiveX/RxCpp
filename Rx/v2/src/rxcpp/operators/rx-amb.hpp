@@ -40,7 +40,6 @@
 #define RXCPP_OPERATORS_RX_AMB_HPP
 
 #include "../rx-includes.hpp"
-#include "./rx-publish.hpp"
 
 namespace rxcpp {
 

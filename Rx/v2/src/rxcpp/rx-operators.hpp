@@ -502,4 +502,7 @@ struct zip_tag {
 
 }
 
+#include "operators/rx-multicast.hpp"
+#include "operators/rx-publish.hpp"
+
 #endif
