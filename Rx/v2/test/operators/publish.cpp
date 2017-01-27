@@ -1,6 +1,6 @@
 #include "../test.h"
 #include <rxcpp/operators/rx-publish.hpp>
-
+#include <rxcpp/operators/rx-connect_forever.hpp>
 
 SCENARIO("publish range", "[hide][range][subject][publish][subject][operators]"){
     GIVEN("a range"){
