@@ -1,4 +1,6 @@
 #include "../test.h"
+#include <rxcpp/operators/rx-publish.hpp>
+
 
 SCENARIO("publish range", "[hide][range][subject][publish][subject][operators]"){
     GIVEN("a range"){

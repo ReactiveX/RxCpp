@@ -3,6 +3,7 @@
 #include "rxcpp/operators/rx-map.hpp"
 #include "rxcpp/operators/rx-take.hpp"
 #include "rxcpp/operators/rx-observe_on.hpp"
+#include "rxcpp/operators/rx-publish.hpp"
 
 SCENARIO("observe subscription", "[hide]"){
     GIVEN("observable of ints"){

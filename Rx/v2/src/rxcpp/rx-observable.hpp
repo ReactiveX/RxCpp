@@ -1161,123 +1161,37 @@ public:
         return  observable_member(ignore_elements_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /// \cond SHOW_SERVICE_MEMBERS
-    /// multicast ->
-    /// allows connections to the source to be independent of subscriptions
-    ///
-    template<class Subject>
-    auto multicast(Subject sub) const
-        ->      connectable_observable<T,   rxo::detail::multicast<T, this_type, Subject>> {
-        return  connectable_observable<T,   rxo::detail::multicast<T, this_type, Subject>>(
-                                            rxo::detail::multicast<T, this_type, Subject>(*this, std::move(sub)));
-    }
-    /// \endcond
-
-    /*! Turn a cold observable hot and allow connections to the source to be independent of subscriptions.
-
-        \tparam  Coordination  the type of the scheduler
-
-        \param  cn  a scheduler all values are queued and delivered on
-        \param  cs  the subscription to control lifetime
-
-        \return  rxcpp::connectable_observable that upon connection causes the source observable to emit items to its observers, on the specified scheduler.
-
-        \sample
-        \snippet publish.cpp publish_synchronized sample
-        \snippet output.txt publish_synchronized sample
-    */
-    template<class Coordination>
-    auto publish_synchronized(Coordination cn, composite_subscription cs = composite_subscription()) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS multicast(rxsub::synchronize<T, Coordination>(std::move(cn), cs)))
-        /// \endcond
-    {
-        return                    multicast(rxsub::synchronize<T, Coordination>(std::move(cn), cs));
-    }
-
-    /*! Turn a cold observable hot and allow connections to the source to be independent of subscriptions.
-
-        \return  rxcpp::connectable_observable that upon connection causes the source observable to emit items to its observers.
-
-        \sample
-        \snippet publish.cpp publish subject sample
-        \snippet output.txt publish subject sample
-    */
+    /*! @copydoc rx-muticast.hpp
+     */
     template<class... AN>
-    auto publish(AN**...) const
+    auto multicast(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS multicast(rxsub::subject<T>(composite_subscription())))
+        -> decltype(observable_member(multicast_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        composite_subscription cs;
-        return                    multicast(rxsub::subject<T>(cs));
-        static_assert(sizeof...(AN) == 0, "publish() was passed too many arguments.");
+        return      observable_member(multicast_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /*! Turn a cold observable hot and allow connections to the source to be independent of subscriptions.
-
-        \param  cs  the subscription to control lifetime
-
-        \return  rxcpp::connectable_observable that upon connection causes the source observable to emit items to its observers.
-
-        \sample
-        \snippet publish.cpp publish subject sample
-        \snippet output.txt publish subject sample
-    */
+    /*! @copydoc rx-publish.hpp
+     */
     template<class... AN>
-    auto publish(composite_subscription cs, AN**...) const
+    auto publish(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS multicast(rxsub::subject<T>(cs)))
+        -> decltype(observable_member(publish_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return                    multicast(rxsub::subject<T>(cs));
-        static_assert(sizeof...(AN) == 0, "publish(composite_subscription) was passed too many arguments.");
+        return      observable_member(publish_tag{},                *this, std::forward<AN>(an)...);
     }
 
-    /*! Turn a cold observable hot, send the most recent value to any new subscriber, and allow connections to the source to be independent of subscriptions.
-
-        \tparam  T  the type of the emitted item
-
-        \param  first  an initial item to be emitted by the resulting observable at connection time before emitting the items from the source observable; not emitted to observers that subscribe after the time of connection
-
-        \return  rxcpp::connectable_observable that upon connection causes the source observable to emit items to its observers.
-
-        \sample
-        \snippet publish.cpp publish behavior sample
-        \snippet output.txt publish behavior sample
-    */
+    /*! @copydoc rxcpp::operators::publish_synchronized
+     */
     template<class... AN>
-    auto publish(T first, AN**...) const
+    auto publish_synchronized(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS multicast(rxsub::behavior<T>(first, composite_subscription())))
+        -> decltype(observable_member(publish_synchronized_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        composite_subscription cs;
-        return      multicast(rxsub::behavior<T>(first, cs));
-        static_assert(sizeof...(AN) == 0, "publish(value_type) was passed too many arguments.");
-    }
-
-    /*! Turn a cold observable hot, send the most recent value to any new subscriber, and allow connections to the source to be independent of subscriptions.
-
-        \tparam  T  the type of the emitted item
-
-        \param  first  an initial item to be emitted by the resulting observable at connection time before emitting the items from the source observable; not emitted to observers that subscribe after the time of connection
-        \param  cs     the subscription to control lifetime
-
-        \return  rxcpp::connectable_observable that upon connection causes the source observable to emit items to its observers.
-
-        \sample
-        \snippet publish.cpp publish behavior sample
-        \snippet output.txt publish behavior sample
-    */
-    template<class... AN>
-    auto publish(T first, composite_subscription cs, AN**...) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(EXPLICIT_THIS multicast(rxsub::behavior<T>(first, cs)))
-        /// \endcond
-    {
-        return      multicast(rxsub::behavior<T>(first, cs));
-        static_assert(sizeof...(AN) == 0, "publish(value_type, composite_subscription) was passed too many arguments.");
+        return      observable_member(publish_synchronized_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-replay.hpp
