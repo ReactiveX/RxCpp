@@ -2,6 +2,14 @@
 
 #pragma once
 
+/*! \file rx-connect_forever.hpp
+
+    \brief  takes a connectable_observable source and calls connect during the construction of the expression.
+            This means that the source starts running without any subscribers and continues running after all subscriptions have been unsubscribed.
+
+    \return An observable that emitting the items from its source.
+ */
+
 #if !defined(RXCPP_OPERATORS_RX_CONNECT_FOREVER_HPP)
 #define RXCPP_OPERATORS_RX_CONNECT_FOREVER_HPP
 
@@ -12,6 +20,16 @@ namespace rxcpp {
 namespace operators {
 
 namespace detail {
+
+template<class... AN>
+struct connect_forever_invalid_arguments {};
+
+template<class... AN>
+struct connect_forever_invalid : public rxo::operator_base<connect_forever_invalid_arguments<AN...>> {
+    using type = observable<connect_forever_invalid_arguments<AN...>, connect_forever_invalid<AN...>>;
+};
+template<class... AN>
+using connect_forever_invalid_t = typename connect_forever_invalid<AN...>::type;
 
 template<class T, class ConnectableObservable>
 struct connect_forever : public operator_base<T>
@@ -32,32 +50,40 @@ struct connect_forever : public operator_base<T>
     }
 };
 
-class connect_forever_factory
+}
+
+/*! @copydoc rx-connect_forever.hpp
+*/
+template<class... AN>
+auto connect_forever(AN&&... an)
+->     operator_factory<connect_forever_tag, AN...> {
+    return operator_factory<connect_forever_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+}
+
+template<>
+struct member_overload<connect_forever_tag>
 {
-public:
-    connect_forever_factory() {}
-    template<class... TN>
-    auto operator()(connectable_observable<TN...>&& source)
-        ->      observable<rxu::value_type_t<connectable_observable<TN...>>,   connect_forever<rxu::value_type_t<connectable_observable<TN...>>, connectable_observable<TN...>>> {
-        return  observable<rxu::value_type_t<connectable_observable<TN...>>,   connect_forever<rxu::value_type_t<connectable_observable<TN...>>, connectable_observable<TN...>>>(
-                                                                               connect_forever<rxu::value_type_t<connectable_observable<TN...>>, connectable_observable<TN...>>(std::move(source)));
+    template<class ConnectableObservable,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_connectable_observable<ConnectableObservable>>,
+        class SourceValue = rxu::value_type_t<ConnectableObservable>,
+        class ConnectForever = rxo::detail::connect_forever<SourceValue, rxu::decay_t<ConnectableObservable>>,
+        class Value = rxu::value_type_t<ConnectForever>,
+        class Result = observable<Value, ConnectForever>
+        >
+    static Result member(ConnectableObservable&& o) {
+        return Result(ConnectForever(std::forward<ConnectableObservable>(o)));
     }
-    template<class... TN>
-    auto operator()(const connectable_observable<TN...>& source)
-        ->      observable<rxu::value_type_t<connectable_observable<TN...>>,   connect_forever<rxu::value_type_t<connectable_observable<TN...>>, connectable_observable<TN...>>> {
-        return  observable<rxu::value_type_t<connectable_observable<TN...>>,   connect_forever<rxu::value_type_t<connectable_observable<TN...>>, connectable_observable<TN...>>>(
-                                                                               connect_forever<rxu::value_type_t<connectable_observable<TN...>>, connectable_observable<TN...>>(source));
+
+    template<class... AN>
+    static operators::detail::connect_forever_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "connect_forever takes no arguments");
     }
 };
-
-}
-
-inline auto connect_forever()
-    ->      detail::connect_forever_factory {
-    return  detail::connect_forever_factory();
-}
-
-}
 
 }
 

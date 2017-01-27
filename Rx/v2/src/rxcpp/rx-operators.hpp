@@ -95,7 +95,6 @@ public:
 
 }
 
-#include "operators/rx-connect_forever.hpp"
 #include "operators/rx-lift.hpp"
 #include "operators/rx-ref_count.hpp"
 #include "operators/rx-subscribe.hpp"
@@ -167,6 +166,13 @@ struct concat_map_tag {
     template<class Included>
     struct include_header{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-concat_map.hpp>");
+    };
+};
+
+struct connect_forever_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-connect_forever.hpp>");
     };
 };
 
