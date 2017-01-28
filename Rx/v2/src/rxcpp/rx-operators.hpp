@@ -96,7 +96,6 @@ public:
 }
 
 #include "operators/rx-lift.hpp"
-#include "operators/rx-ref_count.hpp"
 #include "operators/rx-subscribe.hpp"
 
 namespace rxcpp {
@@ -300,6 +299,13 @@ struct sum_tag : reduce_tag {};
 struct average_tag : reduce_tag {};
 struct min_tag : reduce_tag {};
 struct max_tag : reduce_tag {};
+
+struct ref_count_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-ref_count.hpp>");
+    };
+};
 
 struct pairwise_tag {
     template<class Included>
@@ -510,5 +516,6 @@ struct zip_tag {
 
 #include "operators/rx-multicast.hpp"
 #include "operators/rx-publish.hpp"
+#include "operators/rx-ref_count.hpp"
 
 #endif

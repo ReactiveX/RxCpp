@@ -2,6 +2,14 @@
 
 #pragma once
 
+/*! \file rx-ref_count.hpp
+
+    \brief  takes a connectable_observable source and uses a ref_count of the subscribers to control the connection to the published source.
+            The first subscription will cause a call to connect() and the last unsubscribe will unsubscribe the connection.
+
+    \return An observable that emitting the items from its source.
+ */
+
 #if !defined(RXCPP_OPERATORS_RX_REF_COUNT_HPP)
 #define RXCPP_OPERATORS_RX_REF_COUNT_HPP
 
@@ -13,6 +21,16 @@ namespace operators {
 
 namespace detail {
 
+template<class... AN>
+struct ref_count_invalid_arguments {};
+
+template<class... AN>
+struct ref_count_invalid : public rxo::operator_base<ref_count_invalid_arguments<AN...>> {
+    using type = observable<ref_count_invalid_arguments<AN...>, ref_count_invalid<AN...>>;
+};
+template<class... AN>
+using ref_count_invalid_t = typename ref_count_invalid<AN...>::type;
+    
 template<class T, class ConnectableObservable>
 struct ref_count : public operator_base<T>
 {
@@ -59,33 +77,41 @@ struct ref_count : public operator_base<T>
     }
 };
 
-class ref_count_factory
+}
+
+/*! @copydoc rx-ref_count.hpp
+*/
+template<class... AN>
+auto ref_count(AN&&... an)
+    ->     operator_factory<ref_count_tag, AN...> {
+    return operator_factory<ref_count_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}   
+    
+}
+
+template<>
+struct member_overload<ref_count_tag>
 {
-public:
-    ref_count_factory() {}
-    template<class... TN>
-    auto operator()(connectable_observable<TN...>&& source)
-        ->      observable<rxu::value_type_t<connectable_observable<TN...>>,   ref_count<rxu::value_type_t<connectable_observable<TN...>>, connectable_observable<TN...>>> {
-        return  observable<rxu::value_type_t<connectable_observable<TN...>>,   ref_count<rxu::value_type_t<connectable_observable<TN...>>, connectable_observable<TN...>>>(
-                                                                               ref_count<rxu::value_type_t<connectable_observable<TN...>>, connectable_observable<TN...>>(std::move(source)));
+    template<class ConnectableObservable,
+        class Enabled = rxu::enable_if_all_true_type_t<
+            is_connectable_observable<ConnectableObservable>>,
+        class SourceValue = rxu::value_type_t<ConnectableObservable>,
+        class RefCount = rxo::detail::ref_count<SourceValue, rxu::decay_t<ConnectableObservable>>,
+        class Value = rxu::value_type_t<RefCount>,
+        class Result = observable<Value, RefCount>
+        >
+    static Result member(ConnectableObservable&& o) {
+        return Result(RefCount(std::forward<ConnectableObservable>(o)));
     }
-    template<class... TN>
-    auto operator()(const connectable_observable<TN...>& source)
-        ->      observable<rxu::value_type_t<connectable_observable<TN...>>,   ref_count<rxu::value_type_t<connectable_observable<TN...>>, connectable_observable<TN...>>> {
-        return  observable<rxu::value_type_t<connectable_observable<TN...>>,   ref_count<rxu::value_type_t<connectable_observable<TN...>>, connectable_observable<TN...>>>(
-                                                                               ref_count<rxu::value_type_t<connectable_observable<TN...>>, connectable_observable<TN...>>(source));
+
+    template<class... AN>
+    static operators::detail::ref_count_invalid_t<AN...> member(AN...) {
+        std::terminate();
+        return {};
+        static_assert(sizeof...(AN) == 10000, "ref_count takes no arguments");
     }
 };
-
-}
-
-inline auto ref_count()
-    ->      detail::ref_count_factory {
-    return  detail::ref_count_factory();
-}
-
-}
-
+    
 }
 
 #endif
