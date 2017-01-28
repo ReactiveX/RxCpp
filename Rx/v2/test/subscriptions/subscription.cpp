@@ -4,6 +4,7 @@
 #include "rxcpp/operators/rx-take.hpp"
 #include "rxcpp/operators/rx-observe_on.hpp"
 #include "rxcpp/operators/rx-publish.hpp"
+#include "rxcpp/operators/rx-ref_count.hpp"
 
 SCENARIO("observe subscription", "[hide]"){
     GIVEN("observable of ints"){

@@ -162,16 +162,15 @@ public:
         return cs;
     }
 
-    /// ref_count ->
-    /// takes a connectable_observable source and uses a ref_count of the subscribers
-    /// to control the connection to the published source. The first subscription
-    /// will cause a call to connect() and the last unsubscribe will unsubscribe the
-    /// connection.
-    ///
-    auto ref_count() const
-        ->      observable<T,   rxo::detail::ref_count<T, this_type>> {
-        return  observable<T,   rxo::detail::ref_count<T, this_type>>(
-                                rxo::detail::ref_count<T, this_type>(*this));
+    /*! @copydoc rx-ref_count.hpp
+     */
+    template<class... AN>
+    auto ref_count(AN... an) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(observable_member(ref_count_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        /// \endcond
+    {
+        return      observable_member(ref_count_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-connect_forever.hpp
