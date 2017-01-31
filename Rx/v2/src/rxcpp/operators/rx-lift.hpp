@@ -2,6 +2,17 @@
 
 #pragma once
 
+/*! \file rx-lift.hpp
+
+    \brief  takes any function that will take a subscriber for this observable and produce a subscriber.
+            this is intended to allow externally defined operators, that use make_subscriber, to be connected into the expression.
+
+    \tparam ResultType  the type of the emitted results.
+    \tparam Operator    the type of the operator.
+
+    \return An observable that emitting the items from its source.
+ */
+
 #if !defined(RXCPP_OPERATORS_RX_LIFT_HPP)
 #define RXCPP_OPERATORS_RX_LIFT_HPP
 
