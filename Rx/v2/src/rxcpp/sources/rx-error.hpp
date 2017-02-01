@@ -7,6 +7,28 @@
 
 #include "../rx-includes.hpp"
 
+/*! \file rx-error.hpp
+
+    \brief Returns an observable that sends no items to observer and immediately generates an error, on the specified scheduler.
+
+    \tparam T             the type of (not) emitted items
+    \tparam Exception     the type of the error
+    \tparam Coordination  the type of the scheduler (optional)
+
+    \param  e   the error to be passed to observers
+    \param  cn  the scheduler to use for scheduling the items (optional)
+
+    \return  Observable that sends no items to observer and immediately generates an error.
+
+    \sample
+    \snippet error.cpp error sample
+    \snippet output.txt error sample
+
+    \sample
+    \snippet error.cpp threaded error sample
+    \snippet output.txt threaded error sample
+*/
+
 namespace rxcpp {
 
 namespace sources {
@@ -86,11 +108,15 @@ auto make_error(throw_instance_tag&&, E e, Coordination cn)
 
 }
 
+/*! @copydoc rx-error.hpp
+ */
 template<class T, class E>
 auto error(E e)
     -> decltype(detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, rxu::decay_t<E>>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), identity_immediate())) {
     return      detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, rxu::decay_t<E>>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), identity_immediate());
 }
+/*! @copydoc rx-error.hpp
+ */
 template<class T, class E, class Coordination>
 auto error(E e, Coordination cn)
     -> decltype(detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, rxu::decay_t<E>>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), std::move(cn))) {

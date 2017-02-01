@@ -7,6 +7,19 @@
 
 #include "../rx-includes.hpp"
 
+/*! \file rx-naver.hpp
+
+    \brief Returns an observable that never sends any items or notifications to observer.
+
+    \tparam T  the type of (not) emitted items
+
+    \return  Observable that never sends any items or notifications to observer.
+
+    \sample
+    \snippet never.cpp never sample
+    \snippet output.txt never sample
+*/
+
 namespace rxcpp {
 
 namespace sources {
@@ -23,6 +36,8 @@ struct never : public source_base<T>
 
 }
 
+/*! @copydoc rx-never.hpp
+ */
 template<class T>
 auto never()
     ->      observable<T, detail::never<T>> {

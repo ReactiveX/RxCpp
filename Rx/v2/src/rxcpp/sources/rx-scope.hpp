@@ -7,6 +7,23 @@
 
 #include "../rx-includes.hpp"
 
+/*! \file rx-scope.hpp
+
+    \brief Returns an observable that makes an observable by the specified observable factory using the resource provided by the specified resource factory for each new observer that subscribes.
+
+    \tparam ResourceFactory    the type of the resource factory
+    \tparam ObservableFactory  the type of the observable factory
+
+    \param  rf  the resource factory function that resturn the rxcpp::resource that is used as a resource by the observable factory
+    \param  of  the observable factory function to invoke for each observer that subscribes to the resulting observable
+
+    \return  observable that makes an observable by the specified observable factory using the resource provided by the specified resource factory for each new observer that subscribes.
+
+    \sample
+    \snippet scope.cpp scope sample
+    \snippet output.txt scope sample
+*/
+
 namespace rxcpp {
 
 namespace sources {
@@ -77,7 +94,7 @@ struct scope : public source_base<rxu::value_type_t<scope_traits<ResourceFactory
             return;
         }
         state->out.add(state->resource->get_subscription());
-        
+
         auto selectedCollection = on_exception(
             [state](){return state->observable_factory(state->resource.get()); },
             state->out);
@@ -91,6 +108,8 @@ struct scope : public source_base<rxu::value_type_t<scope_traits<ResourceFactory
 
 }
 
+/*! @copydoc rx-scope.hpp
+ */
 template<class ResourceFactory, class ObservableFactory>
 auto scope(ResourceFactory rf, ObservableFactory of)
     ->      observable<rxu::value_type_t<detail::scope_traits<ResourceFactory, ObservableFactory>>, detail::scope<ResourceFactory, ObservableFactory>> {

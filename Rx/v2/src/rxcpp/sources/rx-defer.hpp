@@ -7,6 +7,21 @@
 
 #include "../rx-includes.hpp"
 
+/*! \file rx-defer.hpp
+
+    \brief Returns an observable that calls the specified observable factory to create an observable for each new observer that subscribes.
+
+    \tparam ObservableFactory  the type of the observable factory
+
+    \param  of  the observable factory function to invoke for each observer that subscribes to the resulting observable
+
+    \return  observable whose observers' subscriptions trigger an invocation of the given observable factory function
+
+    \sample
+    \snippet defer.cpp defer sample
+    \snippet output.txt defer sample
+*/
+
 namespace rxcpp {
 
 namespace sources {
@@ -52,6 +67,8 @@ struct defer : public source_base<rxu::value_type_t<defer_traits<ObservableFacto
 
 }
 
+/*! @copydoc rx-defer.hpp
+ */
 template<class ObservableFactory>
 auto defer(ObservableFactory of)
     ->      observable<rxu::value_type_t<detail::defer_traits<ObservableFactory>>,    detail::defer<ObservableFactory>> {

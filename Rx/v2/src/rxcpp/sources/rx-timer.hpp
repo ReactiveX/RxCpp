@@ -7,6 +7,34 @@
 
 #include "../rx-includes.hpp"
 
+/*! \file rx-timer.hpp
+
+    \brief Returns an observable that emits an integer at the specified time point.
+
+    \tparam Coordination  the type of the scheduler (optional)
+
+    \param  when  time point when the value is emitted
+    \param  cn    the scheduler to use for scheduling the items (optional)
+
+    \return  Observable that emits an integer at the specified time point
+
+    \sample
+    \snippet timer.cpp timepoint timer sample
+    \snippet output.txt timepoint timer sample
+
+    \sample
+    \snippet timer.cpp duration timer sample
+    \snippet output.txt duration timer sample
+
+    \sample
+    \snippet timer.cpp threaded timepoint timer sample
+    \snippet output.txt threaded timepoint timer sample
+
+    \sample
+    \snippet timer.cpp threaded duration timer sample
+    \snippet output.txt threaded duration timer sample
+*/
+
 namespace rxcpp {
 
 namespace sources {
@@ -70,7 +98,7 @@ struct timer : public source_base<long>
 template<class TimePointOrDuration, class Coordination>
 struct defer_timer : public defer_observable<
     rxu::all_true<
-        std::is_convertible<TimePointOrDuration, rxsc::scheduler::clock_type::time_point>::value || 
+        std::is_convertible<TimePointOrDuration, rxsc::scheduler::clock_type::time_point>::value ||
         std::is_convertible<TimePointOrDuration, rxsc::scheduler::clock_type::duration>::value,
         is_coordination<Coordination>::value>,
     void,
@@ -80,6 +108,8 @@ struct defer_timer : public defer_observable<
 
 }
 
+/*! @copydoc rx-timer.hpp
+ */
 template<class TimePointOrDuration>
 auto timer(TimePointOrDuration when)
     ->  typename std::enable_if<
@@ -88,6 +118,8 @@ auto timer(TimePointOrDuration when)
     return          detail::defer_timer<TimePointOrDuration, identity_one_worker>::make(when, identity_current_thread());
 }
 
+/*! @copydoc rx-timer.hpp
+ */
 template<class TimePointOrDuration, class Coordination>
 auto timer(TimePointOrDuration when, Coordination cn)
     ->  typename std::enable_if<

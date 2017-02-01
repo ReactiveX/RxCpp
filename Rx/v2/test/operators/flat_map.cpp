@@ -45,7 +45,7 @@ SCENARIO("pythagorian for loops", "[hide][for][pythagorian][perf]"){
     }
 }
 
-SCENARIO("flat_map pythagorian ranges", "[hide][range][flat_map][pythagorian][perf]"){
+SCENARIO("merge_transform pythagorian ranges", "[hide][range][merge_transform][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("some ranges"){
         WHEN("generating pythagorian triplets"){
@@ -60,14 +60,14 @@ SCENARIO("flat_map pythagorian ranges", "[hide][range][flat_map][pythagorian][pe
             auto start = clock::now();
             auto triples =
                 rxs::range(1, so)
-                    .flat_map(
+                    .merge_transform(
                         [&c, so](int z){
                             return rxs::range(1, z, 1, so)
                                 .flat_map(
                                     [&c, so, z](int x){
                                         return rxs::range(x, z, 1, so)
                                             .filter([&c, z, x](int y){++c; return x*x + y*y == z*z;})
-                                            .map([z, x](int y){return std::make_tuple(x, y, z);})
+                                            .transform([z, x](int y){return std::make_tuple(x, y, z);})
                                             // forget type to workaround lambda deduction bug on msvc 2013
                                             .as_dynamic();},
                                     [](int /*x*/, std::tuple<int,int,int> triplet){return triplet;})
@@ -89,7 +89,7 @@ SCENARIO("flat_map pythagorian ranges", "[hide][range][flat_map][pythagorian][pe
     }
 }
 
-SCENARIO("synchronize flat_map pythagorian ranges", "[hide][range][flat_map][synchronize][pythagorian][perf]"){
+SCENARIO("synchronize merge_transform pythagorian ranges", "[hide][range][merge_transform][synchronize][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("some ranges"){
         WHEN("generating pythagorian triplets"){
@@ -103,10 +103,10 @@ SCENARIO("synchronize flat_map pythagorian ranges", "[hide][range][flat_map][syn
             auto start = clock::now();
             auto triples =
                 rxs::range(1, so)
-                    .flat_map(
+                    .merge_transform(
                         [&c, so](int z){
                             return rxs::range(1, z, 1, so)
-                                .flat_map(
+                                .merge_transform(
                                     [&c, so, z](int x){
                                         return rxs::range(x, z, 1, so)
                                             .filter([&c, z, x](int y){
@@ -115,7 +115,7 @@ SCENARIO("synchronize flat_map pythagorian ranges", "[hide][range][flat_map][syn
                                                     return true;}
                                                 else {
                                                     return false;}})
-                                            .map([z, x](int y){return std::make_tuple(x, y, z);})
+                                            .transform([z, x](int y){return std::make_tuple(x, y, z);})
                                             // forget type to workaround lambda deduction bug on msvc 2013
                                             .as_dynamic();},
                                     [](int /*x*/, std::tuple<int,int,int> triplet){return triplet;},
@@ -137,7 +137,7 @@ SCENARIO("synchronize flat_map pythagorian ranges", "[hide][range][flat_map][syn
     }
 }
 
-SCENARIO("observe_on flat_map pythagorian ranges", "[hide][range][flat_map][observe_on][pythagorian][perf]"){
+SCENARIO("observe_on merge_transform pythagorian ranges", "[hide][range][merge_transform][observe_on][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("some ranges"){
         WHEN("generating pythagorian triplets"){
@@ -151,10 +151,10 @@ SCENARIO("observe_on flat_map pythagorian ranges", "[hide][range][flat_map][obse
             auto start = clock::now();
             auto triples =
                 rxs::range(1, so)
-                    .flat_map(
+                    .merge_transform(
                         [&c, so](int z){
                             return rxs::range(1, z, 1, so)
-                                .flat_map(
+                                .merge_transform(
                                     [&c, so, z](int x){
                                         return rxs::range(x, z, 1, so)
                                             .filter([&c, z, x](int y){
@@ -163,7 +163,7 @@ SCENARIO("observe_on flat_map pythagorian ranges", "[hide][range][flat_map][obse
                                                     return true;}
                                                 else {
                                                     return false;}})
-                                            .map([z, x](int y){return std::make_tuple(x, y, z);})
+                                            .transform([z, x](int y){return std::make_tuple(x, y, z);})
                                             // forget type to workaround lambda deduction bug on msvc 2013
                                             .as_dynamic();},
                                     [](int /*x*/, std::tuple<int,int,int> triplet){return triplet;},
@@ -185,7 +185,7 @@ SCENARIO("observe_on flat_map pythagorian ranges", "[hide][range][flat_map][obse
     }
 }
 
-SCENARIO("serialize flat_map pythagorian ranges", "[hide][range][flat_map][serialize][pythagorian][perf]"){
+SCENARIO("serialize merge_transform pythagorian ranges", "[hide][range][merge_transform][serialize][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("some ranges"){
         WHEN("generating pythagorian triplets"){
@@ -199,10 +199,10 @@ SCENARIO("serialize flat_map pythagorian ranges", "[hide][range][flat_map][seria
             auto start = clock::now();
             auto triples =
                 rxs::range(1, so)
-                    .flat_map(
+                    .merge_transform(
                         [&c, so](int z){
                             return rxs::range(1, z, 1, so)
-                                .flat_map(
+                                .merge_transform(
                                     [&c, so, z](int x){
                                         return rxs::range(x, z, 1, so)
                                             .filter([&c, z, x](int y){
@@ -211,7 +211,7 @@ SCENARIO("serialize flat_map pythagorian ranges", "[hide][range][flat_map][seria
                                                     return true;}
                                                 else {
                                                     return false;}})
-                                            .map([z, x](int y){return std::make_tuple(x, y, z);})
+                                            .transform([z, x](int y){return std::make_tuple(x, y, z);})
                                             // forget type to workaround lambda deduction bug on msvc 2013
                                             .as_dynamic();},
                                     [](int /*x*/, std::tuple<int,int,int> triplet){return triplet;},
@@ -314,13 +314,97 @@ SCENARIO("flat_map completes", "[flat_map][map][operators]"){
                 REQUIRE(required == actual);
             }
         }
+    }
+}
+
+SCENARIO("merge_transform completes", "[merge_transform][transform][map][operators]"){
+    GIVEN("two cold observables. one of ints. one of strings."){
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> i_on;
+        const rxsc::test::messages<std::string> s_on;
+
+        auto xs = sc.make_cold_observable({
+            i_on.next(100, 4),
+            i_on.next(200, 2),
+            i_on.next(300, 3),
+            i_on.next(400, 1),
+            i_on.completed(500)
+        });
+
+        auto ys = sc.make_cold_observable({
+            s_on.next(50, "foo"),
+            s_on.next(100, "bar"),
+            s_on.next(150, "baz"),
+            s_on.next(200, "qux"),
+            s_on.completed(250)
+        });
+
+        WHEN("each int is mapped to the strings"){
+
+            auto res = w.start(
+                [&]() {
+                    return xs
+                        | rxo::merge_transform(
+                            [&](int){
+                                return ys;},
+                            [](int, std::string s){
+                                return s;})
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        | rxo::as_dynamic();
+                }
+            );
+
+            THEN("the output contains strings repeated for each int"){
+                auto required = rxu::to_vector({
+                    s_on.next(350, "foo"),
+                    s_on.next(400, "bar"),
+                    s_on.next(450, "baz"),
+                    s_on.next(450, "foo"),
+                    s_on.next(500, "qux"),
+                    s_on.next(500, "bar"),
+                    s_on.next(550, "baz"),
+                    s_on.next(550, "foo"),
+                    s_on.next(600, "qux"),
+                    s_on.next(600, "bar"),
+                    s_on.next(650, "baz"),
+                    s_on.next(650, "foo"),
+                    s_on.next(700, "qux"),
+                    s_on.next(700, "bar"),
+                    s_on.next(750, "baz"),
+                    s_on.next(800, "qux"),
+                    s_on.completed(850)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription to the ints"){
+                auto required = rxu::to_vector({
+                    i_on.subscribe(200, 700)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there were four subscription and unsubscription to the strings"){
+                auto required = rxu::to_vector({
+                    s_on.subscribe(300, 550),
+                    s_on.subscribe(400, 650),
+                    s_on.subscribe(500, 750),
+                    s_on.subscribe(600, 850)
+                });
+                auto actual = ys.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
 
         WHEN("each int is mapped to the strings with coordinator"){
 
             auto res = w.start(
                 [&]() {
                     return xs
-                        .flat_map(
+                        .merge_transform(
                             [&](int){
                                 return ys;},
                             [](int, std::string s){
@@ -377,7 +461,7 @@ SCENARIO("flat_map completes", "[flat_map][map][operators]"){
     }
 }
 
-SCENARIO("flat_map source never ends", "[flat_map][map][operators]"){
+SCENARIO("merge_transform source never ends", "[merge_transform][transform][map][operators]"){
     GIVEN("two cold observables. one of ints. one of strings."){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -406,7 +490,7 @@ SCENARIO("flat_map source never ends", "[flat_map][map][operators]"){
             auto res = w.start(
                 [&]() {
                     return xs
-                        .flat_map([&](int){return ys;}, [](int, std::string s){return s;})
+                        .merge_transform([&](int){return ys;}, [](int, std::string s){return s;})
                         // forget type to workaround lambda deduction bug on msvc 2013
                         .as_dynamic();
                 }
@@ -464,7 +548,7 @@ SCENARIO("flat_map source never ends", "[flat_map][map][operators]"){
     }
 }
 
-SCENARIO("flat_map inner error", "[flat_map][map][operators]"){
+SCENARIO("merge_transform inner error", "[merge_transform][transform][map][operators]"){
     GIVEN("two cold observables. one of ints. one of strings."){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -494,7 +578,7 @@ SCENARIO("flat_map inner error", "[flat_map][map][operators]"){
             auto res = w.start(
                 [&]() {
                     return xs
-                        .flat_map([&](int){return ys;}, [](int, std::string s){return s;})
+                        .merge_transform([&](int){return ys;}, [](int, std::string s){return s;})
                         // forget type to workaround lambda deduction bug on msvc 2013
                         .as_dynamic();
                 }
@@ -538,7 +622,7 @@ SCENARIO("flat_map inner error", "[flat_map][map][operators]"){
     }
 }
 
-SCENARIO("flat_map, no result selector, no coordination", "[flat_map][map][operators]"){
+SCENARIO("merge_transform, no result selector, no coordination", "[merge_transform][transform][map][operators]"){
     GIVEN("two cold observables. one of ints. one of strings."){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -566,7 +650,7 @@ SCENARIO("flat_map, no result selector, no coordination", "[flat_map][map][opera
             auto res = w.start(
                 [&]() {
                     return xs
-                        .flat_map(
+                        .merge_transform(
                             [&](int){
                                 return ys;})
                         // forget type to workaround lambda deduction bug on msvc 2013
@@ -620,7 +704,7 @@ SCENARIO("flat_map, no result selector, no coordination", "[flat_map][map][opera
     }
 }
 
-SCENARIO("flat_map, no result selector, with coordination", "[flat_map][map][operators]"){
+SCENARIO("merge_transform, no result selector, with coordination", "[merge_transform][transform][map][operators]"){
     GIVEN("two cold observables. one of ints. one of strings."){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -648,7 +732,7 @@ SCENARIO("flat_map, no result selector, with coordination", "[flat_map][map][ope
             auto res = w.start(
                 [&]() {
                     return xs
-                        .flat_map(
+                        .merge_transform(
                             [&](int){
                                 return ys;},
                             rx::identity_current_thread())
