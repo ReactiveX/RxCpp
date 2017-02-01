@@ -112,6 +112,14 @@ auto on_error_resume_next(AN&&... an)
     return operator_factory<on_error_resume_next_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
 }
 
+/*! @copydoc rx-on_error_resume_next.hpp
+*/
+template<class... AN>
+auto switch_on_error(AN&&... an)
+    ->     operator_factory<on_error_resume_next_tag, AN...> {
+    return operator_factory<on_error_resume_next_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
 }
 
 template<>

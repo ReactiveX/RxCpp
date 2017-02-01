@@ -279,6 +279,14 @@ auto concat_map(AN&&... an)
     return operator_factory<concat_map_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
 }
 
+/*! @copydoc rx-concat_map.hpp
+*/
+template<class... AN>
+auto concat_transform(AN&&... an)
+->     operator_factory<concat_map_tag, AN...> {
+    return operator_factory<concat_map_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
 }
 
 template<>

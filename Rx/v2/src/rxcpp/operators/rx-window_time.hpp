@@ -3,7 +3,7 @@
 #pragma once
 
 /*! \file rx-window_time.hpp
-  
+
     \brief Return an observable that emits observables every period time interval and collects items from this observable for period of time into each produced observable, on the specified scheduler.
            If the skip parameter is set, return an observable that emits observables every skip time interval and collects items from this observable for period of time into each produced observable, on the specified scheduler.
 
@@ -20,7 +20,7 @@
     \sample
     \snippet window.cpp window period+skip+coordination sample
     \snippet output.txt window period+skip+coordination sample
-    
+
     \sample
     \snippet window.cpp window period+skip sample
     \snippet output.txt window period+skip sample
@@ -54,12 +54,12 @@ struct window_with_time_invalid : public rxo::operator_base<window_with_time_inv
 };
 template<class... AN>
 using window_with_time_invalid_t = typename window_with_time_invalid<AN...>::type;
-    
+
 template<class T, class Duration, class Coordination>
 struct window_with_time
 {
     typedef rxu::decay_t<T> source_value_type;
-    typedef observable<source_value_type> value_type;    
+    typedef observable<source_value_type> value_type;
     typedef rxu::decay_t<Coordination> coordination_type;
     typedef typename coordination_type::coordinator_type coordinator_type;
     typedef rxu::decay_t<Duration> duration_type;
@@ -246,13 +246,13 @@ struct window_with_time
 
 }
 
-/*! @copydoc rx-window_with_time.hpp
+/*! @copydoc rx-window_time.hpp
 */
 template<class... AN>
 auto window_with_time(AN&&... an)
     ->      operator_factory<window_with_time_tag, AN...> {
      return operator_factory<window_with_time_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
-}    
+}
 
 }
 
@@ -315,8 +315,8 @@ struct member_overload<window_with_time_tag>
         return {};
         static_assert(sizeof...(AN) == 10000, "window_with_time takes (Duration, optional Duration, optional Coordination)");
     }
-};    
-    
+};
+
 }
 
 #endif

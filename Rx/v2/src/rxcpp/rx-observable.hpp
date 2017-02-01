@@ -455,9 +455,9 @@ public:
 };
 
 namespace detail {
-    
+
 template<class SourceOperator, class Subscriber>
-struct safe_subscriber 
+struct safe_subscriber
 {
     safe_subscriber(SourceOperator& so, Subscriber& o) : so(std::addressof(so)), o(std::addressof(o)) {}
 
@@ -850,10 +850,32 @@ public:
         return  observable_member(on_error_resume_next_tag{},                *this, std::forward<AN>(an)...);
     }
 
+    /*! @copydoc rx-on_error_resume_next.hpp
+    */
+    template<class... AN>
+    auto switch_on_error(AN&&... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(on_error_resume_next_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
+    {
+        return  observable_member(on_error_resume_next_tag{},                *this, std::forward<AN>(an)...);
+    }
+
     /*! @copydoc rx-map.hpp
      */
     template<class... AN>
     auto map(AN&&... an) const
+    /// \cond SHOW_SERVICE_MEMBERS
+    -> decltype(observable_member(map_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    /// \endcond
+    {
+        return  observable_member(map_tag{},                *this, std::forward<AN>(an)...);
+    }
+
+    /*! @copydoc rx-map.hpp
+     */
+    template<class... AN>
+    auto transform(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
     -> decltype(observable_member(map_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
     /// \endcond
@@ -1037,6 +1059,17 @@ public:
         return      observable_member(flat_map_tag{},                *this, std::forward<AN>(an)...);
     }
 
+    /*! @copydoc rx-flat_map.hpp
+     */
+    template<class... AN>
+    auto merge_transform(AN&&... an) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(observable_member(flat_map_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        /// \endcond
+    {
+        return      observable_member(flat_map_tag{},                *this, std::forward<AN>(an)...);
+    }
+
     /*! @copydoc rx-concat.hpp
      */
     template<class... AN>
@@ -1052,6 +1085,17 @@ public:
      */
     template<class... AN>
     auto concat_map(AN&&... an) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(observable_member(concat_map_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        /// \endcond
+    {
+        return      observable_member(concat_map_tag{},                *this, std::forward<AN>(an)...);
+    }
+
+    /*! @copydoc rx-concat_map.hpp
+     */
+    template<class... AN>
+    auto concat_transform(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
         -> decltype(observable_member(concat_map_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
@@ -1185,6 +1229,17 @@ public:
      */
     template<class... AN>
     auto reduce(AN&&... an) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(observable_member(reduce_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        /// \endcond
+    {
+        return      observable_member(reduce_tag{},                *this, std::forward<AN>(an)...);
+    }
+
+    /*! @copydoc rx-reduce.hpp
+     */
+    template<class... AN>
+    auto accumulate(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
         -> decltype(observable_member(reduce_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond

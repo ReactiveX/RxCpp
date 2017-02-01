@@ -37,7 +37,7 @@ struct map_invalid : public rxo::operator_base<map_invalid_arguments<AN...>> {
 };
 template<class... AN>
 using map_invalid_t = typename map_invalid<AN...>::type;
-    
+
 template<class T, class Selector>
 struct map
 {
@@ -107,6 +107,14 @@ auto map(AN&&... an)
     return operator_factory<map_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
 }
 
+/*! @copydoc rx-map.hpp
+*/
+template<class... AN>
+auto transform(AN&&... an)
+    -> operator_factory<map_tag, AN...> {
+    return operator_factory<map_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
 }
 
 template<>
@@ -131,7 +139,7 @@ struct member_overload<map_tag>
         static_assert(sizeof...(AN) == 10000, "map takes Selector");
     }
 };
-    
+
 }
 
 #endif

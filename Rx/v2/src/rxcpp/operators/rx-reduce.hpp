@@ -350,7 +350,15 @@ struct last {
 /*! @copydoc rx-reduce.hpp
 */
 template<class... AN>
-auto reduce(AN&&... an) 
+auto reduce(AN&&... an)
+    ->     operator_factory<reduce_tag, AN...> {
+    return operator_factory<reduce_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
+/*! @copydoc rx-reduce.hpp
+*/
+template<class... AN>
+auto accumulate(AN&&... an)
     ->     operator_factory<reduce_tag, AN...> {
     return operator_factory<reduce_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
 }
@@ -367,7 +375,7 @@ auto reduce(AN&&... an)
     \snippet math.cpp first empty sample
     \snippet output.txt first empty sample
 */
-inline auto first() 
+inline auto first()
     ->     operator_factory<first_tag> {
     return operator_factory<first_tag>(std::tuple<>{});
 }
@@ -384,7 +392,7 @@ inline auto first()
     \snippet math.cpp last empty sample
     \snippet output.txt last empty sample
 */
-inline auto last() 
+inline auto last()
     ->     operator_factory<last_tag> {
     return operator_factory<last_tag>(std::tuple<>{});
 }
@@ -492,11 +500,11 @@ inline auto max()
 
 }
 
-template<> 
+template<>
 struct member_overload<reduce_tag>
 {
 
-    template<class Observable, class Seed, class Accumulator, class ResultSelector, 
+    template<class Observable, class Seed, class Accumulator, class ResultSelector,
         class Reduce = rxo::detail::reduce<rxu::value_type_t<Observable>, rxu::decay_t<Observable>, rxu::decay_t<Accumulator>, rxu::decay_t<ResultSelector>, rxu::decay_t<Seed>>,
         class Value = rxu::value_type_t<Reduce>,
         class Result = observable<Value, Reduce>>
@@ -505,8 +513,8 @@ struct member_overload<reduce_tag>
         return Result(Reduce(std::forward<Observable>(o), std::forward<Accumulator>(a), std::forward<ResultSelector>(r), std::forward<Seed>(s)));
     }
 
-    template<class Observable, class Seed, class Accumulator, 
-        class ResultSelector=rxu::detail::take_at<0>, 
+    template<class Observable, class Seed, class Accumulator,
+        class ResultSelector=rxu::detail::take_at<0>,
         class Reduce = rxo::detail::reduce<rxu::value_type_t<Observable>, rxu::decay_t<Observable>, rxu::decay_t<Accumulator>, rxu::decay_t<ResultSelector>, rxu::decay_t<Seed>>,
         class Value = rxu::value_type_t<Reduce>,
         class Result = observable<Value, Reduce>>
@@ -520,18 +528,18 @@ struct member_overload<reduce_tag>
         std::terminate();
         return {};
         static_assert(sizeof...(AN) == 10000, "reduce takes (Seed, Accumulator, optional ResultSelector), Accumulator takes (Seed, Observable::value_type) -> Seed, ResultSelector takes (Observable::value_type) -> ResultValue");
-    } 
+    }
 };
 
-template<> 
+template<>
 struct member_overload<first_tag>
 {
-    template<class Observable, 
+    template<class Observable,
         class SValue = rxu::value_type_t<Observable>,
         class Operation = operators::detail::first<SValue>,
-        class Seed = decltype(Operation::seed()), 
-        class Accumulator = Operation, 
-        class ResultSelector = Operation, 
+        class Seed = decltype(Operation::seed()),
+        class Accumulator = Operation,
+        class ResultSelector = Operation,
         class TakeOne = decltype(((rxu::decay_t<Observable>*)nullptr)->take(1)),
         class Reduce = rxo::detail::reduce<SValue, rxu::decay_t<TakeOne>, rxu::decay_t<Accumulator>, rxu::decay_t<ResultSelector>, rxu::decay_t<Seed>>,
         class RValue = rxu::value_type_t<Reduce>,
@@ -546,18 +554,18 @@ struct member_overload<first_tag>
         std::terminate();
         return {};
         static_assert(sizeof...(AN) == 10000, "first does not support Observable::value_type");
-    } 
+    }
 };
 
-template<> 
+template<>
 struct member_overload<last_tag>
 {
-    template<class Observable, 
+    template<class Observable,
         class SValue = rxu::value_type_t<Observable>,
         class Operation = operators::detail::last<SValue>,
-        class Seed = decltype(Operation::seed()), 
-        class Accumulator = Operation, 
-        class ResultSelector = Operation, 
+        class Seed = decltype(Operation::seed()),
+        class Accumulator = Operation,
+        class ResultSelector = Operation,
         class Reduce = rxo::detail::reduce<SValue, rxu::decay_t<Observable>, rxu::decay_t<Accumulator>, rxu::decay_t<ResultSelector>, rxu::decay_t<Seed>>,
         class RValue = rxu::value_type_t<Reduce>,
         class Result = observable<RValue, Reduce>>
@@ -571,18 +579,18 @@ struct member_overload<last_tag>
         std::terminate();
         return {};
         static_assert(sizeof...(AN) == 10000, "last does not support Observable::value_type");
-    } 
+    }
 };
 
-template<> 
+template<>
 struct member_overload<sum_tag>
 {
-    template<class Observable, 
+    template<class Observable,
         class SValue = rxu::value_type_t<Observable>,
         class Operation = operators::detail::sum<SValue>,
-        class Seed = decltype(Operation::seed()), 
-        class Accumulator = Operation, 
-        class ResultSelector = Operation, 
+        class Seed = decltype(Operation::seed()),
+        class Accumulator = Operation,
+        class ResultSelector = Operation,
         class Reduce = rxo::detail::reduce<SValue, rxu::decay_t<Observable>, rxu::decay_t<Accumulator>, rxu::decay_t<ResultSelector>, rxu::decay_t<Seed>>,
         class RValue = rxu::value_type_t<Reduce>,
         class Result = observable<RValue, Reduce>>
@@ -596,18 +604,18 @@ struct member_overload<sum_tag>
         std::terminate();
         return {};
         static_assert(sizeof...(AN) == 10000, "sum does not support Observable::value_type");
-    } 
+    }
 };
 
-template<> 
+template<>
 struct member_overload<average_tag>
 {
-    template<class Observable, 
+    template<class Observable,
         class SValue = rxu::value_type_t<Observable>,
         class Operation = operators::detail::average<SValue>,
-        class Seed = decltype(Operation::seed()), 
-        class Accumulator = Operation, 
-        class ResultSelector = Operation, 
+        class Seed = decltype(Operation::seed()),
+        class Accumulator = Operation,
+        class ResultSelector = Operation,
         class Reduce = rxo::detail::reduce<SValue, rxu::decay_t<Observable>, rxu::decay_t<Accumulator>, rxu::decay_t<ResultSelector>, rxu::decay_t<Seed>>,
         class RValue = rxu::value_type_t<Reduce>,
         class Result = observable<RValue, Reduce>>
@@ -621,18 +629,18 @@ struct member_overload<average_tag>
         std::terminate();
         return {};
         static_assert(sizeof...(AN) == 10000, "average does not support Observable::value_type");
-    } 
+    }
 };
 
-template<> 
+template<>
 struct member_overload<max_tag>
 {
-    template<class Observable, 
+    template<class Observable,
         class SValue = rxu::value_type_t<Observable>,
         class Operation = operators::detail::max<SValue>,
-        class Seed = decltype(Operation::seed()), 
-        class Accumulator = Operation, 
-        class ResultSelector = Operation, 
+        class Seed = decltype(Operation::seed()),
+        class Accumulator = Operation,
+        class ResultSelector = Operation,
         class Reduce = rxo::detail::reduce<SValue, rxu::decay_t<Observable>, rxu::decay_t<Accumulator>, rxu::decay_t<ResultSelector>, rxu::decay_t<Seed>>,
         class RValue = rxu::value_type_t<Reduce>,
         class Result = observable<RValue, Reduce>>
@@ -646,18 +654,18 @@ struct member_overload<max_tag>
         std::terminate();
         return {};
         static_assert(sizeof...(AN) == 10000, "max does not support Observable::value_type");
-    } 
+    }
 };
 
-template<> 
+template<>
 struct member_overload<min_tag>
 {
-    template<class Observable, 
+    template<class Observable,
         class SValue = rxu::value_type_t<Observable>,
         class Operation = operators::detail::min<SValue>,
-        class Seed = decltype(Operation::seed()), 
-        class Accumulator = Operation, 
-        class ResultSelector = Operation, 
+        class Seed = decltype(Operation::seed()),
+        class Accumulator = Operation,
+        class ResultSelector = Operation,
         class Reduce = rxo::detail::reduce<SValue, rxu::decay_t<Observable>, rxu::decay_t<Accumulator>, rxu::decay_t<ResultSelector>, rxu::decay_t<Seed>>,
         class RValue = rxu::value_type_t<Reduce>,
         class Result = observable<RValue, Reduce>>
@@ -671,7 +679,7 @@ struct member_overload<min_tag>
         std::terminate();
         return {};
         static_assert(sizeof...(AN) == 10000, "min does not support Observable::value_type");
-    } 
+    }
 };
 
 }

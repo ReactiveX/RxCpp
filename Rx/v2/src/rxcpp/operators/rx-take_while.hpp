@@ -94,6 +94,8 @@ struct take_while
 
 }
 
+/*! @copydoc rx-take_while.hpp
+*/
 template<class... AN>
 auto take_while(AN&&... an)
     ->      operator_factory<take_while_tag, AN...> {

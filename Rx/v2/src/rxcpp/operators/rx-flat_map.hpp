@@ -246,6 +246,14 @@ auto flat_map(AN&&... an)
     return operator_factory<flat_map_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
 }
 
+/*! @copydoc rx-flat_map.hpp
+*/
+template<class... AN>
+auto merge_transform(AN&&... an)
+->     operator_factory<flat_map_tag, AN...> {
+    return operator_factory<flat_map_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
+}
+
 }
 
 template<>
