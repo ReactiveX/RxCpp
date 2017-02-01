@@ -250,7 +250,7 @@ struct buffer_with_time
 
 }
 
-/*! @copydoc rx-buffer_with_time.hpp
+/*! @copydoc rx-buffer_time.hpp
 */
 template<class... AN>
 auto buffer_with_time(AN&&... an)

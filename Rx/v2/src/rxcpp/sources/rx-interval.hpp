@@ -7,6 +7,34 @@
 
 #include "../rx-includes.hpp"
 
+/*! \file rx-interval.hpp
+
+    \brief Returns an observable that emits a sequential integer every specified time interval, on the specified scheduler.
+
+    \tparam Coordination  the type of the scheduler (optional)
+
+    \param  period   period between emitted values
+    \param  cn       the scheduler to use for scheduling the items (optional)
+
+    \return  Observable that sends a sequential integer each time interval
+
+    \sample
+    \snippet interval.cpp interval sample
+    \snippet output.txt interval sample
+
+    \sample
+    \snippet interval.cpp immediate interval sample
+    \snippet output.txt immediate interval sample
+
+    \sample
+    \snippet interval.cpp threaded interval sample
+    \snippet output.txt threaded interval sample
+
+    \sample
+    \snippet interval.cpp threaded immediate interval sample
+    \snippet output.txt threaded immediate interval sample
+*/
+
 namespace rxcpp {
 
 namespace sources {
@@ -78,6 +106,9 @@ struct defer_interval : public defer_observable<
 
 }
 
+
+/*! @copydoc rx-interval.hpp
+ */
 template<class Duration>
 auto interval(Duration period)
     ->  typename std::enable_if<
@@ -86,6 +117,8 @@ auto interval(Duration period)
     return          detail::defer_interval<Duration, identity_one_worker>::make(identity_current_thread().now(), period, identity_current_thread());
 }
 
+/*! @copydoc rx-interval.hpp
+ */
 template<class Coordination>
 auto interval(rxsc::scheduler::clock_type::duration period, Coordination cn)
     ->  typename std::enable_if<
@@ -94,6 +127,8 @@ auto interval(rxsc::scheduler::clock_type::duration period, Coordination cn)
     return          detail::defer_interval<rxsc::scheduler::clock_type::duration, Coordination>::make(cn.now(), period, std::move(cn));
 }
 
+/*! @copydoc rx-interval.hpp
+ */
 template<class Duration>
 auto interval(rxsc::scheduler::clock_type::time_point when, Duration period)
     ->  typename std::enable_if<
@@ -102,6 +137,8 @@ auto interval(rxsc::scheduler::clock_type::time_point when, Duration period)
     return          detail::defer_interval<Duration, identity_one_worker>::make(when, period, identity_current_thread());
 }
 
+/*! @copydoc rx-interval.hpp
+ */
 template<class Coordination>
 auto interval(rxsc::scheduler::clock_type::time_point when, rxsc::scheduler::clock_type::duration period, Coordination cn)
     ->  typename std::enable_if<

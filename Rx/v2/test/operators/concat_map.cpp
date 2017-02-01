@@ -8,7 +8,7 @@
 
 static const int static_tripletCount = 100;
 
-SCENARIO("concat_map pythagorian ranges", "[hide][range][concat_map][pythagorian][perf]"){
+SCENARIO("concat_transform pythagorian ranges", "[hide][range][concat_transform][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("some ranges"){
         WHEN("generating pythagorian triplets"){
@@ -25,14 +25,14 @@ SCENARIO("concat_map pythagorian ranges", "[hide][range][concat_map][pythagorian
             auto start = clock::now();
             auto triples =
                 rxs::range(1, so)
-                    .concat_map(
+                    .concat_transform(
                         [&c, so](int z){
                             return rxs::range(1, z, 1, so)
-                                .concat_map(
+                                .concat_transform(
                                     [&c, so, z](int x){
                                         return rxs::range(x, z, 1, so)
                                             .filter([&c, z, x](int y){++c; return x*x + y*y == z*z;})
-                                            .map([z, x](int y){return std::make_tuple(x, y, z);})
+                                            .transform([z, x](int y){return std::make_tuple(x, y, z);})
                                             // forget type to workaround lambda deduction bug on msvc 2013
                                             .as_dynamic();},
                                     [](int /*x*/, std::tuple<int,int,int> triplet){return triplet;})
@@ -53,7 +53,7 @@ SCENARIO("concat_map pythagorian ranges", "[hide][range][concat_map][pythagorian
     }
 }
 
-SCENARIO("synchronize concat_map pythagorian ranges", "[hide][range][concat_map][synchronize][pythagorian][perf]"){
+SCENARIO("synchronize concat_transform pythagorian ranges", "[hide][range][concat_transform][synchronize][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("some ranges"){
         WHEN("generating pythagorian triplets"){
@@ -67,10 +67,10 @@ SCENARIO("synchronize concat_map pythagorian ranges", "[hide][range][concat_map]
             auto start = clock::now();
             auto triples =
                 rxs::range(1, so)
-                    .concat_map(
+                    .concat_transform(
                         [&c, so](int z){
                             return rxs::range(1, z, 1, so)
-                                .concat_map(
+                                .concat_transform(
                                     [&c, so, z](int x){
                                         return rxs::range(x, z, 1, so)
                                             .filter([&c, z, x](int y){
@@ -79,7 +79,7 @@ SCENARIO("synchronize concat_map pythagorian ranges", "[hide][range][concat_map]
                                                     return true;}
                                                 else {
                                                     return false;}})
-                                            .map([z, x](int y){return std::make_tuple(x, y, z);})
+                                            .transform([z, x](int y){return std::make_tuple(x, y, z);})
                                             // forget type to workaround lambda deduction bug on msvc 2013
                                             .as_dynamic();},
                                     [](int /*x*/, std::tuple<int,int,int> triplet){return triplet;},
@@ -101,7 +101,7 @@ SCENARIO("synchronize concat_map pythagorian ranges", "[hide][range][concat_map]
     }
 }
 
-SCENARIO("observe_on concat_map pythagorian ranges", "[hide][range][concat_map][observe_on][pythagorian][perf]"){
+SCENARIO("observe_on concat_transform pythagorian ranges", "[hide][range][concat_transform][observe_on][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("some ranges"){
         WHEN("generating pythagorian triplets"){
@@ -115,10 +115,10 @@ SCENARIO("observe_on concat_map pythagorian ranges", "[hide][range][concat_map][
             auto start = clock::now();
             auto triples =
                 rxs::range(1, so)
-                    .concat_map(
+                    .concat_transform(
                         [&c, so](int z){
                             return rxs::range(1, z, 1, so)
-                                .concat_map(
+                                .concat_transform(
                                     [&c, so, z](int x){
                                         return rxs::range(x, z, 1, so)
                                             .filter([&c, z, x](int y){
@@ -127,7 +127,7 @@ SCENARIO("observe_on concat_map pythagorian ranges", "[hide][range][concat_map][
                                                     return true;}
                                                 else {
                                                     return false;}})
-                                            .map([z, x](int y){return std::make_tuple(x, y, z);})
+                                            .transform([z, x](int y){return std::make_tuple(x, y, z);})
                                             // forget type to workaround lambda deduction bug on msvc 2013
                                             .as_dynamic();},
                                     [](int /*x*/, std::tuple<int,int,int> triplet){return triplet;},
@@ -150,7 +150,7 @@ SCENARIO("observe_on concat_map pythagorian ranges", "[hide][range][concat_map][
     }
 }
 
-SCENARIO("serialize concat_map pythagorian ranges", "[hide][range][concat_map][serialize][pythagorian][perf]"){
+SCENARIO("serialize concat_transform pythagorian ranges", "[hide][range][concat_transform][serialize][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("some ranges"){
         WHEN("generating pythagorian triplets"){
@@ -164,10 +164,10 @@ SCENARIO("serialize concat_map pythagorian ranges", "[hide][range][concat_map][s
             auto start = clock::now();
             auto triples =
                 rxs::range(1, so)
-                    .concat_map(
+                    .concat_transform(
                         [&c, so](int z){
                             return rxs::range(1, z, 1, so)
-                                .concat_map(
+                                .concat_transform(
                                     [&c, so, z](int x){
                                         return rxs::range(x, z, 1, so)
                                             .filter([&c, z, x](int y){
@@ -176,7 +176,7 @@ SCENARIO("serialize concat_map pythagorian ranges", "[hide][range][concat_map][s
                                                     return true;}
                                                 else {
                                                     return false;}})
-                                            .map([z, x](int y){return std::make_tuple(x, y, z);})
+                                            .transform([z, x](int y){return std::make_tuple(x, y, z);})
                                             // forget type to workaround lambda deduction bug on msvc 2013
                                             .as_dynamic();},
                                     [](int /*x*/, std::tuple<int,int,int> triplet){return triplet;},
@@ -199,7 +199,7 @@ SCENARIO("serialize concat_map pythagorian ranges", "[hide][range][concat_map][s
     }
 }
 
-SCENARIO("concat_map completes", "[concat_map][map][operators]"){
+SCENARIO("concat_map completes", "[concat_map][transform][map][operators]"){
     GIVEN("two cold observables. one of ints. one of strings."){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -268,13 +268,85 @@ SCENARIO("concat_map completes", "[concat_map][map][operators]"){
                 REQUIRE(required == actual);
             }
         }
+    }
+}
+
+SCENARIO("concat_transform completes", "[concat_transform][transform][map][operators]"){
+    GIVEN("two cold observables. one of ints. one of strings."){
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> i_on;
+        const rxsc::test::messages<std::string> s_on;
+
+        auto xs = sc.make_cold_observable({
+            i_on.next(100, 4),
+            i_on.next(200, 2),
+            i_on.completed(500)
+        });
+
+        auto ys = sc.make_cold_observable({
+            s_on.next(50, "foo"),
+            s_on.next(100, "bar"),
+            s_on.next(150, "baz"),
+            s_on.next(200, "qux"),
+            s_on.completed(250)
+        });
+
+        WHEN("each int is mapped to the strings"){
+
+            auto res = w.start(
+                [&]() {
+                    return xs
+                        | rxo::concat_transform(
+                            [&](int){
+                                return ys;},
+                            [](int, std::string s){
+                                return s;})
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        | rxo::as_dynamic();
+                }
+            );
+
+            THEN("the output contains strings repeated for each int"){
+                auto required = rxu::to_vector({
+                    s_on.next(350, "foo"),
+                    s_on.next(400, "bar"),
+                    s_on.next(450, "baz"),
+                    s_on.next(500, "qux"),
+                    s_on.next(600, "foo"),
+                    s_on.next(650, "bar"),
+                    s_on.next(700, "baz"),
+                    s_on.next(750, "qux"),
+                    s_on.completed(800)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was one subscription and one unsubscription to the ints"){
+                auto required = rxu::to_vector({
+                    i_on.subscribe(200, 700)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there were 2 subscription and unsubscription to the strings"){
+                auto required = rxu::to_vector({
+                    s_on.subscribe(300, 550),
+                    s_on.subscribe(550, 800)
+                });
+                auto actual = ys.subscriptions();
+                REQUIRE(required == actual);
+            }
+        }
 
         WHEN("each int is mapped to the strings with coordinator"){
 
             auto res = w.start(
                 [&]() {
                     return xs
-                        .concat_map(
+                        .concat_transform(
                             [&](int){
                                 return ys;},
                             [](int, std::string s){
@@ -321,7 +393,7 @@ SCENARIO("concat_map completes", "[concat_map][map][operators]"){
     }
 }
 
-SCENARIO("concat_map, no result selector, no coordination", "[concat_map][map][operators]"){
+SCENARIO("concat_transform, no result selector, no coordination", "[concat_transform][transform][map][operators]"){
     GIVEN("two cold observables. one of ints. one of strings."){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -347,7 +419,7 @@ SCENARIO("concat_map, no result selector, no coordination", "[concat_map][map][o
             auto res = w.start(
                 [&]() {
                     return xs
-                        .concat_map(
+                        .concat_transform(
                             [&](int){
                                 return ys;})
                         // forget type to workaround lambda deduction bug on msvc 2013
@@ -391,7 +463,7 @@ SCENARIO("concat_map, no result selector, no coordination", "[concat_map][map][o
     }
 }
 
-SCENARIO("concat_map, no result selector, with coordination", "[concat_map][map][operators]"){
+SCENARIO("concat_transform, no result selector, with coordination", "[concat_transform][transform][map][operators]"){
     GIVEN("two cold observables. one of ints. one of strings."){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -417,7 +489,7 @@ SCENARIO("concat_map, no result selector, with coordination", "[concat_map][map]
             auto res = w.start(
                 [&]() {
                     return xs
-                        .concat_map(
+                        .concat_transform(
                             [&](int){
                                 return ys;},
                             rx::identity_current_thread())

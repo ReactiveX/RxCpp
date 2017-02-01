@@ -7,6 +7,29 @@
 
 #include "../rx-includes.hpp"
 
+/*! \file rx-range.hpp
+
+    \brief Returns an observable that sends values in the range ```first```-```last``` by adding ```step``` to the previous value. The values are sent on the specified scheduler.
+
+    \tparam T             the type of the values that this observable emits
+    \tparam Coordination  the type of the scheduler (optional)
+
+    \param  first  first value to send (optional)
+    \param  last   last value to send (optional)
+    \param  step   value to add to the previous value to get the next value (optional)
+    \param  cn     the scheduler to run the generator loop on (optional)
+
+    \return  Observable that sends values in the range ```first```-```last``` by adding ```step``` to the previous value using the specified scheduler.
+
+    \sample
+    \snippet range.cpp threaded range sample
+    \snippet output.txt threaded range sample
+
+    An alternative way to specify the scheduler for emitted values is to use observable::subscribe_on operator
+    \snippet range.cpp subscribe_on range sample
+    \snippet output.txt subscribe_on range sample
+*/
+
 namespace rxcpp {
 
 namespace sources {
@@ -90,18 +113,24 @@ struct range : public source_base<T>
 
 }
 
+/*! @copydoc rx-create.hpp
+ */
 template<class T>
 auto range(T first = 0, T last = std::numeric_limits<T>::max(), std::ptrdiff_t step = 1)
     ->      observable<T,   detail::range<T, identity_one_worker>> {
     return  observable<T,   detail::range<T, identity_one_worker>>(
                             detail::range<T, identity_one_worker>(first, last, step, identity_current_thread()));
 }
+/*! @copydoc rx-create.hpp
+ */
 template<class T, class Coordination>
 auto range(T first, T last, std::ptrdiff_t step, Coordination cn)
     ->      observable<T,   detail::range<T, Coordination>> {
     return  observable<T,   detail::range<T, Coordination>>(
                             detail::range<T, Coordination>(first, last, step, std::move(cn)));
 }
+/*! @copydoc rx-create.hpp
+ */
 template<class T, class Coordination>
 auto range(T first, T last, Coordination cn)
     -> typename std::enable_if<is_coordination<Coordination>::value,
@@ -109,6 +138,8 @@ auto range(T first, T last, Coordination cn)
     return  observable<T,   detail::range<T, Coordination>>(
                             detail::range<T, Coordination>(first, last, 1, std::move(cn)));
 }
+/*! @copydoc rx-create.hpp
+ */
 template<class T, class Coordination>
 auto range(T first, Coordination cn)
     -> typename std::enable_if<is_coordination<Coordination>::value,
