@@ -450,6 +450,7 @@ SCENARIO("subject - infinite source", "[subject][subjects]"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
         const rxsc::test::messages<int> on;
+        const rxsc::test::messages<bool> check;
 
         auto xs = sc.make_hot_observable({
             on.next(70, 1),
@@ -476,30 +477,38 @@ SCENARIO("subject - infinite source", "[subject][subjects]"){
 
         WHEN("multicasting an infinite source"){
 
+            auto checks = rxu::to_vector({
+                check.next(0, false)
+            });
+
+            auto record = [&s, &check, &checks](long at) -> void {
+                checks.push_back(check.next(at, s.has_observers()));
+            };
+
             auto o = s.get_subscriber();
 
-            w.schedule_absolute(100, [&s, &o](const rxsc::schedulable&){
-                s = rxsub::subject<int>(); o = s.get_subscriber();});
-            w.schedule_absolute(200, [&xs, &o](const rxsc::schedulable&){
-                xs.subscribe(o);});
-            w.schedule_absolute(1000, [&o](const rxsc::schedulable&){
-                o.unsubscribe();});
+            w.schedule_absolute(100, [&s, &o, &checks, &record](const rxsc::schedulable&){
+                s = rxsub::subject<int>(); o = s.get_subscriber(); checks.clear(); record(100);});
+            w.schedule_absolute(200, [&xs, &o, &record](const rxsc::schedulable&){
+                xs.subscribe(o); record(200);});
+            w.schedule_absolute(1000, [&o, &record](const rxsc::schedulable&){
+                o.unsubscribe(); record(1000);});
 
-            w.schedule_absolute(300, [&s, &results1](const rxsc::schedulable&){
-                s.get_observable().subscribe(results1);});
-            w.schedule_absolute(400, [&s, &results2](const rxsc::schedulable&){
-                s.get_observable().subscribe(results2);});
-            w.schedule_absolute(900, [&s, &results3](const rxsc::schedulable&){
-                s.get_observable().subscribe(results3);});
+            w.schedule_absolute(300, [&s, &results1, &record](const rxsc::schedulable&){
+                s.get_observable().subscribe(results1); record(300);});
+            w.schedule_absolute(400, [&s, &results2, &record](const rxsc::schedulable&){
+                s.get_observable().subscribe(results2); record(400);});
+            w.schedule_absolute(900, [&s, &results3, &record](const rxsc::schedulable&){
+                s.get_observable().subscribe(results3); record(900);});
 
-            w.schedule_absolute(600, [&results1](const rxsc::schedulable&){
-                results1.unsubscribe();});
-            w.schedule_absolute(700, [&results2](const rxsc::schedulable&){
-                results2.unsubscribe();});
-            w.schedule_absolute(800, [&results1](const rxsc::schedulable&){
-                results1.unsubscribe();});
-            w.schedule_absolute(950, [&results3](const rxsc::schedulable&){
-                results3.unsubscribe();});
+            w.schedule_absolute(600, [&results1, &record](const rxsc::schedulable&){
+                results1.unsubscribe(); record(600);});
+            w.schedule_absolute(700, [&results2, &record](const rxsc::schedulable&){
+                results2.unsubscribe(); record(700);});
+            w.schedule_absolute(800, [&results1, &record](const rxsc::schedulable&){
+                results1.unsubscribe(); record(800);});
+            w.schedule_absolute(950, [&results3, &record](const rxsc::schedulable&){
+                results3.unsubscribe(); record(950);});
 
             w.start();
 
@@ -528,6 +537,23 @@ SCENARIO("subject - infinite source", "[subject][subjects]"){
                     on.next(940, 11)
                 });
                 auto actual = results3.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("checks contains expected messages"){
+                auto required = rxu::to_vector({
+                    check.next(100, false),
+                    check.next(200, false),
+                    check.next(300, true),
+                    check.next(400, true),
+                    check.next(600, true),
+                    check.next(700, false),
+                    check.next(800, false),
+                    check.next(900, true),
+                    check.next(950, false),
+                    check.next(1000, false)
+                });
+                auto actual = checks;
                 REQUIRE(required == actual);
             }
 
