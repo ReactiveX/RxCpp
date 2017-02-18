@@ -69,7 +69,7 @@ SCENARIO("repeat, 0 times case", "[repeat][operators]"){
             on.completed(250)
         });
 
-        WHEN("infinite repeat is launched"){
+        WHEN("repeat zero times is launched"){
 
             auto res = w.start(
                 [&]() {
@@ -81,7 +81,10 @@ SCENARIO("repeat, 0 times case", "[repeat][operators]"){
             );
 
             THEN("the output should be empty"){
-                auto required = std::vector<rxsc::test::messages<int>::recorded_type>();
+              auto required = rxu::to_vector({
+                    on.completed(450)
+                });
+
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }

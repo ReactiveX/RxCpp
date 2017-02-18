@@ -70,7 +70,13 @@ namespace repeat {
                               state->source_lifetime,
                               // on_next
                               [state](T t) {
-                                state->out.on_next(t);
+                                // If we are completed already, emit nothing, but
+                                // don't terminate yet. Termination will be called only
+                                // on on_completed. This behavior may need to be revised
+                                // to terminate immideately
+                                if (!state->completed_predicate()) {
+                                  state->out.on_next(t);
+                                }
                               },
                               // on_error
                               [state](std::exception_ptr e) {
@@ -78,8 +84,9 @@ namespace repeat {
                               },
                               // on_completed
                               [state]() {
+                                state->on_completed();
                                 // Use specialized predicate for finite/infinte case
-                                if (state->on_completed_predicate()) {
+                                if (state->completed_predicate()) {
                                   state->out.on_completed();
                                 } else {
                                   state->do_subscribe();
@@ -105,9 +112,13 @@ namespace repeat {
           remaining_(std::move(t)) {
       }
 
-      inline bool on_completed_predicate() {
+      inline bool completed_predicate() {
+        return remaining_ <= 0;
+      }
+      
+      inline void on_completed() {
         // Decrement counter and check if it's zero
-        return --remaining_ <= 0;
+        --remaining_;
       }
 
       source_type source;
@@ -143,9 +154,13 @@ namespace repeat {
         : source(std::move(s)) {
       }
 
-      static inline bool on_completed_predicate() {
+      static inline bool completed_predicate() {
         // Infinite repeat never completes
         return false;
+      }
+
+      static inline void on_completed() {
+        // Infinite repeat never completes
       }
 
       source_type source;
