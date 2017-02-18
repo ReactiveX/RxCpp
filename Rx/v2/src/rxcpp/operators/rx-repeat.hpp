@@ -124,6 +124,16 @@ struct repeat : public operator_base<T>
     }
 };
 
+  template <class T, class Observable, class Count>
+  struct repeat_finite : public repeat_base<T, Observable, Count> {
+  };
+
+  template <class T, class Observable, class Count>
+  struct repeat_infinite : public repeat_base<T, Observable, Count> {
+  };
+
+  
+
 }
 
 /*! @copydoc rx-repeat.hpp
@@ -143,7 +153,7 @@ struct member_overload<repeat_tag>
         class Enabled = rxu::enable_if_all_true_type_t<
             is_observable<Observable>>,
         class SourceValue = rxu::value_type_t<Observable>,
-        class Repeat = rxo::detail::repeat<SourceValue, rxu::decay_t<Observable>, int>,
+        class Repeat = rxo::detail::repeat_infinite<SourceValue, rxu::decay_t<Observable> >,
         class Value = rxu::value_type_t<Repeat>,
         class Result = observable<Value, Repeat>>
     static Result member(Observable&& o) {
@@ -155,7 +165,7 @@ struct member_overload<repeat_tag>
         class Enabled = rxu::enable_if_all_true_type_t<
             is_observable<Observable>>,
         class SourceValue = rxu::value_type_t<Observable>,
-        class Repeat = rxo::detail::repeat<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<Count>>,
+        class Repeat = rxo::detail::repeat_finite<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<Count>>,
         class Value = rxu::value_type_t<Repeat>,
         class Result = observable<Value, Repeat>>
     static Result member(Observable&& o, Count&& c) {
