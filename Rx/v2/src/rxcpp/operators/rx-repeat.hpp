@@ -117,7 +117,6 @@ namespace repeat {
       }
       
       inline void on_completed() {
-        // Decrement counter and check if it's zero
         --remaining_;
       }
 
