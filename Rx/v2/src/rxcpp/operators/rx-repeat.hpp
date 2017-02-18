@@ -8,7 +8,7 @@
 
     \tparam Count  the type of the counter (optional).
 
-    \param t  the number of times the source observable items are repeated (optional). If not specified or 0, infinitely repeats the source observable.
+    \param t  the number of times the source observable items are repeated (optional). If not specified, infinitely repeats the source observable.
 
     \return  An observable that repeats the sequence of items emitted by the source observable for t times.
 
@@ -44,6 +44,7 @@ using repeat_invalid_t = typename repeat_invalid<AN...>::type;
 
 // Contain repeat variations in a namespace
 namespace repeat {
+  // Structure to perform general repeat operations on state
   template <class ValuesType, class Subscriber, class T>
   struct state_type : public std::enable_shared_from_this<state_type<ValuesType, Subscriber, T>>,
                       public ValuesType {
@@ -77,6 +78,7 @@ namespace repeat {
                               },
                               // on_completed
                               [state]() {
+                                // Use specialized predicate for finite/infinte case
                                 if (state->on_completed_predicate()) {
                                   state->out.on_completed();
                                 } else {
@@ -91,6 +93,7 @@ namespace repeat {
     composite_subscription::weak_subscription lifetime_token;
   };
 
+  // Finite repeat case (explicitely limited with the number of times)
   template <class T, class Observable, class Count>
   struct finite : public operator_base<T> {
     typedef rxu::decay_t<Observable> source_type;
@@ -130,6 +133,7 @@ namespace repeat {
     values initial_;
   };
 
+  // Infinite repeat case
   template <class T, class Observable>
   struct infinite : public operator_base<T> {
     typedef rxu::decay_t<Observable> source_type;
