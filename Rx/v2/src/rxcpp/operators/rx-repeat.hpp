@@ -70,13 +70,7 @@ namespace repeat {
                               state->source_lifetime,
                               // on_next
                               [state](T t) {
-                                // If we are completed already, emit nothing, but
-                                // don't terminate yet. Termination will be called only
-                                // on on_completed. This behavior may need to be revised
-                                // to terminate immideately
-                                if (!state->completed_predicate()) {
-                                  state->out.on_next(t);
-                                }
+                                state->out.on_next(t);
                               },
                               // on_error
                               [state](std::exception_ptr e) {
@@ -112,17 +106,20 @@ namespace repeat {
           remaining_(std::move(t)) {
       }
 
-      inline bool completed_predicate() {
+      inline bool completed_predicate() const {
+        // Return true if we are completed
         return remaining_ <= 0;
       }
       
       inline void on_completed() {
+        // Decrement counter
         --remaining_;
       }
 
       source_type source;
-    
+
     private:
+      // Counter to hold number of times remaining to complete
       count_type remaining_;
     };
     
@@ -133,10 +130,12 @@ namespace repeat {
     template<class Subscriber>
     void on_subscribe(const Subscriber& s) const {
       typedef state_type<values, Subscriber, T> state_t;
-      // take a copy of the values for each subscription
-      auto state = std::make_shared<state_t>(initial_, s);
-      // start the first iteration
-      state->do_subscribe();
+      if (!initial_.completed_predicate()) {
+        // take a copy of the values for each subscription
+        auto state = std::make_shared<state_t>(initial_, s);
+        // start the first iteration
+        state->do_subscribe();
+      }
     }
 
   private:
@@ -159,7 +158,7 @@ namespace repeat {
       }
 
       static inline void on_completed() {
-        // Infinite repeat never completes
+        // Infinite repeat does not need to update state
       }
 
       source_type source;
