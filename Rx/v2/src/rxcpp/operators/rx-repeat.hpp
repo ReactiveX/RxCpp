@@ -8,7 +8,7 @@
 
     \tparam Count  the type of the counter (optional).
 
-    \param t  the number of times the source observable items are repeated (optional). If not specified, infinitely repeats the source observable.
+    \param t The number of times the source observable items are repeated (optional). If not specified, infinitely repeats the source observable. Specifying 0 returns an empty sequence immediately
 
     \return  An observable that repeats the sequence of items emitted by the source observable for t times.
 
