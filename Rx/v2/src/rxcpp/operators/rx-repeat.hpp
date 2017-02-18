@@ -42,8 +42,8 @@ struct repeat_invalid : public rxo::operator_base<repeat_invalid_arguments<AN...
 template<class... AN>
 using repeat_invalid_t = typename repeat_invalid<AN...>::type;
 
-template<class T, class Observable, class Count>
-struct repeat : public operator_base<T>
+  template<class RepeatConcrete, class T, class Observable, class Count>
+struct repeat_base : public operator_base<T>
 {
     typedef rxu::decay_t<Observable> source_type;
     typedef rxu::decay_t<Count> count_type;
@@ -106,11 +106,11 @@ struct repeat : public operator_base<T>
                     },
                 // on_completed
                     [state]() {
-                        if (state->repeat_infinitely || (--state->remaining > 0)) {
-                            state->do_subscribe();
-                        } else {
-                            state->out.on_completed();
-                        }
+                      if (RepeatConcrete::on_completed_predicate(state->remaining)) {
+                        state->out.on_completed();
+                      } else {
+                        state->do_subscribe();
+                      }
                     }
                 );
             }
@@ -125,11 +125,21 @@ struct repeat : public operator_base<T>
 };
 
   template <class T, class Observable, class Count>
-  struct repeat_finite : public repeat_base<T, Observable, Count> {
+  struct repeat_finite : public repeat_base<repeat_finite<T, Observable, Count>,
+                                            T, Observable, Count> {
+    typedef rxu::decay_t<Count> count_type;
+    static inline bool on_completed_predicate(const count_type& remaining) {
+      return --remaining <= 0;
+    }
   };
 
   template <class T, class Observable, class Count>
-  struct repeat_infinite : public repeat_base<T, Observable, Count> {
+  struct repeat_infinite : public repeat_base<repeat_finite<T, Observable, Count>,
+                                              T, Observable, Count> {
+    typedef rxu::decay_t<Count> count_type;
+    static inline bool on_completed_predicate(const count_type& remaining) {
+      return false;
+    }
   };
 
   
