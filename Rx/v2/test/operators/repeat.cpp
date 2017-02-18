@@ -56,6 +56,40 @@ SCENARIO("repeat, basic test", "[repeat][operators]"){
     }
 }
 
+SCENARIO("repeat, 0 times case", "[repeat][operators]"){
+    GIVEN("cold observable of 3 ints."){
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        const rxsc::test::messages<int> on;
+
+        auto xs = sc.make_cold_observable({
+            on.next(100, 1),
+            on.next(150, 2),
+            on.next(200, 3),
+            on.completed(250)
+        });
+
+        WHEN("infinite repeat is launched"){
+
+            auto res = w.start(
+                [&]() {
+                    return xs
+                        | rxo::repeat(0)
+                        // forget type to workaround lambda deduction bug on msvc 2013
+                        | rxo::as_dynamic();
+                }
+            );
+
+            THEN("the output should be empty"){
+                auto required = std::vector<rxsc::test::messages<int>::recorded_type>();
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+        }
+    }
+}
+
 SCENARIO("repeat, infinite observable test", "[repeat][operators]"){
     GIVEN("cold observable of 3 ints that never completes."){
         auto sc = rxsc::make_test();
