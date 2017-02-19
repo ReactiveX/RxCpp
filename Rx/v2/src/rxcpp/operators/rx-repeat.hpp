@@ -130,9 +130,12 @@ namespace repeat {
     template<class Subscriber>
     void on_subscribe(const Subscriber& s) const {
       typedef state_type<values, Subscriber, T> state_t;
-      if (!initial_.completed_predicate()) {
-        // take a copy of the values for each subscription
-        auto state = std::make_shared<state_t>(initial_, s);
+      // take a copy of the values for each subscription
+      auto state = std::make_shared<state_t>(initial_, s);      
+      if (initial_.completed_predicate()) {
+        // return completed
+        state->out.on_completed();
+      } else {
         // start the first iteration
         state->do_subscribe();
       }

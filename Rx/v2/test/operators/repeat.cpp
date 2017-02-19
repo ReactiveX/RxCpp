@@ -81,9 +81,11 @@ SCENARIO("repeat, 0 times case", "[repeat][operators]"){
             );
 
             THEN("the output should be empty"){
-                auto required = std::vector<rxsc::test::messages<int>::recorded_type>();
-                auto actual = res.get_observer().messages();
-                REQUIRE(required == actual);
+              auto required = rxu::to_vector({
+                  on.completed(200)
+                    });
+              auto actual = res.get_observer().messages();
+              REQUIRE(required == actual);
             }
 
         }
