@@ -88,6 +88,11 @@ SCENARIO("repeat, 0 times case", "[repeat][operators]"){
               REQUIRE(required == actual);
             }
 
+            THEN("no subscriptions in repeat(0) variant that skips on.next()"){
+              auto required = std::vector<rxcpp::notifications::subscription>();
+              auto actual = xs.subscriptions();
+              REQUIRE(required == actual);
+            }
         }
     }
 }
