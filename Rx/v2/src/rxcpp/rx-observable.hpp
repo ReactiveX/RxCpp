@@ -1435,7 +1435,7 @@ public:
         -> decltype(observable_member(retry_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
         /// \endcond
     {
-        return      observable_member(retry_tag{},                *this, std::forward<AN>(an)...);
+        return      observable_member(retry_tag{},                *(this_type*)this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-start_with.hpp
