@@ -38,6 +38,53 @@ struct retry_invalid : public rxo::operator_base<retry_invalid_arguments<AN...>>
 template<class... AN>
 using retry_invalid_t = typename retry_invalid<AN...>::type;
 
+// Contain repeat variations in a namespace
+namespace repeat {
+  // Structure to perform general retry operations on state
+  template <class ValuesType, class Subscriber, class T>
+  struct state_type : public std::enable_shared_from_this<state_type<ValuesType, Subscriber, T>>,
+                      public ValuesType {
+    typedef Subscriber output_type;
+    state_type(const ValuesType& i, const output_type& oarg)
+      : values(i)
+      , source_lifetime(composite_subscription::empty())
+      , out(oarg) {
+    }
+
+    void do_subscribe() {
+      auto state = this->shared_from_this();
+
+      state->source_lifetime = composite_subscription();
+      state->out.add(state->source_lifetime);
+
+      state->source.subscribe(
+                              state->out,
+                              state->source_lifetime,
+                              // on_next
+                              [state](T t) {
+                                state->out.on_next(t);
+                              },
+                              // on_error
+                              [state](std::exception_ptr e) {
+                                // Use specialized predicate for finite/infinte case
+                                if (state->completed_predicate()) {
+                                  state->out.on_error(e);                                  
+                                } else {
+                                  state->do_subscribe();
+                                }
+                              },
+                              // on_completed
+                              [state]() {
+                                // JEP: never appeears to be called?
+                                state->out.on_completed();
+                              }
+                              );
+    }
+    
+    composite_subscription source_lifetime;
+    output_type out;
+  };
+  
 template<class T, class Observable, class Count>
 struct retry : public operator_base<T> {
     typedef rxu::decay_t<Observable> source_type;
@@ -63,48 +110,6 @@ struct retry : public operator_base<T> {
     void on_subscribe(const Subscriber& s) const {
 
         typedef Subscriber output_type;
-        struct state_type
-            : public std::enable_shared_from_this<state_type>
-            , public values {
-            state_type(const values& i, const output_type& oarg)
-            : values(i)
-            , source_lifetime(composite_subscription::empty())
-            , out(oarg) {
-            }
-            composite_subscription source_lifetime;
-            output_type out;
-
-            void do_subscribe() {
-                auto state = this->shared_from_this();
-
-                state->source_lifetime = composite_subscription();
-                state->out.add(state->source_lifetime);
-
-                state->source.subscribe(
-                    state->out,
-                    state->source_lifetime,
-                    // on_next
-                    [state](T t) {
-                    state->out.on_next(t);
-                },
-                    // on_error
-                    [state](std::exception_ptr e) {
-                    if (state->retry_infinitely || (--state->remaining >= 0)) {
-                        state->do_subscribe();
-                    } else {
-                        state->out.on_error(e);
-                    }
-                },
-                    // on_completed
-                    [state]() {
-
-                        // JEP: never appeears to be called?
-
-                        state->out.on_completed();
-                }
-                );
-            }
-        };
 
         // take a copy of the values for each subscription
         auto state = std::make_shared<state_type>(initial, s);
@@ -114,6 +119,7 @@ struct retry : public operator_base<T> {
     }
 };
 
+}
 }
 
 /*! @copydoc rx-retry.hpp
