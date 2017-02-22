@@ -93,12 +93,10 @@ namespace repeat {
 
     struct values {
       values(source_type s, count_type t)
-        : source(std::move(s))
-        , remaining_(std::move(t)) {
+        : source(std::move(s)), remaining_(std::move(t)) {
         // One "retry" in the counter is actually the first (normal) try 
         --remaining_;
       }
-      source_type source;
       
       inline bool completed_predicate() const {
         // Return true if we are completed
@@ -110,6 +108,8 @@ namespace repeat {
         --remaining_;
       }
 
+      source_type source;
+
     private:
       count_type remaining_;
     };
@@ -120,11 +120,10 @@ namespace repeat {
 
     template<class Subscriber>
     void on_subscribe(const Subscriber& s) const {
-      typedef state_type<value, Subscriber, T> state_t;
+      typedef state_type<values, Subscriber, T> state_t;
       // take a copy of the values for each subscription
-      auto state = std::make_shared<state_t>(initial, s);
-
-      if (initial_.completed_prediacte()) {
+      auto state = std::make_shared<state_t>(initial_, s);
+      if (initial_.completed_predicate()) {
         // Should we call it here in retry?
         state->out.on_completed();
       } else {
@@ -136,41 +135,45 @@ namespace repeat {
   private:
     values initial_;
   };
-  
-  
-template<class T, class Observable, class Count>
-struct retry : public operator_base<T> {
+
+  // Infinite retry case
+  template<class T, class Observable, class Count>
+  struct finite : public operator_base<T> {
     typedef rxu::decay_t<Observable> source_type;
     typedef rxu::decay_t<Count> count_type;
 
     struct values {
-        values(source_type s, count_type t)
-        : source(std::move(s))
-        , remaining(std::move(t))
-        , retry_infinitely(t == 0) {
-        }
-        source_type source;
-        count_type remaining;
-        bool retry_infinitely;
-    };
-    values initial;
+      values(source_type s, count_type t)
+        : source(std::move(s))) {
+      }
+      
+      inline bool completed_predicate() const {
+        // Infinite retry never stops ignoring errors
+        return false
+      }
+      
+      inline void on_completed() {
+      }
 
-    retry(source_type s, count_type t)
-        : initial(std::move(s), std::move(t)) {
+      source_type source;
+    };
+
+    finite(source_type s)
+      : initial_(std::move(s)) {
     }
 
     template<class Subscriber>
     void on_subscribe(const Subscriber& s) const {
-
-        typedef Subscriber output_type;
-
-        // take a copy of the values for each subscription
-        auto state = std::make_shared<state_type>(initial, s);
-
-        // start the first iteration
-        state->do_subscribe();
+      typedef state_type<values, Subscriber, T> state_t;
+      // take a copy of the values for each subscription
+      auto state = std::make_shared<state_t>(initial_, s);
+      // start the first iteration
+      state->do_subscribe();
     }
-};
+
+  private:
+    values initial_;
+  };
 
 }
 }
