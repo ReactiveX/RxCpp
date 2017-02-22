@@ -84,6 +84,59 @@ namespace repeat {
     composite_subscription source_lifetime;
     output_type out;
   };
+
+  // Finite retry case (explicitly limited with the number of times)
+  template<class T, class Observable, class Count>
+  struct finite : public operator_base<T> {
+    typedef rxu::decay_t<Observable> source_type;
+    typedef rxu::decay_t<Count> count_type;
+
+    struct values {
+      values(source_type s, count_type t)
+        : source(std::move(s))
+        , remaining_(std::move(t)) {
+        // One "retry" in the counter is actually the first (normal) try 
+        --remaining_;
+      }
+      source_type source;
+      
+      inline bool completed_predicate() const {
+        // Return true if we are completed
+        return remaining_ <= 0;
+      }
+      
+      inline void on_completed() {
+        // Decrement counter
+        --remaining_;
+      }
+
+    private:
+      count_type remaining_;
+    };
+
+    finite(source_type s, count_type t)
+      : initial_(std::move(s), std::move(t)) {
+    }
+
+    template<class Subscriber>
+    void on_subscribe(const Subscriber& s) const {
+      typedef state_type<value, Subscriber, T> state_t;
+      // take a copy of the values for each subscription
+      auto state = std::make_shared<state_t>(initial, s);
+
+      if (initial_.completed_prediacte()) {
+        // Should we call it here in retry?
+        state->out.on_completed();
+      } else {
+        // start the first iteration
+        state->do_subscribe();
+      }
+    }
+
+  private:
+    values initial_;
+  };
+  
   
 template<class T, class Observable, class Count>
 struct retry : public operator_base<T> {
