@@ -66,6 +66,7 @@ namespace retry {
                               },
                               // on_error
                               [state](std::exception_ptr e) {
+                                state->update();
                                 // Use specialized predicate for finite/infinte case
                                 if (state->completed_predicate()) {
                                   state->out.on_error(e);                                  
@@ -94,8 +95,7 @@ namespace retry {
     struct values {
       values(source_type s, count_type t)
         : source(std::move(s)), remaining_(std::move(t)) {
-        // One "retry" in the counter is actually the first (normal) try 
-        --remaining_;
+        if (remaining_ != 0) ++remaining_;
       }
       
       inline bool completed_predicate() const {
@@ -103,7 +103,7 @@ namespace retry {
         return remaining_ <= 0;
       }
       
-      inline void on_completed() {
+      inline void update() {
         // Decrement counter
         --remaining_;
       }
@@ -151,7 +151,7 @@ namespace retry {
         return false;
       }
       
-      static inline void on_completed() {
+      static inline void update() {
         // Infinite retry does not need to update state
       }
 
