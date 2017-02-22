@@ -8,7 +8,7 @@
 
     \tparam Count the type of the counter (optional)
 
-    \param t  the number of retries (optional) If not specified or 0, infinitely retries the source observable.
+    \param t  the number of retries (optional) If not specified, infinitely retries the source observable. Sepcifying returns immediately without subscribing
 
     \return  An observable that mirrors the source observable, resubscribing to it if it calls on_error up to a specified number of retries.
 
