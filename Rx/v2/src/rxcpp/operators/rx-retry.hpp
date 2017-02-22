@@ -38,15 +38,15 @@ struct retry_invalid : public rxo::operator_base<retry_invalid_arguments<AN...>>
 template<class... AN>
 using retry_invalid_t = typename retry_invalid<AN...>::type;
 
-// Contain repeat variations in a namespace
-namespace repeat {
+// Contain retry variations in a namespace
+namespace retry {
   // Structure to perform general retry operations on state
   template <class ValuesType, class Subscriber, class T>
   struct state_type : public std::enable_shared_from_this<state_type<ValuesType, Subscriber, T>>,
                       public ValuesType {
     typedef Subscriber output_type;
     state_type(const ValuesType& i, const output_type& oarg)
-      : values(i)
+      : ValuesType(i)
       , source_lifetime(composite_subscription::empty())
       , out(oarg) {
     }
@@ -137,29 +137,28 @@ namespace repeat {
   };
 
   // Infinite retry case
-  template<class T, class Observable, class Count>
-  struct finite : public operator_base<T> {
+  template<class T, class Observable>
+  struct infinite : public operator_base<T> {
     typedef rxu::decay_t<Observable> source_type;
-    typedef rxu::decay_t<Count> count_type;
 
     struct values {
-      values(source_type s, count_type t)
-        : source(std::move(s))) {
+      values(source_type s)
+        : source(std::move(s)) {
       }
       
-      inline bool completed_predicate() const {
+      static inline bool completed_predicate() {
         // Infinite retry never stops ignoring errors
-        return false
+        return false;
       }
       
-      inline void on_completed() {
+      static inline void on_completed() {
+        // Infinite retry does not need to update state
       }
 
       source_type source;
     };
 
-    finite(source_type s)
-      : initial_(std::move(s)) {
+    infinite(source_type s) : initial_(std::move(s)) {
     }
 
     template<class Subscriber>
@@ -191,37 +190,35 @@ auto retry(AN&&... an)
 template<> 
 struct member_overload<retry_tag>
 {
-    template<class Observable,
-        class Enabled = rxu::enable_if_all_true_type_t<
-            is_observable<Observable>>,
-        class SourceValue = rxu::value_type_t<Observable>,
-        class Retry = rxo::detail::retry<SourceValue, rxu::decay_t<Observable>, int>,
-        class Value = rxu::value_type_t<Retry>,
-        class Result = observable<Value, Retry>
-        >
-    static Result member(Observable&& o) {
-        return Result(Retry(std::forward<Observable>(o), 0));
-    }
+  template<class Observable,
+           class Enabled = rxu::enable_if_all_true_type_t<is_observable<Observable>>,
+           class SourceValue = rxu::value_type_t<Observable>,
+           class Retry = rxo::detail::retry::infinite<SourceValue, rxu::decay_t<Observable>>,
+           class Value = rxu::value_type_t<Retry>,
+           class Result = observable<Value, Retry>
+           >
+  static Result member(Observable&& o) {
+    return Result(Retry(std::forward<Observable>(o)));
+  }
 
-    template<class Observable,
-        class Count,
-        class Enabled = rxu::enable_if_all_true_type_t<
-            is_observable<Observable>>,
-        class SourceValue = rxu::value_type_t<Observable>,
-        class Retry = rxo::detail::retry<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<Count>>,
-        class Value = rxu::value_type_t<Retry>,
-        class Result = observable<Value, Retry>
-        >
-    static Result member(Observable&& o, Count&& c) {
-        return Result(Retry(std::forward<Observable>(o), std::forward<Count>(c)));
-    }
+  template<class Observable,
+           class Count,
+           class Enabled = rxu::enable_if_all_true_type_t<is_observable<Observable>>,
+           class SourceValue = rxu::value_type_t<Observable>,
+           class Retry = rxo::detail::retry::finite<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<Count>>,
+           class Value = rxu::value_type_t<Retry>,
+           class Result = observable<Value, Retry>
+           >
+  static Result member(Observable&& o, Count&& c) {
+    return Result(Retry(std::forward<Observable>(o), std::forward<Count>(c)));
+  }
 
-    template<class... AN>
-    static operators::detail::retry_invalid_t<AN...> member(const AN&...) {
-        std::terminate();
-        return {};
-        static_assert(sizeof...(AN) == 10000, "retry takes (optional Count)");
-    } 
+  template<class... AN>
+  static operators::detail::retry_invalid_t<AN...> member(const AN&...) {
+    std::terminate();
+    return {};
+    static_assert(sizeof...(AN) == 10000, "retry takes (optional Count)");
+  } 
 };
     
 }
