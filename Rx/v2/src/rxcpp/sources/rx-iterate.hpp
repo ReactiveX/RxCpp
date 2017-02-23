@@ -53,7 +53,7 @@ template<class Collection>
 struct iterate_traits
 {
     typedef rxu::decay_t<Collection> collection_type;
-    typedef decltype(std::begin(*(collection_type*)nullptr)) iterator_type;
+    typedef rxu::decay_t<decltype(std::begin(*(collection_type*)nullptr))> iterator_type;
     typedef rxu::value_type_t<std::iterator_traits<iterator_type>> value_type;
 };
 
