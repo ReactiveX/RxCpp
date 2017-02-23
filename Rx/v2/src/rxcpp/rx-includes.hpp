@@ -150,7 +150,6 @@
 #include <deque>
 #include <thread>
 #include <future>
-#include <vector>
 #include <list>
 #include <queue>
 #include <chrono>
