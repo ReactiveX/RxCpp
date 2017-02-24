@@ -8,7 +8,7 @@
 
     \tparam Count the type of the counter (optional)
 
-    \param t  the total number of retries (optional), i.e. retry(2) means one normal try and one retry. If not specified, infinitely retries the source observable. Specifying 0 returns immediately without subscribing
+    \param t  the total number of tries (optional), i.e. retry(2) means one normal try, before an error occurs, and one retry. If not specified, infinitely retries the source observable. Specifying 0 returns immediately without subscribing
 
     \return  An observable that mirrors the source observable, resubscribing to it if it calls on_error up to a specified number of retries.
 
