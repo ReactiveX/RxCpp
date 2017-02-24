@@ -78,7 +78,7 @@ namespace repeat {
                               },
                               // on_completed
                               [state]() {
-                                state->on_completed();
+                                state->update();
                                 // Use specialized predicate for finite/infinte case
                                 if (state->completed_predicate()) {
                                   state->out.on_completed();
@@ -111,7 +111,7 @@ namespace repeat {
         return remaining_ <= 0;
       }
       
-      inline void on_completed() {
+      inline void update() {
         // Decrement counter
         --remaining_;
       }
@@ -142,7 +142,7 @@ namespace repeat {
     }
 
   private:
-    values initial_;
+     values initial_;
   };
 
   // Infinite repeat case
@@ -160,7 +160,7 @@ namespace repeat {
         return false;
       }
 
-      static inline void on_completed() {
+      static inline void update() {
         // Infinite repeat does not need to update state
       }
 
