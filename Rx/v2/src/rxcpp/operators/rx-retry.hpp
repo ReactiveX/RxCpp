@@ -8,7 +8,7 @@
 
     \tparam Count the type of the counter (optional)
 
-    \param t  the number of retries (optional) If not specified, infinitely retries the source observable. Specifying returns immediately without subscribing
+    \param t  the total number of retries (optional), i.e. retry(2) means one normal try and one retry. If not specified, infinitely retries the source observable. Specifying 0 returns immediately without subscribing
 
     \return  An observable that mirrors the source observable, resubscribing to it if it calls on_error up to a specified number of retries.
 
@@ -100,7 +100,6 @@ namespace retry {
     struct values {
       values(source_type s, count_type t)
         : source(std::move(s)), remaining_(std::move(t)) {
-        if (remaining_ != 0) ++remaining_;
       }
       
       inline bool completed_predicate() const {
