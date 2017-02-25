@@ -33,16 +33,6 @@ namespace operators {
 
 namespace detail {
 
-template<class... AN>
-struct repeat_invalid_arguments {};
-
-template<class... AN>
-struct repeat_invalid : public rxo::operator_base<repeat_invalid_arguments<AN...>> {
-    using type = observable<repeat_invalid_arguments<AN...>, repeat_invalid<AN...>>;
-};
-template<class... AN>
-using repeat_invalid_t = typename repeat_invalid<AN...>::type;
-
 // Contain repeat variations in a namespace
 namespace repeat {
   struct event_handlers {
@@ -110,7 +100,7 @@ struct member_overload<repeat_tag> {
   }
 
   template<class... AN>
-  static operators::detail::repeat_invalid_t<AN...> member(AN...) {
+  static operators::detail::retry_repeat_common::invalid_t<AN...> member(AN...) {
     std::terminate();
     return {};
     static_assert(sizeof...(AN) == 10000, "repeat takes (optional Count)");
