@@ -1,6 +1,6 @@
 #pragma once
 
-/*! \file impl-retry-repeat.hpp
+/*! \file rx-retry-repeat-common.hpp
 
     \brief Implementation commonalities between retry and repeat operators abstracted away from rx-retry.hpp and rx-repeat.hpp files. Should be used only from rx-retry.hpp and rx-repeat.hpp
     
