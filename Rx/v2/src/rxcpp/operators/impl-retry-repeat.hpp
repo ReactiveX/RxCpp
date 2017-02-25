@@ -12,18 +12,6 @@ namespace rxcpp {
   namespace operators {
     namespace detail {
 
-      // Originally these were defined in the root of detail space, were these used only
-      // by repeat/retry? If yes, we should move them down into retry_repeat_common
-      template<class... AN>
-      struct retry_invalid_arguments {};
-
-      template<class... AN>
-      struct retry_invalid : public rxo::operator_base<retry_invalid_arguments<AN...>> {
-        using type = observable<retry_invalid_arguments<AN...>, retry_invalid<AN...>>;
-      };
-      template<class... AN>
-      using retry_invalid_t = typename retry_invalid<AN...>::type;
-
       namespace retry_repeat_common {
         // Structure to perform general retry/repeat operations on state
         template <class Values, class Subscriber, class EventHandlers, class T>

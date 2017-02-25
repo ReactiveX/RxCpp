@@ -29,6 +29,16 @@ namespace operators {
 
 namespace detail {
 
+template<class... AN>
+struct retry_invalid_arguments {};
+
+template<class... AN>
+struct retry_invalid : public rxo::operator_base<retry_invalid_arguments<AN...>> {
+  using type = observable<retry_invalid_arguments<AN...>, retry_invalid<AN...>>;
+};
+template<class... AN>
+using retry_invalid_t = typename retry_invalid<AN...>::type;
+
 // Contain retry variations in a namespace
 namespace retry {
   struct event_handlers {
