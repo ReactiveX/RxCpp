@@ -100,7 +100,7 @@ struct member_overload<retry_tag>
   }
 
   template<class... AN>
-  static operators::detail::retry_repeat_common::invalid_t<AN...> member(const AN&...) {
+  static operators::detail::retry_invalid_t<AN...> member(const AN&...) {
     std::terminate();
     return {};
     static_assert(sizeof...(AN) == 10000, "retry takes (optional Count)");
