@@ -119,7 +119,7 @@ SCENARIO("retry 0, basic test", "[retry][operators]") {
           
 
 SCENARIO("retry with failure", "[retry][operators]") {
-    GIVEN("hot observable of 3x4x7 ints with errors inbetween the groups. Retry 1. Must fail.") {
+    GIVEN("hot observable of 3x4x7 ints with errors inbetween the groups. Retry 2. Must fail.") {
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
         const rxsc::test::messages<int> on;
@@ -145,12 +145,12 @@ SCENARIO("retry with failure", "[retry][operators]") {
             on.completed(725)
         });
 
-        WHEN("retry of 1 is launched with expected error before complete") {
+        WHEN("retry of 2 is launched with expected error before complete") {
 
             auto res = w.start(
                 [&]() {
                 return xs
-                    .retry(1)
+                    .retry(2)
                     // forget type to workaround lambda deduction bug on msvc 2013
                     .as_dynamic();
             });
