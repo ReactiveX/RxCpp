@@ -25,7 +25,7 @@
 #define RXCPP_OPERATORS_RX_REPEAT_HPP
 
 #include "../rx-includes.hpp"
-#include "impl-retry-repeat.hpp"
+#include "rx-retry-repeat-common.hpp"
 
 namespace rxcpp {
 
