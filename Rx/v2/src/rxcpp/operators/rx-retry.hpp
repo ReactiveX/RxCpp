@@ -45,7 +45,6 @@ namespace retry {
           
     template <typename State>
     static inline void on_completed(State& state) {
-      // JEP: never appeears to be called?
       state->out.on_completed();
     }
   };
