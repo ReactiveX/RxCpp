@@ -1,7 +1,7 @@
 nuget {
     nuspec {
         id = rxcpp;
-        version : 3.0.1;
+        version : 4.0.0;
         title: Reactive Extensions for C++;
         authors: {Microsoft Open Technologies Inc.};
         owners: {Microsoft Open Technologies Inc.};
@@ -12,7 +12,7 @@ nuget {
         summary: "The Reactive Extensions (Rx) asynchronous algorithm library";
         description: @"The Reactive Extensions for C++ (RxCpp) is a library of algorithms for values-distributed-in-time. The Range-v3 library does the same for values-distributed-in-space.
         Compiles for gcc, clang and VisualStudio on Linux, OSX and Windows.";
-        releaseNotes: "rx lite, bug fixes, debounce, exists, contains, any, timeout, with_latest_from, all, timestamp, window_toggle, take_last, skip_last, time_interval, switch_if_empty, default_if_empty, sequence_equal";
+        releaseNotes: "rx lite complete!, bug fixes, breaking changes to make repeat(0) and retry(0), VC2017 support, coroutines support, take_while, is_empty";
         copyright: Copyright 2016;
         tags: { RxCpp, RxC++, Rx, Reactive, Observable, Functional, native, nativepackage};
     };

@@ -1,0 +1,2 @@
+Write-NuGetPackage .\rxcpp.autoconfig
+Publish-NuGetPackage -Packages .\rxcpp.4.0.0.nupkg
