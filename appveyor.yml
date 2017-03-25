@@ -6,7 +6,7 @@ branches:
         - master
         - appveyor
 
-image: Visual Studio 2017 RC
+image: Visual Studio 2017
 
 environment:
   matrix:
