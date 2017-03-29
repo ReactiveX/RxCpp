@@ -10,9 +10,12 @@ image: Visual Studio 2017
 
 environment:
   matrix:
-    - VSVER: Visual Studio 12 2013 Win64
-    - VSVER: Visual Studio 14 2015 Win64
-    - VSVER: Visual Studio 15 2017 Win64
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2013
+    VSVER: Visual Studio 12 2013 Win64
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+    VSVER: Visual Studio 14 2015 Win64
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+    VSVER: Visual Studio 15 2017 Win64
 
 platform:
   - x64
