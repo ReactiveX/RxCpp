@@ -340,8 +340,9 @@ public:
 template<class T>
 rxt::testable_observable<T> test_type::make_hot_observable(std::vector<rxn::recorded<std::shared_ptr<rxn::detail::notification_base<T>>>> messages) const
 {
-    return rxt::testable_observable<T>(
-        std::make_shared<hot_observable<T>>(state, create_worker(composite_subscription()), std::move(messages)));
+    auto worker = create_worker(composite_subscription());
+    auto shared = std::make_shared<hot_observable<T>>(state, worker, std::move(messages));
+    return rxt::testable_observable<T>(shared);
 }
 
 template<class F>
