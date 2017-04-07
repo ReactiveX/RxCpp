@@ -120,6 +120,8 @@ struct window_toggle
                 localState->dest.remove(innerscope);
             });
 
+            localState->dest.add(localState->cs);
+
             auto source = on_exception(
                 [&](){return localState->coordinator.in(localState->openings);},
                 localState->dest);
@@ -252,7 +254,7 @@ struct window_toggle
 
         static subscriber<T, observer_type> make(dest_type d, window_toggle_values v) {
             auto cs = composite_subscription();
-            auto coordinator = v.coordination.create_coordinator();
+            auto coordinator = v.coordination.create_coordinator(d.get_subscription());
 
             return make_subscriber<T>(cs, observer_type(this_type(cs, std::move(d), std::move(v), std::move(coordinator))));
         }
