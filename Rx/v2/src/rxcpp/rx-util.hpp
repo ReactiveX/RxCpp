@@ -51,6 +51,16 @@ typename std::enable_if<!std::is_array<T0>::value && std::is_pod<T0>::value, std
     return to_vector({t0, tn...});
 }
 
+// lifted from https://github.com/ericniebler/range-v3/blob/630fc70baa07cbfd222f329e44a3122ab64ce364/include/range/v3/range_fwd.hpp
+// removed constexpr & noexcept to support older VC compilers
+template<typename T>
+/*constexpr*/ T const &as_const(T & t) /*noexcept*/
+{
+    return t;
+}
+template<typename T>
+void as_const(T const &&) = delete;
+
 template<class T, T... ValueN>
 struct values {};
 
@@ -157,7 +167,7 @@ using types_checked_t = typename types_checked_from<TN...>::type;
 template<class Types, class =types_checked>
 struct expand_value_types { struct type; };
 template<class... TN>
-struct expand_value_types<types<TN...>, types_checked_t<typename std::decay<TN>::type::value_type...>> 
+struct expand_value_types<types<TN...>, types_checked_t<typename std::decay<TN>::type::value_type...>>
 {
     using type = types<typename std::decay<TN>::type::value_type...>;
 };
@@ -517,7 +527,7 @@ inline std::string what(std::exception_ptr ep) {
     }
     return std::string();
 }
-                
+
 namespace detail {
 
 template <class T>
@@ -754,7 +764,7 @@ struct is_string : std::false_type {
 };
 
 template <typename T>
-struct is_string<T, 
+struct is_string<T,
     typename types_checked_from<
         typename T::value_type,
         typename T::traits_type,
@@ -796,32 +806,32 @@ namespace rxu=util;
 
 
 //
-// due to an noisy static_assert issue in more than one std lib impl, 
-// rxcpp maintains a whitelist filter for the types that are allowed 
+// due to an noisy static_assert issue in more than one std lib impl,
+// rxcpp maintains a whitelist filter for the types that are allowed
 // to be hashed. this allows is_hashable<T> to work.
 //
 // NOTE: this should eventually be removed!
 //
-template <class T, typename = void> 
+template <class T, typename = void>
 struct filtered_hash;
 
 #if RXCPP_HASH_ENUM
-template <class T> 
+template <class T>
 struct filtered_hash<T, typename std::enable_if<std::is_enum<T>::value>::type> : std::hash<T> {
 };
 #elif RXCPP_HASH_ENUM_UNDERLYING
-template <class T> 
+template <class T>
 struct filtered_hash<T, typename std::enable_if<std::is_enum<T>::value>::type> : std::hash<typename std::underlying_type<T>::type> {
 };
 #endif
 
-template <class T> 
+template <class T>
 struct filtered_hash<T, typename std::enable_if<std::is_integral<T>::value>::type> : std::hash<T> {
 };
-template <class T> 
+template <class T>
 struct filtered_hash<T, typename std::enable_if<std::is_pointer<T>::value>::type> : std::hash<T> {
 };
-template <class T> 
+template <class T>
 struct filtered_hash<T, typename std::enable_if<rxu::is_string<T>::value>::type> : std::hash<T> {
 };
 template <class T>
@@ -850,10 +860,10 @@ struct is_hashable
     : std::false_type {};
 
 template<typename T>
-struct is_hashable<T, 
+struct is_hashable<T,
     typename rxu::types_checked_from<
-        typename filtered_hash<T>::result_type, 
-        typename filtered_hash<T>::argument_type, 
+        typename filtered_hash<T>::result_type,
+        typename filtered_hash<T>::argument_type,
         typename std::result_of<filtered_hash<T>(T)>::type>::type>
     : std::true_type {};
 

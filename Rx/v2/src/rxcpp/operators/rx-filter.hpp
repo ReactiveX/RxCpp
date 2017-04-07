@@ -69,13 +69,14 @@ struct filter
         template <class Value>
         void on_next(Value&& v) const {
             auto filtered = on_exception([&](){
-                return !this->test(std::forward<Value>(v));},
-              dest);
+                    return !this->test(rxu::as_const(v));
+                },
+                dest);
             if (filtered.empty()) {
                 return;
             }
             if (!filtered.get()) {
-                dest.on_next(v);
+                dest.on_next(std::forward<Value>(v));
             }
         }
         void on_error(std::exception_ptr e) const {
