@@ -35,7 +35,7 @@ SCENARIO("window toggle, basic", "[window_toggle][operators]"){
 
         WHEN("ints are split into windows"){
             using namespace std::chrono;
-            
+
             int wi = 0;
 
             auto res = w.start(
@@ -310,7 +310,7 @@ SCENARIO("window toggle, disposed", "[window_toggle][operators]"){
 
             THEN("there was one subscription and one unsubscription to the observable"){
                 auto required = rxu::to_vector({
-                    o_on.subscribe(200, 590)
+                    o_on.subscribe(200, 420)
                 });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);

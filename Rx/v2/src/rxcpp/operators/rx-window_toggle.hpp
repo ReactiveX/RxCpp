@@ -110,14 +110,12 @@ struct window_toggle
         {
             auto localState = state;
 
-            composite_subscription innercs;
+            // when the out observer is unsubscribed the
+            // scope subscription is unsubscribed as well
+            auto scope = localState->dest.add(localState->cs);
 
-            // when the out observer is unsubscribed all the
-            // inner subscriptions are unsubscribed as well
-            auto innerscope = localState->dest.add(innercs);
-
-            innercs.add([=](){
-                localState->dest.remove(innerscope);
+            localState->cs.add([=](){
+                localState->dest.remove(scope);
             });
 
             auto source = on_exception(
@@ -132,9 +130,10 @@ struct window_toggle
             // until the inner subscriptions have finished
             auto sink = make_subscriber<openings_value_type>(
                 localState->dest,
-                innercs,
+                localState->cs,
             // on_next
                 [localState](const openings_value_type& ov) {
+
                     auto closer = localState->closingSelector(ov);
 
                     auto it = localState->subj.insert(localState->subj.end(), rxcpp::subjects::subject<T>());
@@ -252,7 +251,7 @@ struct window_toggle
 
         static subscriber<T, observer_type> make(dest_type d, window_toggle_values v) {
             auto cs = composite_subscription();
-            auto coordinator = v.coordination.create_coordinator();
+            auto coordinator = v.coordination.create_coordinator(d.get_subscription());
 
             return make_subscriber<T>(cs, observer_type(this_type(cs, std::move(d), std::move(v), std::move(coordinator))));
         }
