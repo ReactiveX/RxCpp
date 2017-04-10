@@ -58,22 +58,25 @@ struct filter
         typedef rxu::decay_t<Subscriber> dest_type;
         typedef observer<value_type, this_type> observer_type;
         dest_type dest;
-        test_type test;
+        mutable test_type test;
 
         filter_observer(dest_type d, test_type t)
             : dest(std::move(d))
             , test(std::move(t))
         {
         }
-        void on_next(source_value_type v) const {
+
+        template <class Value>
+        void on_next(Value&& v) const {
             auto filtered = on_exception([&](){
-                return !this->test(v);},
+                    return !this->test(rxu::as_const(v));
+                },
                 dest);
             if (filtered.empty()) {
                 return;
             }
             if (!filtered.get()) {
-                dest.on_next(v);
+                dest.on_next(std::forward<Value>(v));
             }
         }
         void on_error(std::exception_ptr e) const {
