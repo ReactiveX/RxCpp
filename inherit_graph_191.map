@@ -1,0 +1,8 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$structrxcpp_1_1observable__base.html" title="rxcpp::observable_base\&lt; T \&gt;" alt="" coords="5,56,197,83"/>
+<area shape="rect" id="node2" href="$classrxcpp_1_1observable.html" title="rxcpp::observable\&lt;\l T, detail::test_source\l\&lt; T \&gt; \&gt;" alt="" coords="245,5,395,61"/>
+<area shape="rect" id="node4" href="$classrxcpp_1_1observable.html" title="a source of values. subscribe or use one of the operator methods that return a new observable..." alt="" coords="247,85,393,126"/>
+<area shape="rect" id="node3" href="$classrxcpp_1_1test_1_1testable__observable.html" title="a source of values that records the time of each subscription/unsubscription and all the values and t..." alt="" coords="485,13,624,54"/>
+<area shape="rect" id="node5" href="$classrxcpp_1_1connectable__observable.html" title="a source of values that is shared across all subscribers and does not start until connectable_observa..." alt="" coords="443,81,666,122"/>
+<area shape="rect" id="node6" href="$classrxcpp_1_1grouped__observable.html" title="a source of observables which each emit values from one category specified by the key selector..." alt="" coords="465,146,644,187"/>
+</map>

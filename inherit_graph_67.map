@@ -1,0 +1,4 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node2" href="$structrxcpp_1_1defer__observable.html" title="rxcpp::defer_observable\l\&lt; rxu::all_true\&lt; std::\lis_convertible\&lt; Duration,\l rxsc::scheduler::clock_type\l::duration \&gt;::value, is_coordination\l\&lt; Coordination \&gt;::value \&gt;, void,\l interval, Coordination \&gt;" alt="" coords="266,5,489,120"/>
+<area shape="rect" id="node3" href="$structrxcpp_1_1defer__observable.html" title="rxcpp::defer_observable\l\&lt; rxu::all_true\&lt; std::\lis_convertible\&lt; TimePointOrDuration,\l rxsc::scheduler::clock_type::\ltime_point \&gt;::value\|\|std::is_convertible\l\&lt; TimePointOrDuration, rxsc::scheduler\l::clock_type::duration \&gt;::value, is_coordination\l\&lt; Coordination \&gt;::value \&gt;, void, timer, Coordination \&gt;" alt="" coords="211,145,543,274"/>
+</map>

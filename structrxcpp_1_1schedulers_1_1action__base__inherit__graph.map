@@ -1,0 +1,5 @@
+<map id="rxcpp::schedulers::action_base" name="rxcpp::schedulers::action_base">
+<area shape="rect" id="node2" href="$classrxcpp_1_1schedulers_1_1action.html" title="action provides type&#45;forgetting for a potentially recursive set of calls to a function that takes a s..." alt="" coords="5,97,139,138"/>
+<area shape="rect" id="node3" href="$structrxcpp_1_1schedulers_1_1schedulable__base.html" title="rxcpp::schedulers::\lschedulable_base" alt="" coords="163,97,296,138"/>
+<area shape="rect" id="node4" href="$classrxcpp_1_1schedulers_1_1schedulable.html" title="rxcpp::schedulers::\lschedulable" alt="" coords="163,187,296,229"/>
+</map>

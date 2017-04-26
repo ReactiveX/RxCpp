@@ -1,0 +1,9 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$structrxcpp_1_1reduce__tag.html" title="rxcpp::reduce_tag" alt="" coords="6,132,133,159"/>
+<area shape="rect" id="node2" href="$structrxcpp_1_1average__tag.html" title="rxcpp::average_tag" alt="" coords="181,5,315,32"/>
+<area shape="rect" id="node3" href="$structrxcpp_1_1first__tag.html" title="rxcpp::first_tag" alt="" coords="193,56,303,83"/>
+<area shape="rect" id="node4" href="$structrxcpp_1_1last__tag.html" title="rxcpp::last_tag" alt="" coords="194,107,302,133"/>
+<area shape="rect" id="node5" href="$structrxcpp_1_1max__tag.html" title="rxcpp::max_tag" alt="" coords="192,157,304,184"/>
+<area shape="rect" id="node6" href="$structrxcpp_1_1min__tag.html" title="rxcpp::min_tag" alt="" coords="194,208,302,235"/>
+<area shape="rect" id="node7" href="$structrxcpp_1_1sum__tag.html" title="rxcpp::sum_tag" alt="" coords="192,259,304,285"/>
+</map>

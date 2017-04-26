@@ -1,0 +1,5 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$structrxcpp_1_1schedulers_1_1scheduler__base.html" title="rxcpp::schedulers::\lscheduler_base" alt="" coords="5,5,139,46"/>
+<area shape="rect" id="node2" href="$classrxcpp_1_1schedulers_1_1scheduler.html" title="allows functions to be called at specified times and possibly in other contexts. " alt="" coords="187,5,320,46"/>
+<area shape="rect" id="node3" href="$classrxcpp_1_1schedulers_1_1test.html" title="rxcpp::schedulers::test" alt="" coords="368,12,523,39"/>
+</map>

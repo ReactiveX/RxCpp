@@ -1,0 +1,9 @@
+<map id="rxcpp::observer_base&lt; T &gt;" name="rxcpp::observer_base&lt; T &gt;">
+<area shape="rect" id="node2" href="$classrxcpp_1_1observer.html" title="observer\&lt; T \&gt;" alt="" coords="307,12,411,39"/>
+<area shape="rect" id="node4" href="$classrxcpp_1_1observer.html" title="consumes values from an observable using State that may implement on_next, on_error and on_completed ..." alt="" coords="287,63,431,89"/>
+<area shape="rect" id="node5" title="consumes values from an observable using default empty method implementations with optional overrides..." alt="" coords="232,113,485,169"/>
+<area shape="rect" id="node6" href="$classrxcpp_1_1observer_3_01_t_00_01void_00_01void_00_01void_00_01void_01_4.html" title="consumes values from an observable using type&#45;forgetting (shared allocated state with virtual methods..." alt="" coords="279,193,438,234"/>
+<area shape="rect" id="node7" href="$structrxcpp_1_1subscriber__base.html" title="rxcpp::subscriber_base\&lt; T \&gt;" alt="" coords="264,259,453,285"/>
+<area shape="rect" id="node3" href="$classrxcpp_1_1test_1_1testable__observer.html" title="rxcpp::test::testable\l_observer\&lt; T \&gt;" alt="" coords="541,5,680,46"/>
+<area shape="rect" id="node8" href="$classrxcpp_1_1subscriber.html" title="binds an observer that consumes values with a composite_subscription that controls lifetime..." alt="" coords="533,259,688,285"/>
+</map>

@@ -1,0 +1,12 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node4" href="$classrxcpp_1_1schedulers_1_1scheduler__interface.html" title="rxcpp::schedulers::\lscheduler_interface" alt="" coords="249,249,383,290"/>
+<area shape="rect" id="node11" href="$classrxcpp_1_1schedulers_1_1worker__interface.html" title="rxcpp::schedulers::\lworker_interface" alt="" coords="249,314,383,355"/>
+<area shape="rect" id="node3" href="$structrxcpp_1_1schedulers_1_1virtual__time.html" title="rxcpp::schedulers::\lvirtual_time\&lt; Absolute,\l Relative \&gt;" alt="" coords="459,5,615,61"/>
+<area shape="rect" id="node5" href="$structrxcpp_1_1schedulers_1_1current__thread.html" title="rxcpp::schedulers::\lcurrent_thread" alt="" coords="471,85,604,126"/>
+<area shape="rect" id="node6" href="$structrxcpp_1_1schedulers_1_1event__loop.html" title="rxcpp::schedulers::\levent_loop" alt="" coords="471,150,604,191"/>
+<area shape="rect" id="node7" href="$structrxcpp_1_1schedulers_1_1immediate.html" title="rxcpp::schedulers::\limmediate" alt="" coords="471,215,604,257"/>
+<area shape="rect" id="node8" href="$structrxcpp_1_1schedulers_1_1new__thread.html" title="rxcpp::schedulers::\lnew_thread" alt="" coords="471,281,604,322"/>
+<area shape="rect" id="node9" href="$structrxcpp_1_1schedulers_1_1run__loop__scheduler.html" title="rxcpp::schedulers::\lrun_loop_scheduler" alt="" coords="470,346,605,387"/>
+<area shape="rect" id="node10" href="$structrxcpp_1_1schedulers_1_1same__worker.html" title="rxcpp::schedulers::\lsame_worker" alt="" coords="471,411,604,453"/>
+<area shape="rect" id="node13" href="$structrxcpp_1_1schedulers_1_1virtual__time.html" title="rxcpp::schedulers::\lvirtual_time\&lt; long,\l long \&gt;" alt="" coords="471,476,604,532"/>
+</map>

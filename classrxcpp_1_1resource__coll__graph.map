@@ -1,0 +1,5 @@
+<map id="rxcpp::resource&lt; T &gt;" name="rxcpp::resource&lt; T &gt;">
+<area shape="rect" id="node2" href="$structrxcpp_1_1subscription__base.html" title="rxcpp::subscription_base" alt="" coords="5,5,171,32"/>
+<area shape="rect" id="node5" href="$classrxcpp_1_1subscription.html" title="rxcpp::subscription" alt="" coords="93,91,224,117"/>
+<area shape="rect" id="node3" href="$classrxcpp_1_1composite__subscription.html" title="controls lifetime for scheduler::schedule and observable&lt;T, SourceOperator&gt;::subscribe. " alt="" coords="91,176,289,203"/>
+</map>

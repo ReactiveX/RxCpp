@@ -1,0 +1,6 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$structcpplinq_1_1collection__tag.html" title="cpplinq::collection_tag" alt="" coords="6,64,157,91"/>
+<area shape="rect" id="node2" href="$classcpplinq_1_1dynamic__cursor.html" title="cpplinq::dynamic_cursor\&lt; T \&gt;" alt="" coords="205,5,400,32"/>
+<area shape="rect" id="node3" href="$classcpplinq_1_1iter__cursor.html" title="cpplinq::iter_cursor\l\&lt; Iterator \&gt;" alt="" coords="237,57,369,98"/>
+<area shape="rect" id="node4" href="$classcpplinq_1_1dynamic__cursor.html" title="cpplinq::dynamic_cursor\l\&lt; reference_type \&gt;" alt="" coords="221,122,384,163"/>
+</map>

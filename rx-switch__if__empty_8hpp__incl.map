@@ -1,0 +1,24 @@
+<map id="/home/travis/build/Reactive&#45;Extensions/RxCpp/Rx/v2/src/rxcpp/operators/rx&#45;switch_if_empty.hpp" name="/home/travis/build/Reactive&#45;Extensions/RxCpp/Rx/v2/src/rxcpp/operators/rx&#45;switch_if_empty.hpp">
+<area shape="rect" id="node2" href="$rx-includes_8hpp.html" title="../rx&#45;includes.hpp" alt="" coords="2765,139,2888,165"/>
+<area shape="rect" id="node3" href="$rx-trace_8hpp.html" title="rx&#45;trace.hpp" alt="" coords="76,221,167,248"/>
+<area shape="rect" id="node31" href="$rx-util_8hpp.html" title="rx&#45;util.hpp" alt="" coords="2461,221,2539,248"/>
+<area shape="rect" id="node32" href="$rx-predef_8hpp.html" title="rx&#45;predef.hpp" alt="" coords="2564,221,2663,248"/>
+<area shape="rect" id="node33" href="$rx-subscription_8hpp.html" title="rx&#45;subscription.hpp" alt="" coords="2687,221,2819,248"/>
+<area shape="rect" id="node34" href="$rx-observer_8hpp.html" title="rx&#45;observer.hpp" alt="" coords="2844,221,2955,248"/>
+<area shape="rect" id="node35" href="$rx-scheduler_8hpp.html" title="rx&#45;scheduler.hpp" alt="" coords="2979,221,3097,248"/>
+<area shape="rect" id="node36" href="$rx-subscriber_8hpp.html" title="rx&#45;subscriber.hpp" alt="" coords="3123,221,3245,248"/>
+<area shape="rect" id="node37" href="$rx-notification_8hpp.html" title="rx&#45;notification.hpp" alt="" coords="3269,221,3395,248"/>
+<area shape="rect" id="node38" href="$rx-coordination_8hpp.html" title="rx&#45;coordination.hpp" alt="" coords="3419,221,3551,248"/>
+<area shape="rect" id="node39" href="$rx-sources_8hpp.html" title="rx&#45;sources.hpp" alt="" coords="3575,221,3683,248"/>
+<area shape="rect" id="node40" href="$rx-subjects_8hpp.html" title="rx&#45;subjects.hpp" alt="" coords="3707,221,3817,248"/>
+<area shape="rect" id="node41" href="$rx-operators_8hpp.html" title="rx&#45;operators.hpp" alt="" coords="3842,221,3957,248"/>
+<area shape="rect" id="node42" href="$rx-observable_8hpp.html" title="rx&#45;observable.hpp" alt="" coords="3983,221,4108,248"/>
+<area shape="rect" id="node43" href="$rx-connectable__observable_8hpp.html" title="rx&#45;connectable_observable.hpp" alt="" coords="4132,221,4335,248"/>
+<area shape="rect" id="node44" href="$rx-grouped__observable_8hpp.html" title="rx&#45;grouped_observable.hpp" alt="" coords="4359,221,4537,248"/>
+<area shape="rect" id="node45" href="$rx-all_8hpp.html" title="Returns an Observable that emits true if every item emitted by the source Observable satisfies a spec..." alt="" coords="4561,221,4695,248"/>
+<area shape="rect" id="node46" href="$rx-amb_8hpp.html" title="For each item from only the first of the given observables deliver from the new observable that is re..." alt="" coords="4719,221,4864,248"/>
+<area shape="rect" id="node47" href="$rx-any_8hpp.html" title="Returns an Observable that emits true if any item emitted by the source Observable satisfies a specif..." alt="" coords="4889,221,5029,248"/>
+<area shape="rect" id="node48" href="$rx-buffer__count_8hpp.html" title="Return an observable that emits connected, non&#45;overlapping buffer, each containing at most count item..." alt="" coords="5055,214,5183,255"/>
+<area shape="rect" id="node49" href="$rx-buffer__time_8hpp.html" title="Return an observable that emits buffers every period time interval and collects items from this obser..." alt="" coords="5207,214,5335,255"/>
+<area shape="rect" id="node50" href="$rx-buffer__time__count_8hpp.html" title="Return an observable that emits connected, non&#45;overlapping buffers of items from the source observabl..." alt="" coords="5359,214,5487,255"/>
+</map>

@@ -1,0 +1,7 @@
+<map id="rxcpp::schedulers::worker_base" name="rxcpp::schedulers::worker_base">
+<area shape="rect" id="node3" href="$structrxcpp_1_1schedulers_1_1schedulable__base.html" title="rxcpp::schedulers::\lschedulable_base" alt="" coords="5,171,139,213"/>
+<area shape="rect" id="node5" href="$classrxcpp_1_1schedulers_1_1worker.html" title="rxcpp::schedulers::\lworker" alt="" coords="163,171,296,213"/>
+<area shape="rect" id="node2" href="$structrxcpp_1_1subscription__base.html" title="rxcpp::subscription_base" alt="" coords="67,5,233,32"/>
+<area shape="rect" id="node4" href="$classrxcpp_1_1schedulers_1_1schedulable.html" title="rxcpp::schedulers::\lschedulable" alt="" coords="5,262,139,303"/>
+<area shape="rect" id="node6" href="$classrxcpp_1_1schedulers_1_1test_1_1test__worker.html" title="rxcpp::schedulers::\ltest::test_worker" alt="" coords="163,262,296,303"/>
+</map>

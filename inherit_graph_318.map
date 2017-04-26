@@ -1,0 +1,20 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$structrxcpp_1_1schedulers_1_1action__base.html" title="rxcpp::schedulers::\laction_base" alt="" coords="260,67,393,109"/>
+<area shape="rect" id="node2" href="$classrxcpp_1_1schedulers_1_1action.html" title="action provides type&#45;forgetting for a potentially recursive set of calls to a function that takes a s..." alt="" coords="503,70,636,111"/>
+<area shape="rect" id="node3" href="$structrxcpp_1_1schedulers_1_1schedulable__base.html" title="rxcpp::schedulers::\lschedulable_base" alt="" coords="503,169,636,210"/>
+<area shape="rect" id="node4" href="$classrxcpp_1_1schedulers_1_1schedulable.html" title="rxcpp::schedulers::\lschedulable" alt="" coords="717,169,851,210"/>
+<area shape="rect" id="node6" href="$classrxcpp_1_1composite__subscription.html" title="controls lifetime for scheduler::schedule and observable&lt;T, SourceOperator&gt;::subscribe. " alt="" coords="470,475,669,501"/>
+<area shape="rect" id="node7" href="$structrxcpp_1_1observer__base.html" title="rxcpp::observer_base\&lt; T \&gt;" alt="" coords="5,183,184,209"/>
+<area shape="rect" id="node8" href="$classrxcpp_1_1observer.html" title="rxcpp::observer\&lt; T \&gt;" alt="" coords="255,13,399,40"/>
+<area shape="rect" id="node10" href="$classrxcpp_1_1observer.html" title="consumes values from an observable using State that may implement on_next, on_error and on_completed ..." alt="" coords="243,132,410,188"/>
+<area shape="rect" id="node11" href="$classrxcpp_1_1observer_3_01_t_00_01void_00_01void_00_01void_00_01void_01_4.html" title="consumes values from an observable using type&#45;forgetting (shared allocated state with virtual methods..." alt="" coords="247,211,406,253"/>
+<area shape="rect" id="node12" href="$structrxcpp_1_1subscriber__base.html" title="rxcpp::subscriber_base\&lt; T \&gt;" alt="" coords="232,277,421,304"/>
+<area shape="rect" id="node9" href="$classrxcpp_1_1test_1_1testable__observer.html" title="rxcpp::test::testable\l_observer\&lt; T \&gt;" alt="" coords="500,5,639,46"/>
+<area shape="rect" id="node13" href="$classrxcpp_1_1subscriber.html" title="binds an observer that consumes values with a composite_subscription that controls lifetime..." alt="" coords="504,267,635,309"/>
+<area shape="rect" id="node14" href="$structrxcpp_1_1subscription__base.html" title="rxcpp::subscription_base" alt="" coords="11,365,178,392"/>
+<area shape="rect" id="node15" href="$classrxcpp_1_1resource.html" title="rxcpp::resource\&lt; T \&gt;" alt="" coords="255,395,399,421"/>
+<area shape="rect" id="node16" href="$structrxcpp_1_1schedulers_1_1worker__base.html" title="rxcpp::schedulers::\lworker_base" alt="" coords="260,329,393,370"/>
+<area shape="rect" id="node19" href="$classrxcpp_1_1subscription.html" title="rxcpp::subscription" alt="" coords="261,445,393,472"/>
+<area shape="rect" id="node17" href="$classrxcpp_1_1schedulers_1_1worker.html" title="rxcpp::schedulers::\lworker" alt="" coords="503,333,636,374"/>
+<area shape="rect" id="node18" href="$classrxcpp_1_1schedulers_1_1test_1_1test__worker.html" title="rxcpp::schedulers::\ltest::test_worker" alt="" coords="717,333,851,374"/>
+</map>
