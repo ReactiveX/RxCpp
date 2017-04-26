@@ -193,7 +193,7 @@ struct with_latest_from : public operator_base<rxu::value_type_t<with_latest_fro
     }
     template<class State, int... IndexN>
     void subscribe_all(std::shared_ptr<State> state, rxu::values<int, IndexN...>) const {
-        bool subscribed[] = {(subscribe_one<IndexN>(state), true)...};
+        bool subscribed[] = {(subscribe_one<(sizeof...(IndexN)) - 1 - IndexN>(state), true)...};
         subscribed[0] = (*subscribed); // silence warning
     }
 
