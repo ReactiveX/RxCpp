@@ -1,6 +1,6 @@
-#Developer Manual
+# Developer Manual
 
-##Some comments on the scheduler system
+## Some comments on the scheduler system
 
 The scheduler in rxcpp v2 is based on the scheduler and worker constructs that *RxJava* uses (Eric Meijer was involved) The docs for *RxJava* will have an explanation for ```scheduler``` and ```worker```. RxCpp adds ```schedulable```, ```coordination``` and ```coordinator```.
 
