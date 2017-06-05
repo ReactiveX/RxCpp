@@ -254,6 +254,10 @@ public:
         return s.has_observers();
     }
 
+    composite_subscription get_subscription() const {
+        return s.get_subscription();
+    }
+
     subscriber_type get_subscriber() const {
         return s.get_subscriber();
     }
