@@ -495,6 +495,7 @@ auto make_observer(OnNext on)
 template<class T, class DefaultOnError = detail::OnErrorEmpty, class OnError>
 auto make_observer(OnError oe)
     -> typename std::enable_if<
+        !detail::is_on_next_of<T, OnError>::value &&
         detail::is_on_error<OnError>::value,
             observer<T, detail::stateless_observer_tag, detail::OnNextEmpty<T>, OnError>>::type {
     return  observer<T, detail::stateless_observer_tag, detail::OnNextEmpty<T>, OnError>(
