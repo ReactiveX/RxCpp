@@ -126,6 +126,20 @@ struct timeout
             localState->cs.add([=](){
                 localState->worker.schedule(selectedDisposer.get());
             });
+
+            auto work = [v, localState](const rxsc::schedulable&) {
+                auto new_id = ++localState->index;
+                auto produce_time = localState->worker.now() + localState->period;
+
+                localState->worker.schedule(produce_time, produce_timeout(new_id, localState));
+            };
+            auto selectedWork = on_exception(
+                [&](){return localState->coordinator.act(work);},
+                localState->dest);
+            if (selectedWork.empty()) {
+                return;
+            }
+            localState->worker.schedule(selectedWork.get());
         }
 
         static std::function<void(const rxsc::schedulable&)> produce_timeout(std::size_t id, state_type state) {

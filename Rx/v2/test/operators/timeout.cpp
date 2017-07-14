@@ -3,12 +3,14 @@
 
 using namespace std::chrono;
 
-SCENARIO("should not timeout if the source never emits any items", "[timeout][operators]"){
+SCENARIO("should timeout if the source never emits any items", "[timeout][operators]"){
     GIVEN("a source"){
         auto sc = rxsc::make_test();
         auto so = rx::synchronize_in_one_worker(sc);
         auto w = sc.create_worker();
         const rxsc::test::messages<int> on;
+
+        rxcpp::timeout_error ex("timeout has occurred");
 
         auto xs = sc.make_hot_observable({
             on.next(150, 1)
@@ -23,15 +25,17 @@ SCENARIO("should not timeout if the source never emits any items", "[timeout][op
                 }
             );
 
-            THEN("the output is empty"){
-                auto required = std::vector<rxsc::test::messages<int>::recorded_type>();
+            THEN("the error notification message is captured"){
+                auto required = rxu::to_vector({
+                    on.error(211, ex)
+                });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
             }
 
             THEN("there was 1 subscription/unsubscription to the source"){
                 auto required = rxu::to_vector({
-                    on.subscribe(200, 1001)
+                    on.subscribe(200, 212)
                 });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
@@ -40,7 +44,7 @@ SCENARIO("should not timeout if the source never emits any items", "[timeout][op
     }
 }
 
-SCENARIO("should not timeout if the source observable is empty", "[timeout][operators]"){
+SCENARIO("should not timeout if completed before the specified timeout duration", "[timeout][operators]"){
     GIVEN("a source"){
         auto sc = rxsc::make_test();
         auto so = rx::synchronize_in_one_worker(sc);
@@ -56,7 +60,7 @@ SCENARIO("should not timeout if the source observable is empty", "[timeout][oper
 
             auto res = w.start(
                 [so, xs]() {
-                    return xs.timeout(so, milliseconds(10));
+                    return xs.timeout(so, milliseconds(100));
                 }
             );
 
@@ -189,7 +193,7 @@ SCENARIO("should not timeout if there is an error", "[timeout][operators]"){
 
             auto res = w.start(
                 [so, xs]() {
-                    return xs.timeout(milliseconds(40), so);
+                    return xs.timeout(milliseconds(100), so);
                 }
             );
 
