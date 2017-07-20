@@ -693,7 +693,7 @@ public:
             try {
                 (*function)();
             } catch (...) {
-                std::unexpected();
+                std::terminate();
             }
         }
     }
