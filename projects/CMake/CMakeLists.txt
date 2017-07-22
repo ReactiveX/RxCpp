@@ -133,5 +133,5 @@ SET_TARGET_PROPERTIES(RxCpp PROPERTIES LINKER_LANGUAGE CXX)
 
 set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY TRUE CACHE BOOL "Don't require all projects to be built in order to install" FORCE)
 
-install(DIRECTORY ${RXCPP_DIR}/Rx/v2/src/rxcpp/ DESTINATION rxcpp
+install(DIRECTORY ${RXCPP_DIR}/Rx/v2/src/rxcpp/ DESTINATION include/rxcpp
         FILES_MATCHING PATTERN "*.hpp")
