@@ -7,7 +7,7 @@
 
 #include "../rx-includes.hpp"
 
-/*! \file rx-naver.hpp
+/*! \file rx-never.hpp
 
     \brief Returns an observable that never sends any items or notifications to observer.
 
