@@ -21,7 +21,7 @@ SCENARIO("pairwise - enough items to create pairs", "[pairwise][operators]") {
         WHEN("taken pairwise") {
 
             auto res = w.start(
-                [xs, &invoked]() {
+                [xs]() {
                     return xs
                         | rxo::pairwise()
                         // forget type to workaround lambda deduction bug on msvc 2013
