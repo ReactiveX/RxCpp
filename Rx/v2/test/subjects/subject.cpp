@@ -138,7 +138,7 @@ public:
 };
 }
 SCENARIO("for loop calls ready on_next(int)", "[hide][for][asyncobserver][ready][perf]"){
-    const int& onnextcalls = static_onnextcalls;
+    static const int& onnextcalls = static_onnextcalls;
     GIVEN("a for loop"){
         WHEN("calling on_next 100 million times"){
             using namespace std::chrono;
@@ -152,7 +152,7 @@ SCENARIO("for loop calls ready on_next(int)", "[hide][for][asyncobserver][ready]
             asyncwithready::async_subscriber<int, decltype(onnext)> scbr(onnext);
             asyncwithready::ready::onthen_type chunk;
             int i = 0;
-            chunk = [&chunk, scbr, i, onnextcalls]() mutable {
+            chunk = [&chunk, scbr, i]() mutable {
                 for (; i < onnextcalls && scbr.is_subscribed(); i++) {
                     auto controller = scbr.on_next(i);
                     if (!controller.is_ready()) {
@@ -225,13 +225,13 @@ SCENARIO("for loop calls observer", "[hide][for][observer][perf]"){
             using namespace std::chrono;
             typedef steady_clock clock;
 
-            int& c = aliased;
+            static int& c = aliased;
             int n = 1;
 
             c = 0;
             auto start = clock::now();
             auto o = rx::make_observer<int>(
-                [&c](int){++c;},
+                [](int){++c;},
                 [](std::exception_ptr){abort();});
             for (int i = 0; i < onnextcalls; i++) {
                 o.on_next(i);
@@ -251,13 +251,13 @@ SCENARIO("for loop calls subscriber", "[hide][for][subscriber][perf]"){
             using namespace std::chrono;
             typedef steady_clock clock;
 
-            int& c = aliased;
+            static int& c = aliased;
             int n = 1;
 
             c = 0;
             auto start = clock::now();
             auto o = rx::make_subscriber<int>(
-                [&c](int){++c;},
+                [](int){++c;},
                 [](std::exception_ptr){abort();});
             for (int i = 0; i < onnextcalls && o.is_subscribed(); i++) {
                 o.on_next(i);
@@ -277,14 +277,14 @@ SCENARIO("range calls subscriber", "[hide][range][subscriber][perf]"){
             using namespace std::chrono;
             typedef steady_clock clock;
 
-            int& c = aliased;
+            static int& c = aliased;
             int n = 1;
 
             c = 0;
             auto start = clock::now();
 
             rxs::range<int>(1, onnextcalls).subscribe(
-                [&c](int){
+                [](int){
                     ++c;
                 },
                 [](std::exception_ptr){abort();});
@@ -297,7 +297,7 @@ SCENARIO("range calls subscriber", "[hide][range][subscriber][perf]"){
 }
 
 SCENARIO("for loop calls subject", "[hide][for][subject][subjects][long][perf]"){
-    const int& onnextcalls = static_onnextcalls;
+    static const int& onnextcalls = static_onnextcalls;
     GIVEN("a for loop and a subject"){
         WHEN("multicasting a million ints"){
             using namespace std::chrono;
@@ -316,7 +316,7 @@ SCENARIO("for loop calls subject", "[hide][for][subject][subjects][long][perf]")
 
                 auto o = sub.get_subscriber();
 
-                o.add(rx::make_subscription([c, n, onnextcalls](){
+                o.add(rx::make_subscription([c, n](){
                     auto expected = n * onnextcalls;
                     REQUIRE(*c == expected);
                 }));
@@ -371,7 +371,7 @@ SCENARIO("for loop calls subject", "[hide][for][subject][subjects][long][perf]")
 }
 
 SCENARIO("range calls subject", "[hide][range][subject][subjects][long][perf]"){
-    const int& onnextcalls = static_onnextcalls;
+    static const int& onnextcalls = static_onnextcalls;
     GIVEN("a range and a subject"){
         WHEN("multicasting a million ints"){
             using namespace std::chrono;
@@ -389,7 +389,7 @@ SCENARIO("range calls subject", "[hide][range][subject][subjects][long][perf]"){
 
                 auto o = sub.get_subscriber();
 
-                o.add(rx::make_subscription([c, n, onnextcalls](){
+                o.add(rx::make_subscription([c, n](){
                     auto expected = n * onnextcalls;
                     REQUIRE(*c == expected);
                 }));

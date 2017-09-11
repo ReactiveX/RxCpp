@@ -47,13 +47,13 @@ SCENARIO("range partitioned by group_by across hardware threads to derive pi", "
                     [](work w) -> int {return w.index % std::thread::hardware_concurrency();},
                     [](work w){return w;}).
                 map(
-                    [=, &c](rxcpp::grouped_observable<int, work> onproc) {
+                    [=](rxcpp::grouped_observable<int, work> onproc) {
                         auto key = onproc.get_key();
                         // share a producer thread across all the ranges in this group of chunks
                         auto producerthread = rxcpp::observe_on_one_worker(rxcpp::observe_on_new_thread().create_coordinator().get_scheduler());
                         return onproc.
                             map(
-                                [=, &c](work w){
+                                [=](work w){
                                     std::stringstream message;
                                     message << std::setw(3) << w.index << ": range - " << w.first << "-" << w.last;
 
@@ -123,7 +123,7 @@ SCENARIO("range partitioned by dividing work across hardware threads to derive p
                         return work{index, first, last};
                     }).
                 map(
-                    [=, &c](work w){
+                    [=](work w){
                         std::stringstream message;
                         message << std::setw(3) << w.index << ": range - " << w.first << "-" << w.last;
 
