@@ -212,11 +212,11 @@ The build only produces test and example binaries.
 # Running tests
 
 * You can use the CMake test runner `ctest`
-* You can run the test binaries directly `rxcppv2_test_*`
+* You can run the test binaries directly `rxcpp_test_*`
 * Tests can be selected by name or tag
 Example of by-tag
 
-`rxcppv2_test_subscription [perf]`
+`rxcpp_test_subscription [perf]`
 
 # Documentation
 
