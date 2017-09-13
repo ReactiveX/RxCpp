@@ -7,7 +7,6 @@ SCENARIO("pairwise - enough items to create pairs", "[pairwise][operators]") {
         auto w = sc.create_worker();
         const rxsc::test::messages<int> on;
         const rxsc::test::messages<std::tuple<int, int>> on_pairwise;
-        long invoked = 0;
 
         auto xs = sc.make_cold_observable({
             on.next(180, 1),
