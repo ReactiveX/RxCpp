@@ -183,8 +183,8 @@ auto iterate(Collection c, Coordination cn)
 */
 template<class T>
 auto from()
-    -> decltype(iterate(std::array<T, 0>(), identity_immediate())) {
-    return      iterate(std::array<T, 0>(), identity_immediate());
+    -> decltype(iterate(std::initializer_list<T>(), identity_immediate())) {
+    return      iterate(std::initializer_list<T>(), identity_immediate());
 }
 /*! Returns an observable that sends an empty set of values and then completes, on the specified scheduler.
 
@@ -198,8 +198,8 @@ auto from()
 template<class T, class Coordination>
 auto from(Coordination cn)
     -> typename std::enable_if<is_coordination<Coordination>::value,
-        decltype(   iterate(std::array<T, 0>(), std::move(cn)))>::type {
-    return          iterate(std::array<T, 0>(), std::move(cn));
+        decltype(   iterate(std::initializer_list<T>(), std::move(cn)))>::type {
+    return          iterate(std::initializer_list<T>(), std::move(cn));
 }
 /*! Returns an observable that sends each value from its arguments list.
 
