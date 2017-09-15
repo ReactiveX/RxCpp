@@ -86,7 +86,7 @@ struct range : public source_base<T>
                     return;
                 }
 
-                if (std::abs(state.last - state.next) < std::abs(state.step)) {
+                if (std::max(state.last, state.next) - std::min(state.last, state.next) < std::abs(state.step)) {
                     if (state.last != state.next) {
                         dest.on_next(state.last);
                     }
