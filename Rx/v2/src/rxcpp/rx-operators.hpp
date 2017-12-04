@@ -258,6 +258,12 @@ struct merge_tag {
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-merge.hpp>");
     };
 };
+struct merge_delay_error_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-merge_delay_error.hpp>");
+    };
+};
 
 struct multicast_tag {
     template<class Included>

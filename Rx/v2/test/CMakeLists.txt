@@ -54,6 +54,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/lift.cpp
     ${TEST_DIR}/operators/map.cpp
     ${TEST_DIR}/operators/merge.cpp
+    ${TEST_DIR}/operators/merge_delay_error.cpp
     ${TEST_DIR}/operators/observe_on.cpp
     ${TEST_DIR}/operators/on_error_resume_next.cpp
     ${TEST_DIR}/operators/pairwise.cpp
