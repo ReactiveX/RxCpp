@@ -14,13 +14,13 @@ SCENARIO("composite_exception sample"){
         subscribe(
             [](int v){printf("OnNext: %d\n", v);},
             [](std::exception_ptr composite_e) {
-                printf("OnError %s\n", rxu::what(composite_e)); },
+	            printf("OnError %s\n", rxu::what(composite_e).c_str()); },
                 try { std::rethrow_exception(composite_e); }
                 catch(rxcpp::composite_exception ce) {
                     for(std::exception_ptr particular_e : ce.exceptions) {
 
                         try{ std::rethrow_exception(particular_e); }
-                        catch(std::runtime_error error) { printf(" *** %s\n", rxu::what(error)); }
+                        catch(std::runtime_error error) { printf(" *** %s\n", error.what()); }
 
                     }
                 }
