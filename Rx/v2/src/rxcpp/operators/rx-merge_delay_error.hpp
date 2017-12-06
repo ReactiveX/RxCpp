@@ -6,21 +6,21 @@
 
         \brief For each given observable subscribe.
                    For each item emitted from all of the given observables, deliver from the new observable that is returned.
-				   The first error to occure is hold off until all of the given non-error-emitting observables have finished their emission.
+                   The first error to occure is hold off until all of the given non-error-emitting observables have finished their emission.
 
                    There are 2 variants of the operator:
                    - The source observable emits nested observables, nested observables are merged.
                    - The source observable and the arguments v0...vn are used to provide the observables to merge.
 
         \tparam Coordination  the type of the scheduler (optional).
-        \tparam Value0	... (optional).
-        \tparam ValueN	types of source observables (optional).
+        \tparam Value0  ... (optional).
+        \tparam ValueN  types of source observables (optional).
 
-        \param	cn		the scheduler to synchronize sources from different contexts (optional).
-        \param	v0		... (optional).
-        \param	vn		source observables (optional).
+        \param  cn      the scheduler to synchronize sources from different contexts (optional).
+        \param  v0      ... (optional).
+        \param  vn      source observables (optional).
 
-        \return																											 Observable that emits items that are the result of flattening the observables emitted by the source observable.
+        \return                                                                                                              Observable that emits items that are the result of flattening the observables emitted by the source observable.
 
         If scheduler is omitted, identity_current_thread is used.
 
@@ -169,7 +169,8 @@ struct merge_delay_error
                                 // on_error
                                         [state](std::exception_ptr e) {
                                                 if(--state->pendingCompletions == 0) {
-                                                        state->out.on_error(e);
+                                                    state->out.on_error(
+                                                        std::make_exception_ptr(std::move(state->exception.add(e))));
                                                 } else {
                                                         state->exception.add(e);
                                                 }
@@ -192,22 +193,23 @@ struct merge_delay_error
                         },
                 // on_error
                         [state](std::exception_ptr e) {
-			                if(--state->pendingCompletions == 0) {
-			                    state->out.on_error(e);
-			                } else {
-			                    state->exception.add(e);
-			                }
+                            if(--state->pendingCompletions == 0) {
+                                state->out.on_error(
+                                    std::make_exception_ptr(std::move(state->exception.add(e))));
+                            } else {
+                                state->exception.add(e);
+                            }
                         },
                 // on_completed
                         [state]() {
-			                if (--state->pendingCompletions == 0) {
+                            if (--state->pendingCompletions == 0) {
                                 if(!state->exception.empty()) {
                                     state->out.on_error(
-                                        std::make_exception_ptr(state->exception));
+                                        std::make_exception_ptr(std::move(state->exception)));
                                 } else {
                                     state->out.on_completed();
                                 }
-							}
+                            }
                         }
                 );
                 auto selectedSink = on_exception(
@@ -226,7 +228,7 @@ struct merge_delay_error
 */
 template<class... AN>
 auto merge_delay_error(AN&&... an)
-        ->		   operator_factory<merge_delay_error_tag, AN...> {
+        ->         operator_factory<merge_delay_error_tag, AN...> {
         return operator_factory<merge_delay_error_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
 }
 

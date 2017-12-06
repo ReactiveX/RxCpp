@@ -125,6 +125,12 @@
 #define _VARIADIC_MAX 10
 #endif
 
+#if defined(_MSC_VER) && (_MSC_VER <= 1800)
+#define RXCPP_NOEXCEPT
+#else
+#define RXCPP_NOEXCEPT noexcept
+#endif
+
 #pragma push_macro("min")
 #pragma push_macro("max")
 #undef min

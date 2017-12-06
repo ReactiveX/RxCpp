@@ -7,90 +7,6 @@ const int static_onnextcalls = 1000000;
 
 //merge_delay_error must work the very same way as `merge()` except the error handling
 
-SCENARIO("synchronize merge ranges", "[hide][range][synchronize][merge][perf]"){
-    const int& onnextcalls = static_onnextcalls;
-    GIVEN("some ranges"){
-        WHEN("generating ints"){
-            using namespace std::chrono;
-            typedef steady_clock clock;
-
-            auto so = rx::synchronize_event_loop();
-
-            int n = 1;
-            auto sectionCount = onnextcalls / 3;
-            auto start = clock::now();
-            int c = rxs::range(0, sectionCount - 1, 1, so)
-                .merge_delay_error(
-                    so,
-                    rxs::range(sectionCount, (sectionCount * 2) - 1, 1, so),
-                    rxs::range(sectionCount * 2, onnextcalls - 1, 1, so))
-                .as_blocking()
-                .count();
-
-            auto finish = clock::now();
-            auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
-                   duration_cast<milliseconds>(start.time_since_epoch());
-            std::cout << "merge sync ranges : " << n << " subscribed, " << c << " emitted, " << msElapsed.count() << "ms elapsed " << std::endl;
-        }
-    }
-}
-
-SCENARIO("observe_on merge ranges", "[hide][range][observe_on][merge][perf]"){
-    const int& onnextcalls = static_onnextcalls;
-    GIVEN("some ranges"){
-        WHEN("generating ints"){
-            using namespace std::chrono;
-            typedef steady_clock clock;
-
-            auto so = rx::observe_on_event_loop();
-
-            int n = 1;
-            auto sectionCount = onnextcalls / 3;
-            auto start = clock::now();
-            int c = rxs::range(0, sectionCount - 1, 1, so)
-                .merge_delay_error(
-                    so,
-                    rxs::range(sectionCount, (sectionCount * 2) - 1, 1, so),
-                    rxs::range(sectionCount * 2, onnextcalls - 1, 1, so))
-                .as_blocking()
-                .count();
-
-            auto finish = clock::now();
-            auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
-                   duration_cast<milliseconds>(start.time_since_epoch());
-            std::cout << "merge observe_on ranges : " << n << " subscribed, " << c << " emitted, " << msElapsed.count() << "ms elapsed " << std::endl;
-        }
-    }
-}
-
-SCENARIO("serialize merge ranges", "[hide][range][serialize][merge][perf]"){
-    const int& onnextcalls = static_onnextcalls;
-    GIVEN("some ranges"){
-        WHEN("generating ints"){
-            using namespace std::chrono;
-            typedef steady_clock clock;
-
-            auto so = rx::serialize_event_loop();
-
-            int n = 1;
-            auto sectionCount = onnextcalls / 3;
-            auto start = clock::now();
-            int c = rxs::range(0, sectionCount - 1, 1, so)
-                .merge_delay_error(
-                    so,
-                    rxs::range(sectionCount, (sectionCount * 2) - 1, 1, so),
-                    rxs::range(sectionCount * 2, onnextcalls - 1, 1, so))
-                .as_blocking()
-                .count();
-
-            auto finish = clock::now();
-            auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
-                   duration_cast<milliseconds>(start.time_since_epoch());
-            std::cout << "merge serial ranges : " << n << " subscribed, " << c << " emitted, " << msElapsed.count() << "ms elapsed " << std::endl;
-        }
-    }
-}
-
 SCENARIO("merge completes", "[merge][join][operators]"){
     GIVEN("1 hot observable with 3 cold observables of ints."){
         auto sc = rxsc::make_test();
@@ -308,7 +224,7 @@ SCENARIO("variadic merge completes with 2 errors", "[merge][join][operators]"){
             on.next(110, 103),
             on.next(120, 104),
             on.next(210, 105),
-            on.error(220, std::runtime_error("merge_delay_error on_error from ys1")),   
+            on.error(220, std::runtime_error("merge_delay_error on_error from ys1")),
             on.next(230, 107),
             on.completed(240)
         });
