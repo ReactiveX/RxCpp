@@ -13,7 +13,7 @@ SCENARIO("merge_delay_error sample"){
 	values.
 		subscribe(
 			[](int v){printf("OnNext: %d\n", v);},
-			[](std::exception_ptr eptr) { printf("OnError %s\n", rxu::what(eptr)); },
+			[](std::exception_ptr eptr) { printf("OnError %s\n", rxu::what(eptr).c_str()); },
 			[](){printf("OnCompleted\n");}
 	printf("//! [merge_delay_error sample]\n");
 }
@@ -28,7 +28,7 @@ SCENARIO("implicit merge_delay_error sample"){
 	values.
 		subscribe(
 			[](int v){printf("OnNext: %d\n", v);},
-			[](std::exception_ptr eptr) { printf("OnError %s\n", rxu::what(eptr)); },
+			[](std::exception_ptr eptr) { printf("OnError %s\n", rxu::what(eptr).c_str()); },
 			[](){printf("OnCompleted\n");});
 	printf("//! [implicit merge_delay_error sample]\n");
 }
@@ -59,7 +59,7 @@ SCENARIO("threaded merge_delay_error sample"){
 		as_blocking().
 		subscribe(
 			[](int v){printf("[thread %s] OnNext: %d\n", get_pid().c_str(), v);},
-			[](std::exception_ptr eptr) { printf("[thread %s] OnError %s\n", get_pid().c_str(), rxu::what(eptr)); },
+			[](std::exception_ptr eptr) { printf("[thread %s] OnError %s\n", get_pid().c_str(), rxu::what(eptr).c_str()); },
 			[](){printf("[thread %s] OnCompleted\n", get_pid().c_str());});
 	printf("[thread %s] Finish task\n", get_pid().c_str());
 	printf("//! [threaded merge_delay_error sample]\n");
@@ -90,7 +90,7 @@ SCENARIO("threaded implicit merge_delay_error sample"){
 		as_blocking().
 		subscribe(
 			[](int v){printf("[thread %s] OnNext: %d\n", get_pid().c_str(), v);},
-			[](std::exception_ptr eptr) { printf("[thread %s] OnError %s\n", get_pid().c_str(), rxu::what(eptr)); },
+			[](std::exception_ptr eptr) { printf("[thread %s] OnError %s\n", get_pid().c_str(), rxu::what(eptr).c_str()); },
 			[](){printf("[thread %s] OnCompleted\n", get_pid().c_str());});
 	printf("[thread %s] Finish task\n", get_pid().c_str());
 	printf("//! [threaded implicit merge_delay_error sample]\n");
