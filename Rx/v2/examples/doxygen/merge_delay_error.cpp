@@ -45,10 +45,10 @@ SCENARIO("threaded merge_delay_error sample"){
 	auto o2 = rxcpp::observable<>::timer(std::chrono::milliseconds(20)).flat_map([](int) {
 		std::stringstream ss;
 		ss << "[thread " << get_pid().c_str() << "] Timer2 failed\n";
-		printf(ss.str().c_str());
+		printf("%s\n", ss.str().c_str());
 		ss.str(std::string());
 		ss << "(Error from thread: " << get_pid().c_str() << ")\n";
-		return rxcpp::observable<>::error<int>(std::runtime_error(ss.str());
+		return rxcpp::observable<>::error<int>(std::runtime_error(ss.str()));
 	});
 	auto o3 = rxcpp::observable<>::timer(std::chrono::milliseconds(30)).map([](int) {
 		printf("[thread %s] Timer3 fired\n", get_pid().c_str());
@@ -75,7 +75,7 @@ SCENARIO("threaded implicit merge_delay_error sample"){
 	auto o2 = rxcpp::observable<>::timer(std::chrono::milliseconds(20)).flat_map([](int) {
 		std::stringstream ss;
 		ss << "[thread " << get_pid().c_str() << "] Timer2 failed\n";
-		printf(ss.str().c_str());
+		printf("%s\n", ss.str().c_str());
 		ss.str(std::string());
 		ss << "(Error from thread: " << get_pid().c_str() << ")\n";
 		return rxcpp::observable<>::error<int>(std::runtime_error(ss.str()));
