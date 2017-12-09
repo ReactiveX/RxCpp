@@ -125,6 +125,12 @@
 #define _VARIADIC_MAX 10
 #endif
 
+#if defined(_MSC_VER) && (_MSC_VER <= 1800)
+#define RXCPP_NOEXCEPT
+#else
+#define RXCPP_NOEXCEPT noexcept
+#endif
+
 #pragma push_macro("min")
 #pragma push_macro("max")
 #undef min
@@ -203,6 +209,7 @@
 #include "operators/rx-ignore_elements.hpp"
 #include "operators/rx-map.hpp"
 #include "operators/rx-merge.hpp"
+#include "operators/rx-merge_delay_error.hpp"
 #include "operators/rx-observe_on.hpp"
 #include "operators/rx-on_error_resume_next.hpp"
 #include "operators/rx-pairwise.hpp"

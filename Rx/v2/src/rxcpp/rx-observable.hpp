@@ -1023,6 +1023,17 @@ public:
         return      observable_member(merge_tag{},                *this, std::forward<AN>(an)...);
     }
 
+    /*! @copydoc rx-merge_delay_error.hpp
+     */
+    template<class... AN>
+    auto merge_delay_error(AN... an) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(observable_member(merge_delay_error_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        /// \endcond
+    {
+            return      observable_member(merge_delay_error_tag{},                *this, std::forward<AN>(an)...);
+    }
+
     /*! @copydoc rx-amb.hpp
      */
     template<class... AN>

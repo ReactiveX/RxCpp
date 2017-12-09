@@ -49,6 +49,7 @@ if(DOXYGEN_FOUND)
         ${DOXY_EXAMPLES_SRC_DIR}/blocking_observable.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/buffer.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/combine_latest.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/composite_exception.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/concat.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/concat_map.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/contains.cpp
@@ -75,6 +76,7 @@ if(DOXYGEN_FOUND)
         ${DOXY_EXAMPLES_SRC_DIR}/map.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/math.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/merge.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/merge_delay_error.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/never.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/observe_on.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/on_error_resume_next.cpp
