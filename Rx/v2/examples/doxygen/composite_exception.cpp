@@ -26,5 +26,6 @@ SCENARIO("composite_exception sample"){
                 }
             },
             [](){printf("OnCompleted\n");}
+        );
     printf("//! [composite_exception sample]\n");
 }
