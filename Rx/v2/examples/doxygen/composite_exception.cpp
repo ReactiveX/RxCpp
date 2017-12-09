@@ -14,7 +14,7 @@ SCENARIO("composite_exception sample"){
         subscribe(
             [](int v){printf("OnNext: %d\n", v);},
             [](std::exception_ptr composite_e) {
-	            printf("OnError %s\n", rxu::what(composite_e).c_str()); },
+                printf("OnError %s\n", rxu::what(composite_e).c_str());
                 try { std::rethrow_exception(composite_e); }
                 catch(rxcpp::composite_exception ce) {
                     for(std::exception_ptr particular_e : ce.exceptions) {
@@ -24,7 +24,7 @@ SCENARIO("composite_exception sample"){
 
                     }
                 }
-
+            },
             [](){printf("OnCompleted\n");}
     printf("//! [composite_exception sample]\n");
 }
