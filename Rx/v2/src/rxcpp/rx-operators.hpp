@@ -377,6 +377,13 @@ struct skip_tag {
     };
 };
 
+struct skip_while_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-skip_while.hpp>");
+    };
+};
+
 struct skip_last_tag {
     template<class Included>
     struct include_header{

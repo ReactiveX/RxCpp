@@ -1361,6 +1361,17 @@ public:
         return      observable_member(skip_tag{},                *this, std::forward<AN>(an)...);
     }
 
+    /*! @copydoc rx-skip.hpp
+     */
+    template<class... AN>
+    auto skip_while(AN... an) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(observable_member(skip_while_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        /// \endcond
+    {
+        return      observable_member(skip_while_tag{},                *this, std::forward<AN>(an)...);
+    }
+
     /*! @copydoc rx-skip_last.hpp
     */
     template<class... AN>
