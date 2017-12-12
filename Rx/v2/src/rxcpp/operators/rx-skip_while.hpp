@@ -69,7 +69,8 @@ struct skip_while
         {
         }
         void on_next(source_value_type v) {
-            if (pass || (pass = !test(v))) {
+            bool setPass = (pass || (pass = !test(v)));
+            if (setPass) {
                 dest.on_next(v);
             }
         }
