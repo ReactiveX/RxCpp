@@ -10,7 +10,7 @@
 
     \param t  the predicate
 
-    \return      An observable that discards the first items until condition emitted by the source Observable is not fulfilling the predicate, or all of the items from the source observable if the predicate never returns false
+    \return		 An observable that discards the first items until condition emitted by the source Observable is not fulfilling the predicate, or all of the items from the source observable if the predicate never returns false
 
     \sample
     \snippet skip_while.cpp skip_while sample
@@ -69,8 +69,9 @@ struct skip_while
         {
         }
         void on_next(source_value_type v) {
-            bool setPass = (pass || (pass = !test(v)));
-            if (setPass) {
+            if(pass || !test(v))
+            {
+                pass = true;
                 dest.on_next(v);
             }
         }
@@ -89,7 +90,7 @@ struct skip_while
     template<class Subscriber>
     auto operator()(Subscriber dest) const
     -> decltype(skip_while_observer<Subscriber>::make(std::move(dest), test)) {
-        return  skip_while_observer<Subscriber>::make(std::move(dest), test);
+        return	skip_while_observer<Subscriber>::make(std::move(dest), test);
     }
 };
 
@@ -99,7 +100,7 @@ struct skip_while
 */
 template<class... AN>
 auto skip_while(AN&&... an)
-    ->      operator_factory<skip_while_tag, AN...> {
+    ->		operator_factory<skip_while_tag, AN...> {
         return operator_factory<skip_while_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
     }
 
@@ -113,7 +114,7 @@ struct member_overload<skip_while_tag>
             class TakeWhile = rxo::detail::skip_while<SourceValue, rxu::decay_t<Predicate>>>
     static auto member(Observable&& o, Predicate&& p)
     -> decltype(o.template lift<SourceValue>(TakeWhile(std::forward<Predicate>(p)))) {
-        return      o.template lift<SourceValue>(TakeWhile(std::forward<Predicate>(p)));
+        return		o.template lift<SourceValue>(TakeWhile(std::forward<Predicate>(p)));
     }
 
     template<class... AN>
