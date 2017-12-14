@@ -49,6 +49,7 @@ set(RX_SOURCES
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-lift.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-map.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-merge.hpp
+   ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-merge_delay_error.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-multicast.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-observe_on.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-on_error_resume_next.hpp
@@ -63,6 +64,7 @@ set(RX_SOURCES
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-scan.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-sequence_equal.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-skip.hpp
+   ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-skip_while.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-skip_last.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-skip_until.hpp
    ${RXCPP_DIR}/Rx/v2/src/rxcpp/operators/rx-start_with.hpp

@@ -67,6 +67,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/scan.cpp
     ${TEST_DIR}/operators/sequence_equal.cpp
     ${TEST_DIR}/operators/skip.cpp
+    ${TEST_DIR}/operators/skip_while.cpp
     ${TEST_DIR}/operators/skip_last.cpp
     ${TEST_DIR}/operators/skip_until.cpp
     ${TEST_DIR}/operators/start_with.cpp
