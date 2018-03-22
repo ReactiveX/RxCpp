@@ -318,7 +318,7 @@ SCENARIO("scope, dispose", "[scope][sources]"){
     }
 }
 
-SCENARIO("scope, throw resource selector", "[scope][sources]"){
+SCENARIO("scope, throw resource selector", "[scope][sources][!throws]"){
     GIVEN("a test cold observable of ints"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -339,7 +339,7 @@ SCENARIO("scope, throw resource selector", "[scope][sources]"){
                         scope(
                             [&]() -> resource {
                                 ++resource_factory_invoked;
-                                throw ex;
+                                rxu::throw_exception(ex);
                                 //return resource(sc.clock());
                             },
                             [&](resource){
@@ -371,7 +371,7 @@ SCENARIO("scope, throw resource selector", "[scope][sources]"){
     }
 }
 
-SCENARIO("scope, throw resource usage", "[scope][sources]"){
+SCENARIO("scope, throw resource usage", "[scope][sources][!throws]"){
     GIVEN("a test cold observable of ints"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -396,7 +396,7 @@ SCENARIO("scope, throw resource usage", "[scope][sources]"){
                             },
                             [&](resource) -> rx::observable<int> {
                                 ++observable_factory_invoked;
-                                throw ex;
+                                rxu::throw_exception(ex);
                             }
                         )
                         // forget type to workaround lambda deduction bug on msvc 2013

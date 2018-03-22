@@ -84,7 +84,7 @@ SCENARIO("intervals", "[hide][periodically][interval][scheduler][long][perf][sou
                         std::cout << "interval          : period " << counter << ", " << nsDelta.count() << "ms delta from target time" << std::endl;
                         if (counter == 5) {cs.unsubscribe();}
                     },
-                    [](std::exception_ptr){abort();});
+                    [](rxu::error_ptr){abort();});
         }
     }
 }

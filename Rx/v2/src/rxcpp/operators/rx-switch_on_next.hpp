@@ -155,7 +155,7 @@ struct switch_on_next
                         state->out.on_next(std::move(ct));
                     },
                 // on_error
-                    [state](std::exception_ptr e) {
+                    [state](rxu::error_ptr e) {
                         state->out.on_error(e);
                     },
                 //on_completed
@@ -171,7 +171,7 @@ struct switch_on_next
                 selectedSource.subscribe(std::move(selectedSinkInner));
             },
         // on_error
-            [state](std::exception_ptr e) {
+            [state](rxu::error_ptr e) {
                 state->out.on_error(e);
             },
         // on_completed

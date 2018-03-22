@@ -25,14 +25,14 @@ struct OnNextEmpty
 };
 struct OnErrorEmpty
 {
-    void operator()(std::exception_ptr) const {
+    void operator()(rxu::error_ptr) const {
         // error implicitly ignored, abort
         std::terminate();
     }
 };
 struct OnErrorIgnore
 {
-    void operator()(std::exception_ptr) const {
+    void operator()(rxu::error_ptr) const {
     }
 };
 struct OnCompletedEmpty
@@ -76,7 +76,7 @@ struct OnErrorForward
     OnErrorForward() : onerror() {}
     explicit OnErrorForward(onerror_t oe) : onerror(std::move(oe)) {}
     onerror_t onerror;
-    void operator()(state_t& s, std::exception_ptr ep) const {
+    void operator()(state_t& s, rxu::error_ptr ep) const {
         onerror(s, ep);
     }
 };
@@ -85,7 +85,7 @@ struct OnErrorForward<State, void>
 {
     using state_t = rxu::decay_t<State>;
     OnErrorForward() {}
-    void operator()(state_t& s, std::exception_ptr ep) const {
+    void operator()(state_t& s, rxu::error_ptr ep) const {
         s.on_error(ep);
     }
 };
@@ -129,7 +129,7 @@ struct is_on_error
 {
     struct not_void {};
     template<class CF>
-    static auto check(int) -> decltype((*(CF*)nullptr)(*(std::exception_ptr*)nullptr));
+    static auto check(int) -> decltype((*(CF*)nullptr)(*(rxu::error_ptr*)nullptr));
     template<class CF>
     static not_void check(...);
 
@@ -141,7 +141,7 @@ struct is_on_error_for
 {
     struct not_void {};
     template<class CF>
-    static auto check(int) -> decltype((*(CF*)nullptr)(*(State*)nullptr, *(std::exception_ptr*)nullptr));
+    static auto check(int) -> decltype((*(CF*)nullptr)(*(State*)nullptr, *(rxu::error_ptr*)nullptr));
     template<class CF>
     static not_void check(...);
 
@@ -169,7 +169,7 @@ struct is_on_completed
     \tparam T            - the type of value in the stream
     \tparam State        - the type of the stored state
     \tparam OnNext       - the type of a function that matches `void(State&, T)`. Called 0 or more times. If `void` State::on_next will be called.
-    \tparam OnError      - the type of a function that matches `void(State&, std::exception_ptr)`. Called 0 or 1 times, no further calls will be made. If `void` State::on_error will be called.
+    \tparam OnError      - the type of a function that matches `void(State&, rxu::error_ptr)`. Called 0 or 1 times, no further calls will be made. If `void` State::on_error will be called.
     \tparam OnCompleted  - the type of a function that matches `void(State&)`. Called 0 or 1 times, no further calls will be made. If `void` State::on_completed will be called.
 
     \ingroup group-core
@@ -244,7 +244,7 @@ public:
     void on_next(T&& t) const {
         onnext(state, std::move(t));
     }
-    void on_error(std::exception_ptr e) const {
+    void on_error(rxu::error_ptr e) const {
         onerror(state, e);
     }
     void on_completed() const {
@@ -260,7 +260,7 @@ public:
 
     \tparam T            - the type of value in the stream
     \tparam OnNext       - the type of a function that matches `void(T)`. Called 0 or more times. If `void` OnNextEmpty<T> is used.
-    \tparam OnError      - the type of a function that matches `void(std::exception_ptr)`. Called 0 or 1 times, no further calls will be made. If `void` OnErrorEmpty is used.
+    \tparam OnError      - the type of a function that matches `void(rxu::error_ptr)`. Called 0 or 1 times, no further calls will be made. If `void` OnErrorEmpty is used.
     \tparam OnCompleted  - the type of a function that matches `void()`. Called 0 or 1 times, no further calls will be made. If `void` OnCompletedEmpty is used.
 
     \ingroup group-core
@@ -291,7 +291,7 @@ private:
 
 public:
     static_assert(detail::is_on_next_of<T, on_next_t>::value,     "Function supplied for on_next must be a function with the signature void(T);");
-    static_assert(detail::is_on_error<on_error_t>::value,         "Function supplied for on_error must be a function with the signature void(std::exception_ptr);");
+    static_assert(detail::is_on_error<on_error_t>::value,         "Function supplied for on_error must be a function with the signature void(rxu::error_ptr);");
     static_assert(detail::is_on_completed<on_completed_t>::value, "Function supplied for on_completed must be a function with the signature void();");
 
     observer()
@@ -332,7 +332,7 @@ public:
     void on_next(T&& t) const {
         onnext(std::move(t));
     }
-    void on_error(std::exception_ptr e) const {
+    void on_error(rxu::error_ptr e) const {
         onerror(e);
     }
     void on_completed() const {
@@ -352,7 +352,7 @@ struct virtual_observer : public std::enable_shared_from_this<virtual_observer<T
     virtual ~virtual_observer() {}
     virtual void on_next(T&) const {};
     virtual void on_next(T&&) const {};
-    virtual void on_error(std::exception_ptr) const {};
+    virtual void on_error(rxu::error_ptr) const {};
     virtual void on_completed() const {};
 };
 
@@ -371,7 +371,7 @@ struct specific_observer : public virtual_observer<T>
     virtual void on_next(T&& t) const {
         destination.on_next(std::move(t));
     }
-    virtual void on_error(std::exception_ptr e) const {
+    virtual void on_error(rxu::error_ptr e) const {
         destination.on_error(e);
     }
     virtual void on_completed() const {
@@ -439,7 +439,7 @@ public:
             destination->on_next(std::forward<V>(v));
         }
     }
-    void on_error(std::exception_ptr e) const {
+    void on_error(rxu::error_ptr e) const {
         if (destination) {
             destination->on_error(e);
         }
@@ -640,10 +640,10 @@ template<class F, class OnError>
 auto on_exception(const F& f, const OnError& c)
     ->  typename std::enable_if<detail::is_on_error<OnError>::value, typename detail::maybe_from_result<F>::type>::type {
     typename detail::maybe_from_result<F>::type r;
-    try {
+    RXCPP_TRY {
         r.reset(f());
-    } catch (...) {
-        c(std::current_exception());
+    } RXCPP_CATCH(...) {
+        c(rxu::current_exception());
     }
     return r;
 }
@@ -652,10 +652,10 @@ template<class F, class Subscriber>
 auto on_exception(const F& f, const Subscriber& s)
     ->  typename std::enable_if<is_subscriber<Subscriber>::value, typename detail::maybe_from_result<F>::type>::type {
     typename detail::maybe_from_result<F>::type r;
-    try {
+    RXCPP_TRY {
         r.reset(f());
-    } catch (...) {
-        s.on_error(std::current_exception());
+    } RXCPP_CATCH(...) {
+        s.on_error(rxu::current_exception());
     }
     return r;
 }

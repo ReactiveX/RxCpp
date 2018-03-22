@@ -90,7 +90,7 @@ struct scan : public operator_base<rxu::decay_t<Seed>>
                 state->out.on_next(state->result);
             },
         // on_error
-            [state](std::exception_ptr e) {
+            [state](rxu::error_ptr e) {
                 state->out.on_error(e);
             },
         // on_completed

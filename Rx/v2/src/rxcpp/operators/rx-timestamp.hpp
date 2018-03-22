@@ -78,7 +78,7 @@ struct timestamp
         void on_next(source_value_type v) const {
             dest.on_next(std::make_pair(v, coord.now()));
         }
-        void on_error(std::exception_ptr e) const {
+        void on_error(rxu::error_ptr e) const {
             dest.on_error(e);
         }
         void on_completed() const {

@@ -1185,7 +1185,7 @@ SCENARIO("zip right completes first", "[zip][join][operators]"){
     }
 }
 
-SCENARIO("zip selector throws", "[zip][join][operators]"){
+SCENARIO("zip selector throws", "[zip][join][operators][!throws]"){
     GIVEN("2 hot observables of ints."){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -1212,7 +1212,7 @@ SCENARIO("zip selector throws", "[zip][join][operators]"){
                     return o1
                         .zip(
                             [&ex](int, int) -> int {
-                                throw ex;
+                                rxu::throw_exception(ex);
                             },
                             o2
                         )
@@ -1248,7 +1248,7 @@ SCENARIO("zip selector throws", "[zip][join][operators]"){
     }
 }
 
-SCENARIO("zip selector throws N", "[zip][join][operators]"){
+SCENARIO("zip selector throws N", "[zip][join][operators][!throws]"){
     GIVEN("N hot observables of ints."){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -1275,7 +1275,7 @@ SCENARIO("zip selector throws N", "[zip][join][operators]"){
                     return e[0]
                         .zip(
                             [&ex](int, int, int, int) -> int {
-                                throw ex;
+                                rxu::throw_exception(ex);
                             },
                             e[1], e[2], e[3]
                         )

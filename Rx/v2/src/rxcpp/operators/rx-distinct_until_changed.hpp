@@ -74,7 +74,7 @@ struct distinct_until_changed
                 dest.on_next(v);
             }
         }
-        void on_error(std::exception_ptr e) const {
+        void on_error(rxu::error_ptr e) const {
             dest.on_error(e);
         }
         void on_completed() const {

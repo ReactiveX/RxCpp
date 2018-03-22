@@ -1465,7 +1465,7 @@ SCENARIO("combine_latest error after completed right", "[combine_latest][join][o
     }
 }
 
-SCENARIO("combine_latest selector throws", "[combine_latest][join][operators]"){
+SCENARIO("combine_latest selector throws", "[combine_latest][join][operators][!throws]"){
     GIVEN("2 hot observables of ints."){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -1491,8 +1491,25 @@ SCENARIO("combine_latest selector throws", "[combine_latest][join][operators]"){
                 [&]() {
                     return o1
                         .combine_latest(
+                            // Note for trying to handle this test case when exceptions are disabled
+                            // with RXCPP_USE_EXCEPTIONS == 0:
+                            //
+                            // It seems that this test is in particular testing that the
+                            // combine_latest selector (aggregate function) thrown exceptions
+                            // are being translated into an on_error.
+                            //
+                            // Since there appears to be no way to give combine_latest
+                            // an Observable that would call on_error directly (as opposed
+                            // to a regular function that's converted into an observable),
+                            // this test is meaningless when exceptions are disabled
+                            // since any selectors with 'throw' will not even compile.
+                            //
+                            // Attempting to change this to e.g.
+                            //    o1.combineLatest(o2).map ... unconditional onError
+                            // would defeat the purpose of the test since its the combineLatest
+                            // implementation that's supposed to be doing the error forwarding.
                             [&ex](int, int) -> int {
-                                throw ex;
+                                rxu::throw_exception(ex);
                             },
                             o2
                         )
@@ -1528,7 +1545,7 @@ SCENARIO("combine_latest selector throws", "[combine_latest][join][operators]"){
     }
 }
 
-SCENARIO("combine_latest selector throws N", "[combine_latest][join][operators]"){
+SCENARIO("combine_latest selector throws N", "[combine_latest][join][operators][!throws]"){
     GIVEN("N hot observables of ints."){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -1555,7 +1572,7 @@ SCENARIO("combine_latest selector throws N", "[combine_latest][join][operators]"
                     return e[0]
                         .combine_latest(
                             [&ex](int, int, int, int) -> int {
-                                throw ex;
+                                rxu::throw_exception(ex);
                             },
                             e[1], e[2], e[3]
                         )

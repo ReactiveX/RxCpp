@@ -31,17 +31,17 @@ struct liftfilter
         }
         void on_next(typename dest_type::value_type v) const {
             bool filtered = false;
-            try {
+            RXCPP_TRY {
                filtered = !test(v);
-            } catch(...) {
-                dest.on_error(std::current_exception());
+            } RXCPP_CATCH(...) {
+                dest.on_error(rxu::current_exception());
                 return;
             }
             if (!filtered) {
                 dest.on_next(v);
             }
         }
-        void on_error(std::exception_ptr e) const {
+        void on_error(rxu::error_ptr e) const {
             dest.on_error(e);
         }
         void on_completed() const {
@@ -248,10 +248,10 @@ SCENARIO("lift lambda filter stops on disposal", "[where][filter][lift][lambda][
                                 rx::make_observer_dynamic<int>(
                                     [=](int n){
                                         bool pass = false;
-                                        try{pass = predicate(n);} catch(...){dest.on_error(std::current_exception());};
+                                        RXCPP_TRY {pass = predicate(n);} RXCPP_CATCH(...){dest.on_error(rxu::current_exception());};
                                         if (pass) {dest.on_next(n);}
                                     },
-                                    [=](std::exception_ptr e){dest.on_error(e);},
+                                    [=](rxu::error_ptr e){dest.on_error(e);},
                                     [=](){dest.on_completed();}));
                         })
                         // forget type to workaround lambda deduction bug on msvc 2013

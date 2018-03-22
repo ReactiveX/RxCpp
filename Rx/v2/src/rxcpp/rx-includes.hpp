@@ -23,6 +23,10 @@
 #define RXCPP_USE_RTTI 1
 #endif
 
+#if _HAS_EXCEPTIONS
+#define RXCPP_USE_EXCEPTIONS 1
+#endif
+
 #elif defined(__clang__)
 
 #if __has_feature(cxx_rvalue_references)
@@ -33,6 +37,9 @@
 #endif
 #if __has_feature(cxx_variadic_templates)
 #define RXCPP_USE_VARIADIC_TEMPLATES 1
+#endif
+#if __has_feature(cxx_exceptions)
+#define RXCPP_USE_EXCEPTIONS 1
 #endif
 
 #elif defined(__GNUG__)
@@ -51,6 +58,10 @@
 
 #if defined(__GXX_RTTI)
 #define RXCPP_USE_RTTI 1
+#endif
+
+#if defined(__EXCEPTIONS)
+#define RXCPP_USE_EXCEPTIONS 1
 #endif
 
 #endif
@@ -93,6 +104,11 @@
 #if defined(RXCPP_FORCE_USE_RTTI)
 #undef RXCPP_USE_RTTI
 #define RXCPP_USE_RTTI RXCPP_FORCE_USE_RTTI
+#endif
+
+#if defined(RXCPP_FORCE_USE_EXCEPTIONS)
+#undef RXCPP_USE_EXCEPTIONS
+#define RXCPP_USE_EXCEPTIONS RXCPP_FORCE_USE_EXCEPTIONS
 #endif
 
 #if defined(RXCPP_FORCE_USE_WINRT)

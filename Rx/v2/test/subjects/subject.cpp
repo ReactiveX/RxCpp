@@ -232,7 +232,7 @@ SCENARIO("for loop calls observer", "[hide][for][observer][perf]"){
             auto start = clock::now();
             auto o = rx::make_observer<int>(
                 [](int){++c;},
-                [](std::exception_ptr){abort();});
+                [](rxu::error_ptr){abort();});
             for (int i = 0; i < onnextcalls; i++) {
                 o.on_next(i);
             }
@@ -258,7 +258,7 @@ SCENARIO("for loop calls subscriber", "[hide][for][subscriber][perf]"){
             auto start = clock::now();
             auto o = rx::make_subscriber<int>(
                 [](int){++c;},
-                [](std::exception_ptr){abort();});
+                [](rxu::error_ptr){abort();});
             for (int i = 0; i < onnextcalls && o.is_subscribed(); i++) {
                 o.on_next(i);
             }
@@ -287,7 +287,7 @@ SCENARIO("range calls subscriber", "[hide][range][subscriber][perf]"){
                 [](int){
                     ++c;
                 },
-                [](std::exception_ptr){abort();});
+                [](rxu::error_ptr){abort();});
 
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish-start);
@@ -337,7 +337,7 @@ SCENARIO("for loop calls subject", "[hide][for][subject][subjects][long][perf]")
                                 [cs](int){
                                     cs.unsubscribe();
                                 },
-                                [](std::exception_ptr){abort();}));
+                                [](rxu::error_ptr){abort();}));
                         }
                         return 0;
                     });
@@ -346,7 +346,7 @@ SCENARIO("for loop calls subject", "[hide][for][subject][subjects][long][perf]")
                         [c, p](int){
                             ++(*c);
                         },
-                        [](std::exception_ptr){abort();});
+                        [](rxu::error_ptr){abort();});
                 }
 
                 auto start = clock::now();
@@ -407,7 +407,7 @@ SCENARIO("range calls subject", "[hide][range][subject][subjects][long][perf]"){
                                 [cs](int){
                                     cs.unsubscribe();
                                 },
-                                [](std::exception_ptr){abort();});
+                                [](rxu::error_ptr){abort();});
                         }
                         return 0;
                     });
@@ -417,7 +417,7 @@ SCENARIO("range calls subject", "[hide][range][subject][subjects][long][perf]"){
                             [c, p](int){
                                ++(*c);
                             },
-                            [](std::exception_ptr){abort();}
+                            [](rxu::error_ptr){abort();}
                         );
                 }
 

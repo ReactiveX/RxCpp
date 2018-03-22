@@ -24,13 +24,13 @@ SCENARIO("coroutine completes", "[coroutine]"){
             w.advance_to(rxsc::test::subscribed_time);
 
             auto d = [&]() -> std::future<void> {
-                try {
+                RXCPP_TRY {
                     for co_await (auto n : xs | rxo::as_dynamic()) {
                         messages.push_back(on.next(w.clock(), n));
                     }
                     messages.push_back(on.completed(w.clock()));
-                } catch (...) {
-                    messages.push_back(on.error(w.clock(), std::current_exception()));
+                } RXCPP_CATCH(...) {
+                    messages.push_back(on.error(w.clock(), rxu::current_exception()));
                 }
             }();
 
@@ -85,13 +85,13 @@ SCENARIO("coroutine errors", "[coroutine]"){
             w.advance_to(rxsc::test::subscribed_time);
 
             auto d = [&]() -> std::future<void> {
-                try {
+                RXCPP_TRY {
                     for co_await (auto n : xs | rxo::as_dynamic()) {
                         messages.push_back(on.next(w.clock(), n));
                     }
                     messages.push_back(on.completed(w.clock()));
-                } catch (...) {
-                    messages.push_back(on.error(w.clock(), std::current_exception()));
+                } RXCPP_CATCH(...) {
+                    messages.push_back(on.error(w.clock(), rxu::current_exception()));
                 }
             }();
 

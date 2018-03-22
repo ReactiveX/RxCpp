@@ -173,7 +173,7 @@ struct with_latest_from : public operator_base<rxu::value_type_t<with_latest_fro
                 }
             },
         // on_error
-            [state](std::exception_ptr e) {
+            [state](rxu::error_ptr e) {
                 state->out.on_error(e);
             },
         // on_completed

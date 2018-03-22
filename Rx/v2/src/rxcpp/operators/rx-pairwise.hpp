@@ -67,7 +67,7 @@ struct pairwise
             dest.on_next(std::make_tuple(remembered.get(), v));
             remembered.reset(v);
         }
-        void on_error(std::exception_ptr e) const {
+        void on_error(rxu::error_ptr e) const {
             dest.on_error(e);
         }
         void on_completed() const {

@@ -6,9 +6,9 @@
 
     \brief If an error occurs, take the result from the Selector and subscribe to that instead.
 
-    \tparam Selector the actual type of a function of the form `observable<T>(std::exception_ptr)`
+    \tparam Selector the actual type of a function of the form `observable<T>(rxu::error_ptr)`
 
-    \param s the function of the form `observable<T>(std::exception_ptr)`
+    \param s the function of the form `observable<T>(rxu::error_ptr)`
 
     \return Observable that emits the items from the source observable and switches to a new observable on error.
 
@@ -44,7 +44,7 @@ struct on_error_resume_next
 {
     typedef rxu::decay_t<T> value_type;
     typedef rxu::decay_t<Selector> select_type;
-    typedef decltype((*(select_type*)nullptr)(std::exception_ptr())) fallback_type;
+    typedef decltype((*(select_type*)nullptr)(rxu::error_ptr())) fallback_type;
     select_type selector;
 
     on_error_resume_next(select_type s)
@@ -58,7 +58,7 @@ struct on_error_resume_next
         typedef on_error_resume_next_observer<Subscriber> this_type;
         typedef rxu::decay_t<T> value_type;
         typedef rxu::decay_t<Selector> select_type;
-        typedef decltype((*(select_type*)nullptr)(std::exception_ptr())) fallback_type;
+        typedef decltype((*(select_type*)nullptr)(rxu::error_ptr())) fallback_type;
         typedef rxu::decay_t<Subscriber> dest_type;
         typedef observer<T, this_type> observer_type;
         dest_type dest;
@@ -75,7 +75,7 @@ struct on_error_resume_next
         void on_next(value_type v) const {
             dest.on_next(std::move(v));
         }
-        void on_error(std::exception_ptr e) const {
+        void on_error(rxu::error_ptr e) const {
             auto selected = on_exception(
                 [&](){
                     return this->selector(std::move(e));},

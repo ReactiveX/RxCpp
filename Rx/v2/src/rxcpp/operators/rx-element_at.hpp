@@ -77,12 +77,12 @@ struct element_at {
                 dest.on_completed();
             }
         }
-        void on_error(std::exception_ptr e) const {
+        void on_error(rxu::error_ptr e) const {
             dest.on_error(e);
         }
         void on_completed() const {
             if(current <= this->index) {
-                dest.on_error(std::make_exception_ptr(std::range_error("index is out of bounds")));
+                dest.on_error(rxu::make_error_ptr(std::range_error("index is out of bounds")));
             }
         }
 

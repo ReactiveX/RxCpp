@@ -147,7 +147,7 @@ struct take_until : public operator_base<T>
                 state->out.on_completed();
             },
         // on_error
-            [state](std::exception_ptr e) {
+            [state](rxu::error_ptr e) {
                 if (state->mode_value != mode::taking) {return;}
                 state->mode_value = mode::errored;
                 state->out.on_error(e);
@@ -179,7 +179,7 @@ struct take_until : public operator_base<T>
                 }
             },
         // on_error
-            [state](std::exception_ptr e) {
+            [state](rxu::error_ptr e) {
                 if (state->mode_value > mode::clear) {return;}
                 state->mode_value = mode::errored;
                 state->out.on_error(e);

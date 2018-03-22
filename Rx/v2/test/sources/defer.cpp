@@ -15,7 +15,7 @@ SCENARIO("defer stops on completion", "[defer][sources]"){
             auto empty = rx::observable<>::empty<long>();
             auto just = rx::observable<>::just(42);
             auto one = rx::observable<>::from(42);
-            auto error = rx::observable<>::error<long>(std::exception_ptr());
+            auto error = rx::observable<>::error<long>(rxu::error_ptr());
             auto runtimeerror = rx::observable<>::error<long>(std::runtime_error("runtime"));
 
             auto res = w.start(

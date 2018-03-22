@@ -141,7 +141,7 @@ SCENARIO("synchronized range debug", "[hide][subscribe][range][synchronize_debug
                             ++std::get<1>(*completionstate);
                             std::get<2>(*completionstate).on_next(n);
                         },
-                        [=](std::exception_ptr){
+                        [=](rxu::error_ptr){
                             abort();
                         },
                         [=](){
@@ -250,7 +250,7 @@ SCENARIO("observe_on range debug", "[hide][subscribe][range][observe_on_debug][o
                             ++std::get<1>(*completionstate);
                             std::get<2>(*completionstate).on_next(n);
                         },
-                        [=](std::exception_ptr){
+                        [=](rxu::error_ptr){
                             abort();
                         },
                         [=](){

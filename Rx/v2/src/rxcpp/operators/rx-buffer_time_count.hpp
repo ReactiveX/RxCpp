@@ -179,7 +179,7 @@ struct buffer_with_time_or_count
             }
             localState->worker.schedule(selectedWork.get());
         }
-        void on_error(std::exception_ptr e) const {
+        void on_error(rxu::error_ptr e) const {
             auto localState = state;
             auto work = [e, localState](const rxsc::schedulable&){
                 localState->dest.on_error(e);

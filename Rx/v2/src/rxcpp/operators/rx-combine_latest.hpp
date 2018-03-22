@@ -173,7 +173,7 @@ struct combine_latest : public operator_base<rxu::value_type_t<combine_latest_tr
                 }
             },
         // on_error
-            [state](std::exception_ptr e) {
+            [state](rxu::error_ptr e) {
                 state->out.on_error(e);
             },
         // on_completed

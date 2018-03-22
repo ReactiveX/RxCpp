@@ -103,7 +103,7 @@ struct window
             }
         }
 
-        void on_error(std::exception_ptr e) const {
+        void on_error(rxu::error_ptr e) const {
             for (auto s : subj) {
                 s.get_subscriber().on_error(e);
             }

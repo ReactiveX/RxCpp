@@ -56,7 +56,7 @@ class synchronize_observer : public detail::multicast_observer<T>
                 auto keepAlive = this->shared_from_this();
 
                 auto drain_queue = [keepAlive, this](const rxsc::schedulable& self){
-                    try {
+                    RXCPP_TRY {
                         std::unique_lock<std::mutex> guard(lock);
                         if (!destination.is_subscribed()) {
                             current = mode::Disposed;
@@ -74,8 +74,8 @@ class synchronize_observer : public detail::multicast_observer<T>
                         guard.unlock();
                         notification->accept(destination);
                         self();
-                    } catch(...) {
-                        destination.on_error(std::current_exception());
+                    } RXCPP_CATCH(...) {
+                        destination.on_error(rxu::current_exception());
                         std::unique_lock<std::mutex> guard(lock);
                         current = mode::Empty;
                     }
@@ -110,7 +110,7 @@ class synchronize_observer : public detail::multicast_observer<T>
             }
             wake.notify_one();
         }
-        void on_error(std::exception_ptr e) const {
+        void on_error(rxu::error_ptr e) const {
             if (lifetime.is_subscribed()) {
                 std::unique_lock<std::mutex> guard(lock);
                 fill_queue.push_back(notification_type::on_error(e));
@@ -150,7 +150,7 @@ public:
     void on_next(V v) const {
         state->on_next(std::move(v));
     }
-    void on_error(std::exception_ptr e) const {
+    void on_error(rxu::error_ptr e) const {
         state->on_error(e);
     }
     void on_completed() const {

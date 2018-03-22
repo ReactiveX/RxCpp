@@ -1463,7 +1463,7 @@ SCENARIO("with_latest_from error after completed right", "[with_latest_from][joi
     }
 }
 
-SCENARIO("with_latest_from selector throws", "[with_latest_from][join][operators]"){
+SCENARIO("with_latest_from selector throws", "[with_latest_from][join][operators][!throws]"){
     GIVEN("2 hot observables of ints."){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -1490,7 +1490,7 @@ SCENARIO("with_latest_from selector throws", "[with_latest_from][join][operators
                     return o2
                         .with_latest_from(
                             [&ex](int, int) -> int {
-                                throw ex;
+                                rxu::throw_exception(ex);
                             },
                             o1
                         )
@@ -1526,7 +1526,7 @@ SCENARIO("with_latest_from selector throws", "[with_latest_from][join][operators
     }
 }
 
-SCENARIO("with_latest_from selector throws N", "[with_latest_from][join][operators]"){
+SCENARIO("with_latest_from selector throws N", "[with_latest_from][join][operators][!throws]"){
     GIVEN("N hot observables of ints."){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -1553,7 +1553,7 @@ SCENARIO("with_latest_from selector throws N", "[with_latest_from][join][operato
                     return e[3]
                         .with_latest_from(
                             [&ex](int, int, int, int) -> int {
-                                throw ex;
+                                rxu::throw_exception(ex);
                             },
                             e[0], e[1], e[2]
                         )

@@ -90,11 +90,8 @@ SCENARIO("Create great code"){
             [](int v){
                 printf("OnNext: %d\n", v);
             },
-            [](std::exception_ptr ep){
-                try {std::rethrow_exception(ep);}
-                catch (const std::exception& ex) {
-                    printf("OnError: %s\n", ex.what());
-                }
+            [](rxcpp::error_ptr ep){
+                printf("OnError: %s\n", rxu::what(ep));
             },
             [](){
                 printf("OnCompleted\n");

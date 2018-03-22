@@ -240,7 +240,11 @@ SCENARIO("max", "[reduce][max][operators]"){
     }
 }
 
-SCENARIO("max, empty", "[reduce][max][operators]"){
+// Does not work because calling max() on an empty stream throws an exception
+// which will crash when exceptions are disabled.
+//
+// TODO: the max internal implementation should be rewritten not to throw exceptions.
+SCENARIO("max, empty", "[reduce][max][operators][!throws]"){
     GIVEN("a test hot observable of ints"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -365,7 +369,10 @@ SCENARIO("min", "[reduce][min][operators]"){
     }
 }
 
-SCENARIO("min, empty", "[reduce][min][operators]"){
+// Does not work with exceptions disabled, min will throw when stream is empty
+// and this crashes immediately.
+// TODO: min implementation should be rewritten not to throw exceptions.
+SCENARIO("min, empty", "[reduce][min][operators][!throws]"){
     GIVEN("a test hot observable of ints"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();

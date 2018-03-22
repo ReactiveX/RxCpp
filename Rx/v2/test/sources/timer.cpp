@@ -17,7 +17,7 @@ SCENARIO("timer", "[hide][periodically][timer][scheduler][long][perf][sources]")
                         auto nsDelta = duration_cast<milliseconds>(sc.now() - (start + (period * counter)));
                         std::cout << "timer          : period " << counter << ", " << nsDelta.count() << "ms delta from target time" << std::endl;
                     },
-                    [](std::exception_ptr){abort();},
+                    [](rxu::error_ptr){abort();},
                     [](){std::cout << "completed" << std::endl;});
         }
     }

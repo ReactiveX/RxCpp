@@ -227,7 +227,7 @@ class serialize_one_worker : public coordination_base
             std::unique_lock<std::mutex> guard(*lock);
             dest.on_next(v);
         }
-        void on_error(std::exception_ptr e) const {
+        void on_error(rxu::error_ptr e) const {
             std::unique_lock<std::mutex> guard(*lock);
             dest.on_error(e);
         }

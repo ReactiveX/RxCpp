@@ -43,7 +43,7 @@ SCENARIO("concat_transform pythagorian ranges", "[hide][range][concat_transform]
                 .take(tripletCount)
                 .subscribe(
                     rxu::apply_to([&ct](int /*x*/,int /*y*/,int /*z*/){++ct;}),
-                    [](std::exception_ptr){abort();});
+                    [](rxu::error_ptr){abort();});
             auto finish = clock::now();
             auto msElapsed = duration_cast<milliseconds>(finish.time_since_epoch()) -
                    duration_cast<milliseconds>(start.time_since_epoch());

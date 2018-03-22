@@ -46,17 +46,17 @@ struct error : public source_base<T>
 
     struct error_initial_type
     {
-        error_initial_type(std::exception_ptr e, coordination_type cn)
+        error_initial_type(rxu::error_ptr e, coordination_type cn)
             : exception(e)
             , coordination(std::move(cn))
         {
         }
-        std::exception_ptr exception;
+        rxu::error_ptr exception;
         coordination_type coordination;
     };
     error_initial_type initial;
 
-    error(std::exception_ptr e, coordination_type cn)
+    error(rxu::error_ptr e, coordination_type cn)
         : initial(e, std::move(cn))
     {
     }
@@ -93,7 +93,7 @@ struct throw_ptr_tag{};
 struct throw_instance_tag{};
 
 template <class T, class Coordination>
-auto make_error(throw_ptr_tag&&, std::exception_ptr exception, Coordination cn)
+auto make_error(throw_ptr_tag&&, rxu::error_ptr exception, Coordination cn)
     ->      observable<T, error<T, Coordination>> {
     return  observable<T, error<T, Coordination>>(error<T, Coordination>(std::move(exception), std::move(cn)));
 }
@@ -101,26 +101,29 @@ auto make_error(throw_ptr_tag&&, std::exception_ptr exception, Coordination cn)
 template <class T, class E, class Coordination>
 auto make_error(throw_instance_tag&&, E e, Coordination cn)
     ->      observable<T, error<T, Coordination>> {
-    std::exception_ptr exception;
-    try {throw e;} catch(...) {exception = std::current_exception();}
-    return  observable<T, error<T, Coordination>>(error<T, Coordination>(std::move(exception), std::move(cn)));
+    rxu::error_ptr ep = rxu::make_error_ptr(e);
+    return  observable<T, error<T, Coordination>>(error<T, Coordination>(std::move(ep), std::move(cn)));
 }
 
 }
+
+}
+
+namespace sources {
 
 /*! @copydoc rx-error.hpp
  */
 template<class T, class E>
 auto error(E e)
-    -> decltype(detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, rxu::decay_t<E>>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), identity_immediate())) {
-    return      detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, rxu::decay_t<E>>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), identity_immediate());
+    -> decltype(detail::make_error<T>(typename std::conditional<std::is_same<rxu::error_ptr, rxu::decay_t<E>>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), identity_immediate())) {
+    return      detail::make_error<T>(typename std::conditional<std::is_same<rxu::error_ptr, rxu::decay_t<E>>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), identity_immediate());
 }
 /*! @copydoc rx-error.hpp
  */
 template<class T, class E, class Coordination>
 auto error(E e, Coordination cn)
-    -> decltype(detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, rxu::decay_t<E>>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), std::move(cn))) {
-    return      detail::make_error<T>(typename std::conditional<std::is_same<std::exception_ptr, rxu::decay_t<E>>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), std::move(cn));
+    -> decltype(detail::make_error<T>(typename std::conditional<std::is_same<rxu::error_ptr, rxu::decay_t<E>>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), std::move(cn))) {
+    return      detail::make_error<T>(typename std::conditional<std::is_same<rxu::error_ptr, rxu::decay_t<E>>::value, detail::throw_ptr_tag, detail::throw_instance_tag>::type(), std::move(e), std::move(cn));
 }
 
 }

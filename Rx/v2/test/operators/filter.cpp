@@ -212,7 +212,9 @@ SCENARIO("filter stops on error", "[where][filter][operators]"){
     }
 }
 
-SCENARIO("filter stops on throw from predicate", "[where][filter][operators]"){
+// filter cannot possibly catch an exception when exceptions are disabled,
+// so this test is meaningless when exceptions are disabled.
+SCENARIO("filter stops on throw from predicate", "[where][filter][operators][!throws]"){
     GIVEN("a test hot observable of ints"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -248,7 +250,7 @@ SCENARIO("filter stops on throw from predicate", "[where][filter][operators]"){
                         .filter([ex, &invoked](int x) {
                             invoked++;
                             if (x > 5) {
-                                throw ex;
+                                rxu::throw_exception(ex);
                             }
                             return IsPrime(x);
                         })

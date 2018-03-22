@@ -147,7 +147,7 @@ struct timeout
                 if(id != state->index)
                     return;
 
-                state->dest.on_error(std::make_exception_ptr(rxcpp::timeout_error("timeout has occurred")));
+                state->dest.on_error(rxu::make_error_ptr(rxcpp::timeout_error("timeout has occurred")));
             };
 
             auto selectedProduce = on_exception(
@@ -178,7 +178,7 @@ struct timeout
             localState->worker.schedule(selectedWork.get());
         }
 
-        void on_error(std::exception_ptr e) const {
+        void on_error(rxu::error_ptr e) const {
             auto localState = state;
             auto work = [e, localState](const rxsc::schedulable&) {
                 localState->dest.on_error(e);

@@ -198,7 +198,7 @@ struct flat_map
                         state->out.on_next(std::move(selectedResult));
                     },
                 // on_error
-                    [state](std::exception_ptr e) {
+                    [state](rxu::error_ptr e) {
                         state->out.on_error(e);
                     },
                 //on_completed
@@ -213,7 +213,7 @@ struct flat_map
                 selectedSource.subscribe(std::move(selectedSinkInner));
             },
         // on_error
-            [state](std::exception_ptr e) {
+            [state](rxu::error_ptr e) {
                 state->out.on_error(e);
             },
         // on_completed

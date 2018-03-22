@@ -103,7 +103,7 @@ struct skip_last : public operator_base<T>
                 }
             },
         // on_error
-            [state](std::exception_ptr e) {
+            [state](rxu::error_ptr e) {
                 state->out.on_error(e);
             },
         // on_completed

@@ -112,7 +112,7 @@ struct take : public operator_base<T>
                 }
             },
         // on_error
-            [state](std::exception_ptr e) {
+            [state](rxu::error_ptr e) {
                 state->mode_value = mode::errored;
                 state->out.on_error(e);
             },

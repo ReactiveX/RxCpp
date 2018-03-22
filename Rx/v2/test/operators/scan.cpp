@@ -253,7 +253,7 @@ SCENARIO("scan: seed, some data", "[scan][operators]"){
     }
 }
 
-SCENARIO("scan: seed, accumulator throws", "[scan][operators]"){
+SCENARIO("scan: seed, accumulator throws", "[scan][operators][!throws]"){
     GIVEN("a test hot observable of ints"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -279,7 +279,7 @@ SCENARIO("scan: seed, accumulator throws", "[scan][operators]"){
                     return xs
                         .scan(seed, [&](int sum, int x) {
                             if (x == 4) {
-                                throw ex;
+                                rxu::throw_exception(ex);
                             }
                             return sum + x;
                         })

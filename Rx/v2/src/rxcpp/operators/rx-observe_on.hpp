@@ -127,7 +127,7 @@ struct observe_on
 
                     auto drain = [keepAlive, this](const rxsc::schedulable& self){
                         using std::swap;
-                        try {
+                        RXCPP_TRY {
                             for (;;) {
                                 if (drain_queue.empty() || !destination.is_subscribed()) {
                                     std::unique_lock<std::mutex> guard(lock);
@@ -151,8 +151,9 @@ struct observe_on
                                 self();
                                 if (lifetime.is_subscribed()) break;
                             }
-                        } catch(...) {
-                            destination.on_error(std::current_exception());
+                        }
+                        RXCPP_CATCH(...) {
+                            destination.on_error(rxu::current_exception());
                             std::unique_lock<std::mutex> guard(lock);
                             finish(guard, mode::Errored);
                         }
@@ -188,7 +189,7 @@ struct observe_on
             state->fill_queue.push_back(notification_type::on_next(std::move(v)));
             state->ensure_processing(guard);
         }
-        void on_error(std::exception_ptr e) const {
+        void on_error(rxu::error_ptr e) const {
             std::unique_lock<std::mutex> guard(state->lock);
             if (state->current == mode::Errored || state->current == mode::Disposed) { return; }
             state->fill_queue.push_back(notification_type::on_error(e));
