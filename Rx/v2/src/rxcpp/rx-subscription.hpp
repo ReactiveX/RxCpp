@@ -379,7 +379,7 @@ public:
 
     composite_subscription()
         : inner_type()
-        , subscription(*static_cast<const inner_type* const>(this))
+        , subscription(*static_cast<const inner_type*>(this))
     {
     }
 
