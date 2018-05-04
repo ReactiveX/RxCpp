@@ -3,18 +3,18 @@ The Reactive Extensions for C++ (__RxCpp__) is a library of algorithms for value
 Platform    | Status | 
 ----------- | :------------ |
 Windows | [![Windows Status](http://img.shields.io/appveyor/ci/kirkshoop/RxCpp-446.svg?style=flat-square)](https://ci.appveyor.com/project/kirkshoop/rxcpp-446)
-Linux & OSX | [![Linux & Osx Status](http://img.shields.io/travis/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://travis-ci.org/Reactive-Extensions/RxCpp)
+Linux & OSX | [![Linux & Osx Status](http://img.shields.io/travis/ReactiveX/RxCpp.svg?style=flat-square)](https://travis-ci.org/ReactiveX/RxCpp)
 
 Source        | Badges |
 ------------- | :--------------- |
-Github | [![GitHub license](https://img.shields.io/github/license/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp) <br/> [![GitHub release](https://img.shields.io/github/release/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp/releases) <br/> [![GitHub commits](https://img.shields.io/github/commits-since/Reactive-Extensions/RxCpp/v4.0.0.svg?style=flat-square)](https://github.com/Reactive-Extensions/RxCpp)
-Gitter.im | [![Join in on gitter.im](https://img.shields.io/gitter/room/Reactive-Extensions/RxCpp.svg?style=flat-square)](https://gitter.im/Reactive-Extensions/RxCpp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+Github | [![GitHub license](https://img.shields.io/github/license/ReactiveX/RxCpp.svg?style=flat-square)](https://github.com/ReactiveX/RxCpp) <br/> [![GitHub release](https://img.shields.io/github/release/ReactiveX/RxCpp.svg?style=flat-square)](https://github.com/ReactiveX/RxCpp/releases) <br/> [![GitHub commits](https://img.shields.io/github/commits-since/ReactiveX/RxCpp/v4.0.0.svg?style=flat-square)](https://github.com/ReactiveX/RxCpp)
+Gitter.im | [![Join in on gitter.im](https://img.shields.io/gitter/room/ReactiveX/RxCpp.svg?style=flat-square)](https://gitter.im/ReactiveX/RxCpp?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 Packages | [![NuGet version](http://img.shields.io/nuget/v/RxCpp.svg?style=flat-square)](http://www.nuget.org/packages/RxCpp/) [![vcpkg port](https://img.shields.io/badge/vcpkg-port-blue.svg?style=flat-square)](https://github.com/Microsoft/vcpkg/tree/master/ports/rxcpp)
-Documentation | [![rxcpp doxygen documentation](https://img.shields.io/badge/rxcpp-latest-brightgreen.svg?style=flat-square)](http://reactive-extensions.github.io/RxCpp) <br/> [![reactivex intro](https://img.shields.io/badge/reactivex.io-intro-brightgreen.svg?style=flat-square)](http://reactivex.io/intro.html) [![rx marble diagrams](https://img.shields.io/badge/rxmarbles-diagrams-brightgreen.svg?style=flat-square)](http://rxmarbles.com/)
+Documentation | [![rxcpp doxygen documentation](https://img.shields.io/badge/rxcpp-latest-brightgreen.svg?style=flat-square)](http://reactivex.github.io/RxCpp) <br/> [![reactivex intro](https://img.shields.io/badge/reactivex.io-intro-brightgreen.svg?style=flat-square)](http://reactivex.io/intro.html) [![rx marble diagrams](https://img.shields.io/badge/rxmarbles-diagrams-brightgreen.svg?style=flat-square)](http://rxmarbles.com/)
 
 # Usage
 
-__RxCpp__ is a header-only C++ library that only depends on the standard library. The CMake build generates documentation and unit tests.
+__RxCpp__ is a header-only C++ library that only depends on the standard library. The CMake build generates documentation and unit tests. The unit tests depend on a git submodule for the [Catch](https://github.com/philsquared/Catch) library.
 
 # Example
 Add `Rx/v2/src` to the include paths
@@ -128,7 +128,7 @@ Credit [ReactiveX.io](http://reactivex.io/intro.html)
 ### Other language implementations
 
 * Java: [RxJava](https://github.com/ReactiveX/RxJava)
-* JavaScript: [RxJS](https://github.com/Reactive-Extensions/RxJS)
+* JavaScript: [rxjs](https://github.com/ReactiveX/rxjs)
 * C#: [Rx.NET](https://github.com/Reactive-Extensions/Rx.NET)
 * [More..](http://reactivex.io/languages.html)
 
@@ -148,7 +148,7 @@ Credit [ReactiveX.io](http://reactivex.io/intro.html)
 RxCpp uses a git submodule (in `ext/catch`) for the excellent [Catch](https://github.com/philsquared/Catch) library. The easiest way to ensure that the submodules are included in the clone is to add `--recursive` in the clone command.
 
 ```shell
-git clone --recursive https://github.com/Reactive-Extensions/RxCpp.git
+git clone --recursive https://github.com/ReactiveX/RxCpp.git
 cd RxCpp
 ```
 
@@ -224,7 +224,7 @@ Example of by-tag
 
 # Documentation
 
-RxCpp uses Doxygen to generate project [documentation](http://reactive-extensions.github.io/RxCpp).
+RxCpp uses Doxygen to generate project [documentation](http://reactivex.github.io/RxCpp).
 
 When Doxygen+Graphviz is installed, CMake creates a special build task named `doc`. It creates actual documentation and puts it to `projects/doxygen/html/` folder, which can be published to the `gh-pages` branch. Each merged pull request will build the docs and publish them.
 
