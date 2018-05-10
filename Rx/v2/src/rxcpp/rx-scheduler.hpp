@@ -480,9 +480,9 @@ class schedulable : public schedulable_base
             // no change in recursion scope
             return *this;
         }
-        exit_recursed_scope_type reset(const recurse& r) const {
+        std::shared_ptr<exit_recursed_scope_type> reset(const recurse& r) const {
             requestor = std::addressof(r.get_recursed());
-            return exit_recursed_scope_type(this);
+            return std::make_shared<exit_recursed_scope_type>(this);
         }
         bool is_recursed() const {
             return !!requestor;
