@@ -162,7 +162,6 @@ SCENARIO("buffer period sample"){
 
 SCENARIO("buffer period+count+coordination sample"){
     printf("//! [buffer period+count+coordination sample]\n");
-    auto start = std::chrono::steady_clock::now();
     auto int1 = rxcpp::observable<>::range(1L, 3L);
     auto int2 = rxcpp::observable<>::timer(std::chrono::milliseconds(50));
     auto values = int1.
@@ -171,7 +170,7 @@ SCENARIO("buffer period+count+coordination sample"){
     values.
         as_blocking().
         subscribe(
-            [start](std::vector<long> v){
+            [](std::vector<long> v){
                 printf("OnNext:");
                 std::for_each(v.begin(), v.end(), [](long a){
                     printf(" %ld", a);
@@ -184,7 +183,6 @@ SCENARIO("buffer period+count+coordination sample"){
 
 SCENARIO("buffer period+count sample"){
     printf("//! [buffer period+count sample]\n");
-    auto start = std::chrono::steady_clock::now();
     auto int1 = rxcpp::observable<>::range(1L, 3L);
     auto int2 = rxcpp::observable<>::timer(std::chrono::milliseconds(50));
     auto values = int1.
@@ -192,7 +190,7 @@ SCENARIO("buffer period+count sample"){
         buffer_with_time_or_count(std::chrono::milliseconds(20), 2);
     values.
         subscribe(
-            [start](std::vector<long> v){
+            [](std::vector<long> v){
                 printf("OnNext:");
                 std::for_each(v.begin(), v.end(), [](long a){
                     printf(" %ld", a);
