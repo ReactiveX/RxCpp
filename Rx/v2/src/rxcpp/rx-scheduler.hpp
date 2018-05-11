@@ -466,7 +466,7 @@ class schedulable : public schedulable_base
                 : that(that)
             {
             }
-            exit_recursed_scope_type(exit_recursed_scope_type && other) /*noexcept*/
+            exit_recursed_scope_type(exit_recursed_scope_type && other) RXCPP_NOEXCEPT
                 : that(other.that)
             {
                 other.that = nullptr;
