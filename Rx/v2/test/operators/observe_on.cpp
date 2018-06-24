@@ -1,5 +1,6 @@
 #include "../test.h"
 #include <rxcpp/operators/rx-take.hpp>
+#include <rxcpp/operators/rx-map.hpp>
 #include <rxcpp/operators/rx-observe_on.hpp>
 
 const int static_onnextcalls = 100000;
@@ -129,6 +130,58 @@ SCENARIO("stream observe_on", "[observe][observe_on]"){
             THEN("there was 1 subscription/unsubscription to the source"){
                 auto required = rxu::to_vector({
                     on.subscribe(200, 300)
+                });
+                auto actual = xs.subscriptions();
+                REQUIRE(required == actual);
+            }
+
+        }
+    }
+}
+
+class nocompare {
+public:
+    int v;
+};
+
+SCENARIO("observe_on no-comparison", "[observe][observe_on]"){
+    GIVEN("a source"){
+        auto sc = rxsc::make_test();
+        auto so = rx::observe_on_one_worker(sc);
+        auto w = sc.create_worker();
+        const rxsc::test::messages<nocompare> in;
+        const rxsc::test::messages<int> out;
+
+        auto xs = sc.make_hot_observable({
+            in.next(150, nocompare{1}),
+            in.next(210, nocompare{2}),
+            in.next(240, nocompare{3}),
+            in.completed(300)
+        });
+
+        WHEN("observe_on is specified"){
+
+            auto res = w.start(
+                [so, xs]() {
+                    return xs
+                         | rxo::observe_on(so)
+                         | rxo::map([](nocompare v){ return v.v; });
+                }
+            );
+
+            THEN("the output contains items sent while subscribed"){
+                auto required = rxu::to_vector({
+                    out.next(211, 2),
+                    out.next(241, 3),
+                    out.completed(301)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+
+            THEN("there was 1 subscription/unsubscription to the source"){
+                auto required = rxu::to_vector({
+                    out.subscribe(200, 300)
                 });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
