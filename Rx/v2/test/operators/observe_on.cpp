@@ -165,7 +165,8 @@ SCENARIO("observe_on no-comparison", "[observe][observe_on]"){
                 [so, xs]() {
                     return xs
                          | rxo::observe_on(so)
-                         | rxo::map([](nocompare v){ return v.v; });
+                         | rxo::map([](nocompare v){ return v.v; })
+                         | rxo::as_dynamic();
                 }
             );
 
