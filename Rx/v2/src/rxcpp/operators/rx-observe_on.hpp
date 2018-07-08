@@ -316,8 +316,7 @@ public:
 };
 
 inline observe_on_one_worker observe_on_run_loop(const rxsc::run_loop& rl) {
-    static observe_on_one_worker r(rxsc::make_run_loop(rl));
-    return r;
+    return observe_on_one_worker(rxsc::make_run_loop(rl));
 }
 
 inline observe_on_one_worker observe_on_event_loop() {
