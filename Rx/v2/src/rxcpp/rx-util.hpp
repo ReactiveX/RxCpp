@@ -420,7 +420,7 @@ template <class T>
 struct ret
 {
     template <class LHS>
-    auto operator()(LHS&& lhs) const
+    auto operator()(LHS&& ) const
         -> decltype(T())
         { return T(); }
 };
