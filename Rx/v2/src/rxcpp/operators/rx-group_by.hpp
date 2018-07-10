@@ -237,7 +237,7 @@ struct group_by
                 auto robs = durationObs.get().take(1);
                 duration_sub.add(robs.subscribe(
                     [](const typename decltype(robs)::value_type &){},
-                    [=](std::exception_ptr e) {expire();},
+                    [=](std::exception_ptr ) {expire();},
                     [=](){expire();}
                 ));
             }
