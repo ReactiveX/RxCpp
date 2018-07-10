@@ -416,6 +416,15 @@ struct less
         { return std::forward<LHS>(lhs) < std::forward<RHS>(rhs); }
 };
 
+template <class T>
+struct ret
+{
+    template <class LHS>
+    auto operator()(LHS&& ) const
+        -> decltype(T())
+        { return T(); }
+};
+
 template<class T = void>
 struct equal_to
 {
