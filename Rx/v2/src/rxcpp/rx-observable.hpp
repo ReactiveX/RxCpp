@@ -173,27 +173,8 @@ class blocking_observable
         -> void {
         std::mutex lock;
         std::condition_variable wake;
+        bool disposed = false;
         std::exception_ptr error;
-
-        struct tracking
-        {
-            ~tracking()
-            {
-                if (!disposed || !wakened) std::terminate();
-            }
-            tracking()
-            {
-                disposed = false;
-                wakened = false;
-                false_wakes = 0;
-                true_wakes = 0;
-            }
-            std::atomic_bool disposed;
-            std::atomic_bool wakened;
-            std::atomic_int false_wakes;
-            std::atomic_int true_wakes;
-        };
-        auto track = std::make_shared<tracking>();
 
         auto dest = make_subscriber<T>(std::forward<ArgN>(an)...);
 
@@ -213,31 +194,19 @@ class blocking_observable
 
         auto cs = scbr.get_subscription();
         cs.add(
-            [&, track](){
-                // OSX geting invalid x86 op if notify_one is after the disposed = true
-                // presumably because the condition_variable may already have been awakened
-                // and is now sitting in a while loop on disposed
+            [&](){
+                std::unique_lock<std::mutex> guard(lock);
                 wake.notify_one();
-                track->disposed = true;
+                disposed = true;
             });
 
-        std::unique_lock<std::mutex> guard(lock);
         source.subscribe(std::move(scbr));
 
+        std::unique_lock<std::mutex> guard(lock);
         wake.wait(guard,
-            [&, track](){
-                // this is really not good.
-                // false wakeups were never followed by true wakeups so..
-
-                // anyways this gets triggered before disposed is set now so wait.
-                while (!track->disposed) {
-                    ++track->false_wakes;
-                }
-                ++track->true_wakes;
-                return true;
+            [&](){
+                return disposed;
             });
-        track->wakened = true;
-        if (!track->disposed || !track->wakened) std::terminate();
 
         if (error) {std::rethrow_exception(error);}
     }
