@@ -471,22 +471,22 @@ public:
 
     // TODO: skip_while(pred)
 
-    template<typename ITEM = typename element_type>
+    template<typename ITEM = element_type>
     typename std::enable_if<std::is_default_constructible<ITEM>::value, ITEM>::type sum() const {
         ITEM seed{};
         return sum(seed);
     }
 
-    typename element_type sum(typename element_type seed) const {
+    element_type sum(element_type seed) const {
         return std::accumulate(begin(), end(), seed);
     }
 
-    template <typename Selector, typename Result = std::result_of<Selector(typename element_type)>::type>
+    template <typename Selector, typename Result = typename std::result_of<Selector(element_type)>::type>
     typename std::enable_if<std::is_default_constructible<Result>::value, Result>::type sum(Selector sel) const {
         return from(begin(), end()).select(sel).sum();			
     }
 
-    template <typename Selector, typename Result = std::result_of<Selector(typename element_type)>::type>
+    template <typename Selector, typename Result = typename std::result_of<Selector(element_type)>::type>
     Result sum(Selector sel, Result seed) const {
         return from(begin(), end()).select(sel).sum(seed);			
     }
