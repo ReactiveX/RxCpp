@@ -6,6 +6,8 @@
 #include "rxcpp/operators/rx-publish.hpp"
 #include "rxcpp/operators/rx-ref_count.hpp"
 
+#include <sstream>
+
 SCENARIO("observe subscription", "[hide]"){
     GIVEN("observable of ints"){
         WHEN("subscribe"){

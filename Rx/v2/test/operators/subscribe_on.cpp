@@ -4,6 +4,8 @@
 #include <rxcpp/operators/rx-subscribe_on.hpp>
 #include <rxcpp/operators/rx-observe_on.hpp>
 
+#include <sstream>
+
 static const int static_subscriptions = 50000;
 
 SCENARIO("for loop subscribes to map with subscribe_on and observe_on", "[hide][for][just][subscribe][subscribe_on][observe_on][long][perf]"){
