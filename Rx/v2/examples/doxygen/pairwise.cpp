@@ -23,7 +23,7 @@ SCENARIO("pairwise short sample"){
     printf("//! [pairwise short sample]\n");
 }
 
-//std::string get_pid();
+//#include "main.hpp"
 //
 //SCENARIO("threaded flat_map sample"){
 //    printf("//! [threaded flat_map sample]\n");

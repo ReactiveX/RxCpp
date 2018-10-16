@@ -35,7 +35,7 @@ SCENARIO("buffer count+skip sample"){
     printf("//! [buffer count+skip sample]\n");
 }
 
-std::string get_pid();
+#include "main.hpp"
 
 SCENARIO("buffer period+skip+coordination sample"){
     printf("//! [buffer period+skip+coordination sample]\n");

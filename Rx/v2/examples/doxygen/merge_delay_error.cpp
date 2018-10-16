@@ -33,7 +33,7 @@ SCENARIO("implicit merge_delay_error sample"){
 	printf("//! [implicit merge_delay_error sample]\n");
 }
 
-std::string get_pid();
+#include "main.hpp"
 
 SCENARIO("threaded merge_delay_error sample"){
 	printf("//! [threaded merge_delay_error sample]\n");

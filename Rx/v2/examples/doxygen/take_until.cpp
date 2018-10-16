@@ -26,7 +26,7 @@ SCENARIO("take_until time sample"){
     printf("//! [take_until time sample]\n");
 }
 
-std::string get_pid();
+#include "main.hpp"
 
 SCENARIO("threaded take_until sample"){
     printf("//! [threaded take_until sample]\n");

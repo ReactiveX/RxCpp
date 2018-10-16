@@ -17,7 +17,7 @@ SCENARIO("with_latest_from sample"){
     printf("//! [with_latest_from sample]\n");
 }
 
-std::string get_pid();
+#include "main.hpp"
 
 SCENARIO("Coordination with_latest_from sample"){
     printf("//! [Coordination with_latest_from sample]\n");

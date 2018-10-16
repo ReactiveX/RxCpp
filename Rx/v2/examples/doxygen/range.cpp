@@ -13,7 +13,7 @@ SCENARIO("range sample"){
     printf("//! [range sample]\n");
 }
 
-std::string get_pid();
+#include "main.hpp"
 
 SCENARIO("threaded range sample"){
     printf("//! [threaded range sample]\n");

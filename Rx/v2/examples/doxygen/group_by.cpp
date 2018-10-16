@@ -23,7 +23,7 @@ SCENARIO("group_by sample"){
 }
 
 //! [group_by full intro]
-bool less(int v1, int v2){
+static bool less(int v1, int v2){
     return v1 < v2;
 }
 //! [group_by full intro]

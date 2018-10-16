@@ -15,7 +15,7 @@ SCENARIO("skip_until sample"){
     printf("//! [skip_until sample]\n");
 }
 
-std::string get_pid();
+#include "main.hpp"
 
 SCENARIO("threaded skip_until sample"){
     printf("//! [threaded skip_until sample]\n");

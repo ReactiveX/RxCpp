@@ -30,7 +30,7 @@ SCENARIO("implicit merge sample"){
     printf("//! [implicit merge sample]\n");
 }
 
-std::string get_pid();
+#include "main.hpp"
 
 SCENARIO("threaded merge sample"){
     printf("//! [threaded merge sample]\n");

@@ -17,7 +17,7 @@ SCENARIO("zip sample"){
     printf("//! [zip sample]\n");
 }
 
-std::string get_pid();
+#include "main.hpp"
 
 SCENARIO("Coordination zip sample"){
     printf("//! [Coordination zip sample]\n");

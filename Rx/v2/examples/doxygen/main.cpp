@@ -4,6 +4,9 @@
 #include <iostream>
 #include <thread>
 #include <string>
+
+#include "main.hpp"
+
 std::string get_pid() {
     std::stringstream s;
     s << std::this_thread::get_id();

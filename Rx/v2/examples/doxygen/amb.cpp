@@ -30,7 +30,7 @@ SCENARIO("implicit amb sample"){
     printf("//! [implicit amb sample]\n");
 }
 
-std::string get_pid();
+#include "main.hpp"
 
 SCENARIO("threaded amb sample"){
     printf("//! [threaded amb sample]\n");
