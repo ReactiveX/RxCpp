@@ -22,7 +22,7 @@ SCENARIO("concat_map sample"){
     printf("//! [concat_map sample]\n");
 }
 
-std::string get_pid();
+#include "main.hpp"
 
 SCENARIO("threaded concat_map sample"){
     printf("//! [threaded concat_map sample]\n");

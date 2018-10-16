@@ -13,7 +13,7 @@ SCENARIO("from sample"){
     printf("//! [from sample]\n");
 }
 
-std::string get_pid();
+#include "main.hpp"
 
 SCENARIO("threaded from sample"){
     printf("//! [threaded from sample]\n");

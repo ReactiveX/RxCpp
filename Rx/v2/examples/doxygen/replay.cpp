@@ -3,7 +3,7 @@
 #include "rxcpp/rx-test.hpp"
 #include "catch.hpp"
 
-std::string get_pid();
+#include "main.hpp"
 
 SCENARIO("replay sample"){
     printf("//! [replay sample]\n");

@@ -17,7 +17,7 @@ SCENARIO("combine_latest sample"){
     printf("//! [combine_latest sample]\n");
 }
 
-std::string get_pid();
+#include "main.hpp"
 
 SCENARIO("Coordination combine_latest sample"){
     printf("//! [Coordination combine_latest sample]\n");

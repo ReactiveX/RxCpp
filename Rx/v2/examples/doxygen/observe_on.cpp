@@ -3,7 +3,7 @@
 #include "rxcpp/rx-test.hpp"
 #include "catch.hpp"
 
-std::string get_pid();
+#include "main.hpp"
 
 SCENARIO("observe_on sample"){
     printf("//! [observe_on sample]\n");
