@@ -169,12 +169,12 @@ cd projects/build
 cmake -G"Xcode" ../CMake -B.
 ```
 
-#### Visual Studio 2013
+#### Visual Studio 2017
 ```batch
 mkdir projects\build
 cd projects\build
-cmake -G"Visual Studio 14" ..\CMake -B.
-msbuild rxcpp.sln
+cmake -G "Visual Studio 15" ..\CMake\
+msbuild Project.sln
 ```
 
 ### makefile builds
