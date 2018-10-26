@@ -4,7 +4,7 @@
 #include <rxcpp/operators/rx-ref_count.hpp>
 
 
-SCENARIO("publish range", "[hide][range][subject][publish][subject][operators]"){
+SCENARIO("publish range", "[!hide][range][subject][publish][subject][operators]"){
     GIVEN("a range"){
         WHEN("published"){
             auto published = rxs::range<int>(0, 10).publish();

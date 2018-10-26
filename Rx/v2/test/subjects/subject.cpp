@@ -10,7 +10,7 @@
 const int static_onnextcalls = 10000000;
 static int aliased = 0;
 
-SCENARIO("for loop locks mutex", "[hide][for][mutex][long][perf]"){
+SCENARIO("for loop locks mutex", "[!hide][for][mutex][long][perf]"){
     const int& onnextcalls = static_onnextcalls;
     GIVEN("a for loop"){
         WHEN("locking mutex 100 million times"){
@@ -52,7 +52,7 @@ public:
     }
 };
 }
-SCENARIO("for loop calls void on_next(int)", "[hide][for][asyncobserver][baseline][perf]"){
+SCENARIO("for loop calls void on_next(int)", "[!hide][for][asyncobserver][baseline][perf]"){
     const int& onnextcalls = static_onnextcalls;
     GIVEN("a for loop"){
         WHEN("calling on_next 100 million times"){
@@ -137,7 +137,7 @@ public:
     }
 };
 }
-SCENARIO("for loop calls ready on_next(int)", "[hide][for][asyncobserver][ready][perf]"){
+SCENARIO("for loop calls ready on_next(int)", "[!hide][for][asyncobserver][ready][perf]"){
     static const int& onnextcalls = static_onnextcalls;
     GIVEN("a for loop"){
         WHEN("calling on_next 100 million times"){
@@ -191,7 +191,7 @@ public:
         onnext(v); return ready.get_future();}
 };
 }
-SCENARIO("for loop calls std::future<unit> on_next(int)", "[hide][for][asyncobserver][future][long][perf]"){
+SCENARIO("for loop calls std::future<unit> on_next(int)", "[!hide][for][asyncobserver][future][long][perf]"){
     const int& onnextcalls = static_onnextcalls;
     GIVEN("a for loop"){
         WHEN("calling on_next 100 million times"){
@@ -218,7 +218,7 @@ SCENARIO("for loop calls std::future<unit> on_next(int)", "[hide][for][asyncobse
     }
 }
 
-SCENARIO("for loop calls observer", "[hide][for][observer][perf]"){
+SCENARIO("for loop calls observer", "[!hide][for][observer][perf]"){
     const int& onnextcalls = static_onnextcalls;
     GIVEN("a for loop"){
         WHEN("observing 100 million ints"){
@@ -244,7 +244,7 @@ SCENARIO("for loop calls observer", "[hide][for][observer][perf]"){
     }
 }
 
-SCENARIO("for loop calls subscriber", "[hide][for][subscriber][perf]"){
+SCENARIO("for loop calls subscriber", "[!hide][for][subscriber][perf]"){
     const int& onnextcalls = static_onnextcalls;
     GIVEN("a for loop"){
         WHEN("observing 100 million ints"){
@@ -270,7 +270,7 @@ SCENARIO("for loop calls subscriber", "[hide][for][subscriber][perf]"){
     }
 }
 
-SCENARIO("range calls subscriber", "[hide][range][subscriber][perf]"){
+SCENARIO("range calls subscriber", "[!hide][range][subscriber][perf]"){
     const int& onnextcalls = static_onnextcalls;
     GIVEN("a range"){
         WHEN("observing 100 million ints"){
@@ -296,7 +296,7 @@ SCENARIO("range calls subscriber", "[hide][range][subscriber][perf]"){
     }
 }
 
-SCENARIO("for loop calls subject", "[hide][for][subject][subjects][long][perf]"){
+SCENARIO("for loop calls subject", "[!hide][for][subject][subjects][long][perf]"){
     static const int& onnextcalls = static_onnextcalls;
     GIVEN("a for loop and a subject"){
         WHEN("multicasting a million ints"){
@@ -370,7 +370,7 @@ SCENARIO("for loop calls subject", "[hide][for][subject][subjects][long][perf]")
     }
 }
 
-SCENARIO("range calls subject", "[hide][range][subject][subjects][long][perf]"){
+SCENARIO("range calls subject", "[!hide][range][subject][subjects][long][perf]"){
     static const int& onnextcalls = static_onnextcalls;
     GIVEN("a range and a subject"){
         WHEN("multicasting a million ints"){

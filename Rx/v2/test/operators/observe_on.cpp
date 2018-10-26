@@ -5,7 +5,7 @@
 
 const int static_onnextcalls = 100000;
 
-SCENARIO("range observed on new_thread", "[hide][range][observe_on_debug][observe_on][long][perf]"){
+SCENARIO("range observed on new_thread", "[!hide][range][observe_on_debug][observe_on][long][perf]"){
     const int& onnextcalls = static_onnextcalls;
     GIVEN("a range"){
         WHEN("multicasting a million ints"){

@@ -8,7 +8,7 @@
 
 static const int static_tripletCount = 100;
 
-SCENARIO("concat_transform pythagorian ranges", "[hide][range][concat_transform][pythagorian][perf]"){
+SCENARIO("concat_transform pythagorian ranges", "[!hide][range][concat_transform][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("some ranges"){
         WHEN("generating pythagorian triplets"){
@@ -53,7 +53,7 @@ SCENARIO("concat_transform pythagorian ranges", "[hide][range][concat_transform]
     }
 }
 
-SCENARIO("synchronize concat_transform pythagorian ranges", "[hide][range][concat_transform][synchronize][pythagorian][perf]"){
+SCENARIO("synchronize concat_transform pythagorian ranges", "[!hide][range][concat_transform][synchronize][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("some ranges"){
         WHEN("generating pythagorian triplets"){
@@ -101,7 +101,7 @@ SCENARIO("synchronize concat_transform pythagorian ranges", "[hide][range][conca
     }
 }
 
-SCENARIO("observe_on concat_transform pythagorian ranges", "[hide][range][concat_transform][observe_on][pythagorian][perf]"){
+SCENARIO("observe_on concat_transform pythagorian ranges", "[!hide][range][concat_transform][observe_on][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("some ranges"){
         WHEN("generating pythagorian triplets"){
@@ -150,7 +150,7 @@ SCENARIO("observe_on concat_transform pythagorian ranges", "[hide][range][concat
     }
 }
 
-SCENARIO("serialize concat_transform pythagorian ranges", "[hide][range][concat_transform][serialize][pythagorian][perf]"){
+SCENARIO("serialize concat_transform pythagorian ranges", "[!hide][range][concat_transform][serialize][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("some ranges"){
         WHEN("generating pythagorian triplets"){

@@ -3,7 +3,7 @@
 #include <rxcpp/operators/rx-take.hpp>
 #include <rxcpp/operators/rx-scan.hpp>
 
-SCENARIO("scan: issue 41", "[scan][operators][issue][hide]"){
+SCENARIO("scan: issue 41", "[scan][operators][issue][!hide]"){
     GIVEN("map of scan of interval"){
         auto sc = rxsc::make_current_thread();
         auto so = rxcpp::synchronize_in_one_worker(sc);

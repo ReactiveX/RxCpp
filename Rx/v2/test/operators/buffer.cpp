@@ -455,7 +455,7 @@ SCENARIO("buffer count error 2", "[buffer][operators]"){
     }
 }
 
-SCENARIO("buffer with time on intervals", "[buffer_with_time][operators][long][hide]"){
+SCENARIO("buffer with time on intervals", "[buffer_with_time][operators][long][!hide]"){
     GIVEN("7 intervals of 2 seconds"){
         WHEN("the period is 2sec and the initial is 5sec"){
             // time:   |-----------------|
@@ -500,7 +500,7 @@ SCENARIO("buffer with time on intervals", "[buffer_with_time][operators][long][h
     }
 }
 
-SCENARIO("buffer with time on intervals, implicit coordination", "[buffer_with_time][operators][long][hide]"){
+SCENARIO("buffer with time on intervals, implicit coordination", "[buffer_with_time][operators][long][!hide]"){
     GIVEN("7 intervals of 2 seconds"){
         WHEN("the period is 2sec and the initial is 5sec"){
             // time:   |-----------------|
@@ -543,7 +543,7 @@ SCENARIO("buffer with time on intervals, implicit coordination", "[buffer_with_t
     }
 }
 
-SCENARIO("buffer with time on overlapping intervals", "[buffer_with_time][operators][long][hide]"){
+SCENARIO("buffer with time on overlapping intervals", "[buffer_with_time][operators][long][!hide]"){
     GIVEN("5 intervals of 2 seconds"){
         WHEN("the period is 2sec and the initial is 5sec"){
             // time:   |-------------|
@@ -587,7 +587,7 @@ SCENARIO("buffer with time on overlapping intervals", "[buffer_with_time][operat
     }
 }
 
-SCENARIO("buffer with time on overlapping intervals, implicit coordination", "[buffer_with_time][operators][long][hide]"){
+SCENARIO("buffer with time on overlapping intervals, implicit coordination", "[buffer_with_time][operators][long][!hide]"){
     GIVEN("5 intervals of 2 seconds"){
         WHEN("the period is 2sec and the initial is 5sec"){
             // time:   |-------------|
@@ -631,7 +631,7 @@ SCENARIO("buffer with time on overlapping intervals, implicit coordination", "[b
     }
 }
 
-SCENARIO("buffer with time on intervals, error", "[buffer_with_time][operators][long][hide]"){
+SCENARIO("buffer with time on intervals, error", "[buffer_with_time][operators][long][!hide]"){
     GIVEN("5 intervals of 2 seconds"){
         WHEN("the period is 2sec and the initial is 5sec"){
             // time:   |-------------|

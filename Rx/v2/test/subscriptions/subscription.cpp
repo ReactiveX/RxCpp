@@ -8,7 +8,7 @@
 
 #include <sstream>
 
-SCENARIO("observe subscription", "[hide]"){
+SCENARIO("observe subscription", "[!hide]"){
     GIVEN("observable of ints"){
         WHEN("subscribe"){
             auto observers = std::make_shared<std::list<rxcpp::subscriber<int>>>();
@@ -26,7 +26,7 @@ SCENARIO("observe subscription", "[hide]"){
 
 static const int static_subscriptions = 10000;
 
-SCENARIO("for loop subscribes to map", "[hide][for][just][subscribe][long][perf]"){
+SCENARIO("for loop subscribes to map", "[!hide][for][just][subscribe][long][perf]"){
     const int& subscriptions = static_subscriptions;
     GIVEN("a for loop"){
         WHEN("subscribe 100K times"){
@@ -71,7 +71,7 @@ SCENARIO("for loop subscribes to map", "[hide][for][just][subscribe][long][perf]
     }
 }
 
-SCENARIO("for loop subscribes to combine_latest", "[hide][for][just][combine_latest][subscribe][long][perf]"){
+SCENARIO("for loop subscribes to combine_latest", "[!hide][for][just][combine_latest][subscribe][long][perf]"){
     const int& subscriptions = static_subscriptions;
     GIVEN("a for loop"){
         WHEN("subscribe 100K times"){
@@ -109,7 +109,7 @@ SCENARIO("for loop subscribes to combine_latest", "[hide][for][just][combine_lat
     }
 }
 
-SCENARIO("synchronized range debug", "[hide][subscribe][range][synchronize_debug][synchronize][long][perf]"){
+SCENARIO("synchronized range debug", "[!hide][subscribe][range][synchronize_debug][synchronize][long][perf]"){
     GIVEN("range"){
         WHEN("synchronized"){
             using namespace std::chrono;
@@ -218,7 +218,7 @@ SCENARIO("synchronized range debug", "[hide][subscribe][range][synchronize_debug
     }
 }
 
-SCENARIO("observe_on range debug", "[hide][subscribe][range][observe_on_debug][observe_on][long][perf]"){
+SCENARIO("observe_on range debug", "[!hide][subscribe][range][observe_on_debug][observe_on][long][perf]"){
     GIVEN("range"){
         WHEN("observed on"){
             using namespace std::chrono;

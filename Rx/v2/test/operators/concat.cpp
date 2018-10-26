@@ -5,7 +5,7 @@
 
 const int static_onnextcalls = 1000000;
 
-SCENARIO("synchronize concat ranges", "[hide][range][synchronize][concat][perf]"){
+SCENARIO("synchronize concat ranges", "[!hide][range][synchronize][concat][perf]"){
     const int& onnextcalls = static_onnextcalls;
     GIVEN("some ranges"){
         WHEN("generating ints"){
@@ -33,7 +33,7 @@ SCENARIO("synchronize concat ranges", "[hide][range][synchronize][concat][perf]"
     }
 }
 
-SCENARIO("observe_on concat ranges", "[hide][range][observe_on][concat][perf]"){
+SCENARIO("observe_on concat ranges", "[!hide][range][observe_on][concat][perf]"){
     const int& onnextcalls = static_onnextcalls;
     GIVEN("some ranges"){
         WHEN("generating ints"){
@@ -61,7 +61,7 @@ SCENARIO("observe_on concat ranges", "[hide][range][observe_on][concat][perf]"){
     }
 }
 
-SCENARIO("serialize concat ranges", "[hide][range][serialize][concat][perf]"){
+SCENARIO("serialize concat ranges", "[!hide][range][serialize][concat][perf]"){
     const int& onnextcalls = static_onnextcalls;
     GIVEN("some ranges"){
         WHEN("generating ints"){

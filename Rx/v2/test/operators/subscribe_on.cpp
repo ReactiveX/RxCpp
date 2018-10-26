@@ -8,7 +8,7 @@
 
 static const int static_subscriptions = 50000;
 
-SCENARIO("for loop subscribes to map with subscribe_on and observe_on", "[hide][for][just][subscribe][subscribe_on][observe_on][long][perf]"){
+SCENARIO("for loop subscribes to map with subscribe_on and observe_on", "[!hide][for][just][subscribe][subscribe_on][observe_on][long][perf]"){
     const int& subscriptions = static_subscriptions;
     GIVEN("a for loop"){
         WHEN("subscribe 50K times"){
@@ -48,7 +48,7 @@ SCENARIO("for loop subscribes to map with subscribe_on and observe_on", "[hide][
     }
 }
 
-SCENARIO("for loop subscribes to map with subscribe_on", "[hide][subscribe_on_only][for][just][subscribe][subscribe_on][long][perf]"){
+SCENARIO("for loop subscribes to map with subscribe_on", "[!hide][subscribe_on_only][for][just][subscribe][subscribe_on][long][perf]"){
     const int& subscriptions = static_subscriptions;
     GIVEN("a for loop"){
         WHEN("subscribe 50K times"){

@@ -11,7 +11,7 @@
 #include <locale>
 #include <sstream>
 
-SCENARIO("range partitioned by group_by across hardware threads to derive pi", "[hide][pi][group_by][observe_on][long][perf]"){
+SCENARIO("range partitioned by group_by across hardware threads to derive pi", "[!hide][pi][group_by][observe_on][long][perf]"){
     GIVEN("a for loop"){
         WHEN("partitioning pi series across all hardware threads"){
 
@@ -93,7 +93,7 @@ SCENARIO("range partitioned by group_by across hardware threads to derive pi", "
     }
 }
 
-SCENARIO("range partitioned by dividing work across hardware threads to derive pi", "[hide][pi][observe_on][long][perf]"){
+SCENARIO("range partitioned by dividing work across hardware threads to derive pi", "[!hide][pi][observe_on][long][perf]"){
     GIVEN("a for loop"){
         WHEN("partitioning pi series across all hardware threads"){
 

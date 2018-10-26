@@ -3,8 +3,6 @@
 #include <rxcpp/operators/rx-merge_delay_error.hpp>
 #include <rxcpp/operators/rx-observe_on.hpp>
 
-const int static_onnextcalls = 1000000;
-
 //merge_delay_error must work the very same way as `merge()` except the error handling
 
 SCENARIO("merge_delay_error completes", "[merge][join][operators]"){

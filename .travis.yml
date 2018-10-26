@@ -10,15 +10,15 @@ env:
 matrix:
   include:
 
-  - env: BUILD_TYPE=Debug ASAN=Off RUN_TEST=On
+  - env: BUILD_TYPE=Debug ASAN=Off RUN_TEST=On EXCEPTIONS=On
     os: osx
     osx_image: xcode8
 
-  - env: BUILD_TYPE=Debug ASAN=Off LLVM_VERSION=3.8.0 RUN_TEST=On
+  - env: BUILD_TYPE=Debug ASAN=On LLVM_VERSION=3.8.0 RUN_TEST=On EXCEPTIONS=On
     os: linux
     compiler: clang
 
-  - env: BUILD_TYPE=Release ASAN=Off GCC_VERSION=4.9 RUN_TEST=On
+  - env: BUILD_TYPE=Release ASAN=Off GCC_VERSION=4.9 RUN_TEST=On EXCEPTIONS=On
     os: linux
     compiler: gcc
     addons:
@@ -28,7 +28,37 @@ matrix:
         sources:
         - ubuntu-toolchain-r-test
 
-  - env: BUILD_TYPE=Debug ASAN=Off LLVM_VERSION=3.8.0 RUN_TEST=Off PROJECT=doc PUBLISH_DOCS=On DOXYGEN_VERSION=1.8.11
+  - env: BUILD_TYPE=Release ASAN=Off GCC_VERSION=7 RUN_TEST=On EXCEPTIONS=On
+    os: linux
+    compiler: gcc
+    addons: &gcc7
+      apt:
+        packages:
+          - g++-7
+        sources:
+          - ubuntu-toolchain-r-test
+
+  - env: BUILD_TYPE=RelWithDebInfo ASAN=On GCC_VERSION=8 RUN_TEST=On EXCEPTIONS=Off
+    os: linux
+    compiler: gcc
+    addons: &gcc8
+      apt:
+        packages:
+          - g++-8
+        sources:
+          - ubuntu-toolchain-r-test
+
+  - env: BUILD_TYPE=Release ASAN=Off GCC_VERSION=8 RUN_TEST=On EXCEPTIONS=On
+    os: linux
+    compiler: gcc
+    addons: &gcc8
+      apt:
+        packages:
+          - g++-8
+        sources:
+          - ubuntu-toolchain-r-test
+
+  - env: BUILD_TYPE=Debug ASAN=Off LLVM_VERSION=3.8.0 RUN_TEST=Off EXCEPTIONS=On PROJECT=doc PUBLISH_DOCS=On DOXYGEN_VERSION=1.8.11
     os: linux
     compiler: clang
     addons:
@@ -138,7 +168,7 @@ before_script:
   # generate build
   ############################################################################
   - cd ${TRAVIS_BUILD_DIR}
-  - cmake . -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+  - cmake . -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DRX_USE_EXCEPTIONS=$EXCEPTIONS
 
 script:
   ############################################################################
