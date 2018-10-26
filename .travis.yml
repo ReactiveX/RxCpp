@@ -38,7 +38,7 @@ matrix:
         sources:
           - ubuntu-toolchain-r-test
 
-  - env: BUILD_TYPE=RelWithDebInfo ASAN=On GCC_VERSION=8 RUN_TEST=On EXCEPTIONS=Off
+  - env: BUILD_TYPE=RelWithDebInfo ASAN=Off GCC_VERSION=8 RUN_TEST=On EXCEPTIONS=Off
     os: linux
     compiler: gcc
     addons: &gcc8
@@ -156,6 +156,9 @@ before_script:
   - |
     if [ -z "$BUILD_TYPE" ]; then
       BUILD_TYPE=Release;
+    fi;
+    if [ -z "$EXCEPTIONS" ]; then
+      EXCEPTIONS=On;
     fi;
     if [[ "${ASAN}" == "On" ]]; then
       export CXXFLAGS="${CXXFLAGS} -fsanitize=address,undefined,integer -fno-omit-frame-pointer -fno-sanitize=unsigned-integer-overflow";
