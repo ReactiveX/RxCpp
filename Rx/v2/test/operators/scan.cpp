@@ -3,7 +3,7 @@
 #include <rxcpp/operators/rx-take.hpp>
 #include <rxcpp/operators/rx-scan.hpp>
 
-SCENARIO("scan: issue 41", "[scan][operators][issue][hide]"){
+SCENARIO("scan: issue 41", "[scan][operators][issue][!hide]"){
     GIVEN("map of scan of interval"){
         auto sc = rxsc::make_current_thread();
         auto so = rxcpp::synchronize_in_one_worker(sc);
@@ -253,7 +253,7 @@ SCENARIO("scan: seed, some data", "[scan][operators]"){
     }
 }
 
-SCENARIO("scan: seed, accumulator throws", "[scan][operators]"){
+SCENARIO("scan: seed, accumulator throws", "[scan][operators][!throws]"){
     GIVEN("a test hot observable of ints"){
         auto sc = rxsc::make_test();
         auto w = sc.create_worker();
@@ -279,7 +279,7 @@ SCENARIO("scan: seed, accumulator throws", "[scan][operators]"){
                     return xs
                         .scan(seed, [&](int sum, int x) {
                             if (x == 4) {
-                                throw ex;
+                                rxu::throw_exception(ex);
                             }
                             return sum + x;
                         })

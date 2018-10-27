@@ -176,7 +176,7 @@ struct window_toggle
                             innercs.unsubscribe();
                         },
                     // on_error
-                        [localState](std::exception_ptr e) {
+                        [localState](rxu::error_ptr e) {
                             localState->dest.on_error(e);
                         },
                     // on_completed
@@ -186,7 +186,7 @@ struct window_toggle
                     source.subscribe(std::move(selectedSink));
                 },
             // on_error
-                [localState](std::exception_ptr e) {
+                [localState](rxu::error_ptr e) {
                     localState->dest.on_error(e);
                 },
             // on_completed
@@ -218,7 +218,7 @@ struct window_toggle
             localState->worker.schedule(selectedWork.get());
         }
 
-        void on_error(std::exception_ptr e) const {
+        void on_error(rxu::error_ptr e) const {
             auto localState = state;
             auto work = [e, localState](const rxsc::schedulable&){
                 for (auto s : localState->subj) {

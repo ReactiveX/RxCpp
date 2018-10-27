@@ -42,7 +42,7 @@ namespace rxcpp {
                                       state->out.on_next(t);
                                     },
                                     // on_error
-                                    [state](std::exception_ptr e) {
+                                    [state](rxu::error_ptr e) {
                                       EventHandlers::on_error(state, e);
                                     },
                                     // on_completed

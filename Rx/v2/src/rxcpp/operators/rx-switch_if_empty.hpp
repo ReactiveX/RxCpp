@@ -76,7 +76,7 @@ struct switch_if_empty
             is_empty = false;
             dest.on_next(std::move(v));
         }
-        void on_error(std::exception_ptr e) const {
+        void on_error(rxu::error_ptr e) const {
             dest.on_error(std::move(e));
         }
         void on_completed() const {

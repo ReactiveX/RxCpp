@@ -200,7 +200,7 @@ subscriber<T, rxt::testable_observer<T>> test_type::test_type_worker::make_subsc
                               recorded_type(ts->sc->clock(), notification_type::on_next(value)));
           },
           // on_error
-          [ts](std::exception_ptr e)
+          [ts](rxu::error_ptr e)
           {
               ts->m.push_back(
                               recorded_type(ts->sc->clock(), notification_type::on_error(e)));

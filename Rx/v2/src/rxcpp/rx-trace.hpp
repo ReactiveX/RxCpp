@@ -93,8 +93,8 @@ struct trace_noop
     template<class Subscriber>
     inline void on_next_return(const Subscriber&) {}
 
-    template<class Subscriber>
-    inline void on_error_enter(const Subscriber&, const std::exception_ptr&) {}
+    template<class Subscriber, class ErrorPtr>
+    inline void on_error_enter(const Subscriber&, const ErrorPtr&) {}
     template<class Subscriber>
     inline void on_error_return(const Subscriber&) {}
 

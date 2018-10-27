@@ -203,7 +203,7 @@ struct zip : public operator_base<rxu::value_type_t<zip_traits<Coordination, Sel
                 }
             },
         // on_error
-            [state](std::exception_ptr e) {
+            [state](rxu::error_ptr e) {
                 state->out.on_error(e);
             },
         // on_completed

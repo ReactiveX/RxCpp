@@ -13,6 +13,7 @@ SCENARIO("first sample"){
     printf("//! [first sample]\n");
 }
 
+#if RXCPP_USE_EXCEPTIONS
 SCENARIO("first empty sample"){
     printf("//! [first empty sample]\n");
     auto values = rxcpp::observable<>::empty<int>().first();
@@ -28,6 +29,7 @@ SCENARIO("first empty sample"){
             [](){printf("OnCompleted\n");});
     printf("//! [first empty sample]\n");
 }
+#endif
 
 SCENARIO("last sample"){
     printf("//! [last sample]\n");
@@ -39,6 +41,7 @@ SCENARIO("last sample"){
     printf("//! [last sample]\n");
 }
 
+#if RXCPP_USE_EXCEPTIONS
 SCENARIO("last empty sample"){
     printf("//! [last empty sample]\n");
     auto values = rxcpp::observable<>::empty<int>().last();
@@ -54,6 +57,7 @@ SCENARIO("last empty sample"){
             [](){printf("OnCompleted\n");});
     printf("//! [last empty sample]\n");
 }
+#endif
 
 SCENARIO("count sample"){
     printf("//! [count sample]\n");
@@ -65,6 +69,7 @@ SCENARIO("count sample"){
     printf("//! [count sample]\n");
 }
 
+#if RXCPP_USE_EXCEPTIONS
 SCENARIO("count error sample"){
     printf("//! [count error sample]\n");
     auto values = rxcpp::observable<>::range(1, 3).
@@ -82,6 +87,7 @@ SCENARIO("count error sample"){
             [](){printf("OnCompleted\n");});
     printf("//! [count error sample]\n");
 }
+#endif
 
 SCENARIO("sum sample"){
     printf("//! [sum sample]\n");
@@ -93,6 +99,7 @@ SCENARIO("sum sample"){
     printf("//! [sum sample]\n");
 }
 
+#if RXCPP_USE_EXCEPTIONS
 SCENARIO("sum empty sample"){
     printf("//! [sum empty sample]\n");
     auto values = rxcpp::observable<>::empty<int>().sum();
@@ -108,6 +115,7 @@ SCENARIO("sum empty sample"){
             [](){printf("OnCompleted\n");});
     printf("//! [sum empty sample]\n");
 }
+#endif
 
 SCENARIO("sum error sample"){
     printf("//! [sum error sample]\n");
@@ -137,6 +145,7 @@ SCENARIO("average sample"){
     printf("//! [average sample]\n");
 }
 
+#if RXCPP_USE_EXCEPTIONS
 SCENARIO("average empty sample"){
     printf("//! [average empty sample]\n");
     auto values = rxcpp::observable<>::empty<int>().average();
@@ -152,6 +161,7 @@ SCENARIO("average empty sample"){
             [](){printf("OnCompleted\n");});
     printf("//! [average empty sample]\n");
 }
+#endif
 
 SCENARIO("average error sample"){
     printf("//! [average error sample]\n");
@@ -181,6 +191,7 @@ SCENARIO("max sample"){
     printf("//! [max sample]\n");
 }
 
+#if RXCPP_USE_EXCEPTIONS
 SCENARIO("max empty sample"){
     printf("//! [max empty sample]\n");
     auto values = rxcpp::observable<>::empty<int>().max();
@@ -196,6 +207,7 @@ SCENARIO("max empty sample"){
             [](){printf("OnCompleted\n");});
     printf("//! [max empty sample]\n");
 }
+#endif
 
 SCENARIO("max error sample"){
     printf("//! [max error sample]\n");
@@ -225,6 +237,7 @@ SCENARIO("min sample"){
     printf("//! [min sample]\n");
 }
 
+#if RXCPP_USE_EXCEPTIONS
 SCENARIO("min empty sample"){
     printf("//! [min empty sample]\n");
     auto values = rxcpp::observable<>::empty<int>().min();
@@ -240,6 +253,7 @@ SCENARIO("min empty sample"){
             [](){printf("OnCompleted\n");});
     printf("//! [min empty sample]\n");
 }
+#endif
 
 SCENARIO("min error sample"){
     printf("//! [min error sample]\n");

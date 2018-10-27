@@ -84,7 +84,7 @@ struct time_interval
             dest.on_next(now - last);
             last = now;
         }
-        void on_error(std::exception_ptr e) const {
+        void on_error(rxu::error_ptr e) const {
             dest.on_error(e);
         }
         void on_completed() const {

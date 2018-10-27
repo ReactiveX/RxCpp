@@ -143,7 +143,7 @@ struct concat
                         state->out.on_next(ct);
                     },
                 // on_error
-                    [state](std::exception_ptr e) {
+                    [state](rxu::error_ptr e) {
                         state->out.on_error(e);
                     },
                 //on_completed
@@ -207,7 +207,7 @@ struct concat
                 }
             },
         // on_error
-            [state](std::exception_ptr e) {
+            [state](rxu::error_ptr e) {
                 state->out.on_error(e);
             },
         // on_completed

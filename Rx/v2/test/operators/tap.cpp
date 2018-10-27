@@ -86,7 +86,7 @@ SCENARIO("tap stops on error", "[tap][operators]"){
             auto res = w.start(
                 [xs, &invoked]() {
                     return xs
-                        .tap([&invoked](std::exception_ptr) {
+                        .tap([&invoked](rxu::error_ptr) {
                             invoked++;
                         })
                         // forget type to workaround lambda deduction bug on msvc 2013

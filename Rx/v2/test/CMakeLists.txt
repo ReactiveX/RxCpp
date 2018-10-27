@@ -88,6 +88,15 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/zip.cpp
 )
 
+set(TEST_COMPILE_DEFINITIONS "")
+set(TEST_COMMAND_ARGUMENTS "")
+
+if (NOT RX_USE_EXCEPTIONS)
+    MESSAGE( STATUS "no exceptions" )
+    list(APPEND TEST_COMPILE_DEFINITIONS CATCH_CONFIG_DISABLE_EXCEPTIONS)
+    list(APPEND TEST_COMMAND_ARGUMENTS -e)
+endif()
+
 
 add_executable(rxcppv2_test ${TEST_DIR}/test.cpp ${TEST_SOURCES})
 add_executable(rxcpp::tests ALIAS rxcppv2_test)
@@ -98,6 +107,7 @@ set_target_properties(
 )
 target_compile_options(rxcppv2_test PUBLIC ${RX_COMPILE_OPTIONS})
 target_compile_features(rxcppv2_test PUBLIC ${RX_COMPILE_FEATURES})
+target_compile_definitions(rxcppv2_test PUBLIC ${TEST_COMPILE_DEFINITIONS})
 target_include_directories(rxcppv2_test
     PUBLIC ${RX_SRC_DIR} ${RX_CATCH_DIR}
     )
@@ -110,7 +120,7 @@ foreach(ONE_TEST_SOURCE ${TEST_SOURCES})
     set(ONE_TEST_FULL_NAME "rxcpp_test_${ONE_TEST_NAME}")
     add_executable( ${ONE_TEST_FULL_NAME} ${ONE_TEST_SOURCE} )
     add_executable( rxcpp::${ONE_TEST_NAME} ALIAS ${ONE_TEST_FULL_NAME})
-    target_compile_definitions(${ONE_TEST_FULL_NAME} PUBLIC "CATCH_CONFIG_MAIN")
+    target_compile_definitions(${ONE_TEST_FULL_NAME} PUBLIC "CATCH_CONFIG_MAIN" ${TEST_COMPILE_DEFINITIONS})
     target_compile_options(${ONE_TEST_FULL_NAME} PUBLIC ${RX_COMPILE_OPTIONS})
     target_compile_features(${ONE_TEST_FULL_NAME} PUBLIC ${RX_COMPILE_FEATURES})
     target_include_directories(${ONE_TEST_FULL_NAME}
@@ -118,7 +128,7 @@ foreach(ONE_TEST_SOURCE ${TEST_SOURCES})
         )
     target_link_libraries(${ONE_TEST_FULL_NAME} ${CMAKE_THREAD_LIBS_INIT})
 
-    add_test(NAME ${ONE_TEST_NAME} COMMAND ${ONE_TEST_FULL_NAME})
+    add_test(NAME ${ONE_TEST_NAME} COMMAND ${ONE_TEST_FULL_NAME} ${TEST_COMMAND_ARGUMENTS})
 endforeach(ONE_TEST_SOURCE ${TEST_SOURCES})
 
 

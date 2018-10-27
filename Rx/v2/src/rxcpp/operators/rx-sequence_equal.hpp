@@ -161,7 +161,7 @@ struct sequence_equal : public operator_base<bool>
                 check_equal();
             },
             // on_error
-            [state](std::exception_ptr e) {
+            [state](rxu::error_ptr e) {
                 state->out.on_error(e);
             },
             // on_completed
@@ -189,7 +189,7 @@ struct sequence_equal : public operator_base<bool>
                 check_equal();
             },
             // on_error
-            [state](std::exception_ptr e) {
+            [state](rxu::error_ptr e) {
                 state->out.on_error(e);
             },
             // on_completed

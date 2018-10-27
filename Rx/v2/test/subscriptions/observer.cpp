@@ -4,7 +4,7 @@ SCENARIO("subscriber traits", "[observer][traits]"){
     GIVEN("given some subscriber types"){
         int result = 0;
         auto next = [&result](int i){result += i;};
-        auto error = [&result](std::exception_ptr){result += 10;};
+        auto error = [&result](rxu::error_ptr){result += 10;};
         auto completed = [&result](){result += 100;};
 //        auto ra = rx::rxu::detail::arg_resolver_n<0, rx::tag_resumption_resolution::template predicate, typename rx::tag_resumption_resolution::default_type, rx::resumption, decltype(next), decltype(error), decltype(completed), rx::rxu::detail::tag_unresolvable, rx::rxu::detail::tag_unresolvable>(rx::resumption(), next, error, completed, rx::rxu::detail::tag_unresolvable(), rx::rxu::detail::tag_unresolvable());
 //        auto ra = typename rx::rxu::detail::arg_resolver<rx::tag_resumption_resolution::template predicate, typename rx::tag_resumption_resolution::default_type, rx::resumption, decltype(next), decltype(error), decltype(completed)>::type(rx::resumption(), next, error, completed, rx::rxu::detail::tag_unresolvable(), rx::rxu::detail::tag_unresolvable());
@@ -45,7 +45,7 @@ SCENARIO("subscriber traits", "[observer][traits]"){
         }
         WHEN("after error"){
             THEN("subscriber result is 10"){
-                scrbResult.on_error(std::current_exception());
+                scrbResult.on_error(rxu::current_exception());
                 REQUIRE(result == 10);
             }
         }
@@ -102,7 +102,7 @@ SCENARIO("subscriber behavior", "[observer][traits]"){
     GIVEN("given some subscriber types"){
         int result = 0;
         auto next = [&result](int i){result += i;};
-        auto error = [&result](std::exception_ptr){result += 10;};
+        auto error = [&result](rxu::error_ptr){result += 10;};
         auto completed = [&result](){result += 100;};
         auto dob = rx::make_subscriber<int>(rx::make_observer_dynamic<int>(next, error, completed));
         auto so = rx::make_subscriber<int>(next, error, completed);
@@ -143,19 +143,19 @@ SCENARIO("subscriber behavior", "[observer][traits]"){
         }
         WHEN("after error"){
             THEN("dynamic_observer result is 10"){
-                dob.on_error(std::current_exception());
+                dob.on_error(rxu::current_exception());
                 REQUIRE(result == 10);
             }
             THEN("static_observer result is 10"){
-                so.on_error(std::current_exception());
+                so.on_error(rxu::current_exception());
                 REQUIRE(result == 10);
             }
             THEN("dynamic_observer is not subscribed"){
-                dob.on_error(std::current_exception());
+                dob.on_error(rxu::current_exception());
                 REQUIRE(!dob.is_subscribed());
             }
             THEN("static_observer is not subscribed"){
-                so.on_error(std::current_exception());
+                so.on_error(rxu::current_exception());
                 REQUIRE(!so.is_subscribed());
             }
         }

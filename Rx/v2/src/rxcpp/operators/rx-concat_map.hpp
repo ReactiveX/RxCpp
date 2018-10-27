@@ -183,7 +183,7 @@ struct concat_map
                         state->out.on_next(std::move(selectedResult));
                     },
                 // on_error
-                    [state](std::exception_ptr e) {
+                    [state](rxu::error_ptr e) {
                         state->out.on_error(e);
                     },
                 //on_completed
@@ -246,7 +246,7 @@ struct concat_map
                 }
             },
         // on_error
-            [state](std::exception_ptr e) {
+            [state](rxu::error_ptr e) {
                 state->out.on_error(e);
             },
         // on_completed

@@ -6,7 +6,7 @@
 const int static_onnextcalls = 1000000;
 
 
-SCENARIO("synchronize merge ranges", "[hide][range][synchronize][merge][perf]"){
+SCENARIO("synchronize merge ranges", "[!hide][range][synchronize][merge][perf]"){
     const int& onnextcalls = static_onnextcalls;
     GIVEN("some ranges"){
         WHEN("generating ints"){
@@ -34,7 +34,7 @@ SCENARIO("synchronize merge ranges", "[hide][range][synchronize][merge][perf]"){
     }
 }
 
-SCENARIO("observe_on merge ranges", "[hide][range][observe_on][merge][perf]"){
+SCENARIO("observe_on merge ranges", "[!hide][range][observe_on][merge][perf]"){
     const int& onnextcalls = static_onnextcalls;
     GIVEN("some ranges"){
         WHEN("generating ints"){
@@ -62,7 +62,7 @@ SCENARIO("observe_on merge ranges", "[hide][range][observe_on][merge][perf]"){
     }
 }
 
-SCENARIO("serialize merge ranges", "[hide][range][serialize][merge][perf]"){
+SCENARIO("serialize merge ranges", "[!hide][range][serialize][merge][perf]"){
     const int& onnextcalls = static_onnextcalls;
     GIVEN("some ranges"){
         WHEN("generating ints"){

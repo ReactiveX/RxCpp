@@ -1,6 +1,6 @@
 #include "../test.h"
 
-SCENARIO("schedule_periodically", "[hide][periodically][scheduler][long][perf][sources]"){
+SCENARIO("schedule_periodically", "[!hide][periodically][scheduler][long][perf][sources]"){
     GIVEN("schedule_periodically"){
         WHEN("the period is 1sec and the initial is 2sec"){
             using namespace std::chrono;
@@ -21,7 +21,7 @@ SCENARIO("schedule_periodically", "[hide][periodically][scheduler][long][perf][s
     }
 }
 
-SCENARIO("schedule_periodically by duration", "[hide][periodically][scheduler][long][perf][sources]"){
+SCENARIO("schedule_periodically by duration", "[!hide][periodically][scheduler][long][perf][sources]"){
     GIVEN("schedule_periodically_duration"){
         WHEN("the period is 1sec and the initial is 2sec"){
             using namespace std::chrono;
@@ -64,7 +64,7 @@ SCENARIO("schedule_periodically by duration", "[hide][periodically][scheduler][l
     }
 }
 
-SCENARIO("intervals", "[hide][periodically][interval][scheduler][long][perf][sources]"){
+SCENARIO("intervals", "[!hide][periodically][interval][scheduler][long][perf][sources]"){
     GIVEN("10 intervals of 1 seconds"){
         WHEN("the period is 1sec and the initial is 2sec"){
             using namespace std::chrono;
@@ -84,7 +84,7 @@ SCENARIO("intervals", "[hide][periodically][interval][scheduler][long][perf][sou
                         std::cout << "interval          : period " << counter << ", " << nsDelta.count() << "ms delta from target time" << std::endl;
                         if (counter == 5) {cs.unsubscribe();}
                     },
-                    [](std::exception_ptr){abort();});
+                    [](rxu::error_ptr){abort();});
         }
     }
 }

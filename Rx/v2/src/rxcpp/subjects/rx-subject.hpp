@@ -40,7 +40,7 @@ class multicast_observer
         }
         std::mutex lock;
         typename mode::type current;
-        std::exception_ptr error;
+        rxu::error_ptr error;
         composite_subscription lifetime;
     };
 
@@ -191,7 +191,7 @@ public:
             }
         }
     }
-    void on_error(std::exception_ptr e) const {
+    void on_error(rxu::error_ptr e) const {
         std::unique_lock<std::mutex> guard(b->state->lock);
         if (b->state->current == mode::Casting) {
             b->state->error = e;

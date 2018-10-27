@@ -166,7 +166,7 @@ struct reduce : public operator_base<rxu::value_type_t<reduce_traits<T, Observab
                 state->current = std::move(next);
             },
         // on_error
-            [state](std::exception_ptr e) {
+            [state](rxu::error_ptr e) {
                 state->out.on_error(e);
             },
         // on_completed
@@ -244,7 +244,7 @@ struct average {
             }
             return avg;
         }
-        throw rxcpp::empty_error("average() requires a stream with at least one value");
+        rxu::throw_exception(rxcpp::empty_error("average() requires a stream with at least one value"));
     }
 };
 
@@ -264,7 +264,7 @@ struct sum {
     }
     T operator()(seed_type a) const {
         if (a.empty())
-            throw rxcpp::empty_error("sum() requires a stream with at least one value");
+            rxu::throw_exception(rxcpp::empty_error("sum() requires a stream with at least one value"));
         return *a;
     }
 };
@@ -283,7 +283,7 @@ struct max {
     }
     T operator()(seed_type a) {
         if (a.empty())
-            throw rxcpp::empty_error("max() requires a stream with at least one value");
+            rxu::throw_exception(rxcpp::empty_error("max() requires a stream with at least one value"));
         return *a;
     }
 };
@@ -302,7 +302,7 @@ struct min {
     }
     T operator()(seed_type a) {
         if (a.empty())
-            throw rxcpp::empty_error("min() requires a stream with at least one value");
+            rxu::throw_exception(rxcpp::empty_error("min() requires a stream with at least one value"));
         return *a;
     }
 };
@@ -320,7 +320,7 @@ struct first {
     }
     T operator()(seed_type a) {
         if (a.empty()) {
-            throw rxcpp::empty_error("first() requires a stream with at least one value");
+            rxu::throw_exception(rxcpp::empty_error("first() requires a stream with at least one value"));
         }
         return *a;
     }
@@ -339,7 +339,7 @@ struct last {
     }
     T operator()(seed_type a) {
         if (a.empty()) {
-            throw rxcpp::empty_error("last() requires a stream with at least one value");
+            rxu::throw_exception(rxcpp::empty_error("last() requires a stream with at least one value"));
         }
         return *a;
     }

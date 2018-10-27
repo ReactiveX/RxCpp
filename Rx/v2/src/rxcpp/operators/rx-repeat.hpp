@@ -47,7 +47,7 @@ using repeat_invalid_t = typename repeat_invalid<AN...>::type;
 namespace repeat {
   struct event_handlers {
     template <typename State>
-    static inline void on_error(State& state, std::exception_ptr& e) {
+    static inline void on_error(State& state, rxu::error_ptr& e) {
       state->out.on_error(e);
     }
           

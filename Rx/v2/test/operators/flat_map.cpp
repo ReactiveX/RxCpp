@@ -8,7 +8,7 @@
 
 static const int static_tripletCount = 100;
 
-SCENARIO("pythagorian for loops", "[hide][for][pythagorian][perf]"){
+SCENARIO("pythagorian for loops", "[!hide][for][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("a for loop"){
         WHEN("generating pythagorian triplets"){
@@ -45,7 +45,7 @@ SCENARIO("pythagorian for loops", "[hide][for][pythagorian][perf]"){
     }
 }
 
-SCENARIO("merge_transform pythagorian ranges", "[hide][range][merge_transform][pythagorian][perf]"){
+SCENARIO("merge_transform pythagorian ranges", "[!hide][range][merge_transform][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("some ranges"){
         WHEN("generating pythagorian triplets"){
@@ -89,7 +89,7 @@ SCENARIO("merge_transform pythagorian ranges", "[hide][range][merge_transform][p
     }
 }
 
-SCENARIO("synchronize merge_transform pythagorian ranges", "[hide][range][merge_transform][synchronize][pythagorian][perf]"){
+SCENARIO("synchronize merge_transform pythagorian ranges", "[!hide][range][merge_transform][synchronize][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("some ranges"){
         WHEN("generating pythagorian triplets"){
@@ -137,7 +137,7 @@ SCENARIO("synchronize merge_transform pythagorian ranges", "[hide][range][merge_
     }
 }
 
-SCENARIO("observe_on merge_transform pythagorian ranges", "[hide][range][merge_transform][observe_on][pythagorian][perf]"){
+SCENARIO("observe_on merge_transform pythagorian ranges", "[!hide][range][merge_transform][observe_on][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("some ranges"){
         WHEN("generating pythagorian triplets"){
@@ -185,7 +185,7 @@ SCENARIO("observe_on merge_transform pythagorian ranges", "[hide][range][merge_t
     }
 }
 
-SCENARIO("serialize merge_transform pythagorian ranges", "[hide][range][merge_transform][serialize][pythagorian][perf]"){
+SCENARIO("serialize merge_transform pythagorian ranges", "[!hide][range][merge_transform][serialize][pythagorian][perf]"){
     const int& tripletCount = static_tripletCount;
     GIVEN("some ranges"){
         WHEN("generating pythagorian triplets"){

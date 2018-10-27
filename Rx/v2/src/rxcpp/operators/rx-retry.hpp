@@ -43,7 +43,7 @@ using retry_invalid_t = typename retry_invalid<AN...>::type;
 namespace retry {
   struct event_handlers {
     template <typename State>
-    static inline void on_error(State& state, std::exception_ptr& e) {
+    static inline void on_error(State& state, rxu::error_ptr& e) {
       state->update();
       // Use specialized predicate for finite/infinte case
       if (state->completed_predicate()) {

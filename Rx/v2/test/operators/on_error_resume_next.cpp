@@ -30,7 +30,7 @@ SCENARIO("switch_on_error stops on completion", "[switch_on_error][on_error_resu
             auto res = w.start(
                 [xs, ys, &invoked]() {
                     return xs
-                        .switch_on_error([ys, &invoked](std::exception_ptr) {
+                        .switch_on_error([ys, &invoked](rxu::error_ptr) {
                             invoked++;
                             return ys;
                         })
@@ -101,7 +101,7 @@ SCENARIO("on_error_resume_next stops on completion", "[on_error_resume_next][ope
             auto res = w.start(
                 [xs, ys, &invoked]() {
                     return xs
-                        .on_error_resume_next([ys, &invoked](std::exception_ptr) {
+                        .on_error_resume_next([ys, &invoked](rxu::error_ptr) {
                             invoked++;
                             return ys;
                         })
@@ -174,7 +174,7 @@ SCENARIO("on_error_resume_next stops on error", "[on_error_resume_next][operator
             auto res = w.start(
                 [xs, ys, &invoked]() {
                     return xs
-                        .on_error_resume_next([ys, &invoked](std::exception_ptr) {
+                        .on_error_resume_next([ys, &invoked](rxu::error_ptr) {
                             invoked++;
                             return ys;
                         })

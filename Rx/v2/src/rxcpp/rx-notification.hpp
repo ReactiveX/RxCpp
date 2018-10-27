@@ -106,7 +106,7 @@ auto equals(const T& lhs, const T& rhs, int)
 
 template<class T>
 bool equals(const T&, const T&, ...) {
-    throw std::runtime_error("value does not support equality tests");
+    rxu::throw_exception(std::runtime_error("value does not support equality tests"));
     return false;
 }
 
@@ -146,26 +146,20 @@ private:
     };
 
     struct on_error_notification : public base {
-        on_error_notification(std::exception_ptr ep) : ep(ep) {
+        on_error_notification(rxu::error_ptr ep) : ep(ep) {
         }
         on_error_notification(const on_error_notification& o) : ep(o.ep) {}
         on_error_notification(const on_error_notification&& o) : ep(std::move(o.ep)) {}
         on_error_notification& operator=(on_error_notification o) { ep = std::move(o.ep); return *this; }
         virtual void out(std::ostream& os) const {
             os << "on_error(";
-            try {
-                std::rethrow_exception(ep);
-            } catch (const std::exception& e) {
-                os << e.what();
-            } catch (...) {
-                os << "<not derived from std::exception>";
-            }
+            os << rxu::what(ep);
             os << ")";
         }
         virtual bool equals(const typename base::type& other) const {
             bool result = false;
             // not trying to compare exceptions
-            other->accept(make_subscriber<T>(make_observer_dynamic<T>([](T){}, [&result](std::exception_ptr){
+            other->accept(make_subscriber<T>(make_observer_dynamic<T>([](T){}, [&result](rxu::error_ptr){
                 result = true;
             })));
             return result;
@@ -173,7 +167,7 @@ private:
         virtual void accept(const typename base::observer_type& o) const {
             o.on_error(ep);
         }
-        const std::exception_ptr ep;
+        const rxu::error_ptr ep;
     };
 
     struct on_completed_notification : public base {
@@ -199,20 +193,14 @@ private:
     template<typename Exception>
     static
     type make_on_error(exception_tag&&, Exception&& e) {
-        std::exception_ptr ep;
-        try {
-            throw std::forward<Exception>(e);
-        }
-        catch (...) {
-            ep = std::current_exception();
-        }
+        rxu::error_ptr ep = rxu::make_error_ptr(std::forward<Exception>(e));
         return std::make_shared<on_error_notification>(ep);
     }
 
     struct exception_ptr_tag {};
 
     static
-    type make_on_error(exception_ptr_tag&&, std::exception_ptr ep) {
+    type make_on_error(exception_ptr_tag&&, rxu::error_ptr ep) {
         return std::make_shared<on_error_notification>(ep);
     }
 
@@ -229,7 +217,7 @@ public:
     template<typename Exception>
     static type on_error(Exception&& e) {
         return make_on_error(typename std::conditional<
-            std::is_same<rxu::decay_t<Exception>, std::exception_ptr>::value,
+            std::is_same<rxu::decay_t<Exception>, rxu::error_ptr>::value,
                 exception_ptr_tag, exception_tag>::type(),
             std::forward<Exception>(e));
     }
@@ -280,14 +268,14 @@ std::ostream& operator<< (std::ostream& out, const recorded<T>& r) {
 }
 namespace rxn=notifications;
 
-}
-
 inline std::ostream& operator<< (std::ostream& out, const std::vector<rxcpp::notifications::subscription>& vs) {
     return rxcpp::notifications::detail::ostreamvector(out, vs);
 }
 template<class T>
 inline std::ostream& operator<< (std::ostream& out, const std::vector<rxcpp::notifications::recorded<T>>& vr) {
     return rxcpp::notifications::detail::ostreamvector(out, vr);
+}
+
 }
 
 #endif

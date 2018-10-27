@@ -139,7 +139,7 @@ struct skip_until : public operator_base<T>
                 state->trigger_lifetime.unsubscribe();
             },
         // on_error
-            [state](std::exception_ptr e) {
+            [state](rxu::error_ptr e) {
                 if (state->mode_value != mode::skipping) {
                     return;
                 }
@@ -174,7 +174,7 @@ struct skip_until : public operator_base<T>
                 state->out.on_next(t);
             },
         // on_error
-            [state](std::exception_ptr e) {
+            [state](rxu::error_ptr e) {
                 if (state->mode_value > mode::triggered) {
                     return;
                 }

@@ -200,7 +200,7 @@ struct group_by
             auto selectedKey = on_exception(
                 [&](){
                     return this->keySelector(v);},
-                [this](std::exception_ptr e){on_error(e);});
+                [this](rxu::error_ptr e){on_error(e);});
             if (selectedKey.empty()) {
                 return;
             }
@@ -215,7 +215,7 @@ struct group_by
                 auto durationObs = on_exception(
                     [&](){
                         return this->durationSelector(obs);},
-                    [this](std::exception_ptr e){on_error(e);});
+                    [this](rxu::error_ptr e){on_error(e);});
                 if (durationObs.empty()) {
                     return;
                 }
@@ -237,20 +237,20 @@ struct group_by
                 auto robs = durationObs.get().take(1);
                 duration_sub.add(robs.subscribe(
                     [](const typename decltype(robs)::value_type &){},
-                    [=](std::exception_ptr ) {expire();},
+                    [=](rxu::error_ptr) {expire();},
                     [=](){expire();}
                 ));
             }
             auto selectedMarble = on_exception(
                 [&](){
                     return this->marbleSelector(v);},
-                [this](std::exception_ptr e){on_error(e);});
+                [this](rxu::error_ptr e){on_error(e);});
             if (selectedMarble.empty()) {
                 return;
             }
             g->second.on_next(std::move(selectedMarble.get()));
         }
-        void on_error(std::exception_ptr e) const {
+        void on_error(rxu::error_ptr e) const {
             for(auto& g : state->groups) {
                 g.second.on_error(e);
             }
