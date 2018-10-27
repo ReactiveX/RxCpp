@@ -9,8 +9,8 @@ SCENARIO("error sample"){
     values.
         subscribe(
             [](int v){printf("OnNext: %d\n", v);},
-            [](rxcpp::error_ptr ep){
-                printf("OnError: %s\n", rxu::what(ep));
+            [](rxcpp::util::error_ptr ep){
+                printf("OnError: %s\n", rxcpp::util::what(ep).c_str());
             },
             [](){printf("OnCompleted\n");});
     printf("//! [error sample]\n");
@@ -23,8 +23,8 @@ SCENARIO("threaded error sample"){
         as_blocking().
         subscribe(
             [](int v){printf("OnNext: %d\n", v);},
-            [](rxcpp::error_ptr ep){
-                printf("OnError: %s\n", rxu::what(ep));
+            [](rxcpp::util::error_ptr ep){
+                printf("OnError: %s\n", rxcpp::util::what(ep).c_str());
             },
             [](){printf("OnCompleted\n");});
     printf("//! [threaded error sample]\n");

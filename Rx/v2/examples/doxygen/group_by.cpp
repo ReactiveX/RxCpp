@@ -3,6 +3,8 @@
 #include "rxcpp/rx-test.hpp"
 #include "catch.hpp"
 
+#include <sstream>
+
 SCENARIO("group_by sample"){
     printf("//! [group_by sample]\n");
     auto values = rxcpp::observable<>::range(0, 8).
