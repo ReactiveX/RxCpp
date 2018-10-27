@@ -10,8 +10,6 @@
 // some configuration macros
 #if defined(_MSC_VER)
 
-#define RXCPP_NORETURN __declspec(noreturn)
-
 #if _MSC_VER > 1600
 #pragma warning(disable: 4348) // false positives on : redefinition of default parameter : parameter 2
 #define RXCPP_USE_RVALUEREF 1
@@ -28,6 +26,8 @@
 #if _HAS_EXCEPTIONS
 #define RXCPP_USE_EXCEPTIONS 1
 #endif
+
+#define RXCPP_NORETURN __declspec(noreturn)
 
 #elif defined(__clang__)
 
@@ -72,11 +72,7 @@
 #define RXCPP_USE_EXCEPTIONS 1
 #endif
 
-#if __has_feature(cxx_attributes)
-# define RXCPP_NORETURN [[noreturn]]
-#else
-# define RXCPP_NORETURN __attribute__ ((noreturn))
-#endif
+#define RXCPP_NORETURN __attribute__ ((noreturn))
 
 #endif
 
