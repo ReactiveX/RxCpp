@@ -899,7 +899,7 @@ error_ptr make_error_ptr(E&& e) {
 }
 
 // Replace std::rethrow_exception to be compatible with our error_ptr typedef.
-[[noreturn]] inline void rethrow_exception(error_ptr e) {
+RXCPP_NORETURN inline void rethrow_exception(error_ptr e) {
 #if RXCPP_USE_EXCEPTIONS
   std::rethrow_exception(e);
 #else
@@ -917,7 +917,7 @@ error_ptr make_error_ptr(E&& e) {
 // A replacement for the "throw" keyword which is illegal when
 // exceptions are disabled with -fno-exceptions.
 template <typename E>
-[[noreturn]] inline void throw_exception(E&& e) {
+RXCPP_NORETURN inline void throw_exception(E&& e) {
 #if RXCPP_USE_EXCEPTIONS
   throw std::forward<E>(e);
 #else
@@ -930,7 +930,7 @@ template <typename E>
 
 // TODO: Do we really need this? rxu::rethrow_exception(rxu::current_exception())
 // would have the same semantics in either case.
-[[noreturn]] inline void rethrow_current_exception() {
+RXCPP_NORETURN inline void rethrow_current_exception() {
 #if RXCPP_USE_EXCEPTIONS
   std::rethrow_exception(std::current_exception());
 #else
