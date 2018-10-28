@@ -72,6 +72,7 @@ private:
             state->lifetime.add([keepAlive](){
                 std::unique_lock<std::mutex> guard(keepAlive->lock);
                 auto expired = std::move(keepAlive->q);
+                keepAlive->q = new_worker_state::queue_item_time{};
                 if (!keepAlive->q.empty()) std::terminate();
                 keepAlive->wake.notify_one();
 
