@@ -38,7 +38,7 @@ matrix:
         sources:
           - ubuntu-toolchain-r-test
 
-  - env: BUILD_TYPE=RelWithDebInfo ASAN=Off GCC_VERSION=8 RUN_TEST=On EXCEPTIONS=Off
+  - env: BUILD_TYPE=Debug ASAN=Off GCC_VERSION=8 RUN_TEST=On EXCEPTIONS=Off
     os: linux
     compiler: gcc
     addons: &gcc8
