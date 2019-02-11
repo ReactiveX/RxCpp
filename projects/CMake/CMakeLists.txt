@@ -135,8 +135,12 @@ set(RX_SOURCES
 # Grouping all the source files puts them into a virtual folder in Visual Studio
 source_group("src" FILES ${RX_SOURCES})
 
+if (MSVC)
+# This 'RxCpp' build target only appears to be a virtual project for IDEs.
+# It won't actually build correctly since it is missing the shared.cmake integration.
 add_library(RxCpp SHARED ${RX_SOURCES})
 SET_TARGET_PROPERTIES(RxCpp PROPERTIES LINKER_LANGUAGE CXX)
+endif (MSVC)
 
 set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY TRUE CACHE BOOL "Don't require all projects to be built in order to install" FORCE)
 
