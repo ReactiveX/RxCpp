@@ -17,11 +17,11 @@ SCENARIO("composite_exception sample"){
             [](std::exception_ptr composite_e) {
                 printf("OnError %s\n", rxu::what(composite_e).c_str());
                 try { std::rethrow_exception(composite_e); }
-                catch(rxcpp::composite_exception ce) {
+                catch(rxcpp::composite_exception const &ce) {
                     for(std::exception_ptr particular_e : ce.exceptions) {
 
                         try{ std::rethrow_exception(particular_e); }
-                        catch(std::runtime_error error) { printf(" *** %s\n", error.what()); }
+                        catch(std::runtime_error const &error) { printf(" *** %s\n", error.what()); }
 
                     }
                 }
