@@ -126,7 +126,7 @@ install:
     if [ -n "$DOXYGEN_VERSION" ]; then
       DOXYGEN_DIR=${DEPS_DIR}/doxygen-${DOXYGEN_VERSION}
       if [[ -z "$(ls -A ${DOXYGEN_DIR})" ]]; then
-        DOXYGEN_URL="http://ftp.stack.nl/pub/users/dimitri/doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz"
+        DOXYGEN_URL="http://ftp.kaist.ac.kr/doxygen/doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz"
         mkdir -p ${DOXYGEN_DIR} && travis_retry wget --quiet -O - ${DOXYGEN_URL} | tar --strip-components=1 -xz -C ${DOXYGEN_DIR}
       fi
       export PATH=${DOXYGEN_DIR}/bin:${PATH}
