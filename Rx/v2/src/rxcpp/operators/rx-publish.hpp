@@ -21,6 +21,18 @@
     \sample
     \snippet publish.cpp publish behavior sample
     \snippet output.txt publish behavior sample
+
+    \sample
+    \snippet publish.cpp publish diamond samethread sample
+    \snippet output.txt publish diamond samethread sample
+
+    \sample
+    \snippet publish.cpp publish diamond bgthread sample
+    \snippet output.txt publish diamond bgthread sample
+
+    \sample
+    \snippet ref_count.cpp ref_count other diamond sample
+    \snippet output.txt ref_count other diamond sample
 */
 
 #if !defined(RXCPP_OPERATORS_RX_PUBLISH_HPP)

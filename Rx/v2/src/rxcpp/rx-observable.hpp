@@ -574,6 +574,17 @@ public:
         static_assert(sizeof...(AN) == 0, "as_dynamic() was passed too many arguments.");
     }
 
+    /*! @copydoc rx-ref_count.hpp
+     */
+    template<class... AN>
+    auto ref_count(AN... an) const // ref_count(ConnectableObservable&&)
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(observable_member(ref_count_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        /// \endcond
+    {
+        return      observable_member(ref_count_tag{},                *this, std::forward<AN>(an)...);
+    }
+
     /*! @copydoc rxcpp::operators::as_blocking
      */
     template<class... AN>

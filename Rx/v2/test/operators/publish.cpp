@@ -2,6 +2,8 @@
 #include <rxcpp/operators/rx-publish.hpp>
 #include <rxcpp/operators/rx-connect_forever.hpp>
 #include <rxcpp/operators/rx-ref_count.hpp>
+#include <rxcpp/operators/rx-map.hpp>
+#include <rxcpp/operators/rx-merge.hpp>
 
 
 SCENARIO("publish range", "[!hide][range][subject][publish][subject][operators]"){
@@ -34,6 +36,169 @@ SCENARIO("publish range", "[!hide][range][subject][publish][subject][operators]"
                 [](int v){std::cout << v << ", ";},
             // on_completed
                 [](){std::cout << " done." << std::endl;});
+        }
+    }
+}
+
+SCENARIO("publish ref_count", "[range][subject][publish][ref_count][operators]"){
+    GIVEN("a range"){
+        auto sc = rxsc::make_test();
+        auto w = sc.create_worker();
+        const rxsc::test::messages<double> on;
+        const rxsc::test::messages<long> out;
+
+        static const long start_created = 0;
+        static const long start_subscribed = 100;
+        static const long start_unsubscribed = 200;
+
+        static const auto next_time = start_subscribed + 1;
+        static const auto completed_time = next_time + 1;
+
+        auto xs = sc.make_hot_observable({ // [0.0, 10.0]
+            on.next(next_time, 0.0),
+            on.next(next_time, 1.0),
+            on.next(next_time, 2.0),
+            on.next(next_time, 3.0),
+            on.next(next_time, 4.0),
+            on.next(next_time, 5.0),
+            on.next(next_time, 6.0),
+            on.next(next_time, 7.0),
+            on.next(next_time, 8.0),
+            on.next(next_time, 9.0),
+            on.next(next_time, 10.0),
+            on.completed(completed_time)
+        });
+
+        auto xs3 = sc.make_hot_observable({ // [0.0, 3.0]
+            on.next(next_time, 0.0),
+            on.next(next_time, 1.0),
+            on.next(next_time, 2.0),
+            on.next(next_time, 3.0),
+            on.completed(completed_time)
+        });
+
+        WHEN("ref_count is used"){
+            auto res = w.start(
+                [&xs]() {
+                    return xs
+                        .publish()
+                        .ref_count();
+                },
+                start_created,
+                start_subscribed,
+                start_unsubscribed
+            );
+
+            THEN("the output contains exactly the input") {
+                auto required = rxu::to_vector({
+                    on.next(next_time, 0.0),
+                    on.next(next_time, 1.0),
+                    on.next(next_time, 2.0),
+                    on.next(next_time, 3.0),
+                    on.next(next_time, 4.0),
+                    on.next(next_time, 5.0),
+                    on.next(next_time, 6.0),
+                    on.next(next_time, 7.0),
+                    on.next(next_time, 8.0),
+                    on.next(next_time, 9.0),
+                    on.next(next_time, 10.0),
+                    on.completed(completed_time)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+        }
+        WHEN("ref_count(other) is used"){
+            auto res = w.start(
+                [&xs]() {
+                    auto published = xs.publish();
+
+                    auto map_to_int = published.map([](double v) { return (long) v; });
+
+                    // Ensures that 'ref_count(other)' has the source value type,
+                    // not the publisher's value type.
+                    auto with_ref_count = map_to_int.ref_count(published);
+
+                    return with_ref_count;
+                },
+                start_created,
+                start_subscribed,
+                start_unsubscribed
+            );
+
+            THEN("the output contains the long-ified input") {
+                auto required = rxu::to_vector({
+                    out.next(next_time, 0L),
+                    out.next(next_time, 1L),
+                    out.next(next_time, 2L),
+                    out.next(next_time, 3L),
+                    out.next(next_time, 4L),
+                    out.next(next_time, 5L),
+                    out.next(next_time, 6L),
+                    out.next(next_time, 7L),
+                    out.next(next_time, 8L),
+                    out.next(next_time, 9L),
+                    out.next(next_time, 10L),
+                    out.completed(completed_time)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
+        }
+        WHEN("ref_count(other) is used in a diamond"){
+            auto source = rxs::range<double>(0, 3);
+
+            int published_on_next_count = 0;
+
+            auto res = w.start(
+                [&xs3, &published_on_next_count]() {
+                    // Ensure we only subscribe once to 'published' when its in a diamond.
+                    auto next = xs3.map(
+                        [&](double v) {
+                            published_on_next_count++;
+                            return v;
+                        }
+                    );
+
+                    auto published = next.publish();
+
+                    // Ensures that 'x.ref_count(other)' has the 'x' value type, not the other's
+                    // value type.
+                    auto map_to_int = published.map([](double v) { return (long) v; });
+
+                    auto left = map_to_int.map([](long v) { return v * 2; });
+                    auto right = map_to_int.map([](long v) { return v * 100; });
+
+                    auto merge = left.merge(right);
+                    auto with_ref_count = merge.ref_count(published);
+
+                    return with_ref_count;
+                },
+                start_created,
+                start_subscribed,
+                start_unsubscribed
+            );
+
+            THEN("the output is subscribed to only once when its in a diamond") {
+              // Ensure we only subscribe once to 'published' when its in a diamond.
+              CHECK(published_on_next_count == 4);
+            }
+
+            THEN("the output left,right is interleaved without being biased towards one side.") {
+                auto required = rxu::to_vector({
+                    out.next(next_time, 0L),
+                    out.next(next_time, 0L),
+                    out.next(next_time, 2L),
+                    out.next(next_time, 100L),
+                    out.next(next_time, 4L),
+                    out.next(next_time, 200L),
+                    out.next(next_time, 6L),
+                    out.next(next_time, 300L),
+                    out.completed(completed_time)
+                });
+                auto actual = res.get_observer().messages();
+                REQUIRE(required == actual);
+            }
         }
     }
 }

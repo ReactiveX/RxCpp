@@ -84,6 +84,7 @@ if(DOXYGEN_FOUND)
         ${DOXY_EXAMPLES_SRC_DIR}/publish.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/range.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/reduce.cpp
+        ${DOXY_EXAMPLES_SRC_DIR}/ref_count.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/repeat.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/replay.cpp
         ${DOXY_EXAMPLES_SRC_DIR}/retry.cpp
