@@ -164,10 +164,12 @@ public:
     }
     
     bool empty() const {
+        std::unique_lock<std::mutex> guard(state->lock);
         return state->q.empty();
     }
 
     const_reference_item_type peek() const {
+        std::unique_lock<std::mutex> guard(state->lock);
         return state->q.top();
     }
 
