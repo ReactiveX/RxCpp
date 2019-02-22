@@ -111,7 +111,7 @@ struct merge_delay_error
                         // on_completed on the output must wait until all the
                         // subscriptions have received on_completed
                         int pendingCompletions;
-                        composite_exception exception;;
+                        composite_exception exception;
                         coordinator_type coordinator;
                         output_type out;
                 };
