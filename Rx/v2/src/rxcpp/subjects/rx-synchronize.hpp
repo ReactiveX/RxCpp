@@ -89,6 +89,7 @@ class synchronize_observer : public detail::multicast_observer<T>
                 }
 
                 auto processor = coordinator.get_worker();
+                guard.unlock();
                 processor.schedule(lifetime, selectedDrain.get());
             }
         }

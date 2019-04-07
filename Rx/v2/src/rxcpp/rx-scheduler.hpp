@@ -62,12 +62,12 @@ public:
 /// the action uses recurse to coordinate the scheduler and the function.
 class recurse
 {
-    bool& isallowed;
+    std::atomic<bool>& isallowed;
     mutable bool isrequested;
     recursed requestor;
     recurse operator=(const recurse&);
 public:
-    explicit recurse(bool& a)
+    explicit recurse(std::atomic<bool>& a)
         : isallowed(a)
         , isrequested(true)
         , requestor(isrequested)
@@ -94,7 +94,7 @@ public:
 /// recursion is used by the scheduler to signal to each action whether tail recursion is allowed.
 class recursion
 {
-    mutable bool isallowed;
+    mutable std::atomic<bool> isallowed;
     recurse recursor;
     recursion operator=(const recursion&);
 public:
