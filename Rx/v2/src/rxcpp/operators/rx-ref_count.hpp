@@ -90,7 +90,8 @@ struct ref_count : public operator_base<T>
     // ref_count() == false
     // ref_count(other) == true
     using has_observable_t = rxu::negation<std::is_same<void, Observable>>;
-    static constexpr bool has_observable_v = has_observable_t::value;
+    // removed constexpr to support older VC compilers
+    static /*constexpr */ const bool has_observable_v = has_observable_t::value;
 
     struct ref_count_state : public std::enable_shared_from_this<ref_count_state>,
                              public ref_count_state_base<ConnectableObservable, Observable>
