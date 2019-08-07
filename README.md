@@ -152,6 +152,23 @@ git clone --recursive https://github.com/ReactiveX/RxCpp.git
 cd RxCpp
 ```
 
+# Installing
+
+To install RxCpp into your OS you need to follow standart procedure:
+```shell
+mkdir build
+cd build
+cmake ..
+make install 
+```
+
+# Importing
+
+After you have successfully installed RxCpp you can import it into any project by simply adding to your CMakeLists.txt:
+```cmake
+find_package(rxcpp CONFIG)
+``` 
+
 # Building RxCpp Unit Tests
 
 * RxCpp is regularly tested on OSX and Windows.
