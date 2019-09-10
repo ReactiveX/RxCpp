@@ -162,6 +162,16 @@ cmake ..
 make install 
 ```
 
+If you're using the vcpkg dependency manager, you can install RxCpp using a single one-line command:
+
+```
+vcpkg install rxcpp
+```
+
+Vcpkg will acquire RxCpp, build it from source in your computer, and provide CMake integration support for your projects.
+
+See the [vcpkg repository](https://github.com/Microsoft/vcpkg) for more information.
+
 # Importing
 
 After you have successfully installed RxCpp you can import it into any project by simply adding to your CMakeLists.txt:
