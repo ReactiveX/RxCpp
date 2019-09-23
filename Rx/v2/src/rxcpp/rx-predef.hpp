@@ -6,6 +6,7 @@
 #define RXCPP_RX_PREDEF_HPP
 
 #include "rx-includes.hpp"
+#include "rx-observable-fwd.hpp"
 
 namespace rxcpp {
 
@@ -135,18 +136,6 @@ class is_dynamic_observable
 public:
     static const bool value = std::is_convertible<decltype(check<rxu::decay_t<T>>(0)), tag_dynamic_observable*>::value;
 };
-
-template<class T>
-class dynamic_observable;
-
-template<
-    class T = void,
-    class SourceObservable = typename std::conditional<std::is_same<T, void>::value,
-        void, dynamic_observable<T>>::type>
-class observable;
-
-template<class T, class Source>
-observable<T> make_observable_dynamic(Source&&);
 
 template<class Selector, class Default, template<class... TN> class SO, class... AN>
 struct defer_observable;
