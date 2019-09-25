@@ -458,7 +458,7 @@ struct take_until_tag {
 struct tap_tag {
     template<class Included>
     struct include_header{
-        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-rap.hpp>");
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-tap.hpp>");
     };
 };
 
