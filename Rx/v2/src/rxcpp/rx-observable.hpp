@@ -1417,6 +1417,17 @@ public:
         return      observable_member(take_while_tag{},                *this, std::forward<AN>(an)...);
     }
 
+    /*! @copydoc rx-throttle.hpp
+     */
+    template<class... AN>
+    auto throttle(AN&&... an) const
+        /// \cond SHOW_SERVICE_MEMBERS
+        -> decltype(observable_member(throttle_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        /// \endcond
+    {
+        return  observable_member(throttle_tag{},                *this, std::forward<AN>(an)...);
+    }
+
     /*! @copydoc rx-repeat.hpp
      */
     template<class... AN>
