@@ -76,7 +76,7 @@ void as_const(T const &&) = delete;
 template<class T, T... ValueN>
 struct values {};
 
-template<class T, int Remaining, T Step = 1, T Cursor = 0, T... ValueN>
+template<class T, std::size_t Remaining, T Step = 1, T Cursor = 0, T... ValueN>
 struct values_from;
 
 template<class T, T Step, T Cursor, T... ValueN>
@@ -85,7 +85,7 @@ struct values_from<T, 0, Step, Cursor, ValueN...>
     typedef values<T, ValueN...> type;
 };
 
-template<class T, int Remaining, T Step, T Cursor, T... ValueN>
+template<class T, std::size_t Remaining, T Step, T Cursor, T... ValueN>
 struct values_from
 {
     typedef typename values_from<T, Remaining - 1, Step, Cursor + Step, ValueN..., Cursor>::type type;
