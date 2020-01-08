@@ -21,7 +21,7 @@ class behavior_observer : public detail::multicast_observer<T>
 
     class behavior_observer_state : public std::enable_shared_from_this<behavior_observer_state>
     {
-        mutable std::mutex lock;
+        mutable std::recursive_mutex lock;
         mutable T value;
 
     public:
@@ -31,12 +31,18 @@ class behavior_observer : public detail::multicast_observer<T>
         }
 
         void reset(T v) const {
-            std::unique_lock<std::mutex> guard(lock);
+            std::lock_guard<std::recursive_mutex> guard(lock);
             value = std::move(v);
         }
+
         T get() const {
-            std::unique_lock<std::mutex> guard(lock);
+            std::lock_guard<std::recursive_mutex> guard(lock);
             return value;
+        }
+
+        std::recursive_mutex& get_lock() const
+        {
+            return lock;
         }
     };
 
@@ -61,6 +67,11 @@ public:
     void on_next(V v) const {
         state->reset(v);
         base_type::on_next(std::move(v));
+    }
+
+    std::recursive_mutex& get_state_lock() const
+    {
+        return state->get_lock();
     }
 };
 
@@ -92,10 +103,11 @@ public:
     observable<T> get_observable() const {
         auto keepAlive = s;
         return make_observable_dynamic<T>([=](subscriber<T> o){
+            std::lock_guard<std::recursive_mutex> guard(keepAlive.get_state_lock());
             if (keepAlive.get_subscription().is_subscribed()) {
-                o.on_next(get_value());
+                o.on_next(keepAlive.get_value());
             }
-            keepAlive.add(s.get_subscriber(), std::move(o));
+            keepAlive.add(keepAlive.get_subscriber(), std::move(o));
         });
     }
 };
