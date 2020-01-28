@@ -91,7 +91,7 @@ public:
 
     observable<T> get_observable() const {
         auto keepAlive = s;
-        return make_observable_dynamic<T>([=](subscriber<T> o){
+        return make_observable_dynamic<T>([keepAlive, this](subscriber<T> o){
             if (keepAlive.get_subscription().is_subscribed()) {
                 o.on_next(get_value());
             }
