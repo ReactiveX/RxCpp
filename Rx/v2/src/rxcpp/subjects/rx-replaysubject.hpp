@@ -169,7 +169,7 @@ public:
 
     observable<T> get_observable() const {
         auto keepAlive = s;
-        auto observable = make_observable_dynamic<T>([=](subscriber<T> o){
+        auto observable = make_observable_dynamic<T>([=, this](subscriber<T> o){
             for (auto&& value: get_values()) {
                 o.on_next(value);
             }
