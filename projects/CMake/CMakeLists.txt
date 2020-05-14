@@ -152,7 +152,7 @@ install(DIRECTORY ${RXCPP_DIR}/Rx/v2/src/rxcpp/ DESTINATION include/rxcpp
 add_library(rxcpp INTERFACE)
 
 target_include_directories(rxcpp INTERFACE
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${RXCPP_DIR}/Rx/v2/src/>
     $<INSTALL_INTERFACE:include/rxcpp>
 )
 
