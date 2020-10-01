@@ -15,9 +15,9 @@
 <p>This section describes in general what Reactive Extensions (Rx) is, and how it can benefit programmers who are creating asynchronous applications.</p>
 
 <h3>In This Section</h3>
-<p>1.	When Will You Use Rx<br />
-2.	Installing Rx<br />
-3.	Differences Between Versions of Rx</p>
+<p>1. When Will You Use Rx<br />
+2. Installing Rx<br />
+3. Differences Between Versions of Rx</p>
 
 <h3>Related Sections</h3>
 <p>Using Rx<br />
@@ -30,7 +30,7 @@ Reactive Extensions on MSDN Developer Center</p>
 <p>Whether you are authoring a traditional desktop or web-based application, you have to deal with asynchronous programming from time to time. Desktop applications have I/O or UI threads that might take a long time to complete and potentially block all other active threads. However, a user of the modern asynchronous programming model has to manage exceptions and cancellation of events manually. To compose or filter events, he has to write custom code that is hard to decipher and maintain.</p>
 <p>In addition, if your application interacts with multiple sources of data, the conventional way to manage all of these interactions is to implement separate methods as event handlers for each of these data streams. For example, as soon as a user types a character, a keydown event is pushed to your keydown event handler method. Inside this keydown event handler, you have to provide code to react to this event, or to coordinate between all of the different data streams and process this data into a useable form.</p>
 <p>Using Rx, you can represent multiple asynchronous data streams (that come from diverse sources, e.g., stock quote, tweets, computer events, web service requests, etc.), and subscribe to the event stream using the Observer class. The Observable class maintains a list of dependent Observer threads and notifies them automatically of any state changes. You can query observable sequences using standard LINQ query operators implemented by the Rx.Observable type. Thus you can filter, aggregate, and compose on multiple events easily by using these LINQ operators. Cancellation and exceptions can also be handled gracefully by using extension methods provided by Rx.</p>
-<p>The following example shows how easy it is to implement an observable in C++.</p>
+<p>Following example shows how easy it is to implement an observable in C++.</p>
 <pre><code>
     auto ints = rxcpp::observable&lt;>::create<int>(
         [](rxcpp::subscriber&lt;int> s){
