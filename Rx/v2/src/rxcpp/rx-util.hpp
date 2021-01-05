@@ -54,11 +54,10 @@ struct result_of<F(TN...)>
 {
     using type = std::invoke_result_t<F, TN...>;
 };
-
-template<class... TN> using result_of_t = typename result_of<TN...>::type;
 #else
-template<class... TN> using result_of_t = typename std::result_of<TN...>::type;
+template<class... TN> using result_of = std::result_of<TN...>;
 #endif
+template<class... TN> using result_of_t = typename result_of<TN...>::type;
 
 template<class T, std::size_t size>
 std::vector<T> to_vector(const T (&arr) [size]) {
