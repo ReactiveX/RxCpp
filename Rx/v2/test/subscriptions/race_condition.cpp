@@ -4,8 +4,11 @@
 #include "rxcpp/operators/rx-merge.hpp"
 #include "rxcpp/rx-scheduler.hpp"
 
-SCENARIO("race condition") {
+SCENARIO("multicast_observer race condition") {
 
+  // We loop this test many many times because it is attempting to trigger a
+  // race condition that is not guaranteed to occur, described in
+  // https://github.com/ReactiveX/RxCpp/issues/555
   for (std::size_t i=0; i < 5000; ++i) {
     auto comp1 = rxcpp::composite_subscription();
     auto mco = rxcpp::subjects::detail::multicast_observer<std::string>(comp1);
