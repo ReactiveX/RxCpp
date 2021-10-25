@@ -91,11 +91,11 @@ public:
 
     observable<T> get_observable() const {
         auto keepAlive = s;
-        return make_observable_dynamic<T>([keepAlive, this](subscriber<T> o){
+        return make_observable_dynamic<T>([keepAlive](subscriber<T> o){
             if (keepAlive.get_subscription().is_subscribed()) {
-                o.on_next(get_value());
+                o.on_next(keepAlive.get_value());
             }
-            keepAlive.add(s.get_subscriber(), std::move(o));
+            keepAlive.add(keepAlive.get_subscriber(), std::move(o));
         });
     }
 };
