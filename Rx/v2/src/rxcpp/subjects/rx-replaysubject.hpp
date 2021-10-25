@@ -169,8 +169,8 @@ public:
 
     observable<T> get_observable() const {
         auto keepAlive = s;
-        auto observable = make_observable_dynamic<T>([keepAlive, this](subscriber<T> o){
-            for (auto&& value: get_values()) {
+        auto observable = make_observable_dynamic<T>([keepAlive](subscriber<T> o){
+            for (auto&& value: keepAlive.get_values()) {
                 o.on_next(value);
             }
             keepAlive.add(keepAlive.get_subscriber(), std::move(o));
