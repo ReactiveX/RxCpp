@@ -1,3 +1,5 @@
+#pragma once
+
 #include <exception>
 #if (__GLIBCXX__ / 10000) == 2014 || (__GLIBCXX__ / 10000) == 2015
 namespace std {
