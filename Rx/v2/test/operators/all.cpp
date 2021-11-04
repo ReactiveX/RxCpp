@@ -1,5 +1,7 @@
 #include "../test.h"
+#include "../copy_verifier.h"
 #include <rxcpp/operators/rx-all.hpp>
+
 
 SCENARIO("all emits true if every item emitted by the source observable evaluated as true", "[all][operators]") {
     GIVEN("a source") {
@@ -212,6 +214,47 @@ SCENARIO("all emits an error if the source observable emit an error", "[all][ope
                 REQUIRE(required == actual);
             }
 
+        }
+    }
+}
+
+SCENARIO("all doesn't provide copies", "[all][operators][copies]")
+{
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](bool) {};
+        auto          sub           = rx::make_observer<bool>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable().all([](const copy_verifier&) { return true; });
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+
+
+SCENARIO("all doesn't provide copies for move", "[all][operators][copies]")
+{
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](bool) {};
+        auto          sub           = rx::make_observer<bool>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable_for_move().all([](const copy_verifier&) { return true; });
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
         }
     }
 }
