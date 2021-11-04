@@ -77,7 +77,7 @@ struct any
               done(false)
         {
         }
-        void on_next(source_value_type v) const {
+        void on_next(const source_value_type& v) const {
             auto filtered = on_exception([&]() {
                 return !this->test(v); },
                 dest);

@@ -212,3 +212,44 @@ SCENARIO("any emits an error", "[any][operators]"){
         }
     }
 }
+
+SCENARIO("any doesn't provide copies", "[any][operators][copies]")
+{
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](bool) {};
+        auto          sub           = rx::make_observer<bool>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable().any([](const copy_verifier&) { return true; });
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+
+
+SCENARIO("any doesn't provide copies for move", "[any][operators][copies]")
+{
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](bool) {};
+        auto          sub           = rx::make_observer<bool>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable_for_move().any([](const copy_verifier&) { return true; });
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
