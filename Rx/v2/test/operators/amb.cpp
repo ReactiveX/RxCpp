@@ -1,5 +1,4 @@
 #include "../test.h"
-#include "../copy_verifier.h"
 #include "rxcpp/operators/rx-amb.hpp"
 
 SCENARIO("amb never 3", "[amb][join][operators]"){

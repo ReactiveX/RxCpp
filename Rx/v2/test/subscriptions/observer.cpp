@@ -1,5 +1,4 @@
 #include "../test.h"
-#include "../copy_verifier.h"
 
 SCENARIO("subscriber traits", "[observer][traits]"){
     GIVEN("given some subscriber types"){

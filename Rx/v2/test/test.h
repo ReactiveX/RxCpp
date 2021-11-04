@@ -22,3 +22,5 @@ namespace rxn=rx::notifications;
 namespace rxt = rxcpp::test;
 
 #include "catch.hpp"
+
+#include "copy_verifier.h"
