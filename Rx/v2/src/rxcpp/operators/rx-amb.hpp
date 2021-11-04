@@ -171,8 +171,8 @@ struct amb
                     state->out,
                     innercs,
                 // on_next
-                    [state, st, current_id](value_type ct) {
-                        state->out.on_next(std::move(ct));
+                    [state, st, current_id](auto&& ct) {
+                        state->out.on_next(std::forward<decltype(ct)>(ct));
                         if (!state->firstEmitted) {
                             state->firstEmitted = true;
                             auto do_unsubscribe = [](composite_subscription cs) {

@@ -1,4 +1,5 @@
 #include "../test.h"
+#include "../copy_verifier.h"
 #include "rxcpp/operators/rx-amb.hpp"
 
 SCENARIO("variadic amb never 3", "[amb][join][operators]"){
@@ -584,6 +585,45 @@ SCENARIO("variadic amb never empty, custom coordination", "[amb][join][operators
                 });
                 auto actual = res.get_observer().messages();
                 REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("variadic amb doesn't provide copies", "[amb][join][operators][copies]"){
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](const copy_verifier&) {};
+        auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable().amb(rxcpp::observable<>::never<copy_verifier>());
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+
+
+SCENARIO("variadic amb doesn't provide copies for move", "[amb][join][operators][copies]"){
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](const copy_verifier&) {};
+        auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable_for_move().amb(rxcpp::observable<>::never<copy_verifier>());
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                REQUIRE(verifier.get_move_count() == 0);
             }
         }
     }
