@@ -1666,7 +1666,7 @@ SCENARIO("combine_latest typical N", "[combine_latest][join][operators]"){
 }
 
 
-SCENARIO("combine_latest provide 1 copy to store in tuple and 1 copy to send value", "[combine_latest][join][operators][copies]")
+SCENARIO("combine_latest provide 1 copy to store in tuple, 1 copy to send value and 1 move to lambda", "[combine_latest][join][operators][copies]")
 {
     GIVEN("observale and subscriber")
     {
@@ -1674,7 +1674,7 @@ SCENARIO("combine_latest provide 1 copy to store in tuple and 1 copy to send val
         auto          sub           = rx::make_observer<int>(empty_on_next);
         copy_verifier verifier{};
         auto          root = verifier.get_observable();
-        auto          obs  = root.combine_latest([](const copy_verifier& left, const int& )
+        auto          obs  = root.combine_latest([](copy_verifier left, int)
                                                  {
                                                      CHECK(left.get_copy_count() == 2);
                                                      return 0;
@@ -1686,13 +1686,14 @@ SCENARIO("combine_latest provide 1 copy to store in tuple and 1 copy to send val
             THEN("no extra copies")
             {
                 REQUIRE(verifier.get_copy_count() == 2);
-                REQUIRE(verifier.get_move_count() == 0);
+                // 1 move to final lambda
+                REQUIRE(verifier.get_move_count() == 1);
             }
         }
     }
 }
 
-SCENARIO("combine_latest provide 1 move to store in tuple and 1 copy to send value for move", "[combine_latest][join][operators][copies]")
+SCENARIO("combine_latest provide 1 move to store in tuple, 1 copy to send value and 1 move to lambda for move", "[combine_latest][join][operators][copies]")
 {
     GIVEN("observale and subscriber")
     {
@@ -1700,10 +1701,10 @@ SCENARIO("combine_latest provide 1 move to store in tuple and 1 copy to send val
         auto          sub           = rx::make_observer<int>(empty_on_next);
         copy_verifier verifier{};
         auto          root = verifier.get_observable_for_move();
-        auto          obs  = root.combine_latest([](const copy_verifier& left, const int& )
+        auto          obs  = root.combine_latest([](copy_verifier left, int)
                                                  {
                                                      CHECK(left.get_copy_count() == 1);
-                                                     CHECK(left.get_move_count() == 1);
+                                                     CHECK(left.get_move_count() == 2);
                                                      return 0;
                                                  },
                                                  rxcpp::observable<>::just(1));
@@ -1713,7 +1714,8 @@ SCENARIO("combine_latest provide 1 move to store in tuple and 1 copy to send val
             THEN("no extra copies")
             {
                 REQUIRE(verifier.get_copy_count() == 1);
-                REQUIRE(verifier.get_move_count() == 1);
+                // 1 move to final lambda, 1 move to tuple with cache
+                REQUIRE(verifier.get_move_count() == 2);
             }
         }
     }

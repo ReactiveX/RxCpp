@@ -168,8 +168,7 @@ struct combine_latest : public operator_base<rxu::value_type_t<combine_latest_tr
 
                 if (state->valuesSet == sizeof... (ObservableN)) {
                     auto values = rxu::surely(state->latest);
-                    auto selectedResult = rxu::apply(std::move(values), state->selector);
-                    state->out.on_next(std::move(selectedResult));
+                    state->out.on_next(rxu::apply(std::move(values), state->selector));
                 }
             },
         // on_error
