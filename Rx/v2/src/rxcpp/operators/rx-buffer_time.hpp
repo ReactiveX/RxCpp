@@ -182,7 +182,7 @@ struct buffer_with_time
                     localState->worker.schedule(selectedCreate.get());
                 });
         }
-        void on_next(T v) const {
+        void on_next(const T& v) const {
             auto localState = state;
             auto work = [v, localState](const rxsc::schedulable&){
                 for(auto& chunk : localState->chunks) {
