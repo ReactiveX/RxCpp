@@ -1664,3 +1664,57 @@ SCENARIO("combine_latest typical N", "[combine_latest][join][operators]"){
         }
     }
 }
+
+
+SCENARIO("combine_latest provide 1 copy to store in tuple and 1 copy to send value", "[combine_latest][join][operators][copies]")
+{
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](const int&) {};
+        auto          sub           = rx::make_observer<int>(empty_on_next);
+        copy_verifier verifier{};
+        auto          root = verifier.get_observable();
+        auto          obs  = root.combine_latest([](const copy_verifier& left, const int& )
+                                                 {
+                                                     CHECK(left.get_copy_count() == 2);
+                                                     return 0;
+                                                 },
+                                                 rxcpp::observable<>::just(1));
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 2);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+
+SCENARIO("combine_latest provide 1 move to store in tuple and 1 copy to send value for move", "[combine_latest][join][operators][copies]")
+{
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](const int&) {};
+        auto          sub           = rx::make_observer<int>(empty_on_next);
+        copy_verifier verifier{};
+        auto          root = verifier.get_observable_for_move();
+        auto          obs  = root.combine_latest([](const copy_verifier& left, const int& )
+                                                 {
+                                                     CHECK(left.get_copy_count() == 1);
+                                                     CHECK(left.get_move_count() == 1);
+                                                     return 0;
+                                                 },
+                                                 rxcpp::observable<>::just(1));
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 1);
+                REQUIRE(verifier.get_move_count() == 1);
+            }
+        }
+    }
+}

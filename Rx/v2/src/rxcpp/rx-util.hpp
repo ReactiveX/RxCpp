@@ -206,10 +206,10 @@ struct value_type_from<T, typename types_checked_from<value_type_t<T>>::type>
     : public std::true_type {typedef value_type_t<T> type;};
 
 namespace detail {
-template<class F, class... ParamN, int... IndexN>
-auto apply(std::tuple<ParamN...> p, values<int, IndexN...>, F&& f)
-    -> decltype(f(std::forward<ParamN>(std::get<IndexN>(p))...)) {
-    return      f(std::forward<ParamN>(std::get<IndexN>(p))...);
+template<class F, class Tuple, int... IndexN>
+auto apply(Tuple&& p, values<int, IndexN...>, F&& f)
+    -> decltype(f(std::get<IndexN>(std::forward<Tuple>(p))...)) {
+    return      f(std::get<IndexN>(std::forward<Tuple>(p))...);
 }
 
 template<class F_inner, class F_outer, class... ParamN, int... IndexN>
@@ -226,9 +226,15 @@ auto apply_to_each(std::tuple<ParamN...>& p, values<int, IndexN...>, const F_inn
 
 }
 template<class F, class... ParamN>
-auto apply(std::tuple<ParamN...> p, F&& f)
+auto apply(std::tuple<ParamN...>&& p, F&& f)
     -> decltype(detail::apply(std::move(p), typename values_from<int, sizeof...(ParamN)>::type(), std::forward<F>(f))) {
     return      detail::apply(std::move(p), typename values_from<int, sizeof...(ParamN)>::type(), std::forward<F>(f));
+}
+
+template<class F, class... ParamN>
+auto apply(const std::tuple<ParamN...>& p, F&& f)
+    -> decltype(detail::apply(p, typename values_from<int, sizeof...(ParamN)>::type(), std::forward<F>(f))) {
+    return      detail::apply(p, typename values_from<int, sizeof...(ParamN)>::type(), std::forward<F>(f));
 }
 
 template<class F_inner, class F_outer, class... ParamN>
@@ -699,12 +705,7 @@ namespace detail {
     struct surely
     {
         template<class... T>
-        auto operator()(T... t)
-            -> decltype(std::make_tuple(t.get()...)) {
-            return      std::make_tuple(t.get()...);
-        }
-        template<class... T>
-        auto operator()(T... t) const
+        auto operator()(const T&... t) const
             -> decltype(std::make_tuple(t.get()...)) {
             return      std::make_tuple(t.get()...);
         }
