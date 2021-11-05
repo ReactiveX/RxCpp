@@ -144,12 +144,22 @@ struct concat_map
             {
             }
 
-            void subscribe_to(source_value_type st)
+            void subscribe_to(const source_value_type& st)
+            {
+                subscribe_to(std::make_shared<source_value_type>(st));
+            }
+
+            void subscribe_to(source_value_type&& st)
+            {
+                subscribe_to(std::make_shared<source_value_type>(std::move(st)));
+            }
+
+            void subscribe_to(std::shared_ptr<source_value_type> st)
             {
                 auto state = this->shared_from_this();
 
                 auto selectedCollection = on_exception(
-                    [&](){return state->selectCollection(st);},
+                    [&](){return state->selectCollection(*st);},
                     state->out);
                 if (selectedCollection.empty()) {
                     return;
@@ -179,7 +189,7 @@ struct concat_map
                     collectionLifetime,
                 // on_next
                     [state, st](collection_value_type ct) {
-                        auto selectedResult = state->selectResult(st, std::move(ct));
+                        auto selectedResult = state->selectResult(*st, std::move(ct));
                         state->out.on_next(std::move(selectedResult));
                     },
                 // on_error
@@ -192,7 +202,7 @@ struct concat_map
                             auto value = state->selectedCollections.front();
                             state->selectedCollections.pop_front();
                             state->collectionLifetime.unsubscribe();
-                            state->subscribe_to(value);
+                            state->subscribe_to(std::move(value));
                         } else if (!state->sourceLifetime.is_subscribed()) {
                             state->out.on_completed();
                         }
@@ -238,11 +248,11 @@ struct concat_map
             state->out,
             state->sourceLifetime,
         // on_next
-            [state](source_value_type st) {
+            [state](auto&& st) {
                 if (state->collectionLifetime.is_subscribed()) {
-                    state->selectedCollections.push_back(st);
+                    state->selectedCollections.push_back(std::forward<decltype(st)>(st));
                 } else if (state->selectedCollections.empty()) {
-                    state->subscribe_to(st);
+                    state->subscribe_to(std::forward<decltype(st)>(st));
                 }
             },
         // on_error

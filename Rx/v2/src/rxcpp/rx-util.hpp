@@ -310,14 +310,9 @@ template<int Index>
 struct take_at
 {
     template<class... ParamN>
-    auto operator()(ParamN... pn)
+    auto operator()(const ParamN&... pn) const
         -> typename std::tuple_element<Index, std::tuple<decay_t<ParamN>...>>::type {
-        return                std::get<Index>(std::make_tuple(std::move(pn)...));
-    }
-    template<class... ParamN>
-    auto operator()(ParamN... pn) const
-        -> typename std::tuple_element<Index, std::tuple<decay_t<ParamN>...>>::type {
-        return                std::get<Index>(std::make_tuple(std::move(pn)...));
+        return                std::get<Index>(std::tie(pn...));
     }
 };
 

@@ -533,3 +533,46 @@ SCENARIO("concat_transform, no result selector, with coordination", "[concat_tra
         }
     }
 }
+
+SCENARIO("concat_transform do 1 copy to lambda and 1 copy to internal state", "[concat_transform][join][operators][copies]")
+{
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](int) {};
+        auto          sub           = rx::make_observer<int>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs  = verifier.get_observable().concat_map([](copy_verifier){return rxcpp::observable<>::never<int>();});
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                // 1 copy to map lambda + 1 copy into internal state
+                REQUIRE(verifier.get_copy_count() == 2);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+
+SCENARIO("concat_transform do 1 copy to lambda and 1 move to internal state for move", "[concat_transform][join][operators][copies]")
+{
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](int) {};
+        auto          sub           = rx::make_observer<int>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs  = verifier.get_observable_for_move().concat_map([](copy_verifier){return rxcpp::observable<>::never<int>();});
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                // 1 copy to map lambda
+                REQUIRE(verifier.get_copy_count() == 1);
+                // 1 move to internal state
+                REQUIRE(verifier.get_move_count() == 1);
+            }
+        }
+    }
+}
