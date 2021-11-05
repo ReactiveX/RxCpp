@@ -204,7 +204,7 @@ SCENARIO("concat doesn't provide copies", "[concat][join][operators][copies]")
 {
     GIVEN("observale and subscriber")
     {
-        auto          empty_on_next = [](const copy_verifier&) {};
+        auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
         copy_verifier verifier{};
         auto          root = verifier.get_observable();
@@ -214,7 +214,8 @@ SCENARIO("concat doesn't provide copies", "[concat][join][operators][copies]")
             obs.subscribe(sub);
             THEN("no extra copies")
             {
-                REQUIRE(verifier.get_copy_count() == 0);
+                // 1 copy to final lambda
+                REQUIRE(verifier.get_copy_count() == 1);
                 REQUIRE(verifier.get_move_count() == 0);
             }
         }

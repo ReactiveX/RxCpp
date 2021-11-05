@@ -953,10 +953,10 @@ SCENARIO("amb never empty, custom coordination", "[amb][join][operators]"){
 }
 
 
-SCENARIO("variadic amb doesn't provide copies", "[amb][join][operators][copies]"){
+SCENARIO("amb doesn't provide copies", "[amb][join][operators][copies]"){
     GIVEN("observale and subscriber")
     {
-        auto          empty_on_next = [](const copy_verifier&) {};
+        auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
         copy_verifier verifier{};
         auto          obs = rxcpp::observable<>::just(verifier.get_observable()).amb();
@@ -965,7 +965,8 @@ SCENARIO("variadic amb doesn't provide copies", "[amb][join][operators][copies]"
             obs.subscribe(sub);
             THEN("no extra copies")
             {
-                REQUIRE(verifier.get_copy_count() == 0);
+                // 1 copy to final lambda
+                REQUIRE(verifier.get_copy_count() == 1);
                 REQUIRE(verifier.get_move_count() == 0);
             }
         }
@@ -973,10 +974,10 @@ SCENARIO("variadic amb doesn't provide copies", "[amb][join][operators][copies]"
 }
 
 
-SCENARIO("variadic amb doesn't provide copies for move", "[amb][join][operators][copies]"){
+SCENARIO("amb doesn't provide copies for move", "[amb][join][operators][copies]"){
     GIVEN("observale and subscriber")
     {
-        auto          empty_on_next = [](const copy_verifier&) {};
+        auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
         copy_verifier verifier{};
         auto          obs = rxcpp::observable<>::just(verifier.get_observable_for_move()).amb();
@@ -986,7 +987,8 @@ SCENARIO("variadic amb doesn't provide copies for move", "[amb][join][operators]
             THEN("no extra copies")
             {
                 REQUIRE(verifier.get_copy_count() == 0);
-                REQUIRE(verifier.get_move_count() == 0);
+                // 1 move to final lambda
+                REQUIRE(verifier.get_move_count() == 1);
             }
         }
     }
