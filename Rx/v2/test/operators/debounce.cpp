@@ -211,3 +211,34 @@ SCENARIO("debounce - throw", "[debounce][operators]"){
         }
     }
 }
+
+SCENARIO("debounce provides 1 copy to internal state and 2 moves for scheduler", "[debounce][operators][copies]")
+{
+    GIVEN("a source")
+    {
+        auto                                      sc = rxsc::make_test();
+        auto                                      so = rx::synchronize_in_one_worker(sc);
+        auto                                      w  = sc.create_worker();
+        const rxsc::test::messages<copy_verifier> on;
+        copy_verifier                             verifier{};
+
+        auto   xs    = sc.make_cold_observable({on.next(150, verifier), on.completed(300)});
+        size_t count = verifier.get_copy_count();
+
+        WHEN("start")
+        {
+            auto res = w.start([so, xs]() { return xs.debounce(milliseconds(10), so); });
+
+            THEN("no extra copies")
+            {
+                // 1 copy to internal state
+                CHECK(verifier.get_copy_count() - count == 1);
+                // 1 move to scheduler and 1 from scheduler + 1 move for test_notification
+                REQUIRE(verifier.get_move_count() == 3);
+            }
+        }
+    }
+}
+
+
+

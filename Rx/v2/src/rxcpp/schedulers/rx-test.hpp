@@ -197,7 +197,7 @@ subscriber<T, rxt::testable_observer<T>> test_type::test_type_worker::make_subsc
           [ts](T value)
           {
               ts->m.push_back(
-                              recorded_type(ts->sc->clock(), notification_type::on_next(value)));
+                              recorded_type(ts->sc->clock(), notification_type::on_next(std::move(value))));
           },
           // on_error
           [ts](rxu::error_ptr e)
@@ -386,8 +386,8 @@ public:
         messages() {}
 
         template<typename U>
-        static recorded_type next(long ticks, U value) {
-            return recorded_type(ticks, notification_type::on_next(std::move(value)));
+        static recorded_type next(long ticks, U&& value) {
+            return recorded_type(ticks, notification_type::on_next(std::forward<U>(value)));
         }
 
         static recorded_type completed(long ticks) {

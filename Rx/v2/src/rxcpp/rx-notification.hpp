@@ -122,8 +122,8 @@ private:
     typedef detail::notification_base<T> base;
 
     struct on_next_notification : public base {
-        on_next_notification(T value) : value(std::move(value)) {
-        }
+        on_next_notification(T&& value) : value(std::move(value)) {}
+        on_next_notification(const T& value) : value(value) {}
         on_next_notification(const on_next_notification& o) : value(o.value) {}
         on_next_notification(const on_next_notification&& o) : value(std::move(o.value)) {}
         on_next_notification& operator=(on_next_notification o) { value = std::move(o.value); return *this; }
@@ -206,8 +206,8 @@ private:
 
 public:
     template<typename U>
-    static type on_next(U value) {
-        return std::make_shared<on_next_notification>(std::move(value));
+    static type on_next(U&& value) {
+        return std::make_shared<on_next_notification>(std::forward<U>(value));
     }
 
     static type on_completed() {
