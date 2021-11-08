@@ -211,3 +211,86 @@ SCENARIO("contains emits an error", "[contains][operators]"){
         }
     }
 }
+
+SCENARIO("contains doesn't provide copies", "[contains][operators][copies]")
+{
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](bool) {};
+        auto          sub           = rx::make_observer<bool>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable().contains(copy_verifier{});
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+
+
+SCENARIO("contains doesn't provide copies for move", "[contains][operators][copies]")
+{
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](bool) {};
+        auto          sub           = rx::make_observer<bool>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable_for_move().contains(copy_verifier{});
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+
+SCENARIO("contains provides 1 copy for value to compare", "[contains][operators][copies]")
+{
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](bool) {};
+        auto          sub           = rx::make_observer<bool>(empty_on_next);
+        copy_verifier verifier{};
+        copy_verifier verifier_to_pass{};
+        auto          obs = verifier.get_observable().contains(verifier_to_pass);
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier_to_pass.get_copy_count() == 1);
+                REQUIRE(verifier_to_pass.get_move_count() == 0);
+            }
+        }
+    }
+}
+
+SCENARIO("contains provides 1 move for value to compare for move", "[contains][operators][copies]")
+{
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](bool) {};
+        auto          sub           = rx::make_observer<bool>(empty_on_next);
+        copy_verifier verifier{};
+        copy_verifier verifier_to_pass{};
+        auto          obs = verifier.get_observable().contains(std::move(verifier_to_pass));
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier_to_pass.get_copy_count() == 0);
+                REQUIRE(verifier_to_pass.get_move_count() == 1);
+            }
+        }
+    }
+}

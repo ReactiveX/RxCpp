@@ -204,12 +204,13 @@ struct member_overload<contains_tag>
         class SourceValue = rxu::value_type_t<Observable>,
         class Enabled = rxu::enable_if_all_true_type_t<
             is_observable<Observable>>,
-        class Predicate = std::function<bool(T)>,
+        class Predicate = std::function<bool(const rxu::decay_t<T>&)>,
         class Any = rxo::detail::any<SourceValue, rxu::decay_t<Predicate>>,
         class Value = rxu::value_type_t<Any>>
     static auto member(Observable&& o, T&& value)
     -> decltype(o.template lift<Value>(Any(nullptr))) {
-        return  o.template lift<Value>(Any([value](T n) { return n == value; }));
+        auto valueAsShared = std::make_shared<rxu::decay_t<T>>(std::forward<T>(value));
+        return  o.template lift<Value>(Any([valueAsShared](const rxu::decay_t<T>& n) { return n == *valueAsShared; }));
     }
 
     template<class... AN>

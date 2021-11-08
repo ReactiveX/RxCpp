@@ -58,6 +58,9 @@ public:
             sub.on_completed();
         });
     }
+
+    bool operator==(const copy_verifier&) const { return false; }
+    bool operator!=(const copy_verifier&) const { return true; }
 private:
     struct state
     {
