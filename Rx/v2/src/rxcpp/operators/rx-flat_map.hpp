@@ -171,7 +171,7 @@ struct flat_map
             state->out,
             outercs,
         // on_next
-            [state](source_value_type st) {
+            [state](auto&& st) {
 
                 composite_subscription innercs;
 
@@ -183,7 +183,8 @@ struct flat_map
                     state->out.remove(innercstoken);
                 }));
 
-                auto selectedCollection = state->selectCollection(st);
+                auto stAsShared         = std::make_shared<source_value_type>(std::forward<decltype(st)>(st));
+                auto selectedCollection = state->selectCollection(*stAsShared);
                 auto selectedSource = state->coordinator.in(selectedCollection);
 
                 ++state->pendingCompletions;
@@ -193,8 +194,8 @@ struct flat_map
                     state->out,
                     innercs,
                 // on_next
-                    [state, st](collection_value_type ct) {
-                        auto selectedResult = state->selectResult(st, std::move(ct));
+                    [state, stAsShared](collection_value_type ct) {
+                        auto selectedResult = state->selectResult(*stAsShared, std::move(ct));
                         state->out.on_next(std::move(selectedResult));
                     },
                 // on_error
