@@ -139,7 +139,7 @@ struct concat
                     state->out,
                     collectionLifetime,
                 // on_next
-                    [state, st](auto&& ct) {
+                    [state](auto&& ct) {
                         state->out.on_next(std::forward<decltype(ct)>(ct));
                     },
                 // on_error
