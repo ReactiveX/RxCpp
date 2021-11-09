@@ -67,8 +67,9 @@ struct finally
             : dest(std::move(d))
         {
         }
-        void on_next(source_value_type v) const {
-            dest.on_next(v);
+        template<typename U>
+        void on_next(U&& v) const {
+            dest.on_next(std::forward<U>(v));
         }
         void on_error(rxu::error_ptr e) const {
             dest.on_error(e);
