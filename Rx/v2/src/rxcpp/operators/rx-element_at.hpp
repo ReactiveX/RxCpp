@@ -71,9 +71,10 @@ struct element_at {
               current(0)
         {
         }
-        void on_next(source_value_type v) const {
+        template<typename U>
+        void on_next(U&& v) const {
             if (current++ == this->index) {
-                dest.on_next(v);
+                dest.on_next(std::forward<U>(v));
                 dest.on_completed();
             }
         }
