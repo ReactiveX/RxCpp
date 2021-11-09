@@ -214,3 +214,25 @@ SCENARIO("exists emits an error", "[exists][operators]"){
         }
     }
 }
+
+
+SCENARIO("exists doesn't provide copies", "[exists][operators][copies]"){
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](bool) {};
+        auto          sub           = rx::make_observer<bool>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable().exists([](copy_verifier) { return true; });
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                // 1 copy to final lambda
+                REQUIRE(verifier.get_copy_count() == 1);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+
