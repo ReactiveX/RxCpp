@@ -52,7 +52,7 @@ struct OnNextForward
         onnext(s, t);
     }
     void operator()(state_t& s, T&& t) const {
-        onnext(s, t);
+        onnext(s, std::move(t));
     }
 };
 template<class T, class State>
@@ -64,7 +64,7 @@ struct OnNextForward<T, State, void>
         s.on_next(t);
     }
     void operator()(state_t& s, T&& t) const {
-        s.on_next(t);
+        s.on_next(std::move(t));
     }
 };
 

@@ -72,9 +72,10 @@ struct switch_if_empty
         {
             dest.add(lifetime);
         }
-        void on_next(source_value_type v) const {
+        template<typename U>
+        void on_next(U&& v) const {
             is_empty = false;
-            dest.on_next(std::move(v));
+            dest.on_next(std::forward<U>(v));
         }
         void on_error(rxu::error_ptr e) const {
             dest.on_error(std::move(e));
@@ -160,9 +161,9 @@ struct member_overload<default_if_empty_tag>
         class SourceValue = rxu::value_type_t<Observable>,
         class BackupSource = decltype(rxs::from(std::declval<SourceValue>())),
         class DefaultIfEmpty = rxo::detail::switch_if_empty<SourceValue, BackupSource>>
-    static auto member(Observable&& o, Value v)
-        -> decltype(o.template lift<SourceValue>(DefaultIfEmpty(rxs::from(std::move(v))))) {
-        return      o.template lift<SourceValue>(DefaultIfEmpty(rxs::from(std::move(v))));
+    static auto member(Observable&& o, Value&& v)
+        -> decltype(o.template lift<SourceValue>(DefaultIfEmpty(rxs::from(std::forward<Value>(v))))) {
+        return      o.template lift<SourceValue>(DefaultIfEmpty(rxs::from(std::forward<Value>(v))));
     }
 
     template<class... AN>
