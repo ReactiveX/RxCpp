@@ -66,16 +66,15 @@ struct map
             , selector(std::move(s))
         {
         }
+
         template<class Value>
-        void on_next(Value&& v) const {
-            auto selected = on_exception(
-                [&](){
-                    return this->selector(std::forward<Value>(v));},
-                dest);
-            if (selected.empty()) {
-                return;
-            }
-            dest.on_next(std::move(selected.get()));
+        void on_next(Value&& v) const
+        {
+            on_exception_no_return([&]()
+                                   {
+                                       dest.on_next(this->selector(std::forward<Value>(v)));
+                                   },
+                                   dest);
         }
         void on_error(rxu::error_ptr e) const {
             dest.on_error(e);
