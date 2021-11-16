@@ -161,12 +161,12 @@ struct member_overload<is_empty_tag>
         class SourceValue = rxu::value_type_t<Observable>,
         class Enabled = rxu::enable_if_all_true_type_t<
             is_observable<Observable>>,
-        class Predicate = std::function<bool(SourceValue)>,
+        class Predicate = std::function<bool(const SourceValue&)>,
         class IsEmpty = rxo::detail::all<SourceValue, rxu::decay_t<Predicate>>,
         class Value = rxu::value_type_t<IsEmpty>>
     static auto member(Observable&& o)
     -> decltype(o.template lift<Value>(IsEmpty(nullptr))) {
-        return  o.template lift<Value>(IsEmpty([](SourceValue) { return false; }));
+        return  o.template lift<Value>(IsEmpty([](const SourceValue&) { return false; }));
     }
 
     template<class... AN>

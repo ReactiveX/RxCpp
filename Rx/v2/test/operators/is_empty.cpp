@@ -169,3 +169,44 @@ SCENARIO("is_empty emits an error if the source observable emit an error", "[is_
         }
     }
 }
+
+SCENARIO("is_empty doesn't provide copies", "[is_empty][operators][copies]")
+{
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](bool) {};
+        auto          sub           = rx::make_observer<bool>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable().is_empty();
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+
+
+SCENARIO("is_empty doesn't provide copies for move", "[is_emptyis_empty][operators][copies]")
+{
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](bool) {};
+        auto          sub           = rx::make_observer<bool>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable_for_move().is_empty();
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
