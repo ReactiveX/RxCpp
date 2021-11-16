@@ -181,7 +181,7 @@ class blocking_observable
         // keep any error to rethrow at the end.
         auto scbr = make_subscriber<T>(
             dest,
-            [&](T t){dest.on_next(t);},
+            [&](auto&& t){dest.on_next(std::forward<decltype(t)>(t));},
             [&](rxu::error_ptr e){
                 if (do_rethrow) {
                     error = e;
