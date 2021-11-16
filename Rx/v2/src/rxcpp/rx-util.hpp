@@ -580,10 +580,17 @@ public:
     {
     }
 
-    maybe(T value)
+    maybe(const T& value)
     : is_set(false)
     {
         new (reinterpret_cast<T*>(&storage)) T(value);
+        is_set = true;
+    }
+
+    maybe(T&& value)
+    : is_set(false)
+    {
+        new (reinterpret_cast<T*>(&storage)) T(std::move(value));
         is_set = true;
     }
 

@@ -175,7 +175,7 @@ public:
         }
     }
     template<class V>
-    void on_next(V v) const {
+    void on_next(V&& v) const {
         auto current_completer = b->current_completer.lock();
         if (!current_completer) {
             std::unique_lock<std::mutex> guard(b->state->lock);

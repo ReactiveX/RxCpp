@@ -637,25 +637,43 @@ struct maybe_from_result
 template<class F, class OnError>
 auto on_exception(const F& f, const OnError& c)
     ->  typename std::enable_if<detail::is_on_error<OnError>::value, typename detail::maybe_from_result<F>::type>::type {
-    typename detail::maybe_from_result<F>::type r;
     RXCPP_TRY {
-        r.reset(f());
+        return f();
     } RXCPP_CATCH(...) {
         c(rxu::current_exception());
     }
-    return r;
+    return {};
 }
 
 template<class F, class Subscriber>
 auto on_exception(const F& f, const Subscriber& s)
     ->  typename std::enable_if<is_subscriber<Subscriber>::value, typename detail::maybe_from_result<F>::type>::type {
-    typename detail::maybe_from_result<F>::type r;
     RXCPP_TRY {
-        r.reset(f());
+        return f();
     } RXCPP_CATCH(...) {
         s.on_error(rxu::current_exception());
     }
-    return r;
+    return {};
+}
+
+template<class F, class OnError>
+auto on_exception_no_return(const F& f, const OnError& c)
+    ->  typename std::enable_if<detail::is_on_error<OnError>::value, void>::type {
+    RXCPP_TRY {
+        f();
+    } RXCPP_CATCH(...) {
+        c(rxu::current_exception());
+    };
+}
+
+template<class F, class Subscriber>
+auto on_exception_no_return(const F& f, const Subscriber& s)
+    ->  typename std::enable_if<is_subscriber<Subscriber>::value, void>::type {
+    RXCPP_TRY {
+        f();
+    } RXCPP_CATCH(...) {
+        s.on_error(rxu::current_exception());
+    }
 }
 
 }
