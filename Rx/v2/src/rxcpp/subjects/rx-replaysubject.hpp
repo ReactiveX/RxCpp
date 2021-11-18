@@ -69,7 +69,7 @@ class replay_observer : public detail::multicast_observer<T>
         {
         }
 
-        void add(T v) const {
+        void add(const T& v) const {
             std::unique_lock<std::mutex> guard(lock);
 
             if (!count.empty()) {
@@ -84,7 +84,7 @@ class replay_observer : public detail::multicast_observer<T>
                 time_points.push_back(now);
             }
 
-            values.push_back(std::move(v));
+            values.push_back(v);
         }
         std::list<T> get() const {
             std::unique_lock<std::mutex> guard(lock);
@@ -115,10 +115,9 @@ public:
         return state->coordinator;
     }
 
-    template<class V>
-    void on_next(V v) const {
+    void on_next(const T& v) const {
         state->add(v);
-        base_type::on_next(std::move(v));
+        base_type::on_next(v);
     }
 };
 
