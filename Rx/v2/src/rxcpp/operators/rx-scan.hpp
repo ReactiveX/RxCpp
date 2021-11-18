@@ -85,8 +85,8 @@ struct scan : public operator_base<rxu::decay_t<Seed>>
         state->source.subscribe(
             state->out,
         // on_next
-            [state](T t) {
-                state->result = state->accumulator(state->result, t);
+            [state](auto&& t) {
+                state->result = state->accumulator(std::move(state->result), std::forward<decltype(t)>(t));
                 state->out.on_next(state->result);
             },
         // on_error
