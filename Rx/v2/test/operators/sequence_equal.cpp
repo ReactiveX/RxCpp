@@ -860,3 +860,46 @@ SCENARIO("sequence_equal - both sources emit the same sequence of items, custom 
         }
     }
 }
+
+SCENARIO("sequence_equal doesn't provide copies", "[sequence_equal][operators][copies]")
+{
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](bool) {};
+        auto          sub           = rx::make_observer<bool>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable().sequence_equal(verifier.get_observable());
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                // 1 copy to internal state per object
+                REQUIRE(verifier.get_copy_count() == 2);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+
+
+SCENARIO("sequence_equal doesn't provide copies for move", "[sequence_equal][operators][copies]")
+{
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](bool) {};
+        auto          sub           = rx::make_observer<bool>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable_for_move().sequence_equal(verifier.get_observable_for_move());
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                // 1 move to internal state per object
+                REQUIRE(verifier.get_move_count() == 2);
+            }
+        }
+    }
+}
