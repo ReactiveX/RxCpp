@@ -41,20 +41,22 @@ public:
     int get_copy_count() const { return _state->copy_count; }
     int get_move_count() const { return _state->move_count; }
 
-    rxcpp::observable<copy_verifier> get_observable()
+    rxcpp::observable<copy_verifier> get_observable(size_t count = 1)
     {
-        return rxcpp::observable<>::create<copy_verifier>([this](rxcpp::subscriber<copy_verifier> sub)
+        return rxcpp::observable<>::create<copy_verifier>([this, count](rxcpp::subscriber<copy_verifier> sub)
         {
-            sub.on_next(*this);
+            for (size_t i =0; i< count; ++i)
+                sub.on_next(*this);
             sub.on_completed();
         });
     }
 
-    rxcpp::observable<copy_verifier> get_observable_for_move()
+    rxcpp::observable<copy_verifier> get_observable_for_move(size_t count = 1)
     {
-        return rxcpp::observable<>::create<copy_verifier>([this](rxcpp::subscriber<copy_verifier> sub)
+        return rxcpp::observable<>::create<copy_verifier>([this, count](rxcpp::subscriber<copy_verifier> sub)
         {
-            sub.on_next(std::move(*this));
+            for (size_t i =0; i< count; ++i)
+                sub.on_next(std::move(*this));
             sub.on_completed();
         });
     }
