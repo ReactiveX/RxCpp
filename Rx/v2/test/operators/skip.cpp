@@ -631,3 +631,44 @@ SCENARIO("skip, consecutive", "[skip][operators]"){
         }
     }
 }
+
+SCENARIO("skip doesn't provide copies", "[skip][operators][copies]"){
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](copy_verifier) {};
+        auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable().skip(0);
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                // 1 copy to lambda
+                REQUIRE(verifier.get_copy_count() == 1);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+
+
+SCENARIO("skip doesn't provide copies for move", "[skip][operators][copies]"){
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](copy_verifier) {};
+        auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable_for_move().skip(0);
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                // 1 move to lambda
+                REQUIRE(verifier.get_move_count() == 1);
+            }
+        }
+    }
+}
