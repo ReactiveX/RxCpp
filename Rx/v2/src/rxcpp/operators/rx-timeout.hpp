@@ -160,13 +160,13 @@ struct timeout
             return std::function<void(const rxsc::schedulable&)>(selectedProduce.get());
         }
 
-        void on_next(T v) const {
+        void on_next(const T& v) const {
             auto localState = state;
             auto work = [v, localState](const rxsc::schedulable&) {
                 auto new_id = ++localState->index;
                 auto produce_time = localState->worker.now() + localState->period;
 
-                localState->dest.on_next(v);
+                localState->dest.on_next(std::move(v));
                 localState->worker.schedule(produce_time, produce_timeout(new_id, localState));
             };
             auto selectedWork = on_exception(

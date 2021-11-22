@@ -181,3 +181,51 @@ SCENARIO("should emit timestamped items and an error if there is an error", "[ti
         }
     }
 }
+
+SCENARIO("timestamp doesn't provide copies", "[timestamp][operators][copies]"){
+    GIVEN("observale and subscriber")
+    {
+        typedef rxsc::detail::test_type::clock_type clock_type;
+        typedef clock_type::time_point time_point;
+
+        auto          empty_on_next = [](std::pair<copy_verifier, time_point>) {};
+        auto          sub           = rx::make_observer<std::pair<copy_verifier, time_point>>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable().timestamp();
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                // 1 copy to pair
+                REQUIRE(verifier.get_copy_count() == 1);
+                // 1 move pair to final lambda
+                REQUIRE(verifier.get_move_count() == 1);
+            }
+        }
+    }
+}
+
+
+SCENARIO("timestamp doesn't provide copies for move", "[timestamp][operators][copies]"){
+    GIVEN("observale and subscriber")
+    {
+        typedef rxsc::detail::test_type::clock_type clock_type;
+        typedef clock_type::time_point time_point;
+
+        auto          empty_on_next = [](std::pair<copy_verifier, time_point>) {};
+        auto          sub           = rx::make_observer<std::pair<copy_verifier, time_point>>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable_for_move().timestamp();
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                //  1 move to pair + 1 move of pair to final lambda
+                REQUIRE(verifier.get_move_count() == 2);
+            }
+        }
+    }
+}

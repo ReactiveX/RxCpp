@@ -75,8 +75,9 @@ struct timestamp
         {
         }
 
-        void on_next(source_value_type v) const {
-            dest.on_next(std::make_pair(v, coord.now()));
+        template<typename U>
+        void on_next(U&& v) const {
+            dest.on_next(std::make_pair(std::forward<U>(v), coord.now()));
         }
         void on_error(rxu::error_ptr e) const {
             dest.on_error(e);
