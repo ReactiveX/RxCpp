@@ -294,7 +294,7 @@ SCENARIO("element_at - invalid index", "[element_at][operators]"){
 
 
 SCENARIO("element_at doesn't provide copies", "[element_at][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -315,7 +315,7 @@ SCENARIO("element_at doesn't provide copies", "[element_at][operators][copies]")
 
 
 SCENARIO("element_at doesn't provide copies for move", "[element_at][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);

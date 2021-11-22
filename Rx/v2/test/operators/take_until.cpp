@@ -794,7 +794,7 @@ SCENARIO("take_until trigger on time point", "[take_until][take][operators]"){
 }
 
 SCENARIO("take_until doesn't provide copies", "[take_until][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -815,7 +815,7 @@ SCENARIO("take_until doesn't provide copies", "[take_until][operators][copies]")
 
 
 SCENARIO("take_until doesn't provide copies for move", "[take_until][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);

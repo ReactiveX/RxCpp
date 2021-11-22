@@ -364,7 +364,7 @@ SCENARIO("filter stops on dispose from predicate", "[where][filter][operators]")
 
 
 SCENARIO("filter doesn't provide copies", "[filter][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -385,7 +385,7 @@ SCENARIO("filter doesn't provide copies", "[filter][operators][copies]"){
 
 
 SCENARIO("filter doesn't provide copies for move", "[filter][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);

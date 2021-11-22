@@ -184,7 +184,7 @@ SCENARIO("retry with failure", "[retry][operators]") {
 
 SCENARIO("retry doesn't provide copies", "[retry][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -206,7 +206,7 @@ SCENARIO("retry doesn't provide copies", "[retry][operators][copies]")
 
 SCENARIO("retry doesn't provide copies for move", "[retry][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);

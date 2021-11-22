@@ -160,7 +160,7 @@ SCENARIO("ignore_elements - items", "[ignore_elements][operators]"){
 }
 
 SCENARIO("ignore_elements doesn't provide copies", "[ignore_elements][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -180,7 +180,7 @@ SCENARIO("ignore_elements doesn't provide copies", "[ignore_elements][operators]
 
 
 SCENARIO("ignore_elements doesn't provide copies for move", "[ignore_elements][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);

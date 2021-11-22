@@ -434,7 +434,7 @@ SCENARIO("skip_while, dispose after", "[skip_while][operators]"){
 }
 
 SCENARIO("skip_while doesn't provide copies", "[skip_while][skip][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -455,7 +455,7 @@ SCENARIO("skip_while doesn't provide copies", "[skip_while][skip][operators][cop
 
 
 SCENARIO("skip_while doesn't provide copies for move", "[skip_while][skip][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);

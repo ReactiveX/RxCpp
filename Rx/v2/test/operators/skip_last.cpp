@@ -279,7 +279,7 @@ SCENARIO("skip_last, source observable emits an error", "[skip_last][operators]"
 }
 
 SCENARIO("skip_last doesn't provide copies", "[skip_last][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -301,7 +301,7 @@ SCENARIO("skip_last doesn't provide copies", "[skip_last][operators][copies]"){
 
 
 SCENARIO("skip_last doesn't provide copies for move", "[skip_last][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);

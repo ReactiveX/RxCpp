@@ -311,7 +311,7 @@ SCENARIO("scan: seed, accumulator throws", "[scan][operators][!throws]"){
 
 SCENARIO("scan doesn't provide copies", "[scan][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](int) {};
         auto          sub           = rx::make_observer<int>(empty_on_next);
@@ -333,7 +333,7 @@ SCENARIO("scan doesn't provide copies", "[scan][operators][copies]")
 
 SCENARIO("scan doesn't provide copies for move", "[scan][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](int) {};
         auto          sub           = rx::make_observer<int>(empty_on_next);

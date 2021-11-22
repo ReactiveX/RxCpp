@@ -167,7 +167,7 @@ SCENARIO("default_if_empty - source throws", "[default_if_empty][operators]"){
 }
 
 SCENARIO("default_if_empty doesn't provide copies", "[default_if_empty][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -188,7 +188,7 @@ SCENARIO("default_if_empty doesn't provide copies", "[default_if_empty][operator
 
 
 SCENARIO("default_if_empty doesn't provide copies for move", "[default_if_empty][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);

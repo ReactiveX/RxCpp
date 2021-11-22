@@ -456,7 +456,7 @@ SCENARIO("min, error", "[reduce][min][operators]"){
 
 SCENARIO("reduce doesn't provide copies", "[reduce][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](int) {};
         auto          sub           = rx::make_observer<int>(empty_on_next);
@@ -478,7 +478,7 @@ SCENARIO("reduce doesn't provide copies", "[reduce][operators][copies]")
 
 SCENARIO("reduce doesn't provide copies for move", "[reduce][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](int) {};
         auto          sub           = rx::make_observer<int>(empty_on_next);

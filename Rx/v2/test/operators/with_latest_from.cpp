@@ -1646,7 +1646,7 @@ SCENARIO("with_latest_from typical N", "[with_latest_from][join][operators]"){
 
 SCENARIO("with_latest_from doesn't provide copies", "[with_latest_from][join][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](const int&) {};
         auto          sub           = rx::make_observer<int>(empty_on_next);
@@ -1668,7 +1668,7 @@ SCENARIO("with_latest_from doesn't provide copies", "[with_latest_from][join][op
 
 SCENARIO("with_latest_from provide doesn't provide copies for move", "[with_latest_from][join][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](const int&) {};
         auto          sub           = rx::make_observer<int>(empty_on_next);

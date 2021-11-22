@@ -241,7 +241,7 @@ SCENARIO("map - throw", "[map][operators]") {
 
 SCENARIO("map doesn't provide copies", "[map][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -264,7 +264,7 @@ SCENARIO("map doesn't provide copies", "[map][operators][copies]")
 
 SCENARIO("map doesn't provide copies for move", "[map][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);

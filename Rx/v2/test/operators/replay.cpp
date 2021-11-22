@@ -699,7 +699,7 @@ SCENARIO("replay multiple subscriptions with count and time", "[replay][multicas
 
 SCENARIO("replay doesn't provide copies", "[replay][multicast][subject][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -721,7 +721,7 @@ SCENARIO("replay doesn't provide copies", "[replay][multicast][subject][operator
 
 SCENARIO("replay doesn't provide copies for move", "[replay][multicast][subject][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);

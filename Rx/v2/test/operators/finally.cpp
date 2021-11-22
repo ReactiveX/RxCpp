@@ -201,7 +201,7 @@ SCENARIO("finally - throw", "[finally][operators]"){
 
 
 SCENARIO("finally doesn't provide copies", "[finally][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -222,7 +222,7 @@ SCENARIO("finally doesn't provide copies", "[finally][operators][copies]"){
 
 
 SCENARIO("finally doesn't provide copies for move", "[finally][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);

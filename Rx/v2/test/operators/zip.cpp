@@ -1882,7 +1882,7 @@ SCENARIO("zip error after completed right", "[zip][join][operators]"){
 
 SCENARIO("zip doesn't provide copies", "[zip][join][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](const int&) {};
         auto          sub           = rx::make_observer<int>(empty_on_next);
@@ -1905,7 +1905,7 @@ SCENARIO("zip doesn't provide copies", "[zip][join][operators][copies]")
 
 SCENARIO("zip provide doesn't provide copies for move", "[zip][join][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](const int&) {};
         auto          sub           = rx::make_observer<int>(empty_on_next);

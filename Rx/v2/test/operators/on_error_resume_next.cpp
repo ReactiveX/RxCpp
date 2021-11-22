@@ -221,7 +221,7 @@ SCENARIO("on_error_resume_next stops on error", "[on_error_resume_next][operator
 
 SCENARIO("on_error_resume_next doesn't provide copies", "[on_error_resume_next][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -246,7 +246,7 @@ SCENARIO("on_error_resume_next doesn't provide copies", "[on_error_resume_next][
 
 SCENARIO("on_error_resume_next doesn't provide copies for move", "[on_error_resume_next][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);

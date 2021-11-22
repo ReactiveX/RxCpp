@@ -194,7 +194,7 @@ SCENARIO("observe_on no-comparison", "[observe][observe_on]"){
 
 
 SCENARIO("observe_on doesn't provide copies", "[observe][observe_on][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -216,7 +216,7 @@ SCENARIO("observe_on doesn't provide copies", "[observe][observe_on][operators][
 
 
 SCENARIO("observe_on doesn't provide copies for move", "[observe][observe_on][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);

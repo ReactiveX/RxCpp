@@ -215,7 +215,7 @@ SCENARIO("any emits an error", "[any][operators]"){
 
 SCENARIO("any doesn't provide copies", "[any][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](bool) {};
         auto          sub           = rx::make_observer<bool>(empty_on_next);
@@ -236,7 +236,7 @@ SCENARIO("any doesn't provide copies", "[any][operators][copies]")
 
 SCENARIO("any doesn't provide copies for move", "[any][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](bool) {};
         auto          sub           = rx::make_observer<bool>(empty_on_next);

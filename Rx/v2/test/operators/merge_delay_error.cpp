@@ -305,7 +305,7 @@ SCENARIO("variadic merge_delay_error completes with 2 errors", "[merge][join][op
 
 
 SCENARIO("merge_delay_error doesn't provide copies", "[merge_delay_error][join][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -326,7 +326,7 @@ SCENARIO("merge_delay_error doesn't provide copies", "[merge_delay_error][join][
 
 
 SCENARIO("merge_delay_error doesn't provide copies for move", "[merge_delay_error][join][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);

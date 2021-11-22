@@ -433,7 +433,7 @@ SCENARIO("group_by take 1 take 4", "[group_by][take][operators]"){
 
 SCENARIO("group_by do 1 copy from lambda", "[group_by][operators][copies]")
 { 
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -456,7 +456,7 @@ SCENARIO("group_by do 1 copy from lambda", "[group_by][operators][copies]")
 
 SCENARIO("group_by do 1 move from lambda and 1 move to internal state for move", "[group_by][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);

@@ -536,7 +536,7 @@ SCENARIO("concat_transform, no result selector, with coordination", "[concat_tra
 
 SCENARIO("concat_transform do 1 copy to lambda and 1 copy to internal state", "[concat_transform][join][operators][copies]")
 { 
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](int) {};
         auto          sub           = rx::make_observer<int>(empty_on_next);
@@ -557,7 +557,7 @@ SCENARIO("concat_transform do 1 copy to lambda and 1 copy to internal state", "[
 
 SCENARIO("concat_transform do 1 copy to lambda and 1 move to internal state for move", "[concat_transform][join][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](int) {};
         auto          sub           = rx::make_observer<int>(empty_on_next);

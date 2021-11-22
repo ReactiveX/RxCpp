@@ -294,7 +294,7 @@ SCENARIO("variadic merge completes", "[merge][join][operators]"){
 }
 
 SCENARIO("merge doesn't provide copies", "[merge][join][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -315,7 +315,7 @@ SCENARIO("merge doesn't provide copies", "[merge][join][operators][copies]"){
 
 
 SCENARIO("merge doesn't provide copies for move", "[merge][join][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);

@@ -121,7 +121,7 @@ SCENARIO("tap stops on error", "[tap][operators]"){
 }
 
 SCENARIO("tap doesn't provide copies", "[tap][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -142,7 +142,7 @@ SCENARIO("tap doesn't provide copies", "[tap][operators][copies]"){
 
 
 SCENARIO("tap doesn't provide copies for move", "[tap][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);

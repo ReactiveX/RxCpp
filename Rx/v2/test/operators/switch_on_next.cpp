@@ -384,7 +384,7 @@ SCENARIO("switch_on_next - inner completes", "[switch_on_next][operators]"){
 }
 
 SCENARIO("switch_on_next doesn't provide copies", "[switch_on_next][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -405,7 +405,7 @@ SCENARIO("switch_on_next doesn't provide copies", "[switch_on_next][operators][c
 
 
 SCENARIO("switch_on_next doesn't provide copies for move", "[switch_on_next][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);

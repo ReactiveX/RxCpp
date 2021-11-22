@@ -789,7 +789,7 @@ SCENARIO("merge_transform, no result selector, with coordination", "[merge_trans
 
 SCENARIO("merge_transform do 1 copy to lambda and 1 copy to internal state", "[merge_transform][transform][operators][copies]")
 { 
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](int) {};
         auto          sub           = rx::make_observer<int>(empty_on_next);
@@ -810,7 +810,7 @@ SCENARIO("merge_transform do 1 copy to lambda and 1 copy to internal state", "[m
 
 SCENARIO("merge_transform do 1 copy to lambda and 1 move to internal state for move", "[merge_transform][transform][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](int) {};
         auto          sub           = rx::make_observer<int>(empty_on_next);

@@ -863,7 +863,7 @@ SCENARIO("sequence_equal - both sources emit the same sequence of items, custom 
 
 SCENARIO("sequence_equal doesn't provide copies", "[sequence_equal][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](bool) {};
         auto          sub           = rx::make_observer<bool>(empty_on_next);
@@ -885,7 +885,7 @@ SCENARIO("sequence_equal doesn't provide copies", "[sequence_equal][operators][c
 
 SCENARIO("sequence_equal doesn't provide copies for move", "[sequence_equal][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](bool) {};
         auto          sub           = rx::make_observer<bool>(empty_on_next);

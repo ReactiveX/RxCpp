@@ -1232,7 +1232,7 @@ SCENARIO("buffer with time or count, only count triggered", "[buffer_with_time_o
 
 SCENARIO("buffer do 1 copy to place object in vector", "[buffer][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](std::vector<copy_verifier>) {};
         auto          sub           = rx::make_observer<std::vector<copy_verifier>>(empty_on_next);
@@ -1252,7 +1252,7 @@ SCENARIO("buffer do 1 copy to place object in vector", "[buffer][operators][copi
 
 SCENARIO("buffer do 1 copy to place object in vector for move", "[buffer][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](std::vector<copy_verifier>) {};
         auto          sub           = rx::make_observer<std::vector<copy_verifier>>(empty_on_next);

@@ -202,7 +202,7 @@ SCENARIO("concat completes", "[concat][join][operators]"){
 
 SCENARIO("concat doesn't provide copies", "[concat][join][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -224,7 +224,7 @@ SCENARIO("concat doesn't provide copies", "[concat][join][operators][copies]")
 
 SCENARIO("concat doesn't provide copies for move", "[concat][join][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = []( copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);

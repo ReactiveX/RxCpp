@@ -217,7 +217,7 @@ SCENARIO("exists emits an error", "[exists][operators]"){
 
 
 SCENARIO("exists doesn't provide copies", "[exists][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](bool) {};
         auto          sub           = rx::make_observer<bool>(empty_on_next);

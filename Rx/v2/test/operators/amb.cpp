@@ -954,7 +954,7 @@ SCENARIO("amb never empty, custom coordination", "[amb][join][operators]"){
 
 
 SCENARIO("amb doesn't provide copies", "[amb][join][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -975,7 +975,7 @@ SCENARIO("amb doesn't provide copies", "[amb][join][operators][copies]"){
 
 
 SCENARIO("amb doesn't provide copies for move", "[amb][join][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);

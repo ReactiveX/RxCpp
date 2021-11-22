@@ -386,7 +386,7 @@ SCENARIO("countable repeat, error test", "[repeat][operators]"){
 
 SCENARIO("repeat doesn't provide copies", "[repeat][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -408,7 +408,7 @@ SCENARIO("repeat doesn't provide copies", "[repeat][operators][copies]")
 
 SCENARIO("repeat doesn't provide copies for move", "[repeat][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);

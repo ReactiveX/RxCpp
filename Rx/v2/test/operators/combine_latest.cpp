@@ -1668,7 +1668,7 @@ SCENARIO("combine_latest typical N", "[combine_latest][join][operators]"){
 
 SCENARIO("combine_latest provide 1 copy to store in tuple, 1 copy to send value and 1 move to lambda", "[combine_latest][join][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](const int&) {};
         auto          sub           = rx::make_observer<int>(empty_on_next);
@@ -1695,7 +1695,7 @@ SCENARIO("combine_latest provide 1 copy to store in tuple, 1 copy to send value 
 
 SCENARIO("combine_latest provide 1 move to store in tuple, 1 copy to send value and 1 move to lambda for move", "[combine_latest][join][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](const int&) {};
         auto          sub           = rx::make_observer<int>(empty_on_next);

@@ -81,7 +81,7 @@ SCENARIO("pairwise - not enough items to create a pair", "[pairwise][operators]"
 
 SCENARIO("pairwise doesn't provide copies", "[pairwise][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](std::tuple<copy_verifier, copy_verifier>) {};
         auto          sub           = rx::make_observer<std::tuple<copy_verifier, copy_verifier>>(empty_on_next);
@@ -104,7 +104,7 @@ SCENARIO("pairwise doesn't provide copies", "[pairwise][operators][copies]")
 
 SCENARIO("pairwise doesn't provide copies for move", "[pairwise][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](std::tuple<copy_verifier, copy_verifier>) {};
         auto          sub           = rx::make_observer<std::tuple<copy_verifier, copy_verifier>>(empty_on_next);

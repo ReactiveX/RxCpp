@@ -183,7 +183,7 @@ SCENARIO("should emit timestamped items and an error if there is an error", "[ti
 }
 
 SCENARIO("timestamp doesn't provide copies", "[timestamp][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         typedef rxsc::detail::test_type::clock_type clock_type;
         typedef clock_type::time_point time_point;
@@ -208,7 +208,7 @@ SCENARIO("timestamp doesn't provide copies", "[timestamp][operators][copies]"){
 
 
 SCENARIO("timestamp doesn't provide copies for move", "[timestamp][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         typedef rxsc::detail::test_type::clock_type clock_type;
         typedef clock_type::time_point time_point;

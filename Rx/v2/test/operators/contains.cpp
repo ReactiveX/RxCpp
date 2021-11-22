@@ -214,7 +214,7 @@ SCENARIO("contains emits an error", "[contains][operators]"){
 
 SCENARIO("contains doesn't provide copies", "[contains][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](bool) {};
         auto          sub           = rx::make_observer<bool>(empty_on_next);
@@ -235,7 +235,7 @@ SCENARIO("contains doesn't provide copies", "[contains][operators][copies]")
 
 SCENARIO("contains doesn't provide copies for move", "[contains][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](bool) {};
         auto          sub           = rx::make_observer<bool>(empty_on_next);
@@ -255,7 +255,7 @@ SCENARIO("contains doesn't provide copies for move", "[contains][operators][copi
 
 SCENARIO("contains provides 1 copy for value to compare", "[contains][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](bool) {};
         auto          sub           = rx::make_observer<bool>(empty_on_next);
@@ -276,7 +276,7 @@ SCENARIO("contains provides 1 copy for value to compare", "[contains][operators]
 
 SCENARIO("contains provides 1 move for value to compare for move", "[contains][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](bool) {};
         auto          sub           = rx::make_observer<bool>(empty_on_next);

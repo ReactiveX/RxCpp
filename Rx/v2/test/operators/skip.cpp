@@ -633,7 +633,7 @@ SCENARIO("skip, consecutive", "[skip][operators]"){
 }
 
 SCENARIO("skip doesn't provide copies", "[skip][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -654,7 +654,7 @@ SCENARIO("skip doesn't provide copies", "[skip][operators][copies]"){
 
 
 SCENARIO("skip doesn't provide copies for move", "[skip][operators][copies]"){
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);

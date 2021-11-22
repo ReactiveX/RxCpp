@@ -172,7 +172,7 @@ SCENARIO("is_empty emits an error if the source observable emit an error", "[is_
 
 SCENARIO("is_empty doesn't provide copies", "[is_empty][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](bool) {};
         auto          sub           = rx::make_observer<bool>(empty_on_next);
@@ -193,7 +193,7 @@ SCENARIO("is_empty doesn't provide copies", "[is_empty][operators][copies]")
 
 SCENARIO("is_empty doesn't provide copies for move", "[is_emptyis_empty][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](bool) {};
         auto          sub           = rx::make_observer<bool>(empty_on_next);

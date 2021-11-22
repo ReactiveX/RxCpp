@@ -1044,7 +1044,7 @@ SCENARIO("window with time or count, only count triggered", "[window_with_time_o
 
 SCENARIO("window doesn't provide copies", "[window][operators][copies]")
 { 
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
@@ -1065,7 +1065,7 @@ SCENARIO("window doesn't provide copies", "[window][operators][copies]")
 
 SCENARIO("window doesn't provide copies for move", "[window][operators][copies]")
 {
-    GIVEN("observale and subscriber")
+    GIVEN("observable and subscriber")
     {
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
