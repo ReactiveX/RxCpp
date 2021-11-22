@@ -66,9 +66,10 @@ struct take_while
                 , test(std::move(t))
         {
         }
-        void on_next(source_value_type v) const {
+        template<typename U>
+        void on_next(U&& v) const {
             if (test(v)) {
-                dest.on_next(v);
+                dest.on_next(std::forward<U>(v));
             } else {
                 dest.on_completed();
             }
