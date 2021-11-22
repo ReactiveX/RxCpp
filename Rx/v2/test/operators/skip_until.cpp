@@ -608,3 +608,44 @@ SCENARIO("skip_until time point, some data next", "[skip_until][skip][operators]
         }
     }
 }
+
+SCENARIO("skip_until doesn't provide copies", "[skip_until][skip][operators][copies]"){
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](copy_verifier) {};
+        auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable().skip_until(rxcpp::observable<>::just(1));
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                // 1 copy to internal state 
+                REQUIRE(verifier.get_copy_count() == 1);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+
+
+SCENARIO("skip_until doesn't provide copies for move", "[skip_until][skip][operators][copies]"){
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](copy_verifier) {};
+        auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable_for_move().skip_until(rxcpp::observable<>::just(1));
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                 // 1 move to internal state
+                REQUIRE(verifier.get_move_count() == 1);
+            }
+        }
+    }
+}
