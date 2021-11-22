@@ -1879,3 +1879,48 @@ SCENARIO("zip error after completed right", "[zip][join][operators]"){
         }
     }
 }
+
+SCENARIO("zip doesn't provide copies", "[zip][join][operators][copies]")
+{
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](const int&) {};
+        auto          sub           = rx::make_observer<int>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable().zip([](copy_verifier, int v) { return v; },
+                                                          rxcpp::observable<>::just(1));
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                // 1 copy to internal cache
+                REQUIRE(verifier.get_copy_count() == 1);
+                // 1 move from cache + 1 move to tuple + 1 move to lambda
+                REQUIRE(verifier.get_move_count() == 3);
+            }
+        }
+    }
+}
+
+SCENARIO("zip provide doesn't provide copies for move", "[zip][join][operators][copies]")
+{
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](const int&) {};
+        auto          sub           = rx::make_observer<int>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable_for_move().zip([](copy_verifier, int v) { return v; },
+                                                                   rxcpp::observable<>::just(1));
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                // 1 move to internal state + 1 move from cache + 1 move to tuple + 1 move to lambda
+                REQUIRE(verifier.get_move_count() == 4);
+            }
+        }
+    }
+}

@@ -138,30 +138,30 @@ using enable_if_all_true_type_t = typename std::enable_if<all_true_type<BN...>::
 
 struct all_values_true {
     template<class... ValueN>
-    bool operator()(ValueN... vn) const;
+    bool operator()(const ValueN&... vn) const;
 
     template<class Value0>
-    bool operator()(Value0 v0) const {
+    bool operator()(const Value0& v0) const {
         return v0;
     }
 
     template<class Value0, class... ValueN>
-    bool operator()(Value0 v0, ValueN... vn) const {
+    bool operator()(const Value0& v0, const ValueN&... vn) const {
         return v0 && all_values_true()(vn...);
     }
 };
 
 struct any_value_true {
     template<class... ValueN>
-    bool operator()(ValueN... vn) const;
+    bool operator()(const ValueN&... vn) const;
 
     template<class Value0>
-    bool operator()(Value0 v0) const {
+    bool operator()(const Value0& v0) const {
         return v0;
     }
 
     template<class Value0, class... ValueN>
-    bool operator()(Value0 v0, ValueN... vn) const {
+    bool operator()(const Value0& v0, const ValueN&... vn) const {
         return v0 || any_value_true()(vn...);
     }
 };
