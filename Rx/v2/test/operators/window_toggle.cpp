@@ -318,4 +318,3 @@ SCENARIO("window toggle, disposed", "[window_toggle][operators]"){
         }
     }
 }
-

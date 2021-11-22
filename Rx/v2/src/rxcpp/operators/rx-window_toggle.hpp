@@ -202,10 +202,10 @@ struct window_toggle
             source->subscribe(std::move(selectedSink.get()));
         }
 
-        void on_next(T v) const {
+        void on_next(const T& v) const {
             auto localState = state;
             auto work = [v, localState](const rxsc::schedulable&){
-                for (auto s : localState->subj) {
+                for (const auto& s : localState->subj) {
                     s.get_subscriber().on_next(v);
                 }
             };
