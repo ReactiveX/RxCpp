@@ -79,7 +79,7 @@ struct time_interval
         {
         }
 
-        void on_next(source_value_type) const {
+        void on_next(const source_value_type&) const {
             time_point now = coord.now();
             dest.on_next(now - last);
             last = now;
