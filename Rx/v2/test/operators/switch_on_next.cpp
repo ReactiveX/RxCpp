@@ -382,3 +382,44 @@ SCENARIO("switch_on_next - inner completes", "[switch_on_next][operators]"){
         }
     }
 }
+
+SCENARIO("switch_on_next doesn't provide copies", "[switch_on_next][operators][copies]"){
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](copy_verifier) {};
+        auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = rxcpp::observable<>::just(verifier.get_observable()).switch_on_next();
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                // 1 copy to final lambda
+                REQUIRE(verifier.get_copy_count() == 1);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+
+
+SCENARIO("switch_on_next doesn't provide copies for move", "[switch_on_next][operators][copies]"){
+    GIVEN("observale and subscriber")
+    {
+        auto          empty_on_next = [](copy_verifier) {};
+        auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = rxcpp::observable<>::just(verifier.get_observable_for_move()).switch_on_next();
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                // 1 move to final lambda
+                REQUIRE(verifier.get_move_count() == 1);
+            }
+        }
+    }
+}
