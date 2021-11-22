@@ -86,8 +86,8 @@ struct window
             subj.push_back(rxcpp::subjects::subject<T>());
             dest.on_next(subj[0].get_observable().as_dynamic());
         }
-        void on_next(T v) const {
-            for (auto s : subj) {
+        void on_next(const T& v) const {
+            for (const auto& s : subj) {
                 s.get_subscriber().on_next(v);
             }
 
