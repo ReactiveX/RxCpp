@@ -1897,7 +1897,7 @@ SCENARIO("zip doesn't provide copies", "[zip][join][operators][copies]")
                 // 1 copy to internal cache
                 REQUIRE(verifier.get_copy_count() == 1);
                 // 1 move from cache + 1 move to tuple + 1 move to lambda
-                REQUIRE(verifier.get_move_count() == 3);
+                REQUIRE(verifier.get_move_count() <= 3);
             }
         }
     }
@@ -1919,7 +1919,7 @@ SCENARIO("zip provide doesn't provide copies for move", "[zip][join][operators][
             {
                 REQUIRE(verifier.get_copy_count() == 0);
                 // 1 move to internal state + 1 move from cache + 1 move to tuple + 1 move to lambda
-                REQUIRE(verifier.get_move_count() == 4);
+                REQUIRE(verifier.get_move_count() <= 4);
             }
         }
     }

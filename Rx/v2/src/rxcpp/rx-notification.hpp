@@ -53,8 +53,8 @@ struct notification_base
 
     virtual void out(std::ostream& out) const =0;
     virtual bool equals(const type& other) const = 0;
-    virtual void accept(const observer_type& o) const =0;
-    virtual void accept(const observer_type& o) =0;
+    virtual void accept(const observer_type& o) const & =0;
+    virtual void accept(const observer_type& o) && =0;
 };
 
 template<class T>
@@ -140,11 +140,11 @@ private:
                 })));
             return result;
         }
-        void accept(const typename base::observer_type& o) const override{
+        void accept(const typename base::observer_type& o) const & override{
             o.on_next(value);
         }
 
-        void accept(const typename base::observer_type& o) override {
+        void accept(const typename base::observer_type& o) && override {
             o.on_next(std::move(value));
         }
         T value;
@@ -169,11 +169,11 @@ private:
             })));
             return result;
         }
-        void accept(const typename base::observer_type& o) const override{
+        void accept(const typename base::observer_type& o) const & override{
             o.on_error(ep);
         }
 
-        void accept(const typename base::observer_type& o) override{
+        void accept(const typename base::observer_type& o) && override{
             o.on_error(ep);
         }
         const rxu::error_ptr ep;
@@ -192,11 +192,11 @@ private:
             })));
             return result;
         }
-        void accept(const typename base::observer_type& o) const override{
+        void accept(const typename base::observer_type& o) const & override{
             o.on_completed();
         }
 
-        void accept(const typename base::observer_type& o) override{
+        void accept(const typename base::observer_type& o) && override{
             o.on_completed();
         }
     };

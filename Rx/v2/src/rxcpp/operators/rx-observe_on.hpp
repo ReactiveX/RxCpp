@@ -146,7 +146,7 @@ struct observe_on
                                 }
                                 auto notification = std::move(drain_queue.front());
                                 drain_queue.pop_front();
-                                notification->accept(destination);
+                                std::move(*notification).accept(destination);
                                 std::unique_lock<std::mutex> guard(lock);
                                 self();
                                 if (lifetime.is_subscribed()) break;

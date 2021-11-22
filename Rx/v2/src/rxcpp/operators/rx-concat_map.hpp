@@ -154,7 +154,7 @@ struct concat_map
                 subscribe_to(std::make_shared<source_value_type>(std::move(st)));
             }
 
-            void subscribe_to(std::shared_ptr<source_value_type> st)
+            void subscribe_to(std::shared_ptr<source_value_type>&& st)
             {
                 auto state = this->shared_from_this();
 

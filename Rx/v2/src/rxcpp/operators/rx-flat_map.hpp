@@ -195,7 +195,7 @@ struct flat_map
                     innercs,
                 // on_next
                     [state, stAsShared](collection_value_type ct) {
-                        auto selectedResult = state->selectResult(*stAsShared, std::move(ct));
+                        auto selectedResult = state->selectResult(std::move(*stAsShared), std::move(ct));
                         state->out.on_next(std::move(selectedResult));
                     },
                 // on_error
