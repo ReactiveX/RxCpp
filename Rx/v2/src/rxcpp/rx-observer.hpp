@@ -49,30 +49,21 @@ struct OnNextForward
     explicit OnNextForward(onnext_t on) : onnext(std::move(on)) {}
     onnext_t onnext;
 
-    void operator()(state_t& s, const T& t) const {
-        onnext(s, t);
-    }
-    void operator()(state_t& s, T& t) const {
-        onnext(s, t);
-    }
-    void operator()(state_t& s, T&& t) const {
-        onnext(s, std::move(t));
+    template<typename U>
+    void on_next(state_t& s, U&& u) const{
+        onnext(s, std::forward<U>(u));
     }
 };
 template<class T, class State>
 struct OnNextForward<T, State, void>
 {
     using state_t = rxu::decay_t<State>;
-    OnNextForward() {}
-    void operator()(state_t& s, const T& t) const {
-        s.on_next(t);
-    }
+    OnNextForward() = default;
 
-    void operator()(state_t& s, T& t) const {
-        s.on_next(t);
-    }
-    void operator()(state_t& s, T&& t) const {
-        s.on_next(std::move(t));
+    template<typename U>
+    void operator()(state_t& s, U&& u) const
+    {
+        s.on_next(std::forward<U>(u));
     }
 };
 
@@ -245,15 +236,10 @@ public:
         oncompleted = std::move(o.oncompleted);
         return *this;
     }
-    void on_next(const T& t) const {
-        onnext(state, t);
-    }
 
-    void on_next(T& t) const {
-        onnext(state, t);
-    }
-    void on_next(T&& t) const {
-        onnext(state, std::move(t));
+    template<typename U>
+    void on_next(U&& u) const{
+        onnext(state, std::forward<U>(u));
     }
     void on_error(rxu::error_ptr e) const {
         onerror(state, e);
@@ -336,15 +322,9 @@ public:
         oncompleted = std::move(o.oncompleted);
         return *this;
     }
-    void on_next(const T& t) const {
-        onnext(t);
-    }
-
-    void on_next(T& t) const {
-        onnext(t);
-    }
-    void on_next(T&& t) const {
-        onnext(std::move(t));
+    template<typename U>
+    void on_next(U&& u) const{
+        onnext(std::forward<U>(u));
     }
     void on_error(rxu::error_ptr e) const {
         onerror(e);
