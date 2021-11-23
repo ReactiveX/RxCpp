@@ -48,7 +48,11 @@ struct OnNextForward
     OnNextForward() : onnext() {}
     explicit OnNextForward(onnext_t on) : onnext(std::move(on)) {}
     onnext_t onnext;
+
     void operator()(state_t& s, const T& t) const {
+        onnext(s, t);
+    }
+    void operator()(state_t& s, T& t) const {
         onnext(s, t);
     }
     void operator()(state_t& s, T&& t) const {
@@ -61,6 +65,10 @@ struct OnNextForward<T, State, void>
     using state_t = rxu::decay_t<State>;
     OnNextForward() {}
     void operator()(state_t& s, const T& t) const {
+        s.on_next(t);
+    }
+
+    void operator()(state_t& s, T& t) const {
         s.on_next(t);
     }
     void operator()(state_t& s, T&& t) const {
@@ -240,6 +248,10 @@ public:
     void on_next(const T& t) const {
         onnext(state, t);
     }
+
+    void on_next(T& t) const {
+        onnext(state, t);
+    }
     void on_next(T&& t) const {
         onnext(state, std::move(t));
     }
@@ -327,6 +339,10 @@ public:
     void on_next(const T& t) const {
         onnext(t);
     }
+
+    void on_next(T& t) const {
+        onnext(t);
+    }
     void on_next(T&& t) const {
         onnext(std::move(t));
     }
@@ -348,6 +364,7 @@ template<class T>
 struct virtual_observer : public std::enable_shared_from_this<virtual_observer<T>>
 {
     virtual ~virtual_observer() {}
+    virtual void on_next(T&) const {};
     virtual void on_next(const T&) const {};
     virtual void on_next(T&&) const {};
     virtual void on_error(rxu::error_ptr) const {};
@@ -363,6 +380,10 @@ struct specific_observer : public virtual_observer<T>
     }
 
     Observer destination;
+
+    void on_next(T& t) const override {
+        destination.on_next(t);
+    }
     void on_next(const T& t) const override {
         destination.on_next(t);
     }
