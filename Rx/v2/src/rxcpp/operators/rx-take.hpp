@@ -98,13 +98,13 @@ struct take : public operator_base<T>
         // split subscription lifetime
             source_lifetime,
         // on_next
-            [state, source_lifetime](T t) {
+            [state, source_lifetime](auto&& t) {
                 if (state->mode_value < mode::triggered) {
                     if (--state->count > 0) {
-                        state->out.on_next(t);
+                        state->out.on_next(std::forward<decltype(t)>(t));
                     } else {
                         state->mode_value = mode::triggered;
-                        state->out.on_next(t);
+                        state->out.on_next(std::forward<decltype(t)>(t));
                         // must shutdown source before signaling completion
                         source_lifetime.unsubscribe();
                         state->out.on_completed();

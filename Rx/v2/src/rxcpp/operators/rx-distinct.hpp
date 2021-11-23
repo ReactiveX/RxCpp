@@ -55,10 +55,11 @@ struct distinct
                 : dest(d)
         {
         }
-        void on_next(source_value_type v) const {
+        template<typename U>
+        void on_next(U&& v) const {
             if (remembered.empty() || remembered.count(v) == 0) {
                 remembered.insert(v);
-                dest.on_next(v);
+                dest.on_next(std::forward<U>(v));
             }
         }
         void on_error(rxu::error_ptr e) const {

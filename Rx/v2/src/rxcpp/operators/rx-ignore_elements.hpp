@@ -52,7 +52,7 @@ struct ignore_elements {
         {
         }
 
-        void on_next(source_value_type) const {
+        void on_next(const source_value_type&) const {
             // no-op; ignore element
         }
 

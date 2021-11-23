@@ -179,3 +179,53 @@ SCENARIO("subscriber behavior", "[observer][traits]"){
         }
     }
 }
+
+SCENARIO("observer doesn't provide extra copies", "[observer][copies]"){
+    GIVEN("given some observer types"){
+        auto emptyNext = [](const copy_verifier&){};
+        auto obs = rx::make_observer_dynamic<copy_verifier>(emptyNext);
+        WHEN("send value"){
+            auto verifier = copy_verifier{};
+            obs.on_next(verifier);
+            THEN("no extra copies"){
+                REQUIRE(verifier.get_copy_count() == 0);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+            
+        }
+    }
+}
+
+SCENARIO("subscriber doesn't provide extra copies", "[observer][copies]"){
+    GIVEN("given some observer types"){
+        auto emptyNext = [](const copy_verifier&){};
+        auto obs = rx::make_observer_dynamic<copy_verifier>(emptyNext);
+        auto sub = rx::make_subscriber<copy_verifier>(obs);
+        WHEN("send value"){
+            auto verifier = copy_verifier{};
+            sub.on_next(verifier);
+            THEN("no extra copies"){
+                REQUIRE(verifier.get_copy_count() == 0);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+            
+        }
+    }
+}
+
+SCENARIO("subscriber does only 1 move", "[observer][copies]"){
+    GIVEN("given some observer types"){
+        auto emptyNext = [](copy_verifier){};
+        auto obs = rx::make_observer_dynamic<copy_verifier>(emptyNext);
+        auto sub = rx::make_subscriber<copy_verifier>(obs);
+        WHEN("send value"){
+            auto verifier = copy_verifier{};
+            sub.on_next(std::move(verifier));
+            THEN("no extra copies"){
+                REQUIRE(verifier.get_copy_count() == 0);
+                REQUIRE(verifier.get_move_count() == 1);
+            }
+            
+        }
+    }
+}

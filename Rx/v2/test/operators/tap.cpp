@@ -119,3 +119,44 @@ SCENARIO("tap stops on error", "[tap][operators]"){
         }
     }
 }
+
+SCENARIO("tap doesn't provide copies", "[tap][operators][copies]"){
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](copy_verifier) {};
+        auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable().tap([](const auto&){});
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                // 1 copy to final lambda
+                REQUIRE(verifier.get_copy_count() == 1);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+
+
+SCENARIO("tap doesn't provide copies for move", "[tap][operators][copies]"){
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](copy_verifier) {};
+        auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable_for_move().tap([](const auto&){});
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                //  1 move to final lambda
+                REQUIRE(verifier.get_move_count() == 1);
+            }
+        }
+    }
+}

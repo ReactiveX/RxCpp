@@ -151,8 +151,8 @@ struct switch_on_next
                     state->out,
                     state->inner_lifetime,
                 // on_next
-                    [state, st](collection_value_type ct) {
-                        state->out.on_next(std::move(ct));
+                    [state, st](auto&& ct) {
+                        state->out.on_next(std::forward<decltype(ct)>(ct));
                     },
                 // on_error
                     [state](rxu::error_ptr e) {

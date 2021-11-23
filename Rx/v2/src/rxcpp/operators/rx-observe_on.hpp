@@ -146,7 +146,7 @@ struct observe_on
                                 }
                                 auto notification = std::move(drain_queue.front());
                                 drain_queue.pop_front();
-                                notification->accept(destination);
+                                std::move(*notification).accept(destination);
                                 std::unique_lock<std::mutex> guard(lock);
                                 self();
                                 if (lifetime.is_subscribed()) break;
@@ -183,10 +183,11 @@ struct observe_on
         {
         }
 
-        void on_next(source_value_type v) const {
+        template<typename U>
+        void on_next(U&& v) const {
             std::unique_lock<std::mutex> guard(state->lock);
             if (state->current == mode::Errored || state->current == mode::Disposed) { return; }
-            state->fill_queue.push_back(notification_type::on_next(std::move(v)));
+            state->fill_queue.push_back(notification_type::on_next(std::forward<U>(v)));
             state->ensure_processing(guard);
         }
         void on_error(rxu::error_ptr e) const {

@@ -125,13 +125,15 @@ struct sequence_equal : public operator_base<bool>
 
         auto check_equal = [state]() {
             if(!state->source_values.empty() && !state->other_values.empty()) {
-                auto x = std::move(state->source_values.front());
-                state->source_values.pop_front();
+                auto& x = state->source_values.front();
+                auto& y = state->other_values.front();
+                
+                auto res = state->pred(x, y);
 
-                auto y = std::move(state->other_values.front());
+                state->source_values.pop_front();
                 state->other_values.pop_front();
 
-                if (!state->pred(x, y)) {
+                if (!res) {
                     state->out.on_next(false);
                     state->out.on_completed();
                 }
@@ -155,9 +157,9 @@ struct sequence_equal : public operator_base<bool>
             state->out,
             state->other_lifetime,
             // on_next
-            [state, check_equal](other_source_value_type t) {
+            [state, check_equal](auto&& t) {
                 auto& values = state->other_values;
-                values.push_back(t);
+                values.emplace_back(std::forward<decltype(t)>(t));
                 check_equal();
             },
             // on_error
@@ -183,9 +185,9 @@ struct sequence_equal : public operator_base<bool>
         source.get().subscribe(
             state->source_lifetime,
             // on_next
-            [state, check_equal](source_value_type t) {
+            [state, check_equal](auto&& t) {
                 auto& values = state->source_values;
-                values.push_back(t);
+                values.emplace_back(std::forward<decltype(t)>(t));
                 check_equal();
             },
             // on_error

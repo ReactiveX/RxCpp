@@ -170,12 +170,12 @@ struct take_until : public operator_base<T>
         // split subscription lifetime
             state->source_lifetime,
         // on_next
-            [state](T t) {
+            [state](auto&& t) {
                 //
                 // everything is crafted to minimize the overhead of this function.
                 //
                 if (state->mode_value < mode::triggered) {
-                    state->out.on_next(t);
+                    state->out.on_next(std::forward<decltype(t)>(t));
                 }
             },
         // on_error

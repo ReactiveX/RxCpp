@@ -72,7 +72,7 @@ class synchronize_observer : public detail::multicast_observer<T>
                         auto notification = std::move(fill_queue.front());
                         fill_queue.pop_front();
                         guard.unlock();
-                        notification->accept(destination);
+                        std::move(*notification).accept(destination);
                         self();
                     } RXCPP_CATCH(...) {
                         destination.on_error(rxu::current_exception());

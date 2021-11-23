@@ -5,6 +5,7 @@
 #include <rxcpp/operators/rx-window.hpp>
 #include <rxcpp/operators/rx-window_time.hpp>
 #include <rxcpp/operators/rx-window_time_count.hpp>
+#include <rxcpp/operators/rx-concat.hpp>
 
 SCENARIO("window count, basic", "[window][operators]"){
     GIVEN("1 hot observable of ints."){
@@ -1036,6 +1037,48 @@ SCENARIO("window with time or count, only count triggered", "[window_with_time_o
                 });
                 auto actual = xs.subscriptions();
                 REQUIRE(required == actual);
+            }
+        }
+    }
+}
+
+SCENARIO("window doesn't provide copies", "[window][operators][copies]")
+{ 
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](copy_verifier) {};
+        auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
+        copy_verifier verifier{};
+        auto obs = verifier.get_observable().window(1, 1).concat();
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                // 1 copy to final lambda
+                REQUIRE(verifier.get_copy_count() == 1);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+
+SCENARIO("window doesn't provide copies for move", "[window][operators][copies]")
+{
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](copy_verifier) {};
+        auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
+        copy_verifier verifier{};
+        auto obs = verifier.get_observable_for_move().window(1, 1).concat();
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                // 1 copy to final lambda
+                REQUIRE(verifier.get_copy_count() == 1);
+                REQUIRE(verifier.get_move_count() == 0);
             }
         }
     }

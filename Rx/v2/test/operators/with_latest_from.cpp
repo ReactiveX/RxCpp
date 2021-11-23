@@ -1643,3 +1643,47 @@ SCENARIO("with_latest_from typical N", "[with_latest_from][join][operators]"){
         }
     }
 }
+
+SCENARIO("with_latest_from doesn't provide copies", "[with_latest_from][join][operators][copies]")
+{
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](const int&) {};
+        auto          sub           = rx::make_observer<int>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable().with_latest_from([](copy_verifier, int v) { return v; },
+                                                                       rxcpp::observable<>::just(1));
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 2);
+                // 1 move to final lambda
+                REQUIRE(verifier.get_move_count() == 1);
+            }
+        }
+    }
+}
+
+SCENARIO("with_latest_from provide doesn't provide copies for move", "[with_latest_from][join][operators][copies]")
+{
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](const int&) {};
+        auto          sub           = rx::make_observer<int>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable_for_move().with_latest_from([](copy_verifier, int v) { return v; },
+                                                                                    rxcpp::observable<>::just(1));
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 1);
+                // 1 move to final lambda, 1 move to tuple with cache
+                REQUIRE(verifier.get_move_count() == 2);
+            }
+        }
+    }
+}

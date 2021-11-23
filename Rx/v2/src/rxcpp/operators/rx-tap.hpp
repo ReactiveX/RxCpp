@@ -88,9 +88,10 @@ struct tap
             , out(std::move(o))
         {
         }
-        void on_next(source_value_type v) const {
+        template<typename U>
+        void on_next(U&& v) const {
             out.on_next(v);
-            dest.on_next(v);
+            dest.on_next(std::forward<U>(v));
         }
         void on_error(rxu::error_ptr e) const {
             out.on_error(e);

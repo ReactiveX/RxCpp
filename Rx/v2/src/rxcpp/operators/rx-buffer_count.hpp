@@ -84,9 +84,11 @@ struct buffer_count
             , cursor(0)
         {
         }
-        void on_next(T v) const {
+
+        void on_next(const T& v) const {
             if (cursor++ % this->skip == 0) {
                 chunks.emplace_back();
+                chunks.back().reserve(this->count);
             }
             for(auto& chunk : chunks) {
                 chunk.push_back(v);

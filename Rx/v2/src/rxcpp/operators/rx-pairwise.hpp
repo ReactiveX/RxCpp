@@ -58,14 +58,15 @@ struct pairwise
             : dest(std::move(d))
         {
         }
-        void on_next(source_value_type v) const {
+        template<typename U>
+        void on_next(U&& v) const {
             if (remembered.empty()) {
-                remembered.reset(v);
+                remembered.reset(std::forward<U>(v));
                 return;
             }
 
-            dest.on_next(std::make_tuple(remembered.get(), v));
-            remembered.reset(v);
+            dest.on_next(std::make_tuple(std::move(remembered.get()), v));
+            remembered.reset(std::forward<U>(v));
         }
         void on_error(rxu::error_ptr e) const {
             dest.on_error(e);

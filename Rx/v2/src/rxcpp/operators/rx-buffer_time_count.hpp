@@ -163,7 +163,7 @@ struct buffer_with_time_or_count
             return std::function<void(const rxsc::schedulable&)>(selectedProduce.get());
         }
 
-        void on_next(T v) const {
+        void on_next(const T& v) const {
             auto localState = state;
             auto work = [v, localState](const rxsc::schedulable& self){
                 localState->chunk.push_back(v);

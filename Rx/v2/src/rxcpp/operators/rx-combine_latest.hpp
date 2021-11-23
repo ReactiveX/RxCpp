@@ -157,19 +157,18 @@ struct combine_latest : public operator_base<rxu::value_type_t<combine_latest_tr
             state->out,
             innercs,
         // on_next
-            [state](source_value_type st) {
+            [state](auto&& st) {
                 auto& value = std::get<Index>(state->latest);
 
                 if (value.empty()) {
                     ++state->valuesSet;
                 }
 
-                value.reset(st);
+                value.reset(std::forward<decltype(st)>(st));
 
                 if (state->valuesSet == sizeof... (ObservableN)) {
                     auto values = rxu::surely(state->latest);
-                    auto selectedResult = rxu::apply(values, state->selector);
-                    state->out.on_next(selectedResult);
+                    state->out.on_next(rxu::apply(std::move(values), state->selector));
                 }
             },
         // on_error

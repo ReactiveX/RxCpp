@@ -48,10 +48,10 @@ class subscriber : public subscriber_base<T>
         {
         }
         template<class U>
-        void operator()(U u) {
+        void operator()(U&& u) {
             trace_activity().on_next_enter(*that, u);
             RXCPP_TRY {
-                that->destination.on_next(std::move(u));
+                that->destination.on_next(std::forward<U>(u));
                 do_unsubscribe = false;
             } RXCPP_CATCH(...) {
                 auto ex = rxu::current_exception();

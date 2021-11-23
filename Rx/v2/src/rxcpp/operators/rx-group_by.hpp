@@ -196,7 +196,9 @@ struct group_by
         {
             group_by::stopsource(dest, state);
         }
-        void on_next(T v) const {
+
+        template<typename U>
+        void on_next(U&& v) const {
             auto selectedKey = on_exception(
                 [&](){
                     return this->keySelector(v);},
@@ -241,14 +243,11 @@ struct group_by
                     [=](){expire();}
                 ));
             }
-            auto selectedMarble = on_exception(
-                [&](){
-                    return this->marbleSelector(v);},
-                [this](rxu::error_ptr e){on_error(e);});
-            if (selectedMarble.empty()) {
-                return;
-            }
-            g->second.on_next(std::move(selectedMarble.get()));
+            on_exception_no_return([&]()
+                                   {
+                                       g->second.on_next(this->marbleSelector(std::forward<U>(v)));
+                                   },
+                                   [this](rxu::error_ptr e) { on_error(e); });
         }
         void on_error(rxu::error_ptr e) const {
             for(auto& g : state->groups) {

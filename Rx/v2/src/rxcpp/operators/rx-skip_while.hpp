@@ -68,11 +68,13 @@ struct skip_while
                   pass(false)
         {
         }
-        void on_next(source_value_type v) {
+
+        template<typename U>
+        void on_next(U&& v) {
             if(pass || !test(v))
             {
                 pass = true;
-                dest.on_next(v);
+                dest.on_next(std::forward<U>(v));
             }
         }
         void on_error(rxu::error_ptr e) const {

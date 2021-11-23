@@ -158,3 +158,43 @@ SCENARIO("ignore_elements - items", "[ignore_elements][operators]"){
         }
     }
 }
+
+SCENARIO("ignore_elements doesn't provide copies", "[ignore_elements][operators][copies]"){
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](copy_verifier) {};
+        auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable().ignore_elements();
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+
+
+SCENARIO("ignore_elements doesn't provide copies for move", "[ignore_elements][operators][copies]"){
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](copy_verifier) {};
+        auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable_for_move().ignore_elements();
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+

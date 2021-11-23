@@ -275,3 +275,45 @@ SCENARIO("take_last, source observable emits an error", "[take_last][operators]"
         }
     }
 }
+
+SCENARIO("take_last doesn't provide copies", "[take_last][operators][copies]"){
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](copy_verifier) {};
+        auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable().take_last(1);
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                // 1 copy to internal state
+                REQUIRE(verifier.get_copy_count() == 1);
+                // 1 move to final lambda
+                REQUIRE(verifier.get_move_count() == 1);
+            }
+        }
+    }
+}
+
+
+SCENARIO("take_last doesn't provide copies for move", "[take_last][operators][copies]"){
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](copy_verifier) {};
+        auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable_for_move().take_last(1);
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                // 1 move to internal state + 1 move to final lambda
+                REQUIRE(verifier.get_move_count() == 2);
+            }
+        }
+    }
+}

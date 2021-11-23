@@ -48,11 +48,11 @@ struct OnNextForward
     OnNextForward() : onnext() {}
     explicit OnNextForward(onnext_t on) : onnext(std::move(on)) {}
     onnext_t onnext;
-    void operator()(state_t& s, T& t) const {
+    void operator()(state_t& s, const T& t) const {
         onnext(s, t);
     }
     void operator()(state_t& s, T&& t) const {
-        onnext(s, t);
+        onnext(s, std::move(t));
     }
 };
 template<class T, class State>
@@ -60,11 +60,11 @@ struct OnNextForward<T, State, void>
 {
     using state_t = rxu::decay_t<State>;
     OnNextForward() {}
-    void operator()(state_t& s, T& t) const {
+    void operator()(state_t& s, const T& t) const {
         s.on_next(t);
     }
     void operator()(state_t& s, T&& t) const {
-        s.on_next(t);
+        s.on_next(std::move(t));
     }
 };
 
@@ -237,8 +237,7 @@ public:
         oncompleted = std::move(o.oncompleted);
         return *this;
     }
-
-    void on_next(T& t) const {
+    void on_next(const T& t) const {
         onnext(state, t);
     }
     void on_next(T&& t) const {
@@ -325,8 +324,7 @@ public:
         oncompleted = std::move(o.oncompleted);
         return *this;
     }
-
-    void on_next(T& t) const {
+    void on_next(const T& t) const {
         onnext(t);
     }
     void on_next(T&& t) const {
@@ -350,7 +348,7 @@ template<class T>
 struct virtual_observer : public std::enable_shared_from_this<virtual_observer<T>>
 {
     virtual ~virtual_observer() {}
-    virtual void on_next(T&) const {};
+    virtual void on_next(const T&) const {};
     virtual void on_next(T&&) const {};
     virtual void on_error(rxu::error_ptr) const {};
     virtual void on_completed() const {};
@@ -365,16 +363,16 @@ struct specific_observer : public virtual_observer<T>
     }
 
     Observer destination;
-    virtual void on_next(T& t) const {
+    void on_next(const T& t) const override {
         destination.on_next(t);
     }
-    virtual void on_next(T&& t) const {
+    void on_next(T&& t) const override{
         destination.on_next(std::move(t));
     }
-    virtual void on_error(rxu::error_ptr e) const {
+    void on_error(rxu::error_ptr e) const override{
         destination.on_error(e);
     }
-    virtual void on_completed() const {
+    void on_completed() const override {
         destination.on_completed();
     }
 };
@@ -639,25 +637,43 @@ struct maybe_from_result
 template<class F, class OnError>
 auto on_exception(const F& f, const OnError& c)
     ->  typename std::enable_if<detail::is_on_error<OnError>::value, typename detail::maybe_from_result<F>::type>::type {
-    typename detail::maybe_from_result<F>::type r;
     RXCPP_TRY {
-        r.reset(f());
+        return f();
     } RXCPP_CATCH(...) {
         c(rxu::current_exception());
     }
-    return r;
+    return {};
 }
 
 template<class F, class Subscriber>
 auto on_exception(const F& f, const Subscriber& s)
     ->  typename std::enable_if<is_subscriber<Subscriber>::value, typename detail::maybe_from_result<F>::type>::type {
-    typename detail::maybe_from_result<F>::type r;
     RXCPP_TRY {
-        r.reset(f());
+        return f();
     } RXCPP_CATCH(...) {
         s.on_error(rxu::current_exception());
     }
-    return r;
+    return {};
+}
+
+template<class F, class OnError>
+auto on_exception_no_return(const F& f, const OnError& c)
+    ->  typename std::enable_if<detail::is_on_error<OnError>::value, void>::type {
+    RXCPP_TRY {
+        f();
+    } RXCPP_CATCH(...) {
+        c(rxu::current_exception());
+    };
+}
+
+template<class F, class Subscriber>
+auto on_exception_no_return(const F& f, const Subscriber& s)
+    ->  typename std::enable_if<is_subscriber<Subscriber>::value, void>::type {
+    RXCPP_TRY {
+        f();
+    } RXCPP_CATCH(...) {
+        s.on_error(rxu::current_exception());
+    }
 }
 
 }

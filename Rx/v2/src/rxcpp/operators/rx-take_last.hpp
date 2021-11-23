@@ -91,12 +91,12 @@ struct take_last : public operator_base<T>
         // split subscription lifetime
             source_lifetime,
         // on_next
-            [state, source_lifetime](T t) {
+            [state, source_lifetime](auto&& t) {
                 if(state->count > 0) {
                     if (state->items.size() == state->count) {
                         state->items.pop();
                     }
-                    state->items.push(t);
+                    state->items.emplace(std::forward<decltype(t)>(t));
                 }
             },
         // on_error

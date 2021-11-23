@@ -78,3 +78,49 @@ SCENARIO("pairwise - not enough items to create a pair", "[pairwise][operators]"
         }
     }
 }
+
+SCENARIO("pairwise doesn't provide copies", "[pairwise][operators][copies]")
+{
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](std::tuple<copy_verifier, copy_verifier>) {};
+        auto          sub           = rx::make_observer<std::tuple<copy_verifier, copy_verifier>>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable(2).pairwise();
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                // 1 copy to internal state for first, 2 copies for second (one in result, one in internal state)
+                REQUIRE(verifier.get_copy_count() == 3);
+                 // 1 move to final tuple for first, 1 move per object to final lambda
+                REQUIRE(verifier.get_move_count() == 3);
+            }
+        }
+    }
+}
+
+
+SCENARIO("pairwise doesn't provide copies for move", "[pairwise][operators][copies]")
+{
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](std::tuple<copy_verifier, copy_verifier>) {};
+        auto          sub           = rx::make_observer<std::tuple<copy_verifier, copy_verifier>>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable_for_move(2).pairwise();
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                // 1 copy to tuple for second object
+                REQUIRE(verifier.get_copy_count() == 1);
+                // 1 move to internal state per object, 1 move from state for first + move tuple
+                REQUIRE(verifier.get_move_count() == 5);
+            }
+        }
+    }
+}
+

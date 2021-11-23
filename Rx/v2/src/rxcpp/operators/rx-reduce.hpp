@@ -161,9 +161,8 @@ struct reduce : public operator_base<rxu::value_type_t<reduce_traits<T, Observab
         state->source.subscribe(
             state->out,
         // on_next
-            [state](T t) {
-                seed_type next = state->accumulator(std::move(state->current), std::move(t));
-                state->current = std::move(next);
+            [state](auto&& t) {
+                state->current = state->accumulator(std::move(state->current), std::forward<decltype(t)>(t));
             },
         // on_error
             [state](rxu::error_ptr e) {

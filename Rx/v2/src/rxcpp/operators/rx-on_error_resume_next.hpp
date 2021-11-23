@@ -72,8 +72,9 @@ struct on_error_resume_next
         {
             dest.add(lifetime);
         }
-        void on_next(value_type v) const {
-            dest.on_next(std::move(v));
+        template<typename U>
+        void on_next(U&& v) const {
+            dest.on_next(std::forward<U>(v));
         }
         void on_error(rxu::error_ptr e) const {
             auto selected = on_exception(

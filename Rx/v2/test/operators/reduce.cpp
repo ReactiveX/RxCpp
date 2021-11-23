@@ -453,3 +453,46 @@ SCENARIO("min, error", "[reduce][min][operators]"){
         }
     }
 }
+
+SCENARIO("reduce doesn't provide copies", "[reduce][operators][copies]")
+{
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](int) {};
+        auto          sub           = rx::make_observer<int>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable().reduce(int{}, [](int seed, copy_verifier) { return seed; });
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                // 1 copy to lambda
+                REQUIRE(verifier.get_copy_count() == 1);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+
+
+SCENARIO("reduce doesn't provide copies for move", "[reduce][operators][copies]")
+{
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](int) {};
+        auto          sub           = rx::make_observer<int>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable_for_move().reduce(int{}, [](int seed, copy_verifier) { return seed; });
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                // 1 move to lambda
+                REQUIRE(verifier.get_move_count() == 1);
+            }
+        }
+    }
+}

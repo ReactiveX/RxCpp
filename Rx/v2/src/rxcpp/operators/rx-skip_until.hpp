@@ -167,11 +167,11 @@ struct skip_until : public operator_base<T>
         // split subscription lifetime
             state->source_lifetime,
         // on_next
-            [state](T t) {
+            [state](auto&& t) {
                 if (state->mode_value != mode::triggered) {
                     return;
                 }
-                state->out.on_next(t);
+                state->out.on_next(std::forward<decltype(t)>(t));
             },
         // on_error
             [state](rxu::error_ptr e) {

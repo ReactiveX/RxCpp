@@ -117,7 +117,7 @@ struct sample_with_time
 
             auto produce_sample = [localState](const rxsc::schedulable&) {
                 if(!localState->value.empty()) {
-                    localState->dest.on_next(*localState->value);
+                    localState->dest.on_next(std::move(* localState->value));
                     localState->value.reset();
                 }
             };
@@ -135,8 +135,9 @@ struct sample_with_time
                     localState->worker.schedule(selectedProduce.get());
                 });
         }
-        
-        void on_next(T v) const {
+
+        template<typename U>
+        void on_next(U&& v) const {
             auto localState = state;
             auto work = [v, localState](const rxsc::schedulable&) {
                 localState->value.reset(v);

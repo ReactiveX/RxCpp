@@ -199,3 +199,47 @@ SCENARIO("concat completes", "[concat][join][operators]"){
         }
     }
 }
+
+SCENARIO("concat doesn't provide copies", "[concat][join][operators][copies]")
+{
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](copy_verifier) {};
+        auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
+        copy_verifier verifier{};
+        auto          root = verifier.get_observable();
+        auto          obs  = root.concat(rxcpp::observable<>::never<copy_verifier>());
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                // 1 copy to final lambda
+                REQUIRE(verifier.get_copy_count() == 1);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+
+SCENARIO("concat doesn't provide copies for move", "[concat][join][operators][copies]")
+{
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = []( copy_verifier) {};
+        auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
+        copy_verifier verifier{};
+        auto          root = verifier.get_observable_for_move();
+        auto          obs  = root.concat(rxcpp::observable<>::never<copy_verifier>());
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                // one move to final lambda
+                REQUIRE(verifier.get_move_count() == 1);
+            }
+        }
+    }
+}

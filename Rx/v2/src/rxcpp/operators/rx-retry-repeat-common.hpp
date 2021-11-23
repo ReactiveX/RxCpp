@@ -38,8 +38,8 @@ namespace rxcpp {
                                     state->out,
                                     state->source_lifetime,
                                     // on_next
-                                    [state](T t) {
-                                      state->out.on_next(t);
+                                    [state](auto&& t) {
+                                      state->out.on_next(std::forward<decltype(t)>(t));
                                     },
                                     // on_error
                                     [state](rxu::error_ptr e) {

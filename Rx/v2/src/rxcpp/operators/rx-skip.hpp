@@ -99,13 +99,13 @@ struct skip : public operator_base<T>
         // split subscription lifetime
             source_lifetime,
         // on_next
-            [state](T t) {
+            [state](auto&& t) {
                 if (state->mode_value == mode::skipping) {
                     if (--state->count == 0) {
                         state->mode_value = mode::triggered;
                     }
                 } else {
-                    state->out.on_next(t);
+                    state->out.on_next(std::forward<decltype(t)>(t));
                 }
             },
         // on_error

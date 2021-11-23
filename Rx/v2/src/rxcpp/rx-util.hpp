@@ -138,30 +138,30 @@ using enable_if_all_true_type_t = typename std::enable_if<all_true_type<BN...>::
 
 struct all_values_true {
     template<class... ValueN>
-    bool operator()(ValueN... vn) const;
+    bool operator()(const ValueN&... vn) const;
 
     template<class Value0>
-    bool operator()(Value0 v0) const {
+    bool operator()(const Value0& v0) const {
         return v0;
     }
 
     template<class Value0, class... ValueN>
-    bool operator()(Value0 v0, ValueN... vn) const {
+    bool operator()(const Value0& v0, const ValueN&... vn) const {
         return v0 && all_values_true()(vn...);
     }
 };
 
 struct any_value_true {
     template<class... ValueN>
-    bool operator()(ValueN... vn) const;
+    bool operator()(const ValueN&... vn) const;
 
     template<class Value0>
-    bool operator()(Value0 v0) const {
+    bool operator()(const Value0& v0) const {
         return v0;
     }
 
     template<class Value0, class... ValueN>
-    bool operator()(Value0 v0, ValueN... vn) const {
+    bool operator()(const Value0& v0, const ValueN&... vn) const {
         return v0 || any_value_true()(vn...);
     }
 };
@@ -206,10 +206,10 @@ struct value_type_from<T, typename types_checked_from<value_type_t<T>>::type>
     : public std::true_type {typedef value_type_t<T> type;};
 
 namespace detail {
-template<class F, class... ParamN, int... IndexN>
-auto apply(std::tuple<ParamN...> p, values<int, IndexN...>, F&& f)
-    -> decltype(f(std::forward<ParamN>(std::get<IndexN>(p))...)) {
-    return      f(std::forward<ParamN>(std::get<IndexN>(p))...);
+template<class F, class Tuple, int... IndexN>
+auto apply(Tuple&& p, values<int, IndexN...>, F&& f)
+    -> decltype(f(std::get<IndexN>(std::forward<Tuple>(p))...)) {
+    return      f(std::get<IndexN>(std::forward<Tuple>(p))...);
 }
 
 template<class F_inner, class F_outer, class... ParamN, int... IndexN>
@@ -226,9 +226,15 @@ auto apply_to_each(std::tuple<ParamN...>& p, values<int, IndexN...>, const F_inn
 
 }
 template<class F, class... ParamN>
-auto apply(std::tuple<ParamN...> p, F&& f)
+auto apply(std::tuple<ParamN...>&& p, F&& f)
     -> decltype(detail::apply(std::move(p), typename values_from<int, sizeof...(ParamN)>::type(), std::forward<F>(f))) {
     return      detail::apply(std::move(p), typename values_from<int, sizeof...(ParamN)>::type(), std::forward<F>(f));
+}
+
+template<class F, class... ParamN>
+auto apply(const std::tuple<ParamN...>& p, F&& f)
+    -> decltype(detail::apply(p, typename values_from<int, sizeof...(ParamN)>::type(), std::forward<F>(f))) {
+    return      detail::apply(p, typename values_from<int, sizeof...(ParamN)>::type(), std::forward<F>(f));
 }
 
 template<class F_inner, class F_outer, class... ParamN>
@@ -304,14 +310,9 @@ template<int Index>
 struct take_at
 {
     template<class... ParamN>
-    auto operator()(ParamN... pn)
+    auto operator()(const ParamN&... pn) const
         -> typename std::tuple_element<Index, std::tuple<decay_t<ParamN>...>>::type {
-        return                std::get<Index>(std::make_tuple(std::move(pn)...));
-    }
-    template<class... ParamN>
-    auto operator()(ParamN... pn) const
-        -> typename std::tuple_element<Index, std::tuple<decay_t<ParamN>...>>::type {
-        return                std::get<Index>(std::make_tuple(std::move(pn)...));
+        return                std::get<Index>(std::tie(pn...));
     }
 };
 
@@ -579,10 +580,17 @@ public:
     {
     }
 
-    maybe(T value)
+    maybe(const T& value)
     : is_set(false)
     {
         new (reinterpret_cast<T*>(&storage)) T(value);
+        is_set = true;
+    }
+
+    maybe(T&& value)
+    : is_set(false)
+    {
+        new (reinterpret_cast<T*>(&storage)) T(std::move(value));
         is_set = true;
     }
 
@@ -699,12 +707,7 @@ namespace detail {
     struct surely
     {
         template<class... T>
-        auto operator()(T... t)
-            -> decltype(std::make_tuple(t.get()...)) {
-            return      std::make_tuple(t.get()...);
-        }
-        template<class... T>
-        auto operator()(T... t) const
+        auto operator()(const T&... t) const
             -> decltype(std::make_tuple(t.get()...)) {
             return      std::make_tuple(t.get()...);
         }

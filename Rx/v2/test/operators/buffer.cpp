@@ -1229,3 +1229,44 @@ SCENARIO("buffer with time or count, only count triggered", "[buffer_with_time_o
         }
     }
 }
+
+SCENARIO("buffer do 1 copy to place object in vector", "[buffer][operators][copies]")
+{
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](std::vector<copy_verifier>) {};
+        auto          sub           = rx::make_observer<std::vector<copy_verifier>>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable().buffer(1);
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("only one copy")
+            {
+                REQUIRE(verifier.get_copy_count() == 1);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+
+SCENARIO("buffer do 1 copy to place object in vector for move", "[buffer][operators][copies]")
+{
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](std::vector<copy_verifier>) {};
+        auto          sub           = rx::make_observer<std::vector<copy_verifier>>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable_for_move().buffer(1);
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("only one copy")
+            {
+                REQUIRE(verifier.get_copy_count() == 1);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+

@@ -117,10 +117,12 @@ struct delay
             });
         }
 
-        void on_next(T v) const {
+        template<typename U>
+        void on_next(U&& v) const {
             auto localState = state;
-            auto work = [v, localState](const rxsc::schedulable&){
-                localState->dest.on_next(v);
+            auto vAsShared  = std::make_shared<T>(std::forward<U>(v));
+            auto work = [vAsShared, localState](const rxsc::schedulable&){
+                localState->dest.on_next(std::move(*vAsShared));
             };
             auto selectedWork = on_exception(
                 [&](){return localState->coordinator.act(work);},

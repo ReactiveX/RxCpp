@@ -430,3 +430,50 @@ SCENARIO("group_by take 1 take 4", "[group_by][take][operators]"){
         }
     }
 }
+
+SCENARIO("group_by do 1 copy from lambda", "[group_by][operators][copies]")
+{ 
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](copy_verifier) {};
+        auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
+        copy_verifier verifier{};
+        auto obs = verifier.get_observable().group_by([](const auto&) { return true; },
+                                                      [](auto&& v) { return std::forward<decltype(v)>(v); })
+                           .concat();
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                // 1 copy from marble lambda + 1 copy to final result (due to subject)
+                REQUIRE(verifier.get_copy_count() == 2);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+
+SCENARIO("group_by do 1 move from lambda and 1 move to internal state for move", "[group_by][operators][copies]")
+{
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](copy_verifier) {};
+        auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
+        copy_verifier verifier{};
+        auto obs = verifier.get_observable_for_move().group_by([](const auto& ) { return true; },
+                                                               [](auto&& v) { return std::forward<decltype(v)>(v); })
+                           .concat();
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                // 1 copy to final result (due to subject)
+                REQUIRE(verifier.get_copy_count() == 1);
+                // 1 move from lambda
+                REQUIRE(verifier.get_move_count() == 1);
+            }
+        }
+    }
+}

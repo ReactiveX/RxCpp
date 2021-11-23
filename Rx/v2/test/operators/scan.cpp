@@ -308,3 +308,46 @@ SCENARIO("scan: seed, accumulator throws", "[scan][operators][!throws]"){
         }
     }
 }
+
+SCENARIO("scan doesn't provide copies", "[scan][operators][copies]")
+{
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](int) {};
+        auto          sub           = rx::make_observer<int>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable().scan(int{}, [](int seed, copy_verifier) { return seed; });
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                // 1 copy to lambda
+                REQUIRE(verifier.get_copy_count() == 1);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+
+
+SCENARIO("scan doesn't provide copies for move", "[scan][operators][copies]")
+{
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](int) {};
+        auto          sub           = rx::make_observer<int>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = verifier.get_observable_for_move().scan(int{}, [](int seed, copy_verifier) { return seed; });
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                // 1 move to lambda
+                REQUIRE(verifier.get_move_count() == 1);
+            }
+        }
+    }
+}
