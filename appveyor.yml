@@ -3,7 +3,7 @@ version: 2.2.{build}
 branches:
 # whitelist
     only:
-        - master
+        - main
         - appveyor
 
 image: Visual Studio 2017
