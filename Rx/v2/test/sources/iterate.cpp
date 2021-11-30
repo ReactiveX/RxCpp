@@ -39,7 +39,7 @@ SCENARIO("just doesn't provide copies for move", "[just][sources][copies]")
             {
                 // 1 copy to final lambda
                 CHECK(verifier.get_copy_count() == 1);
-                // 1 move to internal state +  1 move to internal state
+                // 1 move to collection  +  1 move to internal state
                 CHECK(verifier.get_move_count() == 2);
             }
         }
@@ -125,7 +125,7 @@ SCENARIO("iterate doesn't provide copies for move", "[iterate][sources][copies]"
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
         copy_verifier verifier{};
-         std::vector<copy_verifier> vec{std::move(verifier)};
+        std::vector<copy_verifier> vec{std::move(verifier)};
         int                        initial_copies = verifier.get_copy_count();
         int                        initial_moves = verifier.get_move_count();
         auto          obs = rxcpp::observable<>::iterate(std::move(vec));
