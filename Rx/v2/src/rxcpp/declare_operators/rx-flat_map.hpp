@@ -28,7 +28,10 @@ struct observable_member_t<Observable, flat_map_tag>
              class CollectionValueType = rxu::value_type_t<CollectionType>,
              class Value = rxu::result_of_t<ResultSelectorType(SourceValue, CollectionValueType)>,
              class Result = observable<Value, FlatMap>>
-    Result flat_map(CollectionSelector&& s);
+    Result flat_map(CollectionSelector&& s)
+    {
+        return Result(FlatMap(*static_cast<Observable*>(this), std::forward<CollectionSelector>(s), ResultSelectorType(), identity_current_thread()));
+    }
 
     template<class CollectionSelector, class Coordination,
              class CollectionSelectorType = rxu::decay_t<CollectionSelector>,
@@ -44,7 +47,10 @@ struct observable_member_t<Observable, flat_map_tag>
              class CollectionValueType = rxu::value_type_t<CollectionType>,
              class Value = rxu::result_of_t<ResultSelectorType(SourceValue, CollectionValueType)>,
              class Result = observable<Value, FlatMap>>
-    Result flat_map(CollectionSelector&& s, Coordination&& cn);
+    Result flat_map(CollectionSelector&& s, Coordination&& cn)
+    {
+        return Result(FlatMap(*static_cast<Observable*>(this), std::forward<CollectionSelector>(s), ResultSelectorType(), std::forward<Coordination>(cn)));
+    }
 
     template<class CollectionSelector, class ResultSelector,
              class IsCoordination = is_coordination<ResultSelector>,
@@ -61,7 +67,10 @@ struct observable_member_t<Observable, flat_map_tag>
              class ResultSelectorType = rxu::decay_t<ResultSelector>,
              class Value = rxu::result_of_t<ResultSelectorType(SourceValue, CollectionValueType)>,
              class Result = observable<Value, FlatMap>>
-    Result flat_map(CollectionSelector&& s, ResultSelector&& rs);
+    Result flat_map(CollectionSelector&& s, ResultSelector&& rs)
+    {
+        return Result(FlatMap(*static_cast<Observable*>(this), std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), identity_current_thread()));
+    }
 
     template<class CollectionSelector, class ResultSelector, class Coordination,
              class CollectionSelectorType = rxu::decay_t<CollectionSelector>,
@@ -77,7 +86,10 @@ struct observable_member_t<Observable, flat_map_tag>
              class ResultSelectorType = rxu::decay_t<ResultSelector>,
              class Value = rxu::result_of_t<ResultSelectorType(SourceValue, CollectionValueType)>,
              class Result = observable<Value, FlatMap>>
-    Result flat_map(CollectionSelector&& s, ResultSelector&& rs, Coordination&& cn);
+    Result flat_map(CollectionSelector&& s, ResultSelector&& rs, Coordination&& cn)
+    {
+        return Result(FlatMap(*static_cast<Observable*>(this), std::forward<CollectionSelector>(s), std::forward<ResultSelector>(rs), std::forward<Coordination>(cn)));
+    }
 
     template<typename ...AN>
     auto merge_transform(AN&& ...an)
@@ -92,49 +104,4 @@ struct observable_member_t<Observable, flat_map_tag>
     }
 
 };
-
-template<class Observable>
-template<class CollectionSelector, class CollectionSelectorType, class SourceValue, class CollectionType, class
-    ResultSelectorType, class Enabled, class FlatMap, class CollectionValueType, class Value, class Result>
-Result observable_member_t<Observable, flat_map_tag>::flat_map(CollectionSelector&& s) {
-    return Result(FlatMap(*static_cast<Observable*>(this),
-                          std::forward<CollectionSelector>(s),
-                          ResultSelectorType(),
-                          identity_current_thread()));
-}
-
-template<class Observable>
-template<class CollectionSelector, class Coordination, class CollectionSelectorType, class SourceValue, class
-    CollectionType, class ResultSelectorType, class Enabled, class FlatMap, class CollectionValueType, class Value,
-    class Result>
-Result observable_member_t<Observable, flat_map_tag>::flat_map(CollectionSelector&& s, Coordination&& cn) {
-    return Result(FlatMap(*static_cast<Observable*>(this),
-                          std::forward<CollectionSelector>(s),
-                          ResultSelectorType(),
-                          std::forward<Coordination>(cn)));
-}
-
-template<class Observable>
-template<class CollectionSelector, class ResultSelector, class IsCoordination, class CollectionSelectorType, class
-    SourceValue, class CollectionType, class Enabled, class FlatMap, class CollectionValueType, class ResultSelectorType
-    , class Value, class Result>
-Result observable_member_t<Observable, flat_map_tag>::flat_map(CollectionSelector&& s, ResultSelector&& rs) {
-    return Result(FlatMap(*static_cast<Observable*>(this),
-                          std::forward<CollectionSelector>(s),
-                          std::forward<ResultSelector>(rs),
-                          identity_current_thread()));
-}
-
-template<class Observable>
-template<class CollectionSelector, class ResultSelector, class Coordination, class CollectionSelectorType, class
-    SourceValue, class CollectionType, class Enabled, class FlatMap, class CollectionValueType, class ResultSelectorType
-    , class Value, class Result>
-Result observable_member_t<Observable, flat_map_tag>::flat_map(CollectionSelector&& s,
-    ResultSelector&& rs,
-    Coordination&& cn) {
-    return Result(FlatMap(*static_cast<Observable*>(this),
-                          std::forward<CollectionSelector>(s),
-                          std::forward<ResultSelector>(rs),
-                          std::forward<Coordination>(cn)));
-}
 }
