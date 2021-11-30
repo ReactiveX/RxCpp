@@ -65,6 +65,9 @@ auto observable_member(Tag, AN&&... an) ->
     return   Overload::member(std::forward<AN>(an)...);
 }
 
+template<class Observable, class Tag>
+struct observable_member_t;
+
 template<class Tag, class... AN>
 class operator_factory
 {
@@ -84,6 +87,12 @@ public:
     auto operator()(tag_type t, ZN&&... zn) const
         -> decltype(observable_member(t, std::forward<ZN>(zn)...)) {
         return      observable_member(t, std::forward<ZN>(zn)...);
+    }
+
+    template<class TObservable, class... ZN, std::enable_if_t<std::is_base_of_v<observable_member_t<TObservable, tag_type>, TObservable>>* = nullptr>
+    auto operator()(tag_type, TObservable&& source, ZN&&... zn) const
+        -> decltype(static_cast<observable_member_t<TObservable, tag_type>*>(&source)->member(std::forward<ZN>(zn)...)) {
+        return static_cast<observable_member_t<TObservable, tag_type>*>(&source)->member(std::forward<ZN>(zn)...);
     }
 
     template<class Observable>
@@ -531,4 +540,5 @@ struct zip_tag {
 #include "operators/rx-publish.hpp"
 #include "operators/rx-ref_count.hpp"
 
+#include "declare_operators/rx-flat_map.hpp"
 #endif

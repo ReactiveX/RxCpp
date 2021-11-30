@@ -477,6 +477,7 @@ class observable<void, void>;
 template<class T, class SourceOperator>
 class observable
     : public observable_base<T>
+    , public observable_member_t<observable<T, SourceOperator>, flat_map_tag>
 {
     static_assert(std::is_same<T, typename SourceOperator::value_type>::value, "SourceOperator::value_type must be the same as T in observable<T, SourceOperator>");
 
@@ -1022,28 +1023,6 @@ public:
         /// \endcond
     {
         return      observable_member(amb_tag{},                *this, std::forward<AN>(an)...);
-    }
-
-    /*! @copydoc rx-flat_map.hpp
-     */
-    template<class... AN>
-    auto flat_map(AN&&... an) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(flat_map_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
-        /// \endcond
-    {
-        return      observable_member(flat_map_tag{},                *this, std::forward<AN>(an)...);
-    }
-
-    /*! @copydoc rx-flat_map.hpp
-     */
-    template<class... AN>
-    auto merge_transform(AN&&... an) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(flat_map_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
-        /// \endcond
-    {
-        return      observable_member(flat_map_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-concat.hpp
