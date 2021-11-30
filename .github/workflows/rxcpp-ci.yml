@@ -20,28 +20,28 @@ jobs:
             name: "Linux GCC 9 Debug (C++14)", artifact: "Linux.tar.xz",
             os: ubuntu-latest,
             build_type: Debug,
-            cc: "gcc-9", cxx: "g++-9"
+            cc: "gcc-9", cxx: "g++-9",
             cmake_args: "-D CMAKE_CXX_STANDARD:STRING=14"
           }
         - {
             name: "Linux GCC 9 Optimised (C++14)", artifact: "Linux.tar.xz",
             os: ubuntu-latest,
             build_type: RelWithDebInfo,
-            cc: "gcc-9", cxx: "g++-9"
+            cc: "gcc-9", cxx: "g++-9",
             cmake_args: "-D CMAKE_CXX_STANDARD:STRING=14"
           }
         - {
             name: "Linux GCC 9 Debug (C++17)", artifact: "Linux.tar.xz",
             os: ubuntu-latest,
             build_type: Debug,
-            cc: "gcc-9", cxx: "g++-9"
+            cc: "gcc-9", cxx: "g++-9",
             cmake_args: "-D CMAKE_CXX_STANDARD:STRING=17"
           }
         - {
             name: "Linux GCC 9 Optimised (C++17)", artifact: "Linux.tar.xz",
             os: ubuntu-latest,
             build_type: RelWithDebInfo,
-            cc: "gcc-9", cxx: "g++-9"
+            cc: "gcc-9", cxx: "g++-9",
             cmake_args: "-D CMAKE_CXX_STANDARD:STRING=17"
           }
         - {
