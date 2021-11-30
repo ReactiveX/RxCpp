@@ -3,7 +3,7 @@ The Reactive Extensions for C++ (__RxCpp__) is a library of algorithms for value
 Platform    | Status | 
 ----------- | :------------ |
 Windows | [![Windows Status](http://img.shields.io/appveyor/ci/kirkshoop/RxCpp-446.svg?style=flat-square)](https://ci.appveyor.com/project/kirkshoop/rxcpp-446)
-Linux & OSX | [![Linux & Osx Status](http://img.shields.io/travis/ReactiveX/RxCpp.svg?style=flat-square)](https://travis-ci.org/ReactiveX/RxCpp)
+Linux & OSX | [![Linux & Osx Status](http://img.shields.io/travis/ReactiveX/RxCpp.svg?style=flat-square)](https://travis-ci.com/ReactiveX/RxCpp)
 
 Source        | Badges |
 ------------- | :--------------- |
