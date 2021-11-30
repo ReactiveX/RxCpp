@@ -539,17 +539,14 @@ public:
     {
     }
 
-    observable(const source_operator_type& o)
-        : source_operator(o) { }
-
-    observable(source_operator_type&& o)
-        : source_operator(std::move(o)) { }
-
-    observable(const observable& o)
-        : source_operator(o.source_operator) {}
-
-    observable(observable&& o)
-        : source_operator(std::move(o.source_operator)) {}
+    explicit observable(const source_operator_type& o)
+        : source_operator(o)
+    {
+    }
+    explicit observable(source_operator_type&& o)
+        : source_operator(std::move(o))
+    {
+    }
 
     /// implicit conversion between observables of the same value_type
     template<class SO>
