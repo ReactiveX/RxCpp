@@ -246,16 +246,16 @@ SCENARIO("map doesn't provide copies", "[map][operators][copies]")
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
         copy_verifier verifier{};
-        auto          obs = verifier.get_observable().map([](auto&& v) { return std::forward<decltype(v)>(v); });
+        auto          obs = verifier.get_observable().map([](copy_verifier v) { return v; });
         WHEN("subscribe")
         {
             obs.subscribe(sub);
             THEN("no extra copies")
             {
-                // 1 copy from map lambda
+                // 1 copy to map lambda
                 REQUIRE(verifier.get_copy_count() == 1);
-                 // 1 move to final lambda
-                REQUIRE(verifier.get_move_count() == 1);
+                 // 1 move from map lambda + 1 move to final lambda
+                REQUIRE(verifier.get_move_count() == 2);
             }
         }
     }
@@ -269,15 +269,15 @@ SCENARIO("map doesn't provide copies for move", "[map][operators][copies]")
         auto          empty_on_next = [](copy_verifier) {};
         auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
         copy_verifier verifier{};
-        auto          obs = verifier.get_observable_for_move().map([](auto&& v) { return std::forward<decltype(v)>(v); });
+        auto          obs = verifier.get_observable_for_move().map([](copy_verifier v) { return v; });
         WHEN("subscribe")
         {
             obs.subscribe(sub);
             THEN("no extra copies")
             {
                 REQUIRE(verifier.get_copy_count() == 0);
-                // 1 move from map lambda +  1 move to final lambda
-                REQUIRE(verifier.get_move_count() == 2);
+                // 1 move to map lambda  + 1 move from map lambda +  1 move to final lambda
+                REQUIRE(verifier.get_move_count() == 3);
             }
         }
     }
