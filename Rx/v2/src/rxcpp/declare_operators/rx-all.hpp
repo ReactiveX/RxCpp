@@ -28,9 +28,9 @@ struct observable_member_t<rxcpp::observable<T, SO>, all_tag>
     }
 
     template <typename... AN>
-    static auto all(AN&&...)
+    static auto all(AN&&...an)
     {
-        return member_overload<all_tag>::member();
+        return member_overload<all_tag>::member(std::forward<AN>(an)...);
     }
 
     template <typename... AN>
@@ -55,9 +55,9 @@ struct observable_member_t<rxcpp::observable<T, SO>, is_empty_tag>
     }
 
     template <typename... AN>
-    static auto is_empty(AN&&...)
+    static auto is_empty(AN&&...an)
     {
-        return member_overload<is_empty_tag>::member();
+        return member_overload<is_empty_tag>::member(std::forward<AN>(an)...);
     }
 
     auto member() const
