@@ -815,7 +815,7 @@ SCENARIO("merge_transform do 1 copy to lambda and 1 move to internal state for m
         auto          empty_on_next = [](int) {};
         auto          sub           = rx::make_observer<int>(empty_on_next);
         copy_verifier verifier{};
-        auto          obs  = verifier.get_observable_for_move().merge_transform([](copy_verifier){ return rxcpp::observable<>::never<int>();});
+        auto          obs  = verifier.get_observable_for_move().flat_map([](copy_verifier){ return rxcpp::observable<>::never<int>();});
         WHEN("subscribe")
         {
             obs.subscribe(sub);

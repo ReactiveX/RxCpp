@@ -38,17 +38,6 @@ namespace rxcpp {
 namespace operators {
 
 namespace detail {
-
-template<class... AN>
-struct flat_map_invalid_arguments {};
-
-template<class... AN>
-struct flat_map_invalid : public rxo::operator_base<flat_map_invalid_arguments<AN...>> {
-    using type = observable<flat_map_invalid_arguments<AN...>, flat_map_invalid<AN...>>;
-};
-template<class... AN>
-using flat_map_invalid_t = typename flat_map_invalid<AN...>::type;
-
 template<class Observable, class CollectionSelector, class ResultSelector, class Coordination>
 struct flat_map_traits {
     typedef rxu::decay_t<Observable> source_type;
