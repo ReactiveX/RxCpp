@@ -1676,16 +1676,16 @@ public:
     /*! @copydoc rx-iterate.hpp
      */
     template<class Collection>
-    static auto iterate(Collection c)
-        -> decltype(rxs::iterate(std::move(c), identity_current_thread())) {
-        return      rxs::iterate(std::move(c), identity_current_thread());
+    static auto iterate(Collection&& c)
+        -> decltype(rxs::iterate(std::forward<Collection>(c), identity_current_thread())) {
+        return      rxs::iterate(std::forward<Collection>(c), identity_current_thread());
     }
     /*! @copydoc rx-iterate.hpp
      */
     template<class Collection, class Coordination>
-    static auto iterate(Collection c, Coordination cn)
-        -> decltype(rxs::iterate(std::move(c), std::move(cn))) {
-        return      rxs::iterate(std::move(c), std::move(cn));
+    static auto iterate(Collection&& c, Coordination cn)
+        -> decltype(rxs::iterate(std::forward<Collection>(c), std::move(cn))) {
+        return      rxs::iterate(std::forward<Collection>(c), std::move(cn));
     }
 
     /*! @copydoc rxcpp::sources::from()
@@ -1706,41 +1706,41 @@ public:
     /*! @copydoc rxcpp::sources::from(Value0 v0, ValueN... vn)
      */
     template<class Value0, class... ValueN>
-    static auto from(Value0 v0, ValueN... vn)
-        -> typename std::enable_if<!is_coordination<Value0>::value,
-            decltype(   rxs::from(v0, vn...))>::type {
-        return          rxs::from(v0, vn...);
+    static auto from(Value0&& v0, ValueN&&... vn)
+        -> typename std::enable_if<!is_coordination<rxu::decay_t<Value0>>::value,
+            decltype(   rxs::from(std::forward<Value0>(v0), std::forward<ValueN>(vn)...))>::type {
+        return          rxs::from(std::forward<Value0>(v0), std::forward<ValueN>(vn)...);
     }
     /*! @copydoc rxcpp::sources::from(Coordination cn, Value0 v0, ValueN... vn)
      */
     template<class Coordination, class Value0, class... ValueN>
-    static auto from(Coordination cn, Value0 v0, ValueN... vn)
+    static auto from(Coordination cn, Value0&& v0, ValueN&&... vn)
         -> typename std::enable_if<is_coordination<Coordination>::value,
-            decltype(   rxs::from(std::move(cn), v0, vn...))>::type {
-        return          rxs::from(std::move(cn), v0, vn...);
+            decltype(   rxs::from(std::move(cn), std::forward<Value0>(v0), std::forward<ValueN>(vn)...))>::type {
+        return          rxs::from(std::move(cn), std::forward<Value0>(v0), std::forward<ValueN>(vn)...);
     }
 
     /*! @copydoc rxcpp::sources::just(Value0 v0)
      */
     template<class T>
-    static auto just(T v)
-        -> decltype(rxs::just(std::move(v))) {
-        return      rxs::just(std::move(v));
+    static auto just(T&& v)
+        -> decltype(rxs::just(std::forward<T>(v))) {
+        return      rxs::just(std::forward<T>(v));
     }
     /*! @copydoc rxcpp::sources::just(Value0 v0, Coordination cn)
      */
     template<class T, class Coordination>
-    static auto just(T v, Coordination cn)
-        -> decltype(rxs::just(std::move(v), std::move(cn))) {
-        return      rxs::just(std::move(v), std::move(cn));
+    static auto just(T&& v, Coordination cn)
+        -> decltype(rxs::just(std::forward<T>(v), std::move(cn))) {
+        return      rxs::just(std::forward<T>(v), std::move(cn));
     }
 
     /*! @copydoc rxcpp::sources::start_with(Observable o, Value0 v0, ValueN... vn)
      */
     template<class Observable, class Value0, class... ValueN>
-    static auto start_with(Observable o, Value0 v0, ValueN... vn)
-        -> decltype(rxs::start_with(std::move(o), std::move(v0), std::move(vn)...)) {
-        return      rxs::start_with(std::move(o), std::move(v0), std::move(vn)...);
+    static auto start_with(Observable o, Value0&& v0, ValueN&&... vn)
+        -> decltype(rxs::start_with(std::move(o), std::forward<Value0>(v0), std::forward<ValueN>(vn)...)) {
+        return      rxs::start_with(std::move(o), std::forward<Value0>(v0), std::forward<ValueN>(vn)...);
     }
 
     /*! @copydoc rx-empty.hpp

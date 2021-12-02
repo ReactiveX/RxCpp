@@ -52,39 +52,46 @@ struct is_iterable
 template<class Collection>
 struct iterate_traits
 {
-    typedef rxu::decay_t<Collection> collection_type;
-    typedef rxu::decay_t<decltype(std::begin(*(collection_type*)nullptr))> iterator_type;
-    typedef rxu::value_type_t<std::iterator_traits<iterator_type>> value_type;
+    // add const due to we don't want to modify original values!
+    using collection_type = std::add_const_t<rxu::decay_t<Collection>>;
+    using iterator_type   = rxu::decay_t<decltype(std::begin(*(collection_type*)nullptr))>;
+    using value_type      = rxu::value_type_t<std::iterator_traits<iterator_type>>;
 };
 
 template<class Collection, class Coordination>
 struct iterate : public source_base<rxu::value_type_t<iterate_traits<Collection>>>
 {
-    typedef iterate<Collection, Coordination> this_type;
-    typedef iterate_traits<Collection> traits;
+    using this_type = iterate<Collection, Coordination>;
+    using traits = iterate_traits<Collection>;
 
-    typedef rxu::decay_t<Coordination> coordination_type;
-    typedef typename coordination_type::coordinator_type coordinator_type;
+    using coordination_type = rxu::decay_t<Coordination>;
+    using coordinator_type = typename coordination_type::coordinator_type;
 
-    typedef typename traits::collection_type collection_type;
-    typedef typename traits::iterator_type iterator_type;
+    using collection_type     = typename traits::collection_type;
+    using collection_type_ptr = std::shared_ptr<collection_type>;
+    using iterator_type       = typename traits::iterator_type;
 
     struct iterate_initial_type
     {
-        iterate_initial_type(collection_type c, coordination_type cn)
-            : collection(std::move(c))
-            , coordination(std::move(cn))
-        {
-        }
-        collection_type collection;
-        coordination_type coordination;
+        iterate_initial_type(Collection&& c, coordination_type cn)
+            : collection_ptr(std::make_shared<collection_type>(std::move(c)))
+            , coordination(std::move(cn)) { }
+
+        iterate_initial_type(const Collection& c, coordination_type cn)
+            : collection_ptr(std::make_shared<collection_type>(c))
+            , coordination(std::move(cn)) { }
+
+        collection_type_ptr    collection_ptr;
+        coordination_type      coordination;
     };
     iterate_initial_type initial;
 
-    iterate(collection_type c, coordination_type cn)
-        : initial(std::move(c), std::move(cn))
-    {
-    }
+    iterate(Collection&& c, coordination_type cn)
+        : initial(std::move(c), std::move(cn)) { }
+
+    iterate(const Collection& c, coordination_type cn)
+        : initial(c, std::move(cn)) { }
+
     template<class Subscriber>
     void on_subscribe(Subscriber o) const {
         static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
@@ -96,18 +103,19 @@ struct iterate : public source_base<rxu::value_type_t<iterate_traits<Collection>
         {
             iterate_state_type(const iterate_initial_type& i, output_type o)
                 : iterate_initial_type(i)
-                , cursor(std::begin(iterate_initial_type::collection))
-                , end(std::end(iterate_initial_type::collection))
+                , cursor(std::begin(*iterate_initial_type::collection_ptr))
+                , end(std::end(*iterate_initial_type::collection_ptr))
                 , out(std::move(o))
             {
             }
             iterate_state_type(const iterate_state_type& o)
                 : iterate_initial_type(o)
-                , cursor(std::begin(iterate_initial_type::collection))
-                , end(std::end(iterate_initial_type::collection))
+                , cursor(std::begin(*iterate_initial_type::collection_ptr))
+                , end(std::end(*iterate_initial_type::collection_ptr))
                 , out(std::move(o.out)) // since lambda capture does not yet support move
             {
             }
+
             mutable iterator_type cursor;
             iterator_type end;
             mutable output_type out;
@@ -157,18 +165,18 @@ struct iterate : public source_base<rxu::value_type_t<iterate_traits<Collection>
 /*! @copydoc rx-iterate.hpp
  */
 template<class Collection>
-auto iterate(Collection c)
-    ->      observable<rxu::value_type_t<detail::iterate_traits<Collection>>, detail::iterate<Collection, identity_one_worker>> {
-    return  observable<rxu::value_type_t<detail::iterate_traits<Collection>>, detail::iterate<Collection, identity_one_worker>>(
-                                                                              detail::iterate<Collection, identity_one_worker>(std::move(c), identity_immediate()));
+auto iterate(Collection&& c)
+    ->      observable<rxu::value_type_t<detail::iterate_traits<rxu::decay_t<Collection>>>, detail::iterate<rxu::decay_t<Collection>, identity_one_worker>> {
+    return  observable<rxu::value_type_t<detail::iterate_traits<rxu::decay_t<Collection>>>, detail::iterate<rxu::decay_t<Collection>, identity_one_worker>>(
+                                                                              detail::iterate<rxu::decay_t<Collection>, identity_one_worker>(std::forward<Collection>(c), identity_immediate()));
 }
 /*! @copydoc rx-iterate.hpp
  */
 template<class Collection, class Coordination>
-auto iterate(Collection c, Coordination cn)
-    ->      observable<rxu::value_type_t<detail::iterate_traits<Collection>>, detail::iterate<Collection, Coordination>> {
-    return  observable<rxu::value_type_t<detail::iterate_traits<Collection>>, detail::iterate<Collection, Coordination>>(
-                                                                              detail::iterate<Collection, Coordination>(std::move(c), std::move(cn)));
+auto iterate(Collection&& c, Coordination cn)
+    ->      observable<rxu::value_type_t<detail::iterate_traits<rxu::decay_t<Collection>>>, detail::iterate<rxu::decay_t<Collection>, Coordination>> {
+    return  observable<rxu::value_type_t<detail::iterate_traits<rxu::decay_t<Collection>>>, detail::iterate<rxu::decay_t<Collection>, Coordination>>(
+                                                                              detail::iterate<rxu::decay_t<Collection>, Coordination>(std::forward<Collection>(c), std::move(cn)));
 }
 
 /*! Returns an observable that sends an empty set of values and then completes.
@@ -218,10 +226,10 @@ auto from(Coordination cn)
     \note This operator is useful to send separated values. If they are stored as a collection, use observable<void,void>::iterate instead.
 */
 template<class Value0, class... ValueN>
-auto from(Value0 v0, ValueN... vn)
-    -> typename std::enable_if<!is_coordination<Value0>::value,
-        decltype(iterate(*(std::array<Value0, sizeof...(ValueN) + 1>*)nullptr, identity_immediate()))>::type {
-    std::array<Value0, sizeof...(ValueN) + 1> c{{v0, vn...}};
+auto from(Value0&& v0, ValueN&&... vn)
+    -> typename std::enable_if<!is_coordination<rxu::decay_t<Value0>>::value,
+        decltype(iterate(*(std::array<rxu::decay_t<Value0>, sizeof...(ValueN) + 1>*)nullptr, identity_immediate()))>::type {
+    std::array<rxu::decay_t<Value0>, sizeof...(ValueN) + 1> c{{std::forward<Value0>(v0), std::forward<ValueN>(vn)...}};
     return iterate(std::move(c), identity_immediate());
 }
 /*! Returns an observable that sends each value from its arguments list, on the specified scheduler.
@@ -243,10 +251,10 @@ auto from(Value0 v0, ValueN... vn)
     \note This operator is useful to send separated values. If they are stored as a collection, use observable<void,void>::iterate instead.
 */
 template<class Coordination, class Value0, class... ValueN>
-auto from(Coordination cn, Value0 v0, ValueN... vn)
+auto from(Coordination cn, Value0&& v0, ValueN&&... vn)
     -> typename std::enable_if<is_coordination<Coordination>::value,
-        decltype(iterate(*(std::array<Value0, sizeof...(ValueN) + 1>*)nullptr, std::move(cn)))>::type {
-    std::array<Value0, sizeof...(ValueN) + 1> c{{v0, vn...}};
+        decltype(iterate(*(std::array<rxu::decay_t<Value0>, sizeof...(ValueN) + 1>*)nullptr, std::move(cn)))>::type {
+    std::array<rxu::decay_t<Value0>, sizeof...(ValueN) + 1> c{{std::forward<Value0>(v0), std::forward<ValueN>(vn)...}};
     return iterate(std::move(c), std::move(cn));
 }
 
@@ -264,10 +272,10 @@ auto from(Coordination cn, Value0 v0, ValueN... vn)
     \snippet output.txt just sample
 */
 template<class Value0>
-auto just(Value0 v0)
-    -> typename std::enable_if<!is_coordination<Value0>::value,
-        decltype(iterate(*(std::array<Value0, 1>*)nullptr, identity_immediate()))>::type {
-    std::array<Value0, 1> c{{v0}};
+auto just(Value0&& v0)
+    -> typename std::enable_if<!is_coordination<rxu::decay_t<Value0>>::value,
+        decltype(iterate(*(std::array<rxu::decay_t<Value0>, 1>*)nullptr, identity_immediate()))>::type {
+    std::array<rxu::decay_t<Value0>, 1> c{{std::forward<Value0>(v0)}};
     return iterate(std::move(c), identity_immediate());
 }
 /*! Returns an observable that sends the specified item to observer and then completes, on the specified scheduler.
@@ -285,10 +293,10 @@ auto just(Value0 v0)
     \snippet output.txt threaded just sample
 */
 template<class Value0, class Coordination>
-auto just(Value0 v0, Coordination cn)
+auto just(Value0&& v0, Coordination cn)
     -> typename std::enable_if<is_coordination<Coordination>::value,
-        decltype(iterate(*(std::array<Value0, 1>*)nullptr, std::move(cn)))>::type {
-    std::array<Value0, 1> c{{v0}};
+        decltype(iterate(*(std::array<rxu::decay_t<Value0>, 1>*)nullptr, std::move(cn)))>::type {
+    std::array<rxu::decay_t<Value0>, 1> c{{std::forward<Value0>(v0)}};
     return iterate(std::move(c), std::move(cn));
 }
 
@@ -313,9 +321,9 @@ auto just(Value0 v0, Coordination cn)
     \snippet output.txt short start_with sample
 */
 template<class Observable, class Value0, class... ValueN>
-auto start_with(Observable o, Value0 v0, ValueN... vn)
-    -> decltype(from(rxu::value_type_t<Observable>(v0), rxu::value_type_t<Observable>(vn)...).concat(o)) {
-    return      from(rxu::value_type_t<Observable>(v0), rxu::value_type_t<Observable>(vn)...).concat(o);
+auto start_with(Observable o, Value0&& v0, ValueN&&... vn)
+    -> decltype(from(rxu::value_type_t<Observable>(std::forward<Value0>(v0)), rxu::value_type_t<Observable>(std::forward<ValueN>(vn))...).concat(o)) {
+    return      from(rxu::value_type_t<Observable>(std::forward<Value0>(v0)), rxu::value_type_t<Observable>(std::forward<ValueN>(vn))...).concat(o);
 }
 
 }

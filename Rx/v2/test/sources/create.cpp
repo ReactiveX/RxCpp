@@ -82,3 +82,56 @@ SCENARIO("when observer::on_next is overridden", "[create][observer][sources]"){
         }
     }
 }
+
+
+SCENARIO("create doesn't provide copies", "[create][sources][copies]")
+{
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](copy_verifier) {};
+        auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = rxcpp::observable<>::create<copy_verifier>([&verifier](rxcpp::subscriber<copy_verifier> sub)
+        {
+            sub.on_next(verifier);
+            sub.on_completed();
+        });
+
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                // 1 copy to final lambda
+                REQUIRE(verifier.get_copy_count() == 1);
+                REQUIRE(verifier.get_move_count() == 0);
+            }
+        }
+    }
+}
+
+
+SCENARIO("create doesn't provide copies for move", "[create][sources][copies]")
+{
+    GIVEN("observable and subscriber")
+    {
+        auto          empty_on_next = [](copy_verifier) {};
+        auto          sub           = rx::make_observer<copy_verifier>(empty_on_next);
+        copy_verifier verifier{};
+        auto          obs = rxcpp::observable<>::create<copy_verifier>([&verifier](rxcpp::subscriber<copy_verifier> sub)
+        {
+            sub.on_next(std::move(verifier));
+            sub.on_completed();
+        });
+        WHEN("subscribe")
+        {
+            obs.subscribe(sub);
+            THEN("no extra copies")
+            {
+                REQUIRE(verifier.get_copy_count() == 0);
+                //  1 move to final lambda
+                REQUIRE(verifier.get_move_count() == 1);
+            }
+        }
+    }
+}
