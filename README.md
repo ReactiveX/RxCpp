@@ -1,9 +1,8 @@
 The Reactive Extensions for C++ (__RxCpp__) is a library of algorithms for values-distributed-in-time. The [__Range-v3__](https://github.com/ericniebler/range-v3) library does the same for values-distributed-in-space.
 
-Platform    | Status | 
+Task    | Status | 
 ----------- | :------------ |
-Windows | [![Windows Status](http://img.shields.io/appveyor/ci/kirkshoop/RxCpp-446.svg?style=flat-square)](https://ci.appveyor.com/project/kirkshoop/rxcpp-446)
-Linux & OSX | [![Linux & Osx Status](http://img.shields.io/travis/ReactiveX/RxCpp.svg?style=flat-square)](https://travis-ci.com/ReactiveX/RxCpp)
+rxcpp CI | [![rxcpp CI](https://img.shields.io/github/workflow/status/ReactiveX/RxCpp/rxcpp%20CI/main.svg?event=push&style=flat-square)](https://github.com/ReactiveX/RxCpp/actions/workflows/rxcpp-ci.yml)
 
 Source        | Badges |
 ------------- | :--------------- |
