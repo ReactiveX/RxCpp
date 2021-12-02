@@ -98,7 +98,7 @@ struct observable_member_t<rxcpp::observable<T, SO>, flat_map_tag>
     template <typename... AN>
     static auto flat_map(AN&&...)
     {
-        return flat_map_tag::include_header<std::false_type>{};
+        return member_overload<flat_map_tag>::member();
     }
 
     template <typename... AN>

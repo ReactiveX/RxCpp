@@ -244,6 +244,13 @@ auto merge_transform(AN&&... an)
     return operator_factory<flat_map_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
 }
 }
+
+template<>
+struct member_overload<flat_map_tag>
+{
+    template<class... AN>
+    static void member(AN&&...)  {}
+};
 }
 
 #endif

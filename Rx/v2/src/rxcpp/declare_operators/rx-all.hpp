@@ -30,7 +30,7 @@ struct observable_member_t<rxcpp::observable<T, SO>, all_tag>
     template <typename... AN>
     static auto all(AN&&...)
     {
-        return all_tag::include_header<std::false_type>{};
+        return member_overload<all_tag>::member();
     }
 
     template <typename... AN>
@@ -57,7 +57,7 @@ struct observable_member_t<rxcpp::observable<T, SO>, is_empty_tag>
     template <typename... AN>
     static auto is_empty(AN&&...)
     {
-        return is_empty_tag::include_header<std::false_type>{};
+        return member_overload<is_empty_tag>::member();
     }
 
     auto member() const

@@ -119,6 +119,20 @@ auto is_empty(AN&&... an)
     return operator_factory<is_empty_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
 }
 }
+
+template<>
+struct member_overload<all_tag>
+{
+    template<class... AN>
+    static void member(AN&&...)  {}
+};
+
+template<>
+struct member_overload<is_empty_tag>
+{
+    template<class... AN>
+    static void member(AN&&...)  {}
+};
 }
 
 #endif
