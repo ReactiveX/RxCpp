@@ -478,6 +478,8 @@ template<class T, class SourceOperator>
 class observable
     : public observable_base<T>
     , public observable_member_t<observable<T, SourceOperator>, flat_map_tag>
+    , public observable_member_t<observable<T, SourceOperator>, all_tag>
+    , public observable_member_t<observable<T, SourceOperator>, is_empty_tag>
 {
     static_assert(std::is_same<T, typename SourceOperator::value_type>::value, "SourceOperator::value_type must be the same as T in observable<T, SourceOperator>");
 
@@ -649,28 +651,6 @@ public:
     auto subscribe(ArgN&&... an) const
         -> composite_subscription {
         return detail_subscribe(make_subscriber<T>(std::forward<ArgN>(an)...));
-    }
-
-    /*! @copydoc rx-all.hpp
-     */
-    template<class... AN>
-    auto all(AN&&... an) const
-    /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(all_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
-    /// \endcond
-    {
-        return  observable_member(all_tag{},                *this, std::forward<AN>(an)...);
-    }
-
-    /*! @copydoc rxcpp::operators::is_empty
-     */
-    template<class... AN>
-    auto is_empty(AN&&... an) const
-    /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(is_empty_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
-    /// \endcond
-    {
-        return  observable_member(is_empty_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-any.hpp
