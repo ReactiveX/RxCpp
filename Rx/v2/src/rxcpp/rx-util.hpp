@@ -44,9 +44,6 @@ namespace rxcpp {
 
 namespace util {
 
-template<typename...TS>
-using sfinae_t = void;
-
 template<class T> using value_type_t = typename std::decay<T>::type::value_type;
 template<class T> using decay_t = typename std::decay<T>::type;
 #ifdef __cpp_lib_is_invocable

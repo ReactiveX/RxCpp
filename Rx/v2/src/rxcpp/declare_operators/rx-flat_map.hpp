@@ -28,7 +28,7 @@ struct observable_member_t<rxcpp::observable<T, SO>, flat_map_tag>
               class CollectionValueType    = rxu::value_type_t<CollectionType>,
               class Value                  = rxu::result_of_t<ResultSelectorType(SourceValue, CollectionValueType)>,
               class Result                 = observable<Value, FlatMap>,
-              class IsHeaderExist          = rxu::sfinae_t<typename FlatMap::this_type>>
+              class IsHeaderExist          = typename FlatMap::this_type>
     Result flat_map(CollectionSelector&& s) const
     {
         return Result(FlatMap(*static_cast<const Observable*>(this),
@@ -46,7 +46,7 @@ struct observable_member_t<rxcpp::observable<T, SO>, flat_map_tag>
               class CollectionValueType    = rxu::value_type_t<CollectionType>,
               class Value                  = rxu::result_of_t<ResultSelectorType(SourceValue, CollectionValueType)>,
               class Result                 = observable<Value, FlatMap>,
-              class IsHeaderExist          = rxu::sfinae_t<typename FlatMap::this_type>>
+              class IsHeaderExist          = typename FlatMap::this_type>
     Result flat_map(CollectionSelector&& s, Coordination&& cn) const
     {
         return Result(FlatMap(*static_cast<const Observable*>(this),
@@ -66,7 +66,7 @@ struct observable_member_t<rxcpp::observable<T, SO>, flat_map_tag>
               class ResultSelectorType     = rxu::decay_t<ResultSelector>,
               class Value                  = rxu::result_of_t<ResultSelectorType(SourceValue, CollectionValueType)>,
               class Result                 = observable<Value, FlatMap>,
-              class IsHeaderExist          = rxu::sfinae_t<typename FlatMap::this_type>>
+              class IsHeaderExist          = typename FlatMap::this_type>
     Result flat_map(CollectionSelector&& s, ResultSelector&& rs) const
     {
         return Result(FlatMap(*static_cast<const Observable*>(this),
@@ -86,7 +86,7 @@ struct observable_member_t<rxcpp::observable<T, SO>, flat_map_tag>
               class ResultSelectorType     = rxu::decay_t<ResultSelector>,
               class Value                  = rxu::result_of_t<ResultSelectorType(SourceValue, CollectionValueType)>,
               class Result                 = observable<Value, FlatMap>,
-              class IsHeaderExist          = rxu::sfinae_t<typename FlatMap::this_type>>
+              class IsHeaderExist          = typename FlatMap::this_type>
     Result flat_map(CollectionSelector&& s, ResultSelector&& rs, Coordination&& cn) const
     {
         return Result(FlatMap(*static_cast<const Observable*>(this),

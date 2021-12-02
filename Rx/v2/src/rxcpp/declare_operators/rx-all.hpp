@@ -21,7 +21,7 @@ struct observable_member_t<rxcpp::observable<T, SO>, all_tag>
     
     template <class Predicate,
               class All           = rxo::detail::all<SourceValue, rxu::decay_t<Predicate>>,
-              class IsHeaderExist = rxu::sfinae_t<typename All::source_value_type>>
+              class IsHeaderExist = typename All::source_value_type>
     auto all(Predicate&& p) const
     {
         return static_cast<const Observable*>(this)->template lift<rxu::value_type_t<All>>(All(std::forward<Predicate>(p)));
@@ -48,7 +48,7 @@ struct observable_member_t<rxcpp::observable<T, SO>, is_empty_tag>
     using Predicate   = std::function<bool(const SourceValue&)>;
 
     template <class IsEmpty       = rxo::detail::all<SourceValue, rxu::decay_t<Predicate>>,
-              class IsHeaderExist = rxu::sfinae_t<typename IsEmpty::source_value_type>>
+              class IsHeaderExist = typename IsEmpty::source_value_type>
     auto is_empty() const
     {
         return static_cast<const Observable*>(this)->template lift<rxu::value_type_t<IsEmpty>>(IsEmpty([](const SourceValue&) { return false; }));
