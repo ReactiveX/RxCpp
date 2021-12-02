@@ -98,7 +98,7 @@ struct observable_member_t<rxcpp::observable<T, SO>, flat_map_tag>
     template <typename... AN>
     static auto flat_map(AN&&...)
     {
-        static_assert(false, "missing include: please #include <rxcpp/operators/rx-flat_map.hpp>");
+        return flat_map_tag::include_header<std::false_type>{};
     }
 
     template <typename... AN>

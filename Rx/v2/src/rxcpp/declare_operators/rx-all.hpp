@@ -30,7 +30,7 @@ struct observable_member_t<rxcpp::observable<T, SO>, all_tag>
     template <typename... AN>
     static auto all(AN&&...)
     {
-        static_assert(false, "missing include: please #include <rxcpp/operators/rx-all.hpp>");
+        return all_tag::include_header<std::false_type>{};
     }
 
     template <typename... AN>
@@ -57,7 +57,7 @@ struct observable_member_t<rxcpp::observable<T, SO>, is_empty_tag>
     template <typename... AN>
     static auto is_empty(AN&&...)
     {
-        static_assert(false, "missing include: please #include <rxcpp/operators/rx-all.hpp>");
+        return is_empty_tag::include_header<std::false_type>{};
     }
 
     auto member() const
