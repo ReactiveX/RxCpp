@@ -89,7 +89,7 @@ public:
         return      observable_member(t, std::forward<ZN>(zn)...);
     }
 
-    template<class TObservable, class... ZN, std::enable_if_t<std::is_base_of_v<observable_member_t<TObservable, tag_type>, TObservable>>* = nullptr>
+    template<class TObservable, class... ZN, std::enable_if_t<std::is_base_of<observable_member_t<TObservable, tag_type>, TObservable>::value>* = nullptr>
     auto operator()(tag_type, TObservable&& source, ZN&&... zn) const
         -> decltype(static_cast<observable_member_t<TObservable, tag_type>*>(&source)->member(std::forward<ZN>(zn)...)) {
         return static_cast<observable_member_t<TObservable, tag_type>*>(&source)->member(std::forward<ZN>(zn)...);
