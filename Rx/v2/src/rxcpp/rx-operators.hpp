@@ -116,13 +116,7 @@ struct amb_tag {
     };
 };
 
-struct all_tag {
-    template<class Included>
-    struct include_header{
-        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-all.hpp>");
-    };
-};
-
+struct all_tag {};
 struct is_empty_tag : all_tag {};
 
 struct any_tag {
@@ -233,12 +227,7 @@ struct finally_tag {
     };
 };
 
-struct flat_map_tag {
-    template<class Included>
-    struct include_header{
-        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-flat_map.hpp>");
-    };
-};
+struct flat_map_tag{};
 
 struct group_by_tag {
     template<class Included>
