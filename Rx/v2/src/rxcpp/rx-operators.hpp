@@ -51,6 +51,12 @@ struct member_overload
                 typename Tag::template include_header<std::false_type> {
         return  typename Tag::template include_header<std::false_type>();
     }
+
+    template<class... AN>
+    static auto include_header_assert(AN&&...) ->
+                typename Tag::template include_header<std::false_type> {
+        return  typename Tag::template include_header<std::false_type>();
+    }
 };
 
 template<class T, class... AN>

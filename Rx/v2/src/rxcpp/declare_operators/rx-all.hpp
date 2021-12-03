@@ -18,19 +18,19 @@ struct observable_member_t<rxcpp::observable<T, SO>, all_tag>
 {
     using Observable         = rxcpp::observable<T, SO>;
     using SourceValue        = rxu::decay_t<T>;
-    
+
     template <class Predicate,
-              class All           = rxo::detail::all<SourceValue, rxu::decay_t<Predicate>>,
-              class IsHeaderExist = typename All::source_value_type>
+              class All   = rxo::detail::all<SourceValue, rxu::decay_t<Predicate>>,
+              class Value = rxu::value_type_t<All>>
     auto all(Predicate&& p) const
     {
-        return static_cast<const Observable*>(this)->template lift<rxu::value_type_t<All>>(All(std::forward<Predicate>(p)));
+        return static_cast<const Observable*>(this)->template lift<Value>(All(std::forward<Predicate>(p)));
     }
 
     template <typename... AN>
     static auto all(AN&&...an)
     {
-        return member_overload<all_tag>::member(std::forward<AN>(an)...);
+        return member_overload<all_tag>::include_header_assert(std::forward<AN>(an)...);
     }
 
     template <typename... AN>
@@ -47,17 +47,17 @@ struct observable_member_t<rxcpp::observable<T, SO>, is_empty_tag>
     using SourceValue = rxu::decay_t<T>;
     using Predicate   = std::function<bool(const SourceValue&)>;
 
-    template <class IsEmpty       = rxo::detail::all<SourceValue, rxu::decay_t<Predicate>>,
-              class IsHeaderExist = typename IsEmpty::source_value_type>
+    template <class IsEmpty = rxo::detail::all<SourceValue, rxu::decay_t<Predicate>>,
+              class Value   = rxu::value_type_t<IsEmpty>>
     auto is_empty() const
     {
-        return static_cast<const Observable*>(this)->template lift<rxu::value_type_t<IsEmpty>>(IsEmpty([](const SourceValue&) { return false; }));
+        return static_cast<const Observable*>(this)->template lift<Value>(IsEmpty([](const SourceValue&) { return false; }));
     }
 
     template <typename... AN>
     static auto is_empty(AN&&...an)
     {
-        return member_overload<is_empty_tag>::member(std::forward<AN>(an)...);
+        return member_overload<is_empty_tag>::include_header_assert(std::forward<AN>(an)...);
     }
 
     auto member() const
