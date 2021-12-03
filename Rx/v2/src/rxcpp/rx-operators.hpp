@@ -547,5 +547,6 @@ struct zip_tag {
 #include "operators/rx-ref_count.hpp"
 
 #include "declare_operators/rx-all.hpp"
+#include "declare_operators/rx-amb.hpp"
 #include "declare_operators/rx-flat_map.hpp"
 #endif

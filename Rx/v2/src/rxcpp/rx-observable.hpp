@@ -480,6 +480,7 @@ class observable
     , public observable_member_t<observable<T, SourceOperator>, flat_map_tag>
     , public observable_member_t<observable<T, SourceOperator>, all_tag>
     , public observable_member_t<observable<T, SourceOperator>, is_empty_tag>
+    , public observable_member_t<observable<T, SourceOperator>, amb_tag>
 {
     static_assert(std::is_same<T, typename SourceOperator::value_type>::value, "SourceOperator::value_type must be the same as T in observable<T, SourceOperator>");
 
@@ -992,17 +993,6 @@ public:
         /// \endcond
     {
             return      observable_member(merge_delay_error_tag{},                *this, std::forward<AN>(an)...);
-    }
-
-    /*! @copydoc rx-amb.hpp
-     */
-    template<class... AN>
-    auto amb(AN... an) const
-        /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(amb_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
-        /// \endcond
-    {
-        return      observable_member(amb_tag{},                *this, std::forward<AN>(an)...);
     }
 
     /*! @copydoc rx-concat.hpp
