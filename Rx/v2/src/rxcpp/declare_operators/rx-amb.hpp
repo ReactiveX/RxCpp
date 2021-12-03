@@ -19,16 +19,17 @@ struct observable_member_t<rxcpp::observable<T, SO>, amb_tag>
     using Observable  = rxcpp::observable<T, SO>;
     using SourceValue = rxu::decay_t<T>;
 
-    template <class Amb           = rxo::detail::amb<SourceValue, rxu::decay_t<Observable>, identity_one_worker>,
-              class Value         = rxu::value_type_t<Amb>,
-              class Result        = observable<Value, Amb>>
+    template <class Enabled = rxu::enable_if_all_true_type_t<is_observable<SourceValue>>,
+              class Amb     = rxo::detail::amb<SourceValue, rxu::decay_t<Observable>, identity_one_worker>,
+              class Value   = rxu::value_type_t<Amb>,
+              class Result  = observable<Value, Amb>>
     Result amb() const
     {
         return Result(Amb(*static_cast<const Observable*>(this), identity_current_thread()));
     }
 
     template <class Coordination,
-              class Enabled       = rxu::enable_if_all_true_type_t<is_coordination<Coordination>>,
+              class Enabled       = rxu::enable_if_all_true_type_t<is_coordination<Coordination>, is_observable<SourceValue>>,
               class Amb           = rxo::detail::amb<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<Coordination>>,
               class Value         = rxu::value_type_t<Amb>,
               class Result        = observable<Value, Amb>>
