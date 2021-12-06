@@ -51,13 +51,19 @@ struct member_overload
                 typename Tag::template include_header<std::false_type> {
         return  typename Tag::template include_header<std::false_type>();
     }
+};
 
-    template<class... AN>
-    static auto include_header_assert(AN&&...) ->
-                typename Tag::template include_header<std::false_type> {
-        return  typename Tag::template include_header<std::false_type>();
+template<class Tag, class ...AN>
+struct operator_declaration
+{
+    static auto header_included()
+    {
+        return typename Tag::template include_header<std::false_type>();
     }
 };
+
+template<typename ...AN>
+using header_included_t = decltype(operator_declaration<AN...>::header_included());
 
 template<class T, class... AN>
 struct delayed_type{using value_type = T; static T value(AN**...) {return T{};}};
@@ -117,14 +123,14 @@ namespace rxcpp {
 
 struct amb_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-amb.hpp>");
     };
 };
 
 struct all_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-all.hpp>");
     };
 };
@@ -133,7 +139,7 @@ struct is_empty_tag : all_tag {};
 
 struct any_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-any.hpp>");
     };
 };
@@ -143,160 +149,160 @@ struct contains_tag : any_tag {};
 
 struct buffer_count_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-buffer_count.hpp>");
     };
 };
 
 struct buffer_with_time_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-buffer_time.hpp>");
     };
 };
 
 struct buffer_with_time_or_count_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-buffer_time_count.hpp>");
     };
 };
 
 struct combine_latest_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-combine_latest.hpp>");
     };
 };
 
 struct concat_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-concat.hpp>");
     };
 };
 
 struct concat_map_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-concat_map.hpp>");
     };
 };
 
 struct connect_forever_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-connect_forever.hpp>");
     };
 };
 
 struct debounce_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-debounce.hpp>");
     };
 };
 
 struct delay_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-delay.hpp>");
     };
 };
 
 struct distinct_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-distinct.hpp>");
     };
 };
 
 struct distinct_until_changed_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-distinct_until_changed.hpp>");
     };
 };
 
 struct element_at_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-element_at.hpp>");
     };
 };
 
 struct filter_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-filter.hpp>");
     };
 };
 
 struct finally_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-finally.hpp>");
     };
 };
 
 struct flat_map_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-flat_map.hpp>");
     };
 };
 
 struct group_by_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-group_by.hpp>");
     };
 };
 
 struct ignore_elements_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-ignore_elements.hpp>");
     };
 };
 
 struct map_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-map.hpp>");
     };
 };
 
 struct merge_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-merge.hpp>");
     };
 };
 struct merge_delay_error_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-merge_delay_error.hpp>");
     };
 };
 
 struct multicast_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-multicast.hpp>");
     };
 };
 
 struct observe_on_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-observe_on.hpp>");
     };
 };
 
 struct on_error_resume_next_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-on_error_resume_next.hpp>");
     };
 };
@@ -310,7 +316,7 @@ class empty_error: public std::runtime_error
 };
 struct reduce_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-reduce.hpp>");
     };
 };
@@ -323,21 +329,21 @@ struct max_tag : reduce_tag {};
 
 struct ref_count_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-ref_count.hpp>");
     };
 };
 
 struct pairwise_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-pairwise.hpp>");
     };
 };
 
 struct publish_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-publish.hpp>");
     };
 };
@@ -345,91 +351,91 @@ struct publish_synchronized_tag : publish_tag {};
     
 struct repeat_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-repeat.hpp>");
     };
 };
 
 struct replay_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-replay.hpp>");
     };
 };
 
 struct retry_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-retry.hpp>");
     };
 };
 
 struct sample_with_time_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-sample_time.hpp>");
     };
 };
 
 struct scan_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-scan.hpp>");
     };
 };
 
 struct sequence_equal_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-sequence_equal.hpp>");
     };
 };
 
 struct skip_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-skip.hpp>");
     };
 };
 
 struct skip_while_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-skip_while.hpp>");
     };
 };
 
 struct skip_last_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-skip_last.hpp>");
     };
 };
 
 struct skip_until_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-skip_until.hpp>");
     };
 };
 
 struct start_with_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-start_with.hpp>");
     };
 };
 
 struct subscribe_on_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-subscribe_on.hpp>");
     };
 };
 
 struct switch_if_empty_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-switch_if_empty.hpp>");
     };
 };
@@ -437,105 +443,105 @@ struct default_if_empty_tag : switch_if_empty_tag {};
 
 struct switch_on_next_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-switch_on_next.hpp>");
     };
 };
 
 struct take_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-take.hpp>");
     };
 };
 
 struct take_last_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-take_last.hpp>");
     };
 };
 
 struct take_while_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-take_while.hpp>");
     };
 };
 
 struct take_until_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-take_until.hpp>");
     };
 };
 
 struct tap_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-tap.hpp>");
     };
 };
 
 struct timeout_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-timeout.hpp>");
     };
 };
 
 struct time_interval_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-time_interval.hpp>");
     };
 };
 
 struct timestamp_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-timestamp.hpp>");
     };
 };
 
 struct window_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-window.hpp>");
     };
 };
 
 struct window_with_time_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-window_time.hpp>");
     };
 };
 
 struct window_with_time_or_count_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-window_time_count.hpp>");
     };
 };
 
 struct window_toggle_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-window_toggle.hpp>");
     };
 };
 
 struct with_latest_from_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-with_latest_from.hpp>");
     };
 };
 
 struct zip_tag {
     template<class Included>
-    struct include_header{
+    struct include_header : std::false_type{
         static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-zip.hpp>");
     };
 };

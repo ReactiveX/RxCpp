@@ -216,5 +216,11 @@ auto amb(AN&&... an)
     return operator_factory<amb_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
 }
 }
+
+template<typename ...AN>
+struct operator_declaration<amb_tag, AN...>
+{
+    static std::true_type header_included();
+};
 }
 #endif
