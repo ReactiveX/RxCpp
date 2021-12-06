@@ -66,7 +66,7 @@ struct observable_member_t<rxcpp::observable<T, SO>, amb_tag>
     }
 
     template<typename... AN, typename = std::enable_if_t<!header_included_v<amb_tag, AN...>>>
-    static auto amb(AN&&...an)
+    static auto amb(AN&&...)
     {
         return operator_declaration<amb_tag, AN...>::header_included();
     }

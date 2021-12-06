@@ -29,7 +29,7 @@ struct observable_member_t<rxcpp::observable<T, SO>, all_tag>
     }
 
     template <typename... AN, typename = std::enable_if_t<!header_included_v<all_tag, AN...>>>
-    static auto all(AN&&...an)
+    static auto all(AN&&...)
     {
         return operator_declaration<all_tag, AN...>::header_included();
     }
@@ -57,7 +57,7 @@ struct observable_member_t<rxcpp::observable<T, SO>, is_empty_tag>
     }
 
     template <typename... AN, typename = std::enable_if_t<!header_included_v<is_empty_tag, AN...>>>
-    static auto is_empty(AN&&...an)
+    static auto is_empty(AN&&...)
     {
         return operator_declaration<is_empty_tag, AN...>::header_included();
     }
