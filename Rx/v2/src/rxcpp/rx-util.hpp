@@ -28,6 +28,8 @@
 
 #define RXCPP_MAKE_IDENTIFIER(Prefix) RXCPP_CONCAT_EVALUATE(Prefix, __LINE__)
 
+#define RXCPP_DECLVAL(...) static_cast<__VA_ARGS__ (*)() noexcept>(nullptr)()
+
 // Provide replacements for try/catch keywords, using which is a compilation error
 // when exceptions are disabled with -fno-exceptions.
 #if RXCPP_USE_EXCEPTIONS
@@ -46,18 +48,13 @@ namespace util {
 
 template<class T> using value_type_t = typename std::decay<T>::type::value_type;
 template<class T> using decay_t = typename std::decay<T>::type;
-#ifdef __cpp_lib_is_invocable
-template <class> struct result_of;
 
-template <class F, class... TN>
-struct result_of<F(TN...)>
-{
-    using type = std::invoke_result_t<F, TN...>;
+template <typename Fn, typename... ArgTypes>
+struct callable_result {
+    using type = decltype(RXCPP_DECLVAL(Fn&&)(RXCPP_DECLVAL(ArgTypes&&)...));
 };
-#else
-template<class... TN> using result_of = std::result_of<TN...>;
-#endif
-template<class... TN> using result_of_t = typename result_of<TN...>::type;
+template <typename Fn, typename... ArgTypes>
+using callable_result_t = typename callable_result<Fn, ArgTypes...>::type;
 
 template<class T, std::size_t size>
 std::vector<T> to_vector(const T (&arr) [size]) {
@@ -1027,7 +1024,7 @@ struct is_hashable<T,
     typename rxu::types_checked_from<
         typename filtered_hash<T>::result_type,
         typename filtered_hash<T>::argument_type,
-        typename rxu::result_of<filtered_hash<T>(T)>::type>::type>
+        typename rxu::callable_result<filtered_hash<T>, T>::type>::type>
     : std::true_type {};
 
 }
