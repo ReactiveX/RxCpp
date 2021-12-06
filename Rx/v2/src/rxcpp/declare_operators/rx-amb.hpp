@@ -29,7 +29,7 @@ struct observable_member_t<rxcpp::observable<T, SO>, amb_tag>
     }
 
     template <class Coordination,
-              class Enabled       = rxu::enable_if_all_true_type_t<is_coordination<Coordination>, is_observable<SourceValue>, header_included_t<amb_tag, Coordination>>
+              class Enabled       = rxu::enable_if_all_true_type_t<is_coordination<Coordination>, is_observable<SourceValue>, header_included_t<amb_tag, Coordination>>,
               class Amb           = rxo::detail::amb<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<Coordination>>,
               class Value         = rxu::value_type_t<Amb>,
               class Result        = observable<Value, Amb>>
