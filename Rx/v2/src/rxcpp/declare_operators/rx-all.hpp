@@ -21,16 +21,17 @@ struct observable_member_t<rxcpp::observable<T, SO>, all_tag>
 
     template <class Predicate,
               class All   = rxo::detail::all<SourceValue, rxu::decay_t<Predicate>>,
-              class Value = rxu::value_type_t<All>>
+              class Value = rxu::value_type_t<All>,
+              class Enabled = rxu::enable_if_all_true_type_t<header_included_t<all_tag, All>>>
     auto all(Predicate&& p) const
     {
         return static_cast<const Observable*>(this)->template lift<Value>(All(std::forward<Predicate>(p)));
     }
 
-    template <typename... AN>
+    template <typename... AN, typename = std::enable_if_t<!header_included_t<all_tag, AN...>::value>>
     static auto all(AN&&...an)
     {
-        return member_overload<all_tag>::include_header_assert(std::forward<AN>(an)...);
+        return operator_declaration<all_tag, AN...>::header_included();
     }
 
     template <typename... AN>
@@ -48,16 +49,17 @@ struct observable_member_t<rxcpp::observable<T, SO>, is_empty_tag>
     using Predicate   = std::function<bool(const SourceValue&)>;
 
     template <class IsEmpty = rxo::detail::all<SourceValue, rxu::decay_t<Predicate>>,
-              class Value   = rxu::value_type_t<IsEmpty>>
+              class Value   = rxu::value_type_t<IsEmpty>,
+              class Enabled = rxu::enable_if_all_true_type_t<header_included_t<is_empty_tag, IsEmpty>>>
     auto is_empty() const
     {
         return static_cast<const Observable*>(this)->template lift<Value>(IsEmpty([](const SourceValue&) { return false; }));
     }
 
-    template <typename... AN>
+    template <typename... AN, typename = std::enable_if_t<!header_included_t<is_empty_tag, AN...>::value>>
     static auto is_empty(AN&&...an)
     {
-        return member_overload<is_empty_tag>::include_header_assert(std::forward<AN>(an)...);
+        return operator_declaration<is_empty_tag, AN...>::header_included();
     }
 
     auto member() const

@@ -119,6 +119,18 @@ auto is_empty(AN&&... an)
     return operator_factory<is_empty_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
 }
 }
+
+template<typename ...AN>
+struct operator_declaration<all_tag, AN...>
+{
+    static std::true_type header_included();
+};
+
+template<typename ...AN>
+struct operator_declaration<is_empty_tag, AN...>
+{
+    static std::true_type header_included();
+};
 }
 
 #endif
