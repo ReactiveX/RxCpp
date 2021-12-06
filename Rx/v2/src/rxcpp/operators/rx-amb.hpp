@@ -46,17 +46,7 @@ namespace rxcpp {
 namespace operators {
 
 namespace detail {
-
-template<class... AN>
-struct amb_invalid_arguments {};
-
-template<class... AN>
-struct amb_invalid : public rxo::operator_base<amb_invalid_arguments<AN...>> {
-    using type = observable<amb_invalid_arguments<AN...>, amb_invalid<AN...>>;
-};
-template<class... AN>
-using amb_invalid_t = typename amb_invalid<AN...>::type;
-
+    
 template<class T, class Observable, class Coordination>
 struct amb
     : public operator_base<rxu::value_type_t<T>>
@@ -225,74 +215,12 @@ auto amb(AN&&... an)
     ->     operator_factory<amb_tag, AN...> {
     return operator_factory<amb_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
 }
-
 }
 
-template<>
-struct member_overload<amb_tag>
+template<typename ...AN>
+struct operator_declaration<amb_tag, AN...>
 {
-    template<class Observable,
-        class Enabled = rxu::enable_if_all_true_type_t<
-            is_observable<Observable>>,
-        class SourceValue = rxu::value_type_t<Observable>,
-        class Amb = rxo::detail::amb<SourceValue, rxu::decay_t<Observable>, identity_one_worker>,
-        class Value = rxu::value_type_t<SourceValue>,
-        class Result = observable<Value, Amb>
-    >
-    static Result member(Observable&& o) {
-        return Result(Amb(std::forward<Observable>(o), identity_current_thread()));
-    }
-
-    template<class Observable, class Coordination,
-        class Enabled = rxu::enable_if_all_true_type_t<
-            is_observable<Observable>,
-            is_coordination<Coordination>>,
-        class SourceValue = rxu::value_type_t<Observable>,
-        class Amb = rxo::detail::amb<SourceValue, rxu::decay_t<Observable>, rxu::decay_t<Coordination>>,
-        class Value = rxu::value_type_t<SourceValue>,
-        class Result = observable<Value, Amb>
-    >
-    static Result member(Observable&& o, Coordination&& cn) {
-        return Result(Amb(std::forward<Observable>(o), std::forward<Coordination>(cn)));
-    }
-
-    template<class Observable, class Value0, class... ValueN,
-        class Enabled = rxu::enable_if_all_true_type_t<
-            all_observables<Observable, Value0, ValueN...>>,
-        class EmittedValue = rxu::value_type_t<Observable>,
-        class SourceValue = observable<EmittedValue>,
-        class ObservableObservable = observable<SourceValue>,
-        class Amb = typename rxu::defer_type<rxo::detail::amb, SourceValue, ObservableObservable, identity_one_worker>::type,
-        class Value = rxu::value_type_t<Amb>,
-        class Result = observable<Value, Amb>
-    >
-    static Result member(Observable&& o, Value0&& v0, ValueN&&... vn) {
-        return Result(Amb(rxs::from(o.as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), identity_current_thread()));
-    }
-
-    template<class Observable, class Coordination, class Value0, class... ValueN,
-        class Enabled = rxu::enable_if_all_true_type_t<
-            all_observables<Observable, Value0, ValueN...>,
-            is_coordination<Coordination>>,
-        class EmittedValue = rxu::value_type_t<Observable>,
-        class SourceValue = observable<EmittedValue>,
-        class ObservableObservable = observable<SourceValue>,
-        class Amb = typename rxu::defer_type<rxo::detail::amb, SourceValue, ObservableObservable, rxu::decay_t<Coordination>>::type,
-        class Value = rxu::value_type_t<Amb>,
-        class Result = observable<Value, Amb>
-    >
-    static Result member(Observable&& o, Coordination&& cn, Value0&& v0, ValueN&&... vn) {
-        return Result(Amb(rxs::from(o.as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), std::forward<Coordination>(cn)));
-    }
-
-    template<class... AN>
-    static operators::detail::amb_invalid_t<AN...> member(AN...) {
-        std::terminate();
-        return {};
-        static_assert(sizeof...(AN) == 10000, "amb takes (optional Coordination, optional Value0, optional ValueN...)");
-    }
+    static std::true_type header_included();
 };
-
 }
-
 #endif

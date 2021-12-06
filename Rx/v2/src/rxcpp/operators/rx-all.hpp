@@ -28,17 +28,6 @@ namespace rxcpp {
 namespace operators {
 
 namespace detail {
-
-template<class... AN>
-struct all_invalid_arguments {};
-
-template<class... AN>
-struct all_invalid : public rxo::operator_base<all_invalid_arguments<AN...>> {
-    using type = observable<all_invalid_arguments<AN...>, all_invalid<AN...>>;
-};
-template<class... AN>
-using all_invalid_t = typename all_invalid<AN...>::type;
-
 template<class T, class Predicate>
 struct all
 {
@@ -129,54 +118,19 @@ auto is_empty(AN&&... an)
 ->     operator_factory<is_empty_tag, AN...> {
     return operator_factory<is_empty_tag, AN...>(std::make_tuple(std::forward<AN>(an)...));
 }
-
 }
 
-template<>
-struct member_overload<all_tag>
+template<typename ...AN>
+struct operator_declaration<all_tag, AN...>
 {
-    template<class Observable, class Predicate,
-        class SourceValue = rxu::value_type_t<Observable>,
-        class Enabled = rxu::enable_if_all_true_type_t<
-            is_observable<Observable>>,
-        class All = rxo::detail::all<SourceValue, rxu::decay_t<Predicate>>,
-        class Value = rxu::value_type_t<All>>
-    static auto member(Observable&& o, Predicate&& p)
-        -> decltype(o.template lift<Value>(All(std::forward<Predicate>(p)))) {
-        return      o.template lift<Value>(All(std::forward<Predicate>(p)));
-    }
-
-    template<class... AN>
-    static operators::detail::all_invalid_t<AN...> member(const AN&...) {
-        std::terminate();
-        return {};
-        static_assert(sizeof...(AN) == 10000, "all takes (Predicate)");
-    }
+    static std::true_type header_included();
 };
 
-template<>
-struct member_overload<is_empty_tag>
+template<typename ...AN>
+struct operator_declaration<is_empty_tag, AN...>
 {
-    template<class Observable,
-        class SourceValue = rxu::value_type_t<Observable>,
-        class Enabled = rxu::enable_if_all_true_type_t<
-            is_observable<Observable>>,
-        class Predicate = std::function<bool(const SourceValue&)>,
-        class IsEmpty = rxo::detail::all<SourceValue, rxu::decay_t<Predicate>>,
-        class Value = rxu::value_type_t<IsEmpty>>
-    static auto member(Observable&& o)
-    -> decltype(o.template lift<Value>(IsEmpty(nullptr))) {
-        return  o.template lift<Value>(IsEmpty([](const SourceValue&) { return false; }));
-    }
-
-    template<class... AN>
-    static operators::detail::all_invalid_t<AN...> member(AN...) {
-        std::terminate();
-        return {};
-        static_assert(sizeof...(AN) == 10000, "is_empty takes no arguments");
-    }
+    static std::true_type header_included();
 };
-
 }
 
 #endif
