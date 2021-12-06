@@ -65,6 +65,9 @@ struct operator_declaration
 template<typename ...AN>
 using header_included_t = decltype(operator_declaration<AN...>::header_included());
 
+template<typename ...AN>
+bool header_included_v = decltype(operator_declaration<AN...>::header_included())::value;
+
 template<class T, class... AN>
 struct delayed_type{using value_type = T; static T value(AN**...) {return T{};}};
 

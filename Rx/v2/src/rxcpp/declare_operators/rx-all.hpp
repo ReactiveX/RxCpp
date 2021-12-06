@@ -28,7 +28,7 @@ struct observable_member_t<rxcpp::observable<T, SO>, all_tag>
         return static_cast<const Observable*>(this)->template lift<Value>(All(std::forward<Predicate>(p)));
     }
 
-    template <typename... AN, typename = std::enable_if_t<!header_included_t<all_tag, AN...>::value>>
+    template <typename... AN, typename = std::enable_if_t<!header_included_v<all_tag, AN...>>>
     static auto all(AN&&...an)
     {
         return operator_declaration<all_tag, AN...>::header_included();
@@ -56,7 +56,7 @@ struct observable_member_t<rxcpp::observable<T, SO>, is_empty_tag>
         return static_cast<const Observable*>(this)->template lift<Value>(IsEmpty([](const SourceValue&) { return false; }));
     }
 
-    template <typename... AN, typename = std::enable_if_t<!header_included_t<is_empty_tag, AN...>::value>>
+    template <typename... AN, typename = std::enable_if_t<!header_included_v<is_empty_tag, AN...>>>
     static auto is_empty(AN&&...an)
     {
         return operator_declaration<is_empty_tag, AN...>::header_included();

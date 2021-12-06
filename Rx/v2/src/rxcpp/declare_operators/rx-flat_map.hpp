@@ -95,7 +95,7 @@ struct observable_member_t<rxcpp::observable<T, SO>, flat_map_tag>
                               std::forward<Coordination>(cn)));
     }
 
-    template <typename... AN, typename = std::enable_if_t<!header_included_t<flat_map_tag, AN...>::value>>
+    template <typename... AN, typename = std::enable_if_t<!header_included_v<flat_map_tag, AN...>>>
     static auto flat_map(AN&&...)
     {
         return operator_declaration<flat_map_tag, AN...>::header_included();

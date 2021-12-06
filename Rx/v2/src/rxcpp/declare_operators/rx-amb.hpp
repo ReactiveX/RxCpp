@@ -65,7 +65,7 @@ struct observable_member_t<rxcpp::observable<T, SO>, amb_tag>
         return Result(Amb(rxs::from(static_cast<const Observable*>(this)->as_dynamic(), v0.as_dynamic(), vn.as_dynamic()...), std::forward<Coordination>(cn)));
     }
 
-    template<typename... AN, typename = std::enable_if_t<!header_included_t<amb_tag, AN...>::value>>
+    template<typename... AN, typename = std::enable_if_t<!header_included_v<amb_tag, AN...>>>
     static auto amb(AN&&...an)
     {
         return operator_declaration<amb_tag, AN...>::header_included();
