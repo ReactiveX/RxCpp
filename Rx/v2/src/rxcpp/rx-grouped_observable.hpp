@@ -16,7 +16,7 @@ struct has_on_get_key_for
 {
     struct not_void {};
     template<class CS>
-    static auto check(int) -> decltype((*(CS*)nullptr).on_get_key());
+    static auto check(int) -> decltype(std::declval<CS>().on_get_key());
     template<class CS>
     static not_void check(...);
 

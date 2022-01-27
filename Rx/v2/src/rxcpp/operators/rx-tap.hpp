@@ -51,7 +51,7 @@ template<class T, class... ArgN>
 struct tap_observer_factory<T, std::tuple<ArgN...>>
 {
     using source_value_type = rxu::decay_t<T>;
-    using out_type = decltype(make_observer<source_value_type, rxcpp::detail::OnErrorIgnore>(*((ArgN*)nullptr)...));
+    using out_type = decltype(make_observer<source_value_type, rxcpp::detail::OnErrorIgnore>((std::declval<ArgN>())...));
     auto operator()(ArgN&&... an) -> out_type const {
         return make_observer<source_value_type, rxcpp::detail::OnErrorIgnore>(std::forward<ArgN>(an)...);
     }

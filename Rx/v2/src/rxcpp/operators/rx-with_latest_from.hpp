@@ -62,7 +62,7 @@ struct is_with_latest_from_selector_check {
 
     struct tag_not_valid;
     template<class CS, class... CON>
-    static auto check(int) -> decltype((*(CS*)nullptr)((*(typename CON::value_type*)nullptr)...));
+    static auto check(int) -> decltype(std::declval<CS>()((std::declval<typename CON::value_type>())...));
     template<class CS, class... CON>
     static tag_not_valid check(...);
 

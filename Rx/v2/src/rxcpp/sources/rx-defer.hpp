@@ -32,7 +32,7 @@ template<class ObservableFactory>
 struct defer_traits
 {
     typedef rxu::decay_t<ObservableFactory> observable_factory_type;
-    typedef decltype((*(observable_factory_type*)nullptr)()) collection_type;
+    using collection_type = decltype(std::declval<observable_factory_type>()());
     typedef typename collection_type::value_type value_type;
 };
 

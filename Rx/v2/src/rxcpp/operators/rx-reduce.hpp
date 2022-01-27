@@ -73,7 +73,7 @@ struct is_result_function_for {
     struct tag_not_valid {};
 
     template<class CS, class CRS>
-    static auto check(int) -> decltype((*(CRS*)nullptr)(*(CS*)nullptr));
+    static auto check(int) -> decltype(std::declval<CRS>()(std::declval<CS>()));
     template<class CS, class CRS>
     static tag_not_valid check(...);
 
@@ -539,7 +539,7 @@ struct member_overload<first_tag>
         class Seed = decltype(Operation::seed()),
         class Accumulator = Operation,
         class ResultSelector = Operation,
-        class TakeOne = decltype(((rxu::decay_t<Observable>*)nullptr)->take(1)),
+        class TakeOne = decltype(std::declval<rxu::decay_t<Observable>>().take(1)),
         class Reduce = rxo::detail::reduce<SValue, rxu::decay_t<TakeOne>, rxu::decay_t<Accumulator>, rxu::decay_t<ResultSelector>, rxu::decay_t<Seed>>,
         class RValue = rxu::value_type_t<Reduce>,
         class Result = observable<RValue, Reduce>>

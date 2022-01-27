@@ -60,26 +60,26 @@ struct flat_map_traits {
 
     struct tag_not_valid {};
     template<class CV, class CCS>
-    static auto collection_check(int) -> decltype((*(CCS*)nullptr)(*(CV*)nullptr));
+    static auto collection_check(int) -> decltype(std::declval<CCS>()(std::declval<CV>()));
     template<class CV, class CCS>
     static tag_not_valid collection_check(...);
 
     static_assert(!std::is_same<decltype(collection_check<source_value_type, collection_selector_type>(0)), tag_not_valid>::value, "flat_map CollectionSelector must be a function with the signature observable(flat_map::source_value_type)");
 
-    typedef rxu::decay_t<decltype((*(collection_selector_type*)nullptr)((*(source_value_type*)nullptr)))> collection_type;
+    using collection_type = rxu::decay_t<decltype(std::declval<collection_selector_type>()(std::declval<source_value_type>()))>;
 
     static_assert(is_observable<collection_type>::value, "flat_map CollectionSelector must return an observable");
 
     typedef typename collection_type::value_type collection_value_type;
 
     template<class CV, class CCV, class CRS>
-    static auto result_check(int) -> decltype((*(CRS*)nullptr)(*(CV*)nullptr, *(CCV*)nullptr));
+    static auto result_check(int) -> decltype(std::declval<CRS>()(std::declval<CV>(), std::declval<CCV>()));
     template<class CV, class CCV, class CRS>
     static tag_not_valid result_check(...);
 
     static_assert(!std::is_same<decltype(result_check<source_value_type, collection_value_type, result_selector_type>(0)), tag_not_valid>::value, "flat_map ResultSelector must be a function with the signature flat_map::value_type(flat_map::source_value_type, flat_map::collection_value_type)");
 
-    typedef rxu::decay_t<decltype((*(result_selector_type*)nullptr)(*(source_value_type*)nullptr, *(collection_value_type*)nullptr))> value_type;
+    using value_type = rxu::decay_t<decltype((std::declval<result_selector_type>())(std::declval<source_value_type>(), std::declval<collection_value_type>()))> ;
 };
 
 template<class Observable, class CollectionSelector, class ResultSelector, class Coordination>

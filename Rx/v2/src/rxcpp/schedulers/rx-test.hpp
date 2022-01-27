@@ -350,7 +350,7 @@ struct is_create_source_function
 {
     struct not_void {};
     template<class CF>
-    static auto check(int) -> decltype((*(CF*)nullptr)());
+    static auto check(int) -> decltype(std::declval<CF>()());
     template<class CF>
     static not_void check(...);
 
@@ -408,7 +408,7 @@ public:
     {
         std::shared_ptr<detail::test_type::test_type_worker> tester;
     public:
-        
+
         ~test_worker() {
         }
 
@@ -514,7 +514,7 @@ public:
         template<class F>
         struct start_traits
         {
-            typedef decltype((*(F*)nullptr)()) source_type;
+            typedef decltype(std::declval<F>()()) source_type;
             typedef typename source_type::value_type value_type;
             typedef subscriber<value_type, rxt::testable_observer<value_type>> subscriber_type;
         };

@@ -27,7 +27,7 @@ struct is_lift_function_for {
 
     struct tag_not_valid {};
     template<class CS, class CF>
-    static auto check(int) -> decltype((*(CF*)nullptr)(*(CS*)nullptr));
+    static auto check(int) -> decltype(std::declval<CF>()(std::declval<CS>()));
     template<class CS, class CF>
     static tag_not_valid check(...);
 

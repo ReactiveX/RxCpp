@@ -56,7 +56,7 @@ struct is_group_by_selector_for {
 
     struct tag_not_valid {};
     template<class CV, class CS>
-    static auto check(int) -> decltype((*(CS*)nullptr)(*(CV*)nullptr));
+    static auto check(int) -> decltype(std::declval<CS>()(std::declval<CV>()));
     template<class CV, class CS>
     static tag_not_valid check(...);
 

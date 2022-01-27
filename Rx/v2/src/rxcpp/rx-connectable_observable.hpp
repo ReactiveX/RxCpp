@@ -16,7 +16,7 @@ struct has_on_connect
 {
     struct not_void {};
     template<class CT>
-    static auto check(int) -> decltype((*(CT*)nullptr).on_connect(composite_subscription()));
+    static auto check(int) -> decltype(std::declval<CT>().on_connect(composite_subscription()));
     template<class CT>
     static not_void check(...);
 
@@ -145,7 +145,7 @@ public:
     ///
     template<class OperatorFactory>
     auto op(OperatorFactory&& of) const
-        -> decltype(of(*(const this_type*)nullptr)) {
+        -> decltype(of(std::declval<const this_type>())) {
         return      of(*this);
         static_assert(is_operator_factory_for<this_type, OperatorFactory>::value, "Function passed for op() must have the signature Result(SourceObservable)");
     }
@@ -167,7 +167,7 @@ public:
     template<class... AN>
     auto ref_count(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(ref_count_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(ref_count_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(ref_count_tag{},                *this, std::forward<AN>(an)...);
@@ -178,7 +178,7 @@ public:
     template<class... AN>
     auto connect_forever(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(connect_forever_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(connect_forever_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(connect_forever_tag{},                *this, std::forward<AN>(an)...);

@@ -116,7 +116,7 @@ struct is_on_next_of
 {
     struct not_void {};
     template<class CT, class CF>
-    static auto check(int) -> decltype((*(CF*)nullptr)(*(CT*)nullptr));
+    static auto check(int) -> decltype(std::declval<CF>()(std::declval<CT>()));
     template<class CT, class CF>
     static not_void check(...);
 
@@ -129,11 +129,11 @@ struct is_on_error
 {
     struct not_void {};
     template<class CF>
-    static auto check(int) -> decltype((*(CF*)nullptr)(*(rxu::error_ptr*)nullptr));
+    static auto check(int) -> decltype(std::declval<CF>()(std::declval<rxu::error_ptr>()));
     template<class CF>
     static not_void check(...);
 
-    static const bool value = std::is_same<decltype(check<rxu::decay_t<F>>(0)), void>::value;
+    static const bool value = std::is_same_v<decltype(check<rxu::decay_t<F>>(0)), void>;
 };
 
 template<class State, class F>
@@ -141,7 +141,7 @@ struct is_on_error_for
 {
     struct not_void {};
     template<class CF>
-    static auto check(int) -> decltype((*(CF*)nullptr)(*(State*)nullptr, *(rxu::error_ptr*)nullptr));
+    static auto check(int) -> decltype(std::declval<CF>()(std::declval<State>(), std::declval<rxu::error_ptr>()));
     template<class CF>
     static not_void check(...);
 
@@ -153,7 +153,7 @@ struct is_on_completed
 {
     struct not_void {};
     template<class CF>
-    static auto check(int) -> decltype((*(CF*)nullptr)());
+    static auto check(int) -> decltype(std::declval<CF>()());
     template<class CF>
     static not_void check(...);
 
@@ -627,7 +627,7 @@ namespace detail {
 template<class F>
 struct maybe_from_result
 {
-    typedef decltype((*(F*)nullptr)()) decl_result_type;
+    using decl_result_type = decltype(std::declval<F>()());
     typedef rxu::decay_t<decl_result_type> result_type;
     typedef rxu::maybe<result_type> type;
 };

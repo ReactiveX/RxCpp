@@ -42,7 +42,7 @@ struct is_iterable
 
     struct not_void {};
     template<class CC>
-    static auto check(int) -> decltype(std::begin(*(CC*)nullptr));
+    static auto check(int) -> decltype(std::begin(std::declval<CC>()));
     template<class CC>
     static not_void check(...);
 
@@ -54,7 +54,7 @@ struct iterate_traits
 {
     // add const due to we don't want to modify original values!
     using collection_type = std::add_const_t<rxu::decay_t<Collection>>;
-    using iterator_type   = rxu::decay_t<decltype(std::begin(*(collection_type*)nullptr))>;
+    using iterator_type   = rxu::decay_t<decltype(std::begin(std::declval<collection_type>()))>;
     using value_type      = rxu::value_type_t<std::iterator_traits<iterator_type>>;
 };
 
@@ -228,7 +228,7 @@ auto from(Coordination cn)
 template<class Value0, class... ValueN>
 auto from(Value0&& v0, ValueN&&... vn)
     -> typename std::enable_if<!is_coordination<rxu::decay_t<Value0>>::value,
-        decltype(iterate(*(std::array<rxu::decay_t<Value0>, sizeof...(ValueN) + 1>*)nullptr, identity_immediate()))>::type {
+        decltype(iterate(std::declval<std::array<rxu::decay_t<Value0>, sizeof...(ValueN) + 1>>(), identity_immediate()))>::type {
     std::array<rxu::decay_t<Value0>, sizeof...(ValueN) + 1> c{{std::forward<Value0>(v0), std::forward<ValueN>(vn)...}};
     return iterate(std::move(c), identity_immediate());
 }
@@ -253,7 +253,7 @@ auto from(Value0&& v0, ValueN&&... vn)
 template<class Coordination, class Value0, class... ValueN>
 auto from(Coordination cn, Value0&& v0, ValueN&&... vn)
     -> typename std::enable_if<is_coordination<Coordination>::value,
-        decltype(iterate(*(std::array<rxu::decay_t<Value0>, sizeof...(ValueN) + 1>*)nullptr, std::move(cn)))>::type {
+        decltype(iterate(std::declval<std::array<rxu::decay_t<Value0>, sizeof...(ValueN) + 1>>(), std::move(cn)))>::type {
     std::array<rxu::decay_t<Value0>, sizeof...(ValueN) + 1> c{{std::forward<Value0>(v0), std::forward<ValueN>(vn)...}};
     return iterate(std::move(c), std::move(cn));
 }
@@ -274,7 +274,7 @@ auto from(Coordination cn, Value0&& v0, ValueN&&... vn)
 template<class Value0>
 auto just(Value0&& v0)
     -> typename std::enable_if<!is_coordination<rxu::decay_t<Value0>>::value,
-        decltype(iterate(*(std::array<rxu::decay_t<Value0>, 1>*)nullptr, identity_immediate()))>::type {
+        decltype(iterate(std::declval<std::array<rxu::decay_t<Value0>, 1>>(), identity_immediate()))>::type {
     std::array<rxu::decay_t<Value0>, 1> c{{std::forward<Value0>(v0)}};
     return iterate(std::move(c), identity_immediate());
 }
@@ -295,7 +295,7 @@ auto just(Value0&& v0)
 template<class Value0, class Coordination>
 auto just(Value0&& v0, Coordination cn)
     -> typename std::enable_if<is_coordination<Coordination>::value,
-        decltype(iterate(*(std::array<rxu::decay_t<Value0>, 1>*)nullptr, std::move(cn)))>::type {
+        decltype(iterate(std::declval<std::array<rxu::decay_t<Value0>, 1>>(), std::move(cn)))>::type {
     std::array<rxu::decay_t<Value0>, 1> c{{std::forward<Value0>(v0)}};
     return iterate(std::move(c), std::move(cn));
 }

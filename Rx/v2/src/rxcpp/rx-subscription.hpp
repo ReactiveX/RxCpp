@@ -16,7 +16,7 @@ struct is_unsubscribe_function
 {
     struct not_void {};
     template<class CF>
-    static auto check(int) -> decltype((*(CF*)nullptr)());
+    static auto check(int) -> decltype(std::declval<CF>()());
     template<class CF>
     static not_void check(...);
 

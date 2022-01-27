@@ -121,7 +121,7 @@ public:
 
 struct action_base
 {
-    typedef tag_action action_tag;
+    using action_tag = tag_action;
 };
 
 class schedulable;
@@ -183,7 +183,7 @@ struct is_action_function
 {
     struct not_void {};
     template<class CF>
-    static auto check(int) -> decltype((*(CF*)nullptr)(*(schedulable*)nullptr));
+    static auto check(int) -> decltype(std::declval<CF>()(std::declval<schedulable>()));
     template<class CF>
     static not_void check(...);
 
@@ -654,7 +654,7 @@ namespace detail {
 class action_type
     : public std::enable_shared_from_this<action_type>
 {
-    typedef action_type this_type;
+    using this_type = action_type;
 
 public:
     typedef std::function<void(const schedulable&, const recurse&)> function_type;

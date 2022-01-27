@@ -44,7 +44,7 @@ struct on_error_resume_next
 {
     typedef rxu::decay_t<T> value_type;
     typedef rxu::decay_t<Selector> select_type;
-    typedef decltype((*(select_type*)nullptr)(rxu::error_ptr())) fallback_type;
+    using fallback_type = decltype(std::declval<select_type>()(rxu::error_ptr()));
     select_type selector;
 
     on_error_resume_next(select_type s)
@@ -58,7 +58,7 @@ struct on_error_resume_next
         typedef on_error_resume_next_observer<Subscriber> this_type;
         typedef rxu::decay_t<T> value_type;
         typedef rxu::decay_t<Selector> select_type;
-        typedef decltype((*(select_type*)nullptr)(rxu::error_ptr())) fallback_type;
+        using fallback_type = decltype(std::declval<select_type>()(rxu::error_ptr()));
         typedef rxu::decay_t<Subscriber> dest_type;
         typedef observer<T, this_type> observer_type;
         dest_type dest;
