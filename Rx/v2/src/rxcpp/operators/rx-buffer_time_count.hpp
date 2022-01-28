@@ -48,11 +48,11 @@ using buffer_with_time_or_count_invalid_t = typename buffer_with_time_or_count_i
 template<class T, class Duration, class Coordination>
 struct buffer_with_time_or_count
 {
-    typedef rxu::decay_t<T> source_value_type;
-    typedef std::vector<source_value_type> value_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
-    typedef typename coordination_type::coordinator_type coordinator_type;
-    typedef rxu::decay_t<Duration> duration_type;
+    using source_value_type = rxu::decay_t<T>;
+    using value_type = std::vector<source_value_type>;
+    using coordination_type = rxu::decay_t<Coordination>;
+    using coordinator_type = typename coordination_type::coordinator_type;
+    using duration_type = rxu::decay_t<Duration>;
 
     struct buffer_with_time_or_count_values
     {
@@ -76,10 +76,10 @@ struct buffer_with_time_or_count
     template<class Subscriber>
     struct buffer_with_time_or_count_observer
     {
-        typedef buffer_with_time_or_count_observer<Subscriber> this_type;
-        typedef std::vector<T> value_type;
-        typedef rxu::decay_t<Subscriber> dest_type;
-        typedef observer<value_type, this_type> observer_type;
+        using this_type = buffer_with_time_or_count_observer<Subscriber>;
+        using value_type = std::vector<T>;
+        using dest_type = rxu::decay_t<Subscriber>;
+        using observer_type = observer<value_type, this_type>;
 
         struct buffer_with_time_or_count_subscriber_values : public buffer_with_time_or_count_values
         {
@@ -99,7 +99,8 @@ struct buffer_with_time_or_count
             mutable int chunk_id;
             mutable value_type chunk;
         };
-        typedef std::shared_ptr<buffer_with_time_or_count_subscriber_values> state_type;
+
+        using state_type = std::shared_ptr<buffer_with_time_or_count_subscriber_values>;
         state_type state;
 
         buffer_with_time_or_count_observer(composite_subscription cs, dest_type d, buffer_with_time_or_count_values v, coordinator_type c)

@@ -58,7 +58,7 @@ using with_latest_from_invalid_t = typename with_latest_from_invalid<AN...>::typ
 
 template<class Selector, class... ObservableN>
 struct is_with_latest_from_selector_check {
-    typedef rxu::decay_t<Selector> selector_type;
+    using selector_type = rxu::decay_t<Selector>;
 
     struct tag_not_valid;
     template<class CS, class... CON>
@@ -89,29 +89,29 @@ using result_with_latest_from_selector_t = typename is_with_latest_from_selector
 template<class Coordination, class Selector, class... ObservableN>
 struct with_latest_from_traits {
 
-    typedef std::tuple<ObservableN...> tuple_source_type;
-    typedef std::tuple<rxu::detail::maybe<typename ObservableN::value_type>...> tuple_source_value_type;
+    using tuple_source_type = std::tuple<ObservableN...>;
+    using tuple_source_value_type = std::tuple<rxu::detail::maybe < typename ObservableN::value_type>...>;
 
-    typedef rxu::decay_t<Selector> selector_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
+    using selector_type = rxu::decay_t<Selector>;
+    using coordination_type = rxu::decay_t<Coordination>;
 
-    typedef typename is_with_latest_from_selector<selector_type, ObservableN...>::type value_type;
+    using value_type = typename is_with_latest_from_selector<selector_type, ObservableN...>::type;
 };
 
 template<class Coordination, class Selector, class... ObservableN>
 struct with_latest_from : public operator_base<rxu::value_type_t<with_latest_from_traits<Coordination, Selector, ObservableN...>>>
 {
-    typedef with_latest_from<Coordination, Selector, ObservableN...> this_type;
+    using this_type = with_latest_from<Coordination, Selector, ObservableN...>;
 
-    typedef with_latest_from_traits<Coordination, Selector, ObservableN...> traits;
+    using traits = with_latest_from_traits<Coordination, Selector, ObservableN...>;
 
-    typedef typename traits::tuple_source_type tuple_source_type;
-    typedef typename traits::tuple_source_value_type tuple_source_value_type;
+    using tuple_source_type = typename traits::tuple_source_type;
+    using tuple_source_value_type = typename traits::tuple_source_value_type;
 
-    typedef typename traits::selector_type selector_type;
+    using selector_type = typename traits::selector_type;
 
-    typedef typename traits::coordination_type coordination_type;
-    typedef typename coordination_type::coordinator_type coordinator_type;
+    using coordination_type = typename traits::coordination_type;
+    using coordinator_type = typename coordination_type::coordinator_type;
 
     struct values
     {
@@ -135,7 +135,7 @@ struct with_latest_from : public operator_base<rxu::value_type_t<with_latest_fro
     template<int Index, class State>
     void subscribe_one(std::shared_ptr<State> state) const {
 
-        typedef typename std::tuple_element<Index, tuple_source_type>::type::value_type source_value_type;
+        using source_value_type = typename std::tuple_element<Index, tuple_source_type>::type::value_type;
 
         composite_subscription innercs;
 
@@ -200,7 +200,7 @@ struct with_latest_from : public operator_base<rxu::value_type_t<with_latest_fro
     void on_subscribe(Subscriber scbr) const {
         static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
 
-        typedef Subscriber output_type;
+        using output_type = Subscriber;
 
         struct with_latest_from_state_type
             : public std::enable_shared_from_this<with_latest_from_state_type>

@@ -43,9 +43,9 @@ using scan_invalid_t = typename scan_invalid<AN...>::type;
 template<class T, class Observable, class Accumulator, class Seed>
 struct scan : public operator_base<rxu::decay_t<Seed>>
 {
-    typedef rxu::decay_t<Observable> source_type;
-    typedef rxu::decay_t<Accumulator> accumulator_type;
-    typedef rxu::decay_t<Seed> seed_type;
+    using source_type = rxu::decay_t<Observable>;
+    using accumulator_type = rxu::decay_t<Accumulator>;
+    using seed_type = rxu::decay_t<Seed>;
 
     struct scan_initial_type
     {

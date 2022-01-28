@@ -46,8 +46,8 @@ template<typename T>
 struct notification_base
     : public std::enable_shared_from_this<notification_base<T>>
 {
-    typedef subscriber<T> observer_type;
-    typedef std::shared_ptr<notification_base<T>> type;
+    using observer_type = subscriber<T>;
+    using type = std::shared_ptr<notification_base<T>>;
 
     virtual ~notification_base() {}
 
@@ -116,11 +116,11 @@ bool equals(const T&, const T&, ...) {
 template<typename T>
 struct notification
 {
-    typedef typename detail::notification_base<T>::type type;
-    typedef typename detail::notification_base<T>::observer_type observer_type;
+    using type = typename detail::notification_base<T>::type;
+    using observer_type = typename detail::notification_base<T>::observer_type;
 
 private:
-    typedef detail::notification_base<T> base;
+    using base = detail::notification_base<T>;
 
     struct on_next_notification : public base {
         on_next_notification(T&& value) : value(std::move(value)) {}

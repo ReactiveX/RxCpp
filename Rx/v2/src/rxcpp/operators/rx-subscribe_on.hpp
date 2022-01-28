@@ -44,9 +44,9 @@ using subscribe_on_invalid_t = typename subscribe_on_invalid<AN...>::type;
 template<class T, class Observable, class Coordination>
 struct subscribe_on : public operator_base<T>
 {
-    typedef rxu::decay_t<Observable> source_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
-    typedef typename coordination_type::coordinator_type coordinator_type;
+    using source_type = rxu::decay_t<Observable>;
+    using coordination_type = rxu::decay_t<Coordination>;
+    using coordinator_type = typename coordination_type::coordinator_type;
     struct subscribe_on_values
     {
         ~subscribe_on_values()
@@ -75,7 +75,7 @@ struct subscribe_on : public operator_base<T>
     template<class Subscriber>
     void on_subscribe(Subscriber s) const {
 
-        typedef Subscriber output_type;
+        using output_type = Subscriber;
         struct subscribe_on_state_type
             : public std::enable_shared_from_this<subscribe_on_state_type>
             , public subscribe_on_values

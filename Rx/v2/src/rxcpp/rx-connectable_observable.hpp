@@ -20,7 +20,7 @@ struct has_on_connect
     template<class CT>
     static not_void check(...);
 
-    typedef decltype(check<T>(0)) detail_result;
+    using detail_result = decltype(check<T>(0));
     static const bool value = std::is_same<detail_result, void>::value;
 };
 
@@ -33,7 +33,7 @@ class dynamic_connectable_observable
     struct state_type
         : public std::enable_shared_from_this<state_type>
     {
-        typedef std::function<void(composite_subscription)> onconnect_type;
+        using onconnect_type = std::function<void(composite_subscription)>;
 
         onconnect_type on_connect;
     };
@@ -59,7 +59,7 @@ class dynamic_connectable_observable
 
 public:
 
-    typedef tag_dynamic_observable dynamic_observable_tag;
+    using dynamic_observable_tag = tag_dynamic_observable;
 
     dynamic_connectable_observable()
     {
@@ -105,14 +105,14 @@ template<class T, class SourceOperator>
 class connectable_observable
     : public observable<T, SourceOperator>
 {
-    typedef connectable_observable<T, SourceOperator> this_type;
-    typedef observable<T, SourceOperator> base_type;
-    typedef rxu::decay_t<SourceOperator> source_operator_type;
+    using this_type = connectable_observable<T, SourceOperator>;
+    using base_type = observable<T, SourceOperator>;
+    using source_operator_type = rxu::decay_t<SourceOperator>;
 
     static_assert(detail::has_on_connect<source_operator_type>::value, "inner must have on_connect method void(composite_subscription)");
 
 public:
-    typedef tag_connectable_observable observable_tag;
+    using observable_tag = tag_connectable_observable;
 
     connectable_observable()
     {

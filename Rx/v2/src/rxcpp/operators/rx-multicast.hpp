@@ -35,8 +35,8 @@ using multicast_invalid_t = typename multicast_invalid<AN...>::type;
 template<class T, class Observable, class Subject>
 struct multicast : public operator_base<T>
 {
-    typedef rxu::decay_t<Observable> source_type;
-    typedef rxu::decay_t<Subject> subject_type;
+    using source_type = rxu::decay_t<Observable>;
+    using subject_type = rxu::decay_t<Subject>;
 
     struct multicast_state : public std::enable_shared_from_this<multicast_state>
     {

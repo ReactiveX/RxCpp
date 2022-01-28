@@ -58,11 +58,11 @@ using window_with_time_invalid_t = typename window_with_time_invalid<AN...>::typ
 template<class T, class Duration, class Coordination>
 struct window_with_time
 {
-    typedef rxu::decay_t<T> source_value_type;
-    typedef observable<source_value_type> value_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
-    typedef typename coordination_type::coordinator_type coordinator_type;
-    typedef rxu::decay_t<Duration> duration_type;
+    using source_value_type = rxu::decay_t<T>;
+    using value_type = observable<source_value_type>;
+    using coordination_type = rxu::decay_t<Coordination>;
+    using coordinator_type = typename coordination_type::coordinator_type;
+    using duration_type = rxu::decay_t<Duration>;
 
     struct window_with_time_values
     {
@@ -86,10 +86,10 @@ struct window_with_time
     template<class Subscriber>
     struct window_with_time_observer
     {
-        typedef window_with_time_observer<Subscriber> this_type;
-        typedef rxu::decay_t<T> value_type;
-        typedef rxu::decay_t<Subscriber> dest_type;
-        typedef observer<T, this_type> observer_type;
+        using this_type = window_with_time_observer<Subscriber>;
+        using value_type = rxu::decay_t<T>;
+        using dest_type = rxu::decay_t<Subscriber>;
+        using observer_type = observer<T, this_type>;
 
         struct window_with_time_subscriber_values : public window_with_time_values
         {

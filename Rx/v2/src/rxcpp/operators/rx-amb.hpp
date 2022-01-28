@@ -64,16 +64,16 @@ struct amb
     //static_assert(is_observable<Observable>::value, "amb requires an observable");
     //static_assert(is_observable<T>::value, "amb requires an observable that contains observables");
 
-    typedef amb<T, Observable, Coordination> this_type;
+    using this_type = amb<T, Observable, Coordination>;
 
-    typedef rxu::decay_t<T> source_value_type;
-    typedef rxu::decay_t<Observable> source_type;
+    using source_value_type = rxu::decay_t<T>;
+    using source_type = rxu::decay_t<Observable>;
 
-    typedef typename source_type::source_operator_type source_operator_type;
-    typedef typename source_value_type::value_type value_type;
+    using source_operator_type = typename source_type::source_operator_type;
+    using value_type = typename source_value_type::value_type;
 
-    typedef rxu::decay_t<Coordination> coordination_type;
-    typedef typename coordination_type::coordinator_type coordinator_type;
+    using coordination_type = rxu::decay_t<Coordination>;
+    using coordinator_type = typename coordination_type::coordinator_type;
 
     struct values
     {
@@ -96,7 +96,7 @@ struct amb
     void on_subscribe(Subscriber scbr) const {
         static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
 
-        typedef Subscriber output_type;
+        using output_type = Subscriber;
 
         struct amb_state_type
             : public std::enable_shared_from_this<amb_state_type>

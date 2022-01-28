@@ -51,12 +51,12 @@ using concat_map_invalid_t = typename concat_map_invalid<AN...>::type;
 
 template<class Observable, class CollectionSelector, class ResultSelector, class Coordination>
 struct concat_traits {
-    typedef rxu::decay_t<Observable> source_type;
-    typedef rxu::decay_t<CollectionSelector> collection_selector_type;
-    typedef rxu::decay_t<ResultSelector> result_selector_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
+    using source_type = rxu::decay_t<Observable>;
+    using collection_selector_type = rxu::decay_t<CollectionSelector>;
+    using result_selector_type = rxu::decay_t<ResultSelector>;
+    using coordination_type = rxu::decay_t<Coordination>;
 
-    typedef typename source_type::value_type source_value_type;
+    using source_value_type = typename source_type::value_type;
 
     struct tag_not_valid {};
     template<class CV, class CCS>
@@ -72,7 +72,7 @@ struct concat_traits {
     static_assert(is_observable<collection_type>::value, "concat_map CollectionSelector must return an observable");
 //#endif
 
-    typedef typename collection_type::value_type collection_value_type;
+    using collection_value_type = typename collection_type::value_type;
 
     template<class CV, class CCV, class CRS>
     static auto result_check(int) -> decltype((std::declval<CRS>())(std::declval<CV>(), std::declval<CCV>()));
@@ -88,19 +88,19 @@ template<class Observable, class CollectionSelector, class ResultSelector, class
 struct concat_map
     : public operator_base<rxu::value_type_t<concat_traits<Observable, CollectionSelector, ResultSelector, Coordination>>>
 {
-    typedef concat_map<Observable, CollectionSelector, ResultSelector, Coordination> this_type;
-    typedef concat_traits<Observable, CollectionSelector, ResultSelector, Coordination> traits;
+    using this_type = concat_map<Observable, CollectionSelector, ResultSelector, Coordination>;
+    using traits = concat_traits<Observable, CollectionSelector, ResultSelector, Coordination>;
 
-    typedef typename traits::source_type source_type;
-    typedef typename traits::collection_selector_type collection_selector_type;
-    typedef typename traits::result_selector_type result_selector_type;
+    using source_type = typename traits::source_type;
+    using collection_selector_type = typename traits::collection_selector_type;
+    using result_selector_type = typename traits::result_selector_type;
 
-    typedef typename traits::source_value_type source_value_type;
-    typedef typename traits::collection_type collection_type;
-    typedef typename traits::collection_value_type collection_value_type;
+    using source_value_type = typename traits::source_value_type;
+    using collection_type = typename traits::collection_type;
+    using collection_value_type = typename traits::collection_value_type;
 
-    typedef typename traits::coordination_type coordination_type;
-    typedef typename coordination_type::coordinator_type coordinator_type;
+    using coordination_type = typename traits::coordination_type;
+    using coordinator_type = typename coordination_type::coordinator_type;
 
     struct values
     {
@@ -129,7 +129,7 @@ struct concat_map
     void on_subscribe(Subscriber scbr) const {
         static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
 
-        typedef Subscriber output_type;
+        using output_type = Subscriber;
 
         struct concat_map_state_type
             : public std::enable_shared_from_this<concat_map_state_type>

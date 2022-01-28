@@ -42,8 +42,8 @@ using skip_invalid_t = typename skip_invalid<AN...>::type;
 template<class T, class Observable, class Count>
 struct skip : public operator_base<T>
 {
-    typedef rxu::decay_t<Observable> source_type;
-    typedef rxu::decay_t<Count> count_type;
+    using source_type = rxu::decay_t<Observable>;
+    using count_type = rxu::decay_t<Count>;
     struct values
     {
         values(source_type s, count_type t)
@@ -74,7 +74,7 @@ struct skip : public operator_base<T>
     template<class Subscriber>
     void on_subscribe(const Subscriber& s) const {
 
-        typedef Subscriber output_type;
+        using output_type = Subscriber;
         struct state_type
             : public std::enable_shared_from_this<state_type>
             , public values

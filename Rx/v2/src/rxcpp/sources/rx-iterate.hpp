@@ -38,7 +38,7 @@ namespace detail {
 template<class Collection>
 struct is_iterable
 {
-    typedef rxu::decay_t<Collection> collection_type;
+    using collection_type = rxu::decay_t<Collection>;
 
     struct not_void {};
     template<class CC>
@@ -96,7 +96,7 @@ struct iterate : public source_base<rxu::value_type_t<iterate_traits<Collection>
     void on_subscribe(Subscriber o) const {
         static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
 
-        typedef typename coordinator_type::template get<Subscriber>::type output_type;
+        using output_type = typename coordinator_type::template get<Subscriber>::type;
 
         struct iterate_state_type
             : public iterate_initial_type

@@ -15,8 +15,8 @@ template<class T>
 struct test_subject_base
     : public std::enable_shared_from_this<test_subject_base<T>>
 {
-    typedef rxn::recorded<typename rxn::notification<T>::type> recorded_type;
-    typedef std::shared_ptr<test_subject_base<T>> type;
+    using recorded_type = rxn::recorded<typename rxn::notification<T>::type>;
+    using type = std::shared_ptr<test_subject_base<T>>;
 
     virtual ~test_subject_base() {}
     virtual void on_subscribe(subscriber<T>) const =0;
@@ -53,12 +53,12 @@ template<class T>
 class testable_observer
     : public observer<T>
 {
-    typedef observer<T> observer_base;
-    typedef typename detail::test_subject_base<T>::type test_subject;
+    using observer_base = observer<T>;
+    using test_subject = typename detail::test_subject_base<T>::type;
     test_subject ts;
 
 public:
-    typedef typename detail::test_subject_base<T>::recorded_type recorded_type;
+    using recorded_type = typename detail::test_subject_base<T>::recorded_type;
 
     testable_observer(test_subject ts, observer_base ob)
         : observer_base(std::move(ob))
@@ -83,14 +83,14 @@ template<class T>
 class testable_observable
     : public observable<T, typename detail::test_source<T>>
 {
-    typedef observable<T, typename detail::test_source<T>> observable_base;
-    typedef typename detail::test_subject_base<T>::type test_subject;
+    using observable_base = observable<T, typename detail::test_source<T>>;
+    using test_subject = typename detail::test_subject_base<T>::type;
     test_subject ts;
 
     //typedef tag_test_observable observable_tag;
 
 public:
-    typedef typename detail::test_subject_base<T>::recorded_type recorded_type;
+    using recorded_type = typename detail::test_subject_base<T>::recorded_type;
 
     explicit testable_observable(test_subject ts)
         : observable_base(detail::test_source<T>(ts))

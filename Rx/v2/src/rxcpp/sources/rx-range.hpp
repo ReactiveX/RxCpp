@@ -39,8 +39,8 @@ namespace detail {
 template<class T, class Coordination>
 struct range : public source_base<T>
 {
-    typedef rxu::decay_t<Coordination> coordination_type;
-    typedef typename coordination_type::coordinator_type coordinator_type;
+    using coordination_type = rxu::decay_t<Coordination>;
+    using coordinator_type = typename coordination_type::coordinator_type;
 
     struct range_state_type
     {

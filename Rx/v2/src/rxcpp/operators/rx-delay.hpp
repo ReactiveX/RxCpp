@@ -43,10 +43,10 @@ using delay_invalid_t = typename delay_invalid<AN...>::type;
 template<class T, class Duration, class Coordination>
 struct delay
 {
-    typedef rxu::decay_t<T> source_value_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
-    typedef typename coordination_type::coordinator_type coordinator_type;
-    typedef rxu::decay_t<Duration> duration_type;
+    using source_value_type = rxu::decay_t<T>;
+    using coordination_type = rxu::decay_t<Coordination>;
+    using coordinator_type = typename coordination_type::coordinator_type;
+    using duration_type = rxu::decay_t<Duration>;
 
     struct delay_values
     {
@@ -68,10 +68,10 @@ struct delay
     template<class Subscriber>
     struct delay_observer
     {
-        typedef delay_observer<Subscriber> this_type;
-        typedef rxu::decay_t<T> value_type;
-        typedef rxu::decay_t<Subscriber> dest_type;
-        typedef observer<T, this_type> observer_type;
+        using this_type = delay_observer<Subscriber>;
+        using value_type = rxu::decay_t<T>;
+        using dest_type = rxu::decay_t<Subscriber>;
+        using observer_type = observer<T, this_type>;
 
         struct delay_subscriber_values : public delay_values
         {

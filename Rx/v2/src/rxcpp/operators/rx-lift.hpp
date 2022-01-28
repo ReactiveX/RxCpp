@@ -50,19 +50,19 @@ namespace detail {
 template<class ResultType, class SourceOperator, class Operator>
 struct lift_traits
 {
-    typedef rxu::decay_t<ResultType> result_value_type;
-    typedef rxu::decay_t<SourceOperator> source_operator_type;
-    typedef rxu::decay_t<Operator> operator_type;
+    using result_value_type = rxu::decay_t<ResultType>;
+    using source_operator_type = rxu::decay_t<SourceOperator>;
+    using operator_type = rxu::decay_t<Operator>;
 
-    typedef typename source_operator_type::value_type source_value_type;
+    using source_value_type = typename source_operator_type::value_type;
 };
 
 template<class ResultType, class SourceOperator, class Operator>
 struct lift_operator : public operator_base<typename lift_traits<ResultType, SourceOperator, Operator>::result_value_type>
 {
-    typedef lift_traits<ResultType, SourceOperator, Operator> traits;
-    typedef typename traits::source_operator_type source_operator_type;
-    typedef typename traits::operator_type operator_type;
+    using traits = lift_traits<ResultType, SourceOperator, Operator>;
+    using source_operator_type = typename traits::source_operator_type;
+    using operator_type = typename traits::operator_type;
     source_operator_type source;
     operator_type chain;
 
@@ -83,7 +83,7 @@ struct lift_operator : public operator_base<typename lift_traits<ResultType, Sou
 template<class ResultType, class Operator>
 class lift_factory
 {
-    typedef rxu::decay_t<Operator> operator_type;
+    using operator_type = rxu::decay_t<Operator>;
     operator_type chain;
 public:
     lift_factory(operator_type op) : chain(std::move(op)) {}

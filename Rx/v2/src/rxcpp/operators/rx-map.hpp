@@ -41,8 +41,8 @@ using map_invalid_t = typename map_invalid<AN...>::type;
 template<class T, class Selector>
 struct map
 {
-    typedef rxu::decay_t<T> source_value_type;
-    typedef rxu::decay_t<Selector> select_type;
+    using source_value_type = rxu::decay_t<T>;
+    using select_type = rxu::decay_t<Selector>;
     using value_type = decltype(std::declval<select_type>()(std::declval<source_value_type>()));
     select_type selector;
 
@@ -54,10 +54,10 @@ struct map
     template<class Subscriber>
     struct map_observer
     {
-        typedef map_observer<Subscriber> this_type;
+        using this_type = map_observer<Subscriber>;
         using value_type = decltype(std::declval<select_type>()(std::declval<source_value_type>()));
-        typedef rxu::decay_t<Subscriber> dest_type;
-        typedef observer<source_value_type, this_type> observer_type;
+        using dest_type = rxu::decay_t<Subscriber>;
+        using observer_type = observer<source_value_type, this_type>;
         dest_type dest;
         mutable select_type selector;
 

@@ -143,8 +143,8 @@ struct defer_observable;
 struct tag_observable {};
 template<class T>
 struct observable_base {
-    typedef tag_observable observable_tag;
-    typedef T value_type;
+    using observable_tag = tag_observable;
+    using value_type = T;
 };
 
 namespace detail {
@@ -298,9 +298,9 @@ struct identity_for
 template<class T, class Seed, class Accumulator>
 struct is_accumulate_function_for {
 
-    typedef rxu::decay_t<Accumulator> accumulator_type;
-    typedef rxu::decay_t<Seed> seed_type;
-    typedef T source_value_type;
+    using accumulator_type = rxu::decay_t<Accumulator>;
+    using seed_type = rxu::decay_t<Seed>;
+    using source_value_type = T;
 
     struct tag_not_valid {};
     template<class CS, class CV, class CRS>
@@ -308,7 +308,7 @@ struct is_accumulate_function_for {
     template<class CS, class CV, class CRS>
     static tag_not_valid check(...);
 
-    typedef decltype(check<seed_type, source_value_type, accumulator_type>(0)) type;
+    using type = decltype(check<seed_type, source_value_type, accumulator_type>(0));
     static const bool value = std::is_same<type, seed_type>::value;
 };
 

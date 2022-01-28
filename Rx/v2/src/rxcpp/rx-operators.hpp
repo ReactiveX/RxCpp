@@ -15,8 +15,8 @@ struct tag_operator {};
 template<class T>
 struct operator_base
 {
-    typedef T value_type;
-    typedef tag_operator operator_tag;
+    using value_type = T;
+    using operator_tag = tag_operator;
 };
 
 namespace detail {

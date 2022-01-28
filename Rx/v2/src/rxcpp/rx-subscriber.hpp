@@ -12,7 +12,7 @@ namespace rxcpp {
 template<class T>
 struct subscriber_base : public observer_base<T>, public subscription_base
 {
-    typedef tag_subscriber subscriber_tag;
+    using subscriber_tag = tag_subscriber;
 };
 
 /*!
@@ -26,8 +26,8 @@ class subscriber : public subscriber_base<T>
 {
     static_assert(!is_subscriber<Observer>::value, "not allowed to nest subscribers");
     static_assert(is_observer<Observer>::value, "subscriber must contain an observer<T, ...>");
-    typedef subscriber<T, Observer> this_type;
-    typedef rxu::decay_t<Observer> observer_type;
+    using this_type = subscriber<T, Observer>;
+    using observer_type = rxu::decay_t<Observer>;
 
     composite_subscription lifetime;
     observer_type destination;
@@ -102,7 +102,7 @@ class subscriber : public subscriber_base<T>
 
     subscriber();
 public:
-    typedef typename composite_subscription::weak_subscription weak_subscription;
+    using weak_subscription = typename composite_subscription::weak_subscription;
 
     subscriber(const this_type& o)
         : lifetime(o.lifetime)

@@ -13,8 +13,8 @@ namespace rxcpp {
 template<class T>
 struct observer_base
 {
-    typedef T value_type;
-    typedef tag_observer observer_tag;
+    using value_type = T;
+    using observer_tag = tag_observer;
 };
 
 namespace detail {
@@ -120,7 +120,7 @@ struct is_on_next_of
     template<class CT, class CF>
     static not_void check(...);
 
-    typedef decltype(check<T, rxu::decay_t<F>>(0)) detail_result;
+    using detail_result = decltype(check<T, rxu::decay_t < F>>(0));
     static const bool value = std::is_same<detail_result, void>::value;
 };
 
@@ -391,7 +391,7 @@ template<class T>
 class observer<T, void, void, void, void> : public observer_base<T>
 {
 public:
-    typedef tag_dynamic_observer dynamic_observer_tag;
+    using dynamic_observer_tag = tag_dynamic_observer;
 
 private:
     using this_type = observer<T, void, void, void, void>;
@@ -628,8 +628,8 @@ template<class F>
 struct maybe_from_result
 {
     using decl_result_type = decltype(std::declval<F>()());
-    typedef rxu::decay_t<decl_result_type> result_type;
-    typedef rxu::maybe<result_type> type;
+    using result_type = rxu::decay_t<decl_result_type>;
+    using type = rxu::maybe<result_type>;
 };
 
 }

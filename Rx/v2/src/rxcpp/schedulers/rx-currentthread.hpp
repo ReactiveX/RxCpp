@@ -15,13 +15,13 @@ namespace detail {
 
 struct action_queue
 {
-    typedef action_queue this_type;
+    using this_type = action_queue;
 
-    typedef scheduler_base::clock_type clock;
-    typedef time_schedulable<clock::time_point> item_type;
+    using clock = scheduler_base::clock_type;
+    using item_type = time_schedulable<clock::time_point>;
 
 private:
-    typedef schedulable_queue<item_type::time_point_type> queue_item_time;
+    using queue_item_time = schedulable_queue<item_type::time_point_type>;
 
 public:
     struct current_thread_queue_type {
@@ -131,15 +131,15 @@ public:
 struct current_thread : public scheduler_interface
 {
 private:
-    typedef current_thread this_type;
+    using this_type = current_thread;
     current_thread(const this_type&);
 
-    typedef detail::action_queue queue_type;
+    using queue_type = detail::action_queue;
 
     struct derecurser : public worker_interface
     {
     private:
-        typedef current_thread this_type;
+        using this_type = current_thread;
         derecurser(const this_type&);
     public:
         derecurser()
@@ -165,7 +165,7 @@ private:
     struct current_worker : public worker_interface
     {
     private:
-        typedef current_thread this_type;
+        using this_type = current_thread;
         current_worker(const this_type&);
     public:
         current_worker()

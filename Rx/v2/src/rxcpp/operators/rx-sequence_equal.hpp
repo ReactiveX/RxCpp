@@ -45,13 +45,13 @@ using sequence_equal_invalid_t = typename sequence_equal_invalid<AN...>::type;
 template<class T, class Observable, class OtherObservable, class BinaryPredicate, class Coordination>
 struct sequence_equal : public operator_base<bool>
 {
-    typedef rxu::decay_t<Observable> source_type;
-    typedef rxu::decay_t<T> source_value_type;
-    typedef rxu::decay_t<OtherObservable> other_source_type;
-    typedef typename other_source_type::value_type other_source_value_type;
-    typedef rxu::decay_t<BinaryPredicate> predicate_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
-    typedef typename coordination_type::coordinator_type coordinator_type;
+    using source_type = rxu::decay_t<Observable>;
+    using source_value_type = rxu::decay_t<T>;
+    using other_source_type = rxu::decay_t<OtherObservable>;
+    using other_source_value_type = typename other_source_type::value_type;
+    using predicate_type = rxu::decay_t<BinaryPredicate>;
+    using coordination_type = rxu::decay_t<Coordination>;
+    using coordinator_type = typename coordination_type::coordinator_type;
 
     struct values {
         values(source_type s, other_source_type t, predicate_type pred, coordination_type sf)
@@ -78,7 +78,7 @@ struct sequence_equal : public operator_base<bool>
     template<class Subscriber>
     void on_subscribe(Subscriber s) const {
 
-        typedef Subscriber output_type;
+        using output_type = Subscriber;
 
         struct state_type
             : public std::enable_shared_from_this<state_type>

@@ -26,7 +26,7 @@ struct has_on_subscribe_for
     template<class CS, class CT>
     static not_void check(...);
 
-    typedef decltype(check<rxu::decay_t<Subscriber>, T>(0)) detail_result;
+    using detail_result = decltype(check<rxu::decay_t < Subscriber>, T > (0));
     static const bool value = std::is_same<detail_result, void>::value;
 };
 
@@ -39,7 +39,7 @@ class dynamic_observable
     struct state_type
         : public std::enable_shared_from_this<state_type>
     {
-        typedef std::function<void(subscriber<T>)> onsubscribe_type;
+        using onsubscribe_type = std::function<void(subscriber < T > )>;
 
         onsubscribe_type on_subscribe;
     };
@@ -64,7 +64,7 @@ class dynamic_observable
 
 public:
 
-    typedef tag_dynamic_observable dynamic_observable_tag;
+    using dynamic_observable_tag = tag_dynamic_observable;
 
     dynamic_observable()
     {
@@ -110,10 +110,10 @@ struct resolve_observable;
 template<class Default, class SO>
 struct resolve_observable<true, Default, SO>
 {
-    typedef typename SO::type type;
-    typedef typename type::value_type value_type;
+    using type = typename SO::type;
+    using value_type = typename type::value_type;
     static const bool value = true;
-    typedef observable<value_type, type> observable_type;
+    using observable_type = observable<value_type, type>;
     template<class... AN>
     static observable_type make(const Default&, AN&&... an) {
         return observable_type(type(std::forward<AN>(an)...));
@@ -123,7 +123,7 @@ template<class Default, class SO>
 struct resolve_observable<false, Default, SO>
 {
     static const bool value = false;
-    typedef Default observable_type;
+    using observable_type = Default;
     template<class... AN>
     static observable_type make(const observable_type& that, const AN&...) {
         return that;
@@ -132,10 +132,10 @@ struct resolve_observable<false, Default, SO>
 template<class SO>
 struct resolve_observable<true, void, SO>
 {
-    typedef typename SO::type type;
-    typedef typename type::value_type value_type;
+    using type = typename SO::type;
+    using value_type = typename type::value_type;
     static const bool value = true;
-    typedef observable<value_type, type> observable_type;
+    using observable_type = observable<value_type, type>;
     template<class... AN>
     static observable_type make(AN&&... an) {
         return observable_type(type(std::forward<AN>(an)...));
@@ -145,7 +145,7 @@ template<class SO>
 struct resolve_observable<false, void, SO>
 {
     static const bool value = false;
-    typedef void observable_type;
+    using observable_type = void;
     template<class... AN>
     static observable_type make(const AN&...) {
     }
@@ -212,7 +212,7 @@ class blocking_observable
     }
 
 public:
-    typedef rxu::decay_t<Observable> observable_type;
+    using observable_type = rxu::decay_t<Observable>;
     observable_type source;
     ~blocking_observable()
     {
@@ -480,10 +480,10 @@ class observable
 {
     static_assert(std::is_same<T, typename SourceOperator::value_type>::value, "SourceOperator::value_type must be the same as T in observable<T, SourceOperator>");
 
-    typedef observable<T, SourceOperator> this_type;
+    using this_type = observable<T, SourceOperator>;
 
 public:
-    typedef rxu::decay_t<SourceOperator> source_operator_type;
+    using source_operator_type = rxu::decay_t<SourceOperator>;
     mutable source_operator_type source_operator;
 
 private:
@@ -498,7 +498,7 @@ private:
     auto detail_subscribe(Subscriber o) const
         -> composite_subscription {
 
-        typedef rxu::decay_t<Subscriber> subscriber_type;
+        using subscriber_type = rxu::decay_t<Subscriber>;
 
         static_assert(is_subscriber<subscriber_type>::value, "subscribe must be passed a subscriber");
         static_assert(std::is_same<typename source_operator_type::value_type, T>::value && std::is_convertible<T*, typename subscriber_type::value_type*>::value, "the value types in the sequence must match or be convertible");
@@ -527,7 +527,7 @@ private:
     }
 
 public:
-    typedef T value_type;
+    using value_type = T;
 
     static_assert(rxo::is_operator<source_operator_type>::value || rxs::is_source<source_operator_type>::value, "observable must wrap an operator or source");
 

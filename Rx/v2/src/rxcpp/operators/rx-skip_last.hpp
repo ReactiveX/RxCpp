@@ -41,11 +41,11 @@ using skip_last_invalid_t = typename skip_last_invalid<AN...>::type;
 template<class T, class Observable, class Count>
 struct skip_last : public operator_base<T>
 {
-    typedef rxu::decay_t<Observable> source_type;
-    typedef rxu::decay_t<Count> count_type;
+    using source_type = rxu::decay_t<Observable>;
+    using count_type = rxu::decay_t<Count>;
 
-    typedef std::queue<T> queue_type;
-    typedef typename queue_type::size_type queue_size_type;
+    using queue_type = std::queue<T>;
+    using queue_size_type = typename queue_type::size_type;
 
     struct values
     {
@@ -67,7 +67,7 @@ struct skip_last : public operator_base<T>
     template<class Subscriber>
     void on_subscribe(const Subscriber& s) const {
 
-        typedef Subscriber output_type;
+        using output_type = Subscriber;
         struct state_type
             : public std::enable_shared_from_this<state_type>
             , public values

@@ -49,7 +49,7 @@ using window_toggle_invalid_t = typename window_toggle_invalid<AN...>::type;
 template<class T, class Openings, class ClosingSelector, class Coordination>
 struct window_toggle
 {
-    typedef window_toggle<T, Openings, ClosingSelector, Coordination> this_type;
+    using this_type = window_toggle<T, Openings, ClosingSelector, Coordination>;
 
     using source_value_type = rxu::decay_t<T>;
     using coordination_type = rxu::decay_t<Coordination>;
@@ -82,10 +82,10 @@ struct window_toggle
     template<class Subscriber>
     struct window_toggle_observer
     {
-        typedef window_toggle_observer<Subscriber> this_type;
-        typedef rxu::decay_t<T> value_type;
-        typedef rxu::decay_t<Subscriber> dest_type;
-        typedef observer<T, this_type> observer_type;
+        using this_type = window_toggle_observer<Subscriber>;
+        using value_type = rxu::decay_t<T>;
+        using dest_type = rxu::decay_t<Subscriber>;
+        using observer_type = observer<T, this_type>;
 
         struct window_toggle_subscriber_values : public window_toggle_values
         {

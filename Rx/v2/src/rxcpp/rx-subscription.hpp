@@ -26,7 +26,7 @@ struct is_unsubscribe_function
 }
 
 struct tag_subscription {};
-struct subscription_base {typedef tag_subscription subscription_tag;};
+struct subscription_base { using subscription_tag = tag_subscription; };
 template<class T>
 class is_subscription
 {
@@ -41,7 +41,7 @@ public:
 template<class Unsubscribe>
 class static_subscription
 {
-    typedef rxu::decay_t<Unsubscribe> unsubscribe_call_type;
+    using unsubscribe_call_type = rxu::decay_t<Unsubscribe>;
     unsubscribe_call_type unsubscribe_call;
     static_subscription()
     {
@@ -81,13 +81,13 @@ class subscription : public subscription_base
         std::atomic<bool> issubscribed;
     };
 public:
-    typedef std::weak_ptr<base_subscription_state> weak_state_type;
+    using weak_state_type = std::weak_ptr<base_subscription_state>;
 
 private:
     template<class I>
     struct subscription_state : public base_subscription_state
     {
-        typedef rxu::decay_t<I> inner_t;
+        using inner_t = rxu::decay_t<I>;
         subscription_state(inner_t i)
             : base_subscription_state(true)
             , inner(std::move(i))
@@ -242,7 +242,7 @@ struct tag_composite_subscription_empty {};
 class composite_subscription_inner
 {
 private:
-    typedef subscription::weak_state_type weak_subscription;
+    using weak_subscription = subscription::weak_state_type;
     struct composite_subscription_state : public std::enable_shared_from_this<composite_subscription_state>
     {
         // invariant: cannot access this data without the lock held.
@@ -381,7 +381,7 @@ private:
     };
 
 public:
-    typedef std::shared_ptr<composite_subscription_state> shared_state_type;
+    using shared_state_type = std::shared_ptr<composite_subscription_state>;
 
 protected:
     mutable shared_state_type state;
@@ -460,9 +460,9 @@ class composite_subscription
     : protected detail::composite_subscription_inner
     , public subscription
 {
-    typedef detail::composite_subscription_inner inner_type;
+    using inner_type = detail::composite_subscription_inner;
 public:
-    typedef subscription::weak_state_type weak_subscription;
+    using weak_subscription = subscription::weak_state_type;
 
     composite_subscription(detail::tag_composite_subscription_empty et)
         : inner_type(et)
@@ -555,7 +555,7 @@ template<class T>
 class resource : public subscription_base
 {
 public:
-    typedef typename composite_subscription::weak_subscription weak_subscription;
+    using weak_subscription = typename composite_subscription::weak_subscription;
 
     resource()
         : lifetime(composite_subscription())

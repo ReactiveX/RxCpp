@@ -93,7 +93,7 @@ using zip_invalid_t = typename zip_invalid<AN...>::type;
 
 template<class Selector, class... ObservableN>
 struct is_zip_selector_check {
-    typedef rxu::decay_t<Selector> selector_type;
+    using selector_type = rxu::decay_t<Selector>;
 
     struct tag_not_valid;
     template<class CS, class... CON>
@@ -123,29 +123,29 @@ using result_zip_selector_t = typename is_zip_selector<Selector, ON...>::type;
 
 template<class Coordination, class Selector, class... ObservableN>
 struct zip_traits {
-    typedef std::tuple<rxu::decay_t<ObservableN>...> tuple_source_type;
-    typedef std::tuple<zip_source_state<ObservableN>...> tuple_source_values_type;
+    using tuple_source_type = std::tuple<rxu::decay_t < ObservableN>...>;
+    using tuple_source_values_type = std::tuple<zip_source_state<ObservableN>...>;
 
-    typedef rxu::decay_t<Selector> selector_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
+    using selector_type = rxu::decay_t<Selector>;
+    using coordination_type = rxu::decay_t<Coordination>;
 
-    typedef typename is_zip_selector<selector_type, ObservableN...>::type value_type;
+    using value_type = typename is_zip_selector<selector_type, ObservableN...>::type;
 };
 
 template<class Coordination, class Selector, class... ObservableN>
 struct zip : public operator_base<rxu::value_type_t<zip_traits<Coordination, Selector, ObservableN...>>>
 {
-    typedef zip<Coordination, Selector, ObservableN...> this_type;
+    using this_type = zip<Coordination, Selector, ObservableN...>;
 
-    typedef zip_traits<Coordination, Selector, ObservableN...> traits;
+    using traits = zip_traits<Coordination, Selector, ObservableN...>;
 
-    typedef typename traits::tuple_source_type tuple_source_type;
-    typedef typename traits::tuple_source_values_type tuple_source_values_type;
+    using tuple_source_type = typename traits::tuple_source_type;
+    using tuple_source_values_type = typename traits::tuple_source_values_type;
 
-    typedef typename traits::selector_type selector_type;
+    using selector_type = typename traits::selector_type;
 
-    typedef typename traits::coordination_type coordination_type;
-    typedef typename coordination_type::coordinator_type coordinator_type;
+    using coordination_type = typename traits::coordination_type;
+    using coordinator_type = typename coordination_type::coordinator_type;
 
     struct values
     {
@@ -169,7 +169,7 @@ struct zip : public operator_base<rxu::value_type_t<zip_traits<Coordination, Sel
     template<int Index, class State>
     void subscribe_one(std::shared_ptr<State> state) const {
 
-        typedef typename std::tuple_element<Index, tuple_source_type>::type::value_type source_value_type;
+        using source_value_type = typename std::tuple_element<Index, tuple_source_type>::type::value_type;
 
         composite_subscription innercs;
 
@@ -232,7 +232,7 @@ struct zip : public operator_base<rxu::value_type_t<zip_traits<Coordination, Sel
     void on_subscribe(Subscriber scbr) const {
         static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
 
-        typedef Subscriber output_type;
+        using output_type = Subscriber;
 
         struct zip_state_type
             : public std::enable_shared_from_this<zip_state_type>

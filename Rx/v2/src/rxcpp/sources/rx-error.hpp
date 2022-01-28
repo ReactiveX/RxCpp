@@ -38,11 +38,11 @@ namespace detail {
 template<class T, class Coordination>
 struct error : public source_base<T>
 {
-    typedef error<T, Coordination> this_type;
+    using this_type = error<T, Coordination>;
 
-    typedef rxu::decay_t<Coordination> coordination_type;
+    using coordination_type = rxu::decay_t<Coordination>;
 
-    typedef typename coordination_type::coordinator_type coordinator_type;
+    using coordinator_type = typename coordination_type::coordinator_type;
 
     struct error_initial_type
     {
