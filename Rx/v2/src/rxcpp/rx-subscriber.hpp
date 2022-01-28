@@ -124,8 +124,8 @@ public:
     subscriber(
         const subscriber<T, O>& o,
         typename std::enable_if<
-               !std::is_same<O, observer<T>>::value &&
-               std::is_same<Observer, observer<T>>::value, void**>::type = nullptr)
+               !std::is_same_v<O, observer<T>> &&
+               std::is_same_v<Observer, observer<T>>, void**>::type = nullptr)
         : lifetime(o.lifetime)
         , destination(o.destination.as_dynamic())
         , id(o.id)

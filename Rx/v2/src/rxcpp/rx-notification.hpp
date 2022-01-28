@@ -230,7 +230,7 @@ public:
     template<typename Exception>
     static type on_error(Exception&& e) {
         return make_on_error(typename std::conditional<
-            std::is_same<rxu::decay_t<Exception>, rxu::error_ptr>::value,
+            std::is_same_v<rxu::decay_t<Exception>, rxu::error_ptr>,
                 exception_ptr_tag, exception_tag>::type(),
             std::forward<Exception>(e));
     }

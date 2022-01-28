@@ -202,7 +202,7 @@ template<class T>
 class dynamic_connectable_observable;
 
 template<class T,
-    class SourceObservable = typename std::conditional<std::is_same<T, void>::value,
+    class SourceObservable = typename std::conditional<std::is_same_v<T, void>,
         void, dynamic_connectable_observable<T>>::type>
 class connectable_observable;
 
@@ -236,7 +236,7 @@ template<class K, class T>
 class dynamic_grouped_observable;
 
 template<class K, class T,
-    class SourceObservable = typename std::conditional<std::is_same<T, void>::value,
+    class SourceObservable = typename std::conditional<std::is_same_v<T, void>,
         void, dynamic_grouped_observable<K, T>>::type>
 class grouped_observable;
 
@@ -270,7 +270,7 @@ struct is_operator_factory_for {
 
     using type = decltype(check<function_type, source_type>(0));
 
-    static const bool value = !std::is_same<type, tag_not_valid>::value && is_observable<source_type>::value;
+    static const bool value = !std::is_same_v<type, tag_not_valid> && is_observable<source_type>::value;
 };
 
 //
@@ -309,7 +309,7 @@ struct is_accumulate_function_for {
     static tag_not_valid check(...);
 
     using type = decltype(check<seed_type, source_value_type, accumulator_type>(0));
-    static const bool value = std::is_same<type, seed_type>::value;
+    static const bool value = std::is_same_v<type, seed_type>;
 };
 
 }

@@ -14,7 +14,7 @@ class dynamic_observable;
 
 template<
     class T = void,
-    class SourceObservable = typename std::conditional<std::is_same<T, void>::value,
+    class SourceObservable = typename std::conditional<std::is_same_v<T, void>,
         void, dynamic_observable<T>>::type>
 class observable;
 

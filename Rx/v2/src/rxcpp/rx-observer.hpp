@@ -121,7 +121,7 @@ struct is_on_next_of
     static not_void check(...);
 
     using detail_result = decltype(check<T, rxu::decay_t < F>>(0));
-    static const bool value = std::is_same<detail_result, void>::value;
+    static const bool value = std::is_same_v<detail_result, void>;
 };
 
 template<class F>
@@ -145,7 +145,7 @@ struct is_on_error_for
     template<class CF>
     static not_void check(...);
 
-    static const bool value = std::is_same<decltype(check<rxu::decay_t<F>>(0)), void>::value;
+    static const bool value = std::is_same_v<decltype(check<rxu::decay_t<F>>(0)), void>;
 };
 
 template<class F>
@@ -157,7 +157,7 @@ struct is_on_completed
     template<class CF>
     static not_void check(...);
 
-    static const bool value = std::is_same<decltype(check<rxu::decay_t<F>>(0)), void>::value;
+    static const bool value = std::is_same_v<decltype(check<rxu::decay_t<F>>(0)), void>;
 };
 
 }
@@ -182,15 +182,15 @@ public:
     using this_type = observer<T, State, OnNext, OnError, OnCompleted>;
     using state_t = rxu::decay_t<State>;
     using on_next_t = typename std::conditional<
-        !std::is_same<void, OnNext>::value,
+        !std::is_same_v<void, OnNext>,
         rxu::decay_t<OnNext>,
         detail::OnNextForward<T, State, OnNext>>::type;
     using on_error_t = typename std::conditional<
-        !std::is_same<void, OnError>::value,
+        !std::is_same_v<void, OnError>,
         rxu::decay_t<OnError>,
         detail::OnErrorForward<State, OnError>>::type;
     using on_completed_t = typename std::conditional<
-        !std::is_same<void, OnCompleted>::value,
+        !std::is_same_v<void, OnCompleted>,
         rxu::decay_t<OnCompleted>,
         detail::OnCompletedForward<State, OnCompleted>>::type;
 
@@ -271,15 +271,15 @@ class observer<T, detail::stateless_observer_tag, OnNext, OnError, OnCompleted> 
 public:
     using this_type = observer<T, detail::stateless_observer_tag, OnNext, OnError, OnCompleted>;
     using on_next_t = typename std::conditional<
-        !std::is_same<void, OnNext>::value,
+        !std::is_same_v<void, OnNext>,
         rxu::decay_t<OnNext>,
         detail::OnNextEmpty<T>>::type;
     using on_error_t = typename std::conditional<
-        !std::is_same<void, OnError>::value,
+        !std::is_same_v<void, OnError>,
         rxu::decay_t<OnError>,
         detail::OnErrorEmpty>::type;
     using on_completed_t = typename std::conditional<
-        !std::is_same<void, OnCompleted>::value,
+        !std::is_same_v<void, OnCompleted>,
         rxu::decay_t<OnCompleted>,
         detail::OnCompletedEmpty>::type;
 
