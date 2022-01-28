@@ -74,9 +74,9 @@ public:
     template<class T>
     struct get
     {
-        using type = typename std::conditional<rxsc::detail::is_action_function<T>::value, get_action_function<T>,
-                typename std::conditional<is_observable<T>::value, get_observable<T>,
-                        typename std::conditional<is_subscriber<T>::value, get_subscriber<T>, not_supported>::type>::type>::type::type;
+        using type = typename std::conditional_t<rxsc::detail::is_action_function<T>::value, get_action_function<T>,
+                typename std::conditional_t<is_observable<T>::value, get_observable<T>,
+                        typename std::conditional_t<is_subscriber<T>::value, get_subscriber<T>, not_supported>>>::type;
     };
 
     coordinator(Input i) : input(i) {}

@@ -77,10 +77,10 @@ struct invalid_with_latest_from_selector {
 };
 
 template<class Selector, class... ObservableN>
-struct is_with_latest_from_selector : public std::conditional<
+struct is_with_latest_from_selector : public std::conditional_t<
     is_with_latest_from_selector_check<Selector, ObservableN...>::value, 
     is_with_latest_from_selector_check<Selector, ObservableN...>, 
-    invalid_with_latest_from_selector<Selector, ObservableN...>>::type {
+    invalid_with_latest_from_selector<Selector, ObservableN...>> {
 };
 
 template<class Selector, class... ON>

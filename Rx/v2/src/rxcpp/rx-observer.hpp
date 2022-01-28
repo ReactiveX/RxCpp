@@ -181,18 +181,9 @@ class observer : public observer_base<T>
 public:
     using this_type = observer<T, State, OnNext, OnError, OnCompleted>;
     using state_t = rxu::decay_t<State>;
-    using on_next_t = typename std::conditional<
-        !std::is_same_v<void, OnNext>,
-        rxu::decay_t<OnNext>,
-        detail::OnNextForward<T, State, OnNext>>::type;
-    using on_error_t = typename std::conditional<
-        !std::is_same_v<void, OnError>,
-        rxu::decay_t<OnError>,
-        detail::OnErrorForward<State, OnError>>::type;
-    using on_completed_t = typename std::conditional<
-        !std::is_same_v<void, OnCompleted>,
-        rxu::decay_t<OnCompleted>,
-        detail::OnCompletedForward<State, OnCompleted>>::type;
+    using on_next_t = typename std::conditional_t<!std::is_same_v<void, OnNext>, rxu::decay_t<OnNext>, detail::OnNextForward<T, State, OnNext>>;
+    using on_error_t = typename std::conditional_t<!std::is_same_v<void, OnError>, rxu::decay_t<OnError>, detail::OnErrorForward<State, OnError>>;
+    using on_completed_t = typename std::conditional_t<!std::is_same_v<void, OnCompleted>, rxu::decay_t<OnCompleted>, detail::OnCompletedForward<State, OnCompleted>>;
 
 private:
     mutable state_t state;
@@ -270,18 +261,9 @@ class observer<T, detail::stateless_observer_tag, OnNext, OnError, OnCompleted> 
 {
 public:
     using this_type = observer<T, detail::stateless_observer_tag, OnNext, OnError, OnCompleted>;
-    using on_next_t = typename std::conditional<
-        !std::is_same_v<void, OnNext>,
-        rxu::decay_t<OnNext>,
-        detail::OnNextEmpty<T>>::type;
-    using on_error_t = typename std::conditional<
-        !std::is_same_v<void, OnError>,
-        rxu::decay_t<OnError>,
-        detail::OnErrorEmpty>::type;
-    using on_completed_t = typename std::conditional<
-        !std::is_same_v<void, OnCompleted>,
-        rxu::decay_t<OnCompleted>,
-        detail::OnCompletedEmpty>::type;
+    using on_next_t = typename std::conditional_t<!std::is_same_v<void, OnNext>, rxu::decay_t<OnNext>, detail::OnNextEmpty<T>>;
+    using on_error_t = typename std::conditional_t<!std::is_same_v<void, OnError>, rxu::decay_t<OnError>, detail::OnErrorEmpty>;
+    using on_completed_t = typename std::conditional_t<!std::is_same_v<void, OnCompleted>, rxu::decay_t<OnCompleted>, detail::OnCompletedEmpty>;
 
 private:
     on_next_t onnext;

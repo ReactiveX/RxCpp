@@ -76,8 +76,7 @@ public:
         : dynamic_observable<T>(sof)
         , state(std::make_shared<state_type>())
     {
-        construct(std::move(sof),
-                  typename std::conditional<is_dynamic_grouped_observable<SOF>::value, tag_dynamic_grouped_observable, rxs::tag_source>::type());
+        construct(std::move(sof), typename std::conditional_t<is_dynamic_grouped_observable<SOF>::value, tag_dynamic_grouped_observable, rxs::tag_source>());
     }
 
     template<class SF, class CF>

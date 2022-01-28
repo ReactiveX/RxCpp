@@ -77,10 +77,10 @@ struct invalid_combine_latest_selector {
 };
 
 template<class Selector, class... ObservableN>
-struct is_combine_latest_selector : public std::conditional<
+struct is_combine_latest_selector : public std::conditional_t<
     is_combine_latest_selector_check<Selector, ObservableN...>::value, 
     is_combine_latest_selector_check<Selector, ObservableN...>, 
-    invalid_combine_latest_selector<Selector, ObservableN...>>::type {
+    invalid_combine_latest_selector<Selector, ObservableN...>> {
 };
 
 template<class Selector, class... ON>

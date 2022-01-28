@@ -112,10 +112,10 @@ struct invalid_zip_selector {
 };
 
 template<class Selector, class... ObservableN>
-struct is_zip_selector : public std::conditional<
+struct is_zip_selector : public std::conditional_t<
     is_zip_selector_check<Selector, ObservableN...>::value, 
     is_zip_selector_check<Selector, ObservableN...>, 
-    invalid_zip_selector<Selector, ObservableN...>>::type {
+    invalid_zip_selector<Selector, ObservableN...>> {
 };
 
 template<class Selector, class... ON>

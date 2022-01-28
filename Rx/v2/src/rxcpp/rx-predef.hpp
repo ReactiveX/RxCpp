@@ -202,8 +202,7 @@ template<class T>
 class dynamic_connectable_observable;
 
 template<class T,
-    class SourceObservable = typename std::conditional<std::is_same_v<T, void>,
-        void, dynamic_connectable_observable<T>>::type>
+    class SourceObservable = typename std::conditional_t<std::is_same_v<T, void>, void, dynamic_connectable_observable<T>>>
 class connectable_observable;
 
 struct tag_connectable_observable : public tag_observable {};
@@ -236,8 +235,7 @@ template<class K, class T>
 class dynamic_grouped_observable;
 
 template<class K, class T,
-    class SourceObservable = typename std::conditional<std::is_same_v<T, void>,
-        void, dynamic_grouped_observable<K, T>>::type>
+    class SourceObservable = typename std::conditional_t<std::is_same_v<T, void>, void, dynamic_grouped_observable<K, T>>>
 class grouped_observable;
 
 template<class K, class T, class Source>

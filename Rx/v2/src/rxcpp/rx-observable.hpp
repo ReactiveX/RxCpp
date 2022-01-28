@@ -75,7 +75,7 @@ public:
         : state(std::make_shared<state_type>())
     {
         construct(std::forward<SOF>(sof),
-                  typename std::conditional<rxs::is_source<SOF>::value || rxo::is_operator<SOF>::value, rxs::tag_source, tag_function>::type());
+                  typename std::conditional_t<rxs::is_source<SOF>::value || rxo::is_operator<SOF>::value, rxs::tag_source, tag_function>());
     }
 
     void on_subscribe(subscriber<T> o) const {
