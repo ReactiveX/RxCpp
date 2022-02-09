@@ -70,7 +70,7 @@ std::vector<T> to_vector(std::initializer_list<T> il) {
 }
 
 template<class T0, class... TN>
-typename std::enable_if<!std::is_array<T0>::value && std::is_pod<T0>::value, std::vector<T0>>::type to_vector(T0 t0, TN... tn) {
+typename std::enable_if<!std::is_array<T0>::value && std::is_trivial<T0>::value && std::is_standard_layout<T0>::value, std::vector<T0>>::type to_vector(T0 t0, TN... tn) {
     return to_vector({t0, tn...});
 }
 
