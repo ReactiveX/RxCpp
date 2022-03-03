@@ -305,13 +305,13 @@ struct member_overload<concat_map_tag>
     template<class Observable, class CollectionSelector,
         class CollectionSelectorType = rxu::decay_t<CollectionSelector>,
         class SourceValue = rxu::value_type_t<Observable>,
-        class CollectionType = rxu::result_of_t<CollectionSelectorType(SourceValue)>,
+        class CollectionType = rxu::callable_result_t<CollectionSelectorType, SourceValue>,
         class ResultSelectorType = rxu::detail::take_at<1>,
         class Enabled = rxu::enable_if_all_true_type_t<
             all_observables<Observable, CollectionType>>,
         class ConcatMap = rxo::detail::concat_map<rxu::decay_t<Observable>, rxu::decay_t<CollectionSelector>, ResultSelectorType, identity_one_worker>,
         class CollectionValueType = rxu::value_type_t<CollectionType>,
-        class Value = rxu::result_of_t<ResultSelectorType(SourceValue, CollectionValueType)>,
+        class Value = rxu::callable_result_t<ResultSelectorType, SourceValue, CollectionValueType>,
         class Result = observable<Value, ConcatMap>
     >
     static Result member(Observable&& o, CollectionSelector&& s) {
@@ -321,14 +321,14 @@ struct member_overload<concat_map_tag>
     template<class Observable, class CollectionSelector, class Coordination,
         class CollectionSelectorType = rxu::decay_t<CollectionSelector>,
         class SourceValue = rxu::value_type_t<Observable>,
-        class CollectionType = rxu::result_of_t<CollectionSelectorType(SourceValue)>,
+        class CollectionType = rxu::callable_result_t<CollectionSelectorType, SourceValue>,
         class ResultSelectorType = rxu::detail::take_at<1>,
         class Enabled = rxu::enable_if_all_true_type_t<
             all_observables<Observable, CollectionType>,
             is_coordination<Coordination>>,
         class ConcatMap = rxo::detail::concat_map<rxu::decay_t<Observable>, rxu::decay_t<CollectionSelector>, ResultSelectorType, rxu::decay_t<Coordination>>,
         class CollectionValueType = rxu::value_type_t<CollectionType>,
-        class Value = rxu::result_of_t<ResultSelectorType(SourceValue, CollectionValueType)>,
+        class Value = rxu::callable_result_t<ResultSelectorType, SourceValue, CollectionValueType>,
         class Result = observable<Value, ConcatMap>
     >
     static Result member(Observable&& o, CollectionSelector&& s, Coordination&& cn) {
@@ -339,14 +339,14 @@ struct member_overload<concat_map_tag>
         class IsCoordination = is_coordination<ResultSelector>,
         class CollectionSelectorType = rxu::decay_t<CollectionSelector>,
         class SourceValue = rxu::value_type_t<Observable>,
-        class CollectionType = rxu::result_of_t<CollectionSelectorType(SourceValue)>,
+        class CollectionType = rxu::callable_result_t<CollectionSelectorType, SourceValue>,
         class Enabled = rxu::enable_if_all_true_type_t<
             all_observables<Observable, CollectionType>,
             rxu::negation<IsCoordination>>,
         class ConcatMap = rxo::detail::concat_map<rxu::decay_t<Observable>, rxu::decay_t<CollectionSelector>, rxu::decay_t<ResultSelector>, identity_one_worker>,
         class CollectionValueType = rxu::value_type_t<CollectionType>,
         class ResultSelectorType = rxu::decay_t<ResultSelector>,
-        class Value = rxu::result_of_t<ResultSelectorType(SourceValue, CollectionValueType)>,
+        class Value = rxu::callable_result_t<ResultSelectorType, SourceValue, CollectionValueType>,
         class Result = observable<Value, ConcatMap>
     >
     static Result member(Observable&& o, CollectionSelector&& s, ResultSelector&& rs) {
@@ -356,14 +356,14 @@ struct member_overload<concat_map_tag>
     template<class Observable, class CollectionSelector, class ResultSelector, class Coordination,
         class CollectionSelectorType = rxu::decay_t<CollectionSelector>,
         class SourceValue = rxu::value_type_t<Observable>,
-        class CollectionType = rxu::result_of_t<CollectionSelectorType(SourceValue)>,
+        class CollectionType = rxu::callable_result_t<CollectionSelectorType, SourceValue>,
         class Enabled = rxu::enable_if_all_true_type_t<
             all_observables<Observable, CollectionType>,
             is_coordination<Coordination>>,
         class ConcatMap = rxo::detail::concat_map<rxu::decay_t<Observable>, rxu::decay_t<CollectionSelector>, rxu::decay_t<ResultSelector>, rxu::decay_t<Coordination>>,
         class CollectionValueType = rxu::value_type_t<CollectionType>,
         class ResultSelectorType = rxu::decay_t<ResultSelector>,
-        class Value = rxu::result_of_t<ResultSelectorType(SourceValue, CollectionValueType)>,
+        class Value = rxu::callable_result_t<ResultSelectorType, SourceValue, CollectionValueType>,
         class Result = observable<Value, ConcatMap>
     >
     static Result member(Observable&& o, CollectionSelector&& s, ResultSelector&& rs, Coordination&& cn) {
