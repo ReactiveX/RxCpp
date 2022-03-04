@@ -67,46 +67,46 @@ using reduce_invalid_t = typename reduce_invalid<AN...>::type;
 template<class Seed, class ResultSelector>
 struct is_result_function_for {
 
-    typedef rxu::decay_t<ResultSelector> result_selector_type;
-    typedef rxu::decay_t<Seed> seed_type;
+    using result_selector_type = rxu::decay_t<ResultSelector>;
+    using seed_type = rxu::decay_t<Seed>;
 
     struct tag_not_valid {};
 
     template<class CS, class CRS>
-    static auto check(int) -> decltype((*(CRS*)nullptr)(*(CS*)nullptr));
+    static auto check(int) -> decltype(std::declval<CRS>()(std::declval<CS>()));
     template<class CS, class CRS>
     static tag_not_valid check(...);
 
-    typedef rxu::decay_t<decltype(check<seed_type, result_selector_type>(0))> type;
-    static const bool value = !std::is_same<type, tag_not_valid>::value;
+    using type = rxu::decay_t<decltype(check<seed_type, result_selector_type>(0))>;
+    static const bool value = !std::is_same_v<type, tag_not_valid>;
 };
 
 template<class T, class Observable, class Accumulator, class ResultSelector, class Seed>
 struct reduce_traits
 {
-    typedef rxu::decay_t<Observable> source_type;
-    typedef rxu::decay_t<Accumulator> accumulator_type;
-    typedef rxu::decay_t<ResultSelector> result_selector_type;
-    typedef rxu::decay_t<Seed> seed_type;
+    using source_type = rxu::decay_t<Observable>;
+    using accumulator_type = rxu::decay_t<Accumulator>;
+    using result_selector_type = rxu::decay_t<ResultSelector>;
+    using seed_type = rxu::decay_t<Seed>;
 
-    typedef T source_value_type;
+    using source_value_type = T;
 
-    typedef typename is_result_function_for<seed_type, result_selector_type>::type value_type;
+    using value_type = typename is_result_function_for<seed_type, result_selector_type>::type;
 };
 
 template<class T, class Observable, class Accumulator, class ResultSelector, class Seed>
 struct reduce : public operator_base<rxu::value_type_t<reduce_traits<T, Observable, Accumulator, ResultSelector, Seed>>>
 {
-    typedef reduce<T, Observable, Accumulator, ResultSelector, Seed> this_type;
-    typedef reduce_traits<T, Observable, Accumulator, ResultSelector, Seed> traits;
+    using this_type = reduce<T, Observable, Accumulator, ResultSelector, Seed>;
+    using traits = reduce_traits<T, Observable, Accumulator, ResultSelector, Seed>;
 
-    typedef typename traits::source_type source_type;
-    typedef typename traits::accumulator_type accumulator_type;
-    typedef typename traits::result_selector_type result_selector_type;
-    typedef typename traits::seed_type seed_type;
+    using source_type = typename traits::source_type;
+    using accumulator_type = typename traits::accumulator_type;
+    using result_selector_type = typename traits::result_selector_type;
+    using seed_type = typename traits::seed_type;
 
-    typedef typename traits::source_value_type source_value_type;
-    typedef typename traits::value_type value_type;
+    using source_value_type = typename traits::source_value_type;
+    using value_type = typename traits::value_type;
 
     struct reduce_initial_type
     {
@@ -187,7 +187,7 @@ private:
 
 template<class T>
 struct initialize_seeder {
-    typedef T seed_type;
+    using seed_type = T;
     static seed_type seed() {
         return seed_type{};
     }
@@ -249,7 +249,7 @@ struct average {
 
 template<class T>
 struct sum {
-    typedef rxu::maybe<T> seed_type;
+    using seed_type = rxu::maybe<T>;
     static seed_type seed() {
         return seed_type();
     }
@@ -270,7 +270,7 @@ struct sum {
 
 template<class T>
 struct max {
-    typedef rxu::maybe<T> seed_type;
+    using seed_type = rxu::maybe<T>;
     static seed_type seed() {
         return seed_type();
     }
@@ -289,7 +289,7 @@ struct max {
 
 template<class T>
 struct min {
-    typedef rxu::maybe<T> seed_type;
+    using seed_type = rxu::maybe<T>;
     static seed_type seed() {
         return seed_type();
     }
@@ -539,7 +539,7 @@ struct member_overload<first_tag>
         class Seed = decltype(Operation::seed()),
         class Accumulator = Operation,
         class ResultSelector = Operation,
-        class TakeOne = decltype(((rxu::decay_t<Observable>*)nullptr)->take(1)),
+        class TakeOne = decltype(std::declval<rxu::decay_t<Observable>>().take(1)),
         class Reduce = rxo::detail::reduce<SValue, rxu::decay_t<TakeOne>, rxu::decay_t<Accumulator>, rxu::decay_t<ResultSelector>, rxu::decay_t<Seed>>,
         class RValue = rxu::value_type_t<Reduce>,
         class Result = observable<RValue, Reduce>>

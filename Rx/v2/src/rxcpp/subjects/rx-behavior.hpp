@@ -16,8 +16,8 @@ namespace detail {
 template<class T>
 class behavior_observer : public detail::multicast_observer<T>
 {
-    typedef behavior_observer<T> this_type;
-    typedef detail::multicast_observer<T> base_type;
+    using this_type = behavior_observer<T>;
+    using base_type = detail::multicast_observer<T>;
 
     class behavior_observer_state : public std::enable_shared_from_this<behavior_observer_state>
     {

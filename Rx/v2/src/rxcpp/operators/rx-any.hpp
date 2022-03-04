@@ -50,9 +50,9 @@ using any_invalid_t = typename any_invalid<AN...>::type;
 template<class T, class Predicate>
 struct any
 {
-    typedef rxu::decay_t<T> source_value_type;
-    typedef bool value_type;
-    typedef rxu::decay_t<Predicate> test_type;
+    using source_value_type = rxu::decay_t<T>;
+    using value_type = bool;
+    using test_type = rxu::decay_t<Predicate>;
     test_type test;
 
     any(test_type t)
@@ -63,10 +63,10 @@ struct any
     template<class Subscriber>
     struct any_observer
     {
-        typedef any_observer<Subscriber> this_type;
-        typedef source_value_type value_type;
-        typedef rxu::decay_t<Subscriber> dest_type;
-        typedef observer<value_type, this_type> observer_type;
+        using this_type = any_observer<Subscriber>;
+        using value_type = source_value_type;
+        using dest_type = rxu::decay_t<Subscriber>;
+        using observer_type = observer<value_type, this_type>;
         dest_type dest;
         test_type test;
         mutable bool done;

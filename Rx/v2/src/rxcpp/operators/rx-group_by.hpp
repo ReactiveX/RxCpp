@@ -51,58 +51,58 @@ using group_by_invalid_t = typename group_by_invalid<AN...>::type;
 template<class T, class Selector>
 struct is_group_by_selector_for {
 
-    typedef rxu::decay_t<Selector> selector_type;
-    typedef T source_value_type;
+    using selector_type = rxu::decay_t<Selector>;
+    using source_value_type = T;
 
     struct tag_not_valid {};
     template<class CV, class CS>
-    static auto check(int) -> decltype((*(CS*)nullptr)(*(CV*)nullptr));
+    static auto check(int) -> decltype(std::declval<CS>()(std::declval<CV>()));
     template<class CV, class CS>
     static tag_not_valid check(...);
 
-    typedef decltype(check<source_value_type, selector_type>(0)) type;
-    static const bool value = !std::is_same<type, tag_not_valid>::value;
+    using type = decltype(check<source_value_type, selector_type>(0));
+    static const bool value = !std::is_same_v<type, tag_not_valid>;
 };
 
 template<class T, class Observable, class KeySelector, class MarbleSelector, class BinaryPredicate, class DurationSelector>
 struct group_by_traits
 {
-    typedef T source_value_type;
-    typedef rxu::decay_t<Observable> source_type;
-    typedef rxu::decay_t<KeySelector> key_selector_type;
-    typedef rxu::decay_t<MarbleSelector> marble_selector_type;
-    typedef rxu::decay_t<BinaryPredicate> predicate_type;
-    typedef rxu::decay_t<DurationSelector> duration_selector_type;
+    using source_value_type = T;
+    using source_type = rxu::decay_t<Observable>;
+    using key_selector_type = rxu::decay_t<KeySelector>;
+    using marble_selector_type = rxu::decay_t<MarbleSelector>;
+    using predicate_type = rxu::decay_t<BinaryPredicate>;
+    using duration_selector_type = rxu::decay_t<DurationSelector>;
 
     static_assert(is_group_by_selector_for<source_value_type, key_selector_type>::value, "group_by KeySelector must be a function with the signature key_type(source_value_type)");
 
-    typedef typename is_group_by_selector_for<source_value_type, key_selector_type>::type key_type;
+    using key_type = typename is_group_by_selector_for<source_value_type, key_selector_type>::type;
 
     static_assert(is_group_by_selector_for<source_value_type, marble_selector_type>::value, "group_by MarbleSelector must be a function with the signature marble_type(source_value_type)");
 
-    typedef typename is_group_by_selector_for<source_value_type, marble_selector_type>::type marble_type;
+    using marble_type = typename is_group_by_selector_for<source_value_type, marble_selector_type>::type;
 
-    typedef rxsub::subject<marble_type> subject_type;
+    using subject_type = rxsub::subject<marble_type>;
 
-    typedef std::map<key_type, typename subject_type::subscriber_type, predicate_type> key_subscriber_map_type;
+    using key_subscriber_map_type = std::map<key_type, typename subject_type::subscriber_type, predicate_type>;
 
-    typedef grouped_observable<key_type, marble_type> grouped_observable_type;
+    using grouped_observable_type = grouped_observable<key_type, marble_type>;
 };
 
 template<class T, class Observable, class KeySelector, class MarbleSelector, class BinaryPredicate, class DurationSelector>
 struct group_by
 {
-    typedef group_by_traits<T, Observable, KeySelector, MarbleSelector, BinaryPredicate, DurationSelector> traits_type;
-    typedef typename traits_type::key_selector_type key_selector_type;
-    typedef typename traits_type::marble_selector_type marble_selector_type;
-    typedef typename traits_type::marble_type marble_type;
-    typedef typename traits_type::predicate_type predicate_type;
-    typedef typename traits_type::duration_selector_type duration_selector_type;
-    typedef typename traits_type::subject_type subject_type;
-    typedef typename traits_type::key_type key_type;
+    using traits_type = group_by_traits<T, Observable, KeySelector, MarbleSelector, BinaryPredicate, DurationSelector>;
+    using key_selector_type = typename traits_type::key_selector_type;
+    using marble_selector_type = typename traits_type::marble_selector_type;
+    using marble_type = typename traits_type::marble_type;
+    using predicate_type = typename traits_type::predicate_type;
+    using duration_selector_type = typename traits_type::duration_selector_type;
+    using subject_type = typename traits_type::subject_type;
+    using key_type = typename traits_type::key_type;
 
-    typedef typename traits_type::key_subscriber_map_type group_map_type;
-    typedef std::vector<typename composite_subscription::weak_subscription> bindings_type;
+    using group_map_type = typename traits_type::key_subscriber_map_type;
+    using bindings_type = std::vector<typename composite_subscription::weak_subscription>;
 
     struct group_by_state_type 
     {
@@ -180,10 +180,10 @@ struct group_by
     template<class Subscriber>
     struct group_by_observer : public group_by_values
     {
-        typedef group_by_observer<Subscriber> this_type;
-        typedef typename traits_type::grouped_observable_type value_type;
-        typedef rxu::decay_t<Subscriber> dest_type;
-        typedef observer<T, this_type> observer_type;
+        using this_type = group_by_observer<Subscriber>;
+        using value_type = typename traits_type::grouped_observable_type;
+        using dest_type = rxu::decay_t<Subscriber>;
+        using observer_type = observer<T, this_type>;
 
         dest_type dest;
 
@@ -278,10 +278,10 @@ struct group_by
 template<class KeySelector, class MarbleSelector, class BinaryPredicate, class DurationSelector>
 class group_by_factory
 {
-    typedef rxu::decay_t<KeySelector> key_selector_type;
-    typedef rxu::decay_t<MarbleSelector> marble_selector_type;
-    typedef rxu::decay_t<BinaryPredicate> predicate_type;
-    typedef rxu::decay_t<DurationSelector> duration_selector_type;
+    using key_selector_type = rxu::decay_t<KeySelector>;
+    using marble_selector_type = rxu::decay_t<MarbleSelector>;
+    using predicate_type = rxu::decay_t<BinaryPredicate>;
+    using duration_selector_type = rxu::decay_t<DurationSelector>;
     key_selector_type keySelector;
     marble_selector_type marbleSelector;
     predicate_type predicate;
@@ -297,9 +297,9 @@ public:
     template<class Observable>
     struct group_by_factory_traits
     {
-        typedef rxu::value_type_t<rxu::decay_t<Observable>> value_type;
-        typedef detail::group_by_traits<value_type, Observable, KeySelector, MarbleSelector, BinaryPredicate, DurationSelector> traits_type;
-        typedef detail::group_by<value_type, Observable, KeySelector, MarbleSelector, BinaryPredicate, DurationSelector> group_by_type;
+        using value_type = rxu::value_type_t <rxu::decay_t<Observable>>;
+        using traits_type = detail::group_by_traits<value_type, Observable, KeySelector, MarbleSelector, BinaryPredicate, DurationSelector>;
+        using group_by_type = detail::group_by<value_type, Observable, KeySelector, MarbleSelector, BinaryPredicate, DurationSelector>;
     };
     template<class Observable>
     auto operator()(Observable&& source)

@@ -16,8 +16,8 @@ struct tag_source {};
 template<class T>
 struct source_base
 {
-    typedef T value_type;
-    typedef tag_source source_tag;
+    using value_type = T;
+    using source_tag = tag_source;
 };
 template<class T>
 class is_source

@@ -16,12 +16,12 @@ struct has_on_connect
 {
     struct not_void {};
     template<class CT>
-    static auto check(int) -> decltype((*(CT*)nullptr).on_connect(composite_subscription()));
+    static auto check(int) -> decltype(std::declval<CT>().on_connect(composite_subscription()));
     template<class CT>
     static not_void check(...);
 
-    typedef decltype(check<T>(0)) detail_result;
-    static const bool value = std::is_same<detail_result, void>::value;
+    using detail_result = decltype(check<T>(0));
+    static const bool value = std::is_same_v<detail_result, void>;
 };
 
 }
@@ -33,7 +33,7 @@ class dynamic_connectable_observable
     struct state_type
         : public std::enable_shared_from_this<state_type>
     {
-        typedef std::function<void(composite_subscription)> onconnect_type;
+        using onconnect_type = std::function<void(composite_subscription)>;
 
         onconnect_type on_connect;
     };
@@ -59,7 +59,7 @@ class dynamic_connectable_observable
 
 public:
 
-    typedef tag_dynamic_observable dynamic_observable_tag;
+    using dynamic_observable_tag = tag_dynamic_observable;
 
     dynamic_connectable_observable()
     {
@@ -70,8 +70,7 @@ public:
         : dynamic_observable<T>(sof)
         , state(std::make_shared<state_type>())
     {
-        construct(std::move(sof),
-                  typename std::conditional<is_dynamic_observable<SOF>::value, tag_dynamic_observable, rxs::tag_source>::type());
+        construct(std::move(sof), typename std::conditional_t<is_dynamic_observable<SOF>::value, tag_dynamic_observable, rxs::tag_source>());
     }
 
     template<class SF, class CF>
@@ -105,14 +104,14 @@ template<class T, class SourceOperator>
 class connectable_observable
     : public observable<T, SourceOperator>
 {
-    typedef connectable_observable<T, SourceOperator> this_type;
-    typedef observable<T, SourceOperator> base_type;
-    typedef rxu::decay_t<SourceOperator> source_operator_type;
+    using this_type = connectable_observable<T, SourceOperator>;
+    using base_type = observable<T, SourceOperator>;
+    using source_operator_type = rxu::decay_t<SourceOperator>;
 
     static_assert(detail::has_on_connect<source_operator_type>::value, "inner must have on_connect method void(composite_subscription)");
 
 public:
-    typedef tag_connectable_observable observable_tag;
+    using observable_tag = tag_connectable_observable;
 
     connectable_observable()
     {
@@ -145,7 +144,7 @@ public:
     ///
     template<class OperatorFactory>
     auto op(OperatorFactory&& of) const
-        -> decltype(of(*(const this_type*)nullptr)) {
+        -> decltype(of(std::declval<const this_type>())) {
         return      of(*this);
         static_assert(is_operator_factory_for<this_type, OperatorFactory>::value, "Function passed for op() must have the signature Result(SourceObservable)");
     }
@@ -167,7 +166,7 @@ public:
     template<class... AN>
     auto ref_count(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(ref_count_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(ref_count_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(ref_count_tag{},                *this, std::forward<AN>(an)...);
@@ -178,7 +177,7 @@ public:
     template<class... AN>
     auto connect_forever(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(connect_forever_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(connect_forever_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(connect_forever_tag{},                *this, std::forward<AN>(an)...);

@@ -58,17 +58,17 @@ using combine_latest_invalid_t = typename combine_latest_invalid<AN...>::type;
 
 template<class Selector, class... ObservableN>
 struct is_combine_latest_selector_check {
-    typedef rxu::decay_t<Selector> selector_type;
+    using selector_type = rxu::decay_t<Selector>;
 
     struct tag_not_valid;
     template<class CS, class... CON>
-    static auto check(int) -> decltype((*(CS*)nullptr)((*(typename CON::value_type*)nullptr)...));
+    static auto check(int) -> decltype(std::declval<CS>()((std::declval<typename CON::value_type>())...));
     template<class CS, class... CON>
     static tag_not_valid check(...);
 
     using type = decltype(check<selector_type, rxu::decay_t<ObservableN>...>(0));
 
-    static const bool value = !std::is_same<type, tag_not_valid>::value;
+    static const bool value = !std::is_same_v<type, tag_not_valid>;
 };
 
 template<class Selector, class... ObservableN>
@@ -77,10 +77,10 @@ struct invalid_combine_latest_selector {
 };
 
 template<class Selector, class... ObservableN>
-struct is_combine_latest_selector : public std::conditional<
+struct is_combine_latest_selector : public std::conditional_t<
     is_combine_latest_selector_check<Selector, ObservableN...>::value, 
     is_combine_latest_selector_check<Selector, ObservableN...>, 
-    invalid_combine_latest_selector<Selector, ObservableN...>>::type {
+    invalid_combine_latest_selector<Selector, ObservableN...>> {
 };
 
 template<class Selector, class... ON>
@@ -89,29 +89,29 @@ using result_combine_latest_selector_t = typename is_combine_latest_selector<Sel
 template<class Coordination, class Selector, class... ObservableN>
 struct combine_latest_traits {
 
-    typedef std::tuple<ObservableN...> tuple_source_type;
-    typedef std::tuple<rxu::detail::maybe<typename ObservableN::value_type>...> tuple_source_value_type;
+    using tuple_source_type = std::tuple<ObservableN...>;
+    using tuple_source_value_type = std::tuple<rxu::detail::maybe < typename ObservableN::value_type>...>;
 
-    typedef rxu::decay_t<Selector> selector_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
+    using selector_type = rxu::decay_t<Selector>;
+    using coordination_type = rxu::decay_t<Coordination>;
 
-    typedef typename is_combine_latest_selector<selector_type, ObservableN...>::type value_type;
+    using value_type = typename is_combine_latest_selector<selector_type, ObservableN...>::type;
 };
 
 template<class Coordination, class Selector, class... ObservableN>
 struct combine_latest : public operator_base<rxu::value_type_t<combine_latest_traits<Coordination, Selector, ObservableN...>>>
 {
-    typedef combine_latest<Coordination, Selector, ObservableN...> this_type;
+    using this_type = combine_latest<Coordination, Selector, ObservableN...>;
 
-    typedef combine_latest_traits<Coordination, Selector, ObservableN...> traits;
+    using traits = combine_latest_traits<Coordination, Selector, ObservableN...>;
 
-    typedef typename traits::tuple_source_type tuple_source_type;
-    typedef typename traits::tuple_source_value_type tuple_source_value_type;
+    using tuple_source_type = typename traits::tuple_source_type;
+    using tuple_source_value_type = typename traits::tuple_source_value_type;
 
-    typedef typename traits::selector_type selector_type;
+    using selector_type = typename traits::selector_type;
 
-    typedef typename traits::coordination_type coordination_type;
-    typedef typename coordination_type::coordinator_type coordinator_type;
+    using coordination_type = typename traits::coordination_type;
+    using coordinator_type = typename coordination_type::coordinator_type;
 
     struct values
     {
@@ -135,7 +135,7 @@ struct combine_latest : public operator_base<rxu::value_type_t<combine_latest_tr
     template<int Index, class State>
     void subscribe_one(std::shared_ptr<State> state) const {
 
-        typedef typename std::tuple_element<Index, tuple_source_type>::type::value_type source_value_type;
+        using source_value_type = typename std::tuple_element<Index, tuple_source_type>::type::value_type;
 
         composite_subscription innercs;
 
@@ -200,7 +200,7 @@ struct combine_latest : public operator_base<rxu::value_type_t<combine_latest_tr
     void on_subscribe(Subscriber scbr) const {
         static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
 
-        typedef Subscriber output_type;
+        using output_type = Subscriber;
 
         struct combine_latest_state_type
             : public std::enable_shared_from_this<combine_latest_state_type>

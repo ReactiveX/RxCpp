@@ -41,8 +41,8 @@ using timestamp_invalid_t = typename timestamp_invalid<AN...>::type;
 template<class T, class Coordination>
 struct timestamp
 {
-    typedef rxu::decay_t<T> source_value_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
+    using source_value_type = rxu::decay_t<T>;
+    using coordination_type = rxu::decay_t<Coordination>;
 
     struct timestamp_values {
         timestamp_values(coordination_type c)
@@ -62,10 +62,10 @@ struct timestamp
     template<class Subscriber>
     struct timestamp_observer
     {
-        typedef timestamp_observer<Subscriber> this_type;
-        typedef source_value_type value_type;
-        typedef rxu::decay_t<Subscriber> dest_type;
-        typedef observer<value_type, this_type> observer_type;
+        using this_type = timestamp_observer<Subscriber>;
+        using value_type = source_value_type;
+        using dest_type = rxu::decay_t<Subscriber>;
+        using observer_type = observer<value_type, this_type>;
         dest_type dest;
         coordination_type coord;
 

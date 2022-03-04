@@ -41,8 +41,8 @@ using skip_while_invalid_t = typename skip_while_invalid<AN...>::type;
 template<class T, class Predicate>
 struct skip_while
 {
-    typedef rxu::decay_t<T> source_value_type;
-    typedef rxu::decay_t<Predicate> test_type;
+    using source_value_type = rxu::decay_t<T>;
+    using test_type = rxu::decay_t<Predicate>;
     test_type test;
 
 
@@ -54,10 +54,10 @@ struct skip_while
     template<class Subscriber>
     struct skip_while_observer
     {
-        typedef skip_while_observer<Subscriber> this_type;
-        typedef source_value_type value_type;
-        typedef rxu::decay_t<Subscriber> dest_type;
-        typedef observer<value_type, this_type> observer_type;
+        using this_type = skip_while_observer<Subscriber>;
+        using value_type = source_value_type;
+        using dest_type = rxu::decay_t<Subscriber>;
+        using observer_type = observer<value_type, this_type>;
         dest_type dest;
         test_type test;
         bool pass;

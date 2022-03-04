@@ -46,8 +46,8 @@ using window_invalid_t = typename window_invalid<AN...>::type;
 template<class T>
 struct window
 {
-    typedef rxu::decay_t<T> source_value_type;
-    typedef observable<source_value_type> value_type;
+    using source_value_type = rxu::decay_t<T>;
+    using value_type = observable<source_value_type>;
 
     struct window_values
     {
@@ -70,10 +70,10 @@ struct window
     template<class Subscriber>
     struct window_observer : public window_values
     {
-        typedef window_observer<Subscriber> this_type;
-        typedef rxu::decay_t<T> value_type;
-        typedef rxu::decay_t<Subscriber> dest_type;
-        typedef observer<T, this_type> observer_type;
+        using this_type = window_observer<Subscriber>;
+        using value_type = rxu::decay_t<T>;
+        using dest_type = rxu::decay_t<Subscriber>;
+        using observer_type = observer<T, this_type>;
         dest_type dest;
         mutable int cursor;
         mutable std::deque<rxcpp::subjects::subject<T>> subj;

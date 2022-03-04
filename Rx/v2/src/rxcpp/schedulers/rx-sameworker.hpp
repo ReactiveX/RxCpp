@@ -14,7 +14,7 @@ namespace schedulers {
 struct same_worker : public scheduler_interface
 {
 private:
-    typedef same_worker this_type;
+    using this_type = same_worker;
     same_worker(const this_type&);
 
     rxsc::worker controller;

@@ -16,25 +16,25 @@ namespace detail {
 template<class Coordination>
 struct replay_traits
 {
-    typedef rxu::maybe<std::size_t> count_type;
-    typedef rxu::maybe<rxsc::scheduler::clock_type::duration> period_type;
-    typedef rxsc::scheduler::clock_type::time_point time_point_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
-    typedef typename coordination_type::coordinator_type coordinator_type;
+    using count_type = rxu::maybe<std::size_t>;
+    using period_type = rxu::maybe<rxsc::scheduler::clock_type::duration>;
+    using time_point_type = rxsc::scheduler::clock_type::time_point;
+    using coordination_type = rxu::decay_t<Coordination>;
+    using coordinator_type = typename coordination_type::coordinator_type;
 };
 
 template<class T, class Coordination>
 class replay_observer : public detail::multicast_observer<T>
 {
-    typedef replay_observer<T, Coordination> this_type;
-    typedef detail::multicast_observer<T> base_type;
+    using this_type = replay_observer<T, Coordination>;
+    using base_type = detail::multicast_observer<T>;
 
-    typedef replay_traits<Coordination> traits;
-    typedef typename traits::count_type count_type;
-    typedef typename traits::period_type period_type;
-    typedef typename traits::time_point_type time_point_type;
-    typedef typename traits::coordination_type coordination_type;
-    typedef typename traits::coordinator_type coordinator_type;
+    using traits = replay_traits<Coordination>;
+    using count_type = typename traits::count_type;
+    using period_type = typename traits::period_type;
+    using time_point_type = typename traits::time_point_type;
+    using coordination_type = typename traits::coordination_type;
+    using coordinator_type = typename traits::coordinator_type;
 
     class replay_observer_state : public std::enable_shared_from_this<replay_observer_state>
     {
@@ -126,10 +126,10 @@ public:
 template<class T, class Coordination>
 class replay
 {
-    typedef detail::replay_traits<Coordination> traits;
-    typedef typename traits::count_type count_type;
-    typedef typename traits::period_type period_type;
-    typedef typename traits::time_point_type time_point_type;
+    using traits = detail::replay_traits<Coordination>;
+    using count_type = typename traits::count_type;
+    using period_type = typename traits::period_type;
+    using time_point_type = typename traits::time_point_type;
 
     detail::replay_observer<T, Coordination> s;
 

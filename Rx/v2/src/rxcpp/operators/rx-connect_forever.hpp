@@ -34,7 +34,7 @@ using connect_forever_invalid_t = typename connect_forever_invalid<AN...>::type;
 template<class T, class ConnectableObservable>
 struct connect_forever : public operator_base<T>
 {
-    typedef rxu::decay_t<ConnectableObservable> source_type;
+    using source_type = rxu::decay_t<ConnectableObservable>;
 
     source_type source;
 
