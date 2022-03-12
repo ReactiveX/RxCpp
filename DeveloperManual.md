@@ -10,7 +10,7 @@ The scheduler in rxcpp v2 is based on the scheduler and worker constructs that *
 
 ```schedulable``` owns a function and has a ```worker``` and a ```lifetime```. When the ```schedulable```'s ```lifetime``` is unsubscribed the ```schedulable``` function will not be called. The ```schedulable``` is passed to the function and allows the function to reschedule itself or schedule something else on the same worker.
 
-The new concepts are ```coordination``` and ```coordinator```. I added these to simplify operator implementations and to introduce pay-for-use in operator implementations. Specifically, in Rx.NET and RxJava, the operators use atomic operations and synchronization primitives to coordinate messages from multiple streams even when all the streams are on the same thread (like UI events). The ```identity_...``` coordinations in RxCpp are used by default and have no overhead. The ```syncronize_...``` and ```observe_on_...``` coordinations use mutex and queue-onto-a-worker respectively, to interleave multiple streams safely.
+The new concepts are ```coordination``` and ```coordinator```. I added these to simplify operator implementations and to introduce pay-for-use in operator implementations. Specifically, in Rx.NET and RxJava, the operators use atomic operations and synchronization primitives to coordinate messages from multiple streams even when all the streams are on the same thread (like UI events). The ```identity_...``` coordinations in RxCpp are used by default and have no overhead. The ```synchronize_...``` and ```observe_on_...``` coordinations use mutex and queue-onto-a-worker respectively, to interleave multiple streams safely.
 
 ```coordination``` is a factory for ```coordinator```s and has a scheduler.
 
