@@ -61,7 +61,7 @@ int main()
                     }) |
                 as_dynamic();
         }) |
-        tap([](vector<uint8_t>& v){
+        tap([](const vector<uint8_t>& v){
             // print input packet of bytes
             copy(v.begin(), v.end(), ostream_iterator<long>(cout, " "));
             cout << endl;
