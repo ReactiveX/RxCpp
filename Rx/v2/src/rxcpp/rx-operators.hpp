@@ -462,6 +462,13 @@ struct tap_tag {
     };
 };
 
+struct throttle_tag {
+    template<class Included>
+    struct include_header{
+        static_assert(Included::value, "missing include: please #include <rxcpp/operators/rx-throttle.hpp>");
+    };
+};
+
 struct timeout_tag {
     template<class Included>
     struct include_header{

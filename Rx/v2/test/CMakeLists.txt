@@ -80,6 +80,7 @@ set(TEST_SOURCES
     ${TEST_DIR}/operators/take_until.cpp
     ${TEST_DIR}/operators/take_while.cpp
     ${TEST_DIR}/operators/tap.cpp
+    ${TEST_DIR}/operators/throttle.cpp
     ${TEST_DIR}/operators/time_interval.cpp
     ${TEST_DIR}/operators/timeout.cpp
     ${TEST_DIR}/operators/timestamp.cpp
