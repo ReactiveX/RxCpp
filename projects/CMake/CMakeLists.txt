@@ -153,10 +153,17 @@ install(DIRECTORY ${RXCPP_DIR}/Rx/v2/src/rxcpp/ DESTINATION include/rxcpp
 # just with find_package(rxcpp CONFIG) after rxcpp is installed into system by "make install". 
 add_library(rxcpp INTERFACE)
 
-target_include_directories(rxcpp INTERFACE
-    $<BUILD_INTERFACE:${RXCPP_DIR}/Rx/v2/src/>
-    $<INSTALL_INTERFACE:include/rxcpp>
-)
+if (RXCPP_INCLUDE_AS_SYSTEM_HEADERS) # Include as system header to not cause warnings when used as cmake subproject
+   target_include_directories(rxcpp SYSTEM INTERFACE
+       $<BUILD_INTERFACE:${RXCPP_DIR}/Rx/v2/src/>
+       $<INSTALL_INTERFACE:include/rxcpp>
+   )
+else (RXCPP_INCLUDE_AS_SYSTEM_HEADERS) # include as private headers to have warnings for examples and tests
+   target_include_directories(rxcpp INTERFACE
+       $<BUILD_INTERFACE:${RXCPP_DIR}/Rx/v2/src/>
+       $<INSTALL_INTERFACE:include/rxcpp>
+   )
+endif (RXCPP_INCLUDE_AS_SYSTEM_HEADERS)
 
 install(TARGETS rxcpp EXPORT rxcppConfig)
 install(EXPORT rxcppConfig DESTINATION share/rxcpp/cmake)
