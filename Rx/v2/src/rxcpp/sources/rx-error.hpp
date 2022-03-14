@@ -115,15 +115,15 @@ namespace sources {
  */
 template<class T, class E>
 auto error(E e)
-    -> decltype(detail::make_error<T>(typename std::conditional_t<std::is_same_v<rxu::error_ptr, rxu::decay_t<E>>, detail::throw_ptr_tag, detail::throw_instance_tag>(), std::move(e), identity_immediate())) {
-    return      detail::make_error<T>(typename std::conditional_t<std::is_same_v<rxu::error_ptr, rxu::decay_t<E>>, detail::throw_ptr_tag, detail::throw_instance_tag>(), std::move(e), identity_immediate());
+    -> decltype(detail::make_error<T>(typename std::conditional_t<rxcpp::is_same_v<rxu::error_ptr, rxu::decay_t<E>>, detail::throw_ptr_tag, detail::throw_instance_tag>(), std::move(e), identity_immediate())) {
+    return      detail::make_error<T>(typename std::conditional_t<rxcpp::is_same_v<rxu::error_ptr, rxu::decay_t<E>>, detail::throw_ptr_tag, detail::throw_instance_tag>(), std::move(e), identity_immediate());
 }
 /*! @copydoc rx-error.hpp
  */
 template<class T, class E, class Coordination>
 auto error(E e, Coordination cn)
-    -> decltype(detail::make_error<T>(typename std::conditional_t<std::is_same_v<rxu::error_ptr, rxu::decay_t<E>>, detail::throw_ptr_tag, detail::throw_instance_tag>(), std::move(e), std::move(cn))) {
-    return      detail::make_error<T>(typename std::conditional_t<std::is_same_v<rxu::error_ptr, rxu::decay_t<E>>, detail::throw_ptr_tag, detail::throw_instance_tag>(), std::move(e), std::move(cn));
+    -> decltype(detail::make_error<T>(typename std::conditional_t<rxcpp::is_same_v<rxu::error_ptr, rxu::decay_t<E>>, detail::throw_ptr_tag, detail::throw_instance_tag>(), std::move(e), std::move(cn))) {
+    return      detail::make_error<T>(typename std::conditional_t<rxcpp::is_same_v<rxu::error_ptr, rxu::decay_t<E>>, detail::throw_ptr_tag, detail::throw_instance_tag>(), std::move(e), std::move(cn));
 }
 
 }

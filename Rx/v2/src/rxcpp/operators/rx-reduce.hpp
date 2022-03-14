@@ -78,7 +78,7 @@ struct is_result_function_for {
     static tag_not_valid check(...);
 
     using type = rxu::decay_t<decltype(check<seed_type, result_selector_type>(0))>;
-    static const bool value = !std::is_same_v<type, tag_not_valid>;
+    static const bool value = !rxcpp::is_same_v<type, tag_not_valid>;
 };
 
 template<class T, class Observable, class Accumulator, class ResultSelector, class Seed>

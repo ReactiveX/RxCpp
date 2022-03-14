@@ -20,7 +20,7 @@ struct is_unsubscribe_function
     template<class CF>
     static not_void check(...);
 
-    static const bool value = std::is_same_v<decltype(check<rxu::decay_t<F>>(0)), void>;
+    static const bool value = rxcpp::is_same_v<decltype(check<rxu::decay_t<F>>(0)), void>;
 };
 
 }
@@ -143,7 +143,7 @@ public:
         }
     }
     template<class U>
-    explicit subscription(U u, typename std::enable_if<!std::is_same_v<subscription, U> && is_subscription<U>::value, void**>::type = nullptr)
+    explicit subscription(U u, typename std::enable_if<!rxcpp::is_same_v<subscription, U> && is_subscription<U>::value, void**>::type = nullptr)
         // intentionally slice
         : state(std::move((*static_cast<subscription*>(&u)).state))
     {

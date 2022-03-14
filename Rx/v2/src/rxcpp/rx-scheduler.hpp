@@ -187,7 +187,7 @@ struct is_action_function
     template<class CF>
     static not_void check(...);
 
-    static const bool value = std::is_same_v<decltype(check<rxu::decay_t<F>>(0)), void>;
+    static const bool value = rxcpp::is_same_v<decltype(check<rxu::decay_t<F>>(0)), void>;
 };
 
 }

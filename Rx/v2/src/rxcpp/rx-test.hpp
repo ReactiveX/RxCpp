@@ -38,7 +38,7 @@ struct test_source
         ts->on_subscribe(std::move(o));
     }
     template<class Subscriber>
-    typename std::enable_if<!std::is_same_v<Subscriber, subscriber<T>>, void>::type
+    typename std::enable_if<!rxcpp::is_same_v<Subscriber, subscriber<T>>, void>::type
     on_subscribe(Subscriber o) const {
 
         static_assert(is_subscriber<Subscriber>::value, "on_subscribe must be passed a subscriber.");

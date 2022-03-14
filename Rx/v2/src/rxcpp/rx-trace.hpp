@@ -111,4 +111,28 @@ struct trace_tag {};
 inline auto rxcpp_trace_activity(...) -> rxcpp::trace_noop;
 
 
+#if __cplusplus <= 201402L
+// intermediate C++14 hort-hand definitions anticipating those available in C++17 onwards
+namespace rxcpp {
+template<class T, class U>
+static constexpr bool is_same_v = false;
+
+template<class T>
+static constexpr bool is_same_v<T, T> = true;
+
+} // namespace rxcpp
+
+#else
+
+namespace rxcpp {
+template <typename _Tp, typename _Up>
+inline constexpr bool is_same_v = std::is_same_v<_Tp, _Up>;
+
+} // namespace rxcpp
+#endif
+
+static_assert(rxcpp::is_same_v<int,int>);
+static_assert(!rxcpp::is_same_v<int,float>);
+
+
 #endif
