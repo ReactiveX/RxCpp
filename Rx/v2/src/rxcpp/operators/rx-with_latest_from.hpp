@@ -68,7 +68,7 @@ struct is_with_latest_from_selector_check {
 
     using type = decltype(check<selector_type, rxu::decay_t<ObservableN>...>(0));
 
-    static const bool value = !std::is_same_v<type, tag_not_valid>;
+    static const bool value = !rxcpp::is_same_v<type, tag_not_valid>;
 };
 
 template<class Selector, class... ObservableN>

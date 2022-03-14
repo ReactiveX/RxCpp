@@ -64,7 +64,7 @@ struct flat_map_traits {
     template<class CV, class CCS>
     static tag_not_valid collection_check(...);
 
-    static_assert(!std::is_same_v<decltype(collection_check<source_value_type, collection_selector_type>(0)), tag_not_valid>, "flat_map CollectionSelector must be a function with the signature observable(flat_map::source_value_type)");
+    static_assert(!rxcpp::is_same_v<decltype(collection_check<source_value_type, collection_selector_type>(0)), tag_not_valid>, "flat_map CollectionSelector must be a function with the signature observable(flat_map::source_value_type)");
 
     using collection_type = rxu::decay_t<decltype(std::declval<collection_selector_type>()(std::declval<source_value_type>()))>;
 
@@ -77,7 +77,7 @@ struct flat_map_traits {
     template<class CV, class CCV, class CRS>
     static tag_not_valid result_check(...);
 
-    static_assert(!std::is_same_v<decltype(result_check<source_value_type, collection_value_type, result_selector_type>(0)), tag_not_valid>, "flat_map ResultSelector must be a function with the signature flat_map::value_type(flat_map::source_value_type, flat_map::collection_value_type)");
+    static_assert(!rxcpp::is_same_v<decltype(result_check<source_value_type, collection_value_type, result_selector_type>(0)), tag_not_valid>, "flat_map ResultSelector must be a function with the signature flat_map::value_type(flat_map::source_value_type, flat_map::collection_value_type)");
 
     using value_type = rxu::decay_t<decltype((std::declval<result_selector_type>())(std::declval<source_value_type>(), std::declval<collection_value_type>()))> ;
 };

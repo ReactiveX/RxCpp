@@ -21,7 +21,7 @@ struct has_on_connect
     static not_void check(...);
 
     using detail_result = decltype(check<T>(0));
-    static const bool value = std::is_same_v<detail_result, void>;
+    static const bool value = rxcpp::is_same_v<detail_result, void>;
 };
 
 }

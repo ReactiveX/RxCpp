@@ -61,7 +61,7 @@ struct is_group_by_selector_for {
     static tag_not_valid check(...);
 
     using type = decltype(check<source_value_type, selector_type>(0));
-    static const bool value = !std::is_same_v<type, tag_not_valid>;
+    static const bool value = !rxcpp::is_same_v<type, tag_not_valid>;
 };
 
 template<class T, class Observable, class KeySelector, class MarbleSelector, class BinaryPredicate, class DurationSelector>

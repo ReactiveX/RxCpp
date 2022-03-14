@@ -46,7 +46,7 @@ struct is_iterable
     template<class CC>
     static not_void check(...);
 
-    static const bool value = !std::is_same_v<decltype(check<collection_type>(0)), not_void>;
+    static const bool value = !rxcpp::is_same_v<decltype(check<collection_type>(0)), not_void>;
 };
 
 template<class Collection>

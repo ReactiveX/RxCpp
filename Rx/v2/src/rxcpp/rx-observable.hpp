@@ -27,7 +27,7 @@ struct has_on_subscribe_for
     static not_void check(...);
 
     using detail_result = decltype(check<rxu::decay_t < Subscriber>, T > (0));
-    static const bool value = std::is_same_v<detail_result, void>;
+    static const bool value = rxcpp::is_same_v<detail_result, void>;
 };
 
 }
@@ -478,7 +478,7 @@ template<class T, class SourceOperator>
 class observable
     : public observable_base<T>
 {
-    static_assert(std::is_same_v<T, typename SourceOperator::value_type>, "SourceOperator::value_type must be the same as T in observable<T, SourceOperator>");
+    static_assert(rxcpp::is_same_v<T, typename SourceOperator::value_type>, "SourceOperator::value_type must be the same as T in observable<T, SourceOperator>");
 
     using this_type = observable<T, SourceOperator>;
 
@@ -501,7 +501,7 @@ private:
         using subscriber_type = rxu::decay_t<Subscriber>;
 
         static_assert(is_subscriber<subscriber_type>::value, "subscribe must be passed a subscriber");
-        static_assert(std::is_same_v<typename source_operator_type::value_type, T> && std::is_convertible<T*, typename subscriber_type::value_type*>::value, "the value types in the sequence must match or be convertible");
+        static_assert(rxcpp::is_same_v<typename source_operator_type::value_type, T> && std::is_convertible<T*, typename subscriber_type::value_type*>::value, "the value types in the sequence must match or be convertible");
         static_assert(detail::has_on_subscribe_for<subscriber_type, source_operator_type>::value, "inner must have on_subscribe method that accepts this subscriber ");
 
         trace_activity().subscribe_enter(*this, o);
