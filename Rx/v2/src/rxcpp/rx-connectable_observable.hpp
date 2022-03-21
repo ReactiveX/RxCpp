@@ -156,7 +156,7 @@ public:
         return *this;
     }
 
-    composite_subscription connect(composite_subscription cs = composite_subscription()) {
+    composite_subscription connect(composite_subscription cs = composite_subscription()) const {
         base_type::source_operator.on_connect(cs);
         return cs;
     }
