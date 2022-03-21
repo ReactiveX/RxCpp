@@ -15,8 +15,8 @@ struct tag_operator {};
 template<class T>
 struct operator_base
 {
-    typedef T value_type;
-    typedef tag_operator operator_tag;
+    using value_type = T;
+    using operator_tag = tag_operator;
 };
 
 namespace detail {
@@ -88,7 +88,7 @@ public:
 
     template<class Observable>
     auto operator()(Observable source) const 
-        -> decltype(rxu::apply(std::tuple_cat(std::make_tuple(tag_type{}, source), (*(tuple_type*)nullptr)), (*(this_type*)nullptr))) {
+        -> decltype(rxu::apply(std::tuple_cat(std::make_tuple(tag_type{}, source), std::declval<tuple_type>()), std::declval<this_type>())) {
         return      rxu::apply(std::tuple_cat(std::make_tuple(tag_type{}, source),                      an),                  *this);
     }
 };

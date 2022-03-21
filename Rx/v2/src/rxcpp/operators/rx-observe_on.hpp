@@ -44,10 +44,10 @@ using observe_on_invalid_t = typename observe_on_invalid<AN...>::type;
 template<class T, class Coordination>
 struct observe_on
 {
-    typedef rxu::decay_t<T> source_value_type;
+    using source_value_type = rxu::decay_t<T>;
 
-    typedef rxu::decay_t<Coordination> coordination_type;
-    typedef typename coordination_type::coordinator_type coordinator_type;
+    using coordination_type = rxu::decay_t<Coordination>;
+    using coordinator_type = typename coordination_type::coordinator_type;
 
     coordination_type coordination;
 
@@ -59,14 +59,14 @@ struct observe_on
     template<class Subscriber>
     struct observe_on_observer
     {
-        typedef observe_on_observer<Subscriber> this_type;
-        typedef source_value_type value_type;
-        typedef rxu::decay_t<Subscriber> dest_type;
-        typedef observer<value_type, this_type> observer_type;
+        using this_type = observe_on_observer<Subscriber>;
+        using value_type = source_value_type;
+        using dest_type = rxu::decay_t<Subscriber>;
+        using observer_type = observer<value_type, this_type>;
 
-        typedef rxn::notification<T> notification_type;
-        typedef typename notification_type::type base_notification_type;
-        typedef std::deque<base_notification_type> queue_type;
+        using notification_type = rxn::notification<T>;
+        using base_notification_type = typename notification_type::type;
+        using queue_type = std::deque<base_notification_type>;
 
         struct mode
         {
@@ -305,7 +305,7 @@ public:
 
     explicit observe_on_one_worker(rxsc::scheduler sc) : factory(sc) {}
 
-    typedef coordinator<input_type> coordinator_type;
+    using coordinator_type = coordinator<input_type>;
 
     inline rxsc::scheduler::clock_type::time_point now() const {
         return factory.now();

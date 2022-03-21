@@ -42,8 +42,8 @@ using time_interval_invalid_t = typename time_interval_invalid<AN...>::type;
 template<class T, class Coordination>
 struct time_interval
 {
-    typedef rxu::decay_t<T> source_value_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
+    using source_value_type = rxu::decay_t<T>;
+    using coordination_type = rxu::decay_t<Coordination>;
 
     struct time_interval_values {
         time_interval_values(coordination_type c)
@@ -63,11 +63,11 @@ struct time_interval
     template<class Subscriber>
     struct time_interval_observer
     {
-        typedef time_interval_observer<Subscriber> this_type;
-        typedef source_value_type value_type;
-        typedef rxu::decay_t<Subscriber> dest_type;
-        typedef observer<value_type, this_type> observer_type;
-        typedef rxsc::scheduler::clock_type::time_point time_point;
+        using this_type = time_interval_observer<Subscriber>;
+        using value_type = source_value_type;
+        using dest_type = rxu::decay_t<Subscriber>;
+        using observer_type = observer<value_type, this_type>;
+        using time_point = rxsc::scheduler::clock_type::time_point;
         dest_type dest;
         coordination_type coord;
         mutable time_point last;

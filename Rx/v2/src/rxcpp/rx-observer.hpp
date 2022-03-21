@@ -13,8 +13,8 @@ namespace rxcpp {
 template<class T>
 struct observer_base
 {
-    typedef T value_type;
-    typedef tag_observer observer_tag;
+    using value_type = T;
+    using observer_tag = tag_observer;
 };
 
 namespace detail {
@@ -115,12 +115,12 @@ struct is_on_next_of
 {
     struct not_void {};
     template<class CT, class CF>
-    static auto check(int) -> decltype((*(CF*)nullptr)(*(CT*)nullptr));
+    static auto check(int) -> decltype(std::declval<CF>()(std::declval<CT>()));
     template<class CT, class CF>
     static not_void check(...);
 
-    typedef decltype(check<T, rxu::decay_t<F>>(0)) detail_result;
-    static const bool value = std::is_same<detail_result, void>::value;
+    using detail_result = decltype(check<T, rxu::decay_t < F>>(0));
+    static const bool value = std::is_same_v<detail_result, void>;
 };
 
 template<class F>
@@ -128,11 +128,11 @@ struct is_on_error
 {
     struct not_void {};
     template<class CF>
-    static auto check(int) -> decltype((*(CF*)nullptr)(*(rxu::error_ptr*)nullptr));
+    static auto check(int) -> decltype(std::declval<CF>()(std::declval<rxu::error_ptr>()));
     template<class CF>
     static not_void check(...);
 
-    static const bool value = std::is_same<decltype(check<rxu::decay_t<F>>(0)), void>::value;
+    static const bool value = std::is_same_v<decltype(check<rxu::decay_t<F>>(0)), void>;
 };
 
 template<class State, class F>
@@ -140,11 +140,11 @@ struct is_on_error_for
 {
     struct not_void {};
     template<class CF>
-    static auto check(int) -> decltype((*(CF*)nullptr)(*(State*)nullptr, *(rxu::error_ptr*)nullptr));
+    static auto check(int) -> decltype(std::declval<CF>()(std::declval<State>(), std::declval<rxu::error_ptr>()));
     template<class CF>
     static not_void check(...);
 
-    static const bool value = std::is_same<decltype(check<rxu::decay_t<F>>(0)), void>::value;
+    static const bool value = std::is_same_v<decltype(check<rxu::decay_t<F>>(0)), void>;
 };
 
 template<class F>
@@ -152,11 +152,11 @@ struct is_on_completed
 {
     struct not_void {};
     template<class CF>
-    static auto check(int) -> decltype((*(CF*)nullptr)());
+    static auto check(int) -> decltype(std::declval<CF>()());
     template<class CF>
     static not_void check(...);
 
-    static const bool value = std::is_same<decltype(check<rxu::decay_t<F>>(0)), void>::value;
+    static const bool value = std::is_same_v<decltype(check<rxu::decay_t<F>>(0)), void>;
 };
 
 }
@@ -180,18 +180,9 @@ class observer : public observer_base<T>
 public:
     using this_type = observer<T, State, OnNext, OnError, OnCompleted>;
     using state_t = rxu::decay_t<State>;
-    using on_next_t = typename std::conditional<
-        !std::is_same<void, OnNext>::value,
-        rxu::decay_t<OnNext>,
-        detail::OnNextForward<T, State, OnNext>>::type;
-    using on_error_t = typename std::conditional<
-        !std::is_same<void, OnError>::value,
-        rxu::decay_t<OnError>,
-        detail::OnErrorForward<State, OnError>>::type;
-    using on_completed_t = typename std::conditional<
-        !std::is_same<void, OnCompleted>::value,
-        rxu::decay_t<OnCompleted>,
-        detail::OnCompletedForward<State, OnCompleted>>::type;
+    using on_next_t = typename std::conditional_t<!std::is_same_v<void, OnNext>, rxu::decay_t<OnNext>, detail::OnNextForward<T, State, OnNext>>;
+    using on_error_t = typename std::conditional_t<!std::is_same_v<void, OnError>, rxu::decay_t<OnError>, detail::OnErrorForward<State, OnError>>;
+    using on_completed_t = typename std::conditional_t<!std::is_same_v<void, OnCompleted>, rxu::decay_t<OnCompleted>, detail::OnCompletedForward<State, OnCompleted>>;
 
 private:
     mutable state_t state;
@@ -268,18 +259,9 @@ class observer<T, detail::stateless_observer_tag, OnNext, OnError, OnCompleted> 
 {
 public:
     using this_type = observer<T, detail::stateless_observer_tag, OnNext, OnError, OnCompleted>;
-    using on_next_t = typename std::conditional<
-        !std::is_same<void, OnNext>::value,
-        rxu::decay_t<OnNext>,
-        detail::OnNextEmpty<T>>::type;
-    using on_error_t = typename std::conditional<
-        !std::is_same<void, OnError>::value,
-        rxu::decay_t<OnError>,
-        detail::OnErrorEmpty>::type;
-    using on_completed_t = typename std::conditional<
-        !std::is_same<void, OnCompleted>::value,
-        rxu::decay_t<OnCompleted>,
-        detail::OnCompletedEmpty>::type;
+    using on_next_t = typename std::conditional_t<!std::is_same_v<void, OnNext>, rxu::decay_t<OnNext>, detail::OnNextEmpty<T>>;
+    using on_error_t = typename std::conditional_t<!std::is_same_v<void, OnError>, rxu::decay_t<OnError>, detail::OnErrorEmpty>;
+    using on_completed_t = typename std::conditional_t<!std::is_same_v<void, OnCompleted>, rxu::decay_t<OnCompleted>, detail::OnCompletedEmpty>;
 
 private:
     on_next_t onnext;
@@ -392,7 +374,7 @@ template<class T>
 class observer<T, void, void, void, void> : public observer_base<T>
 {
 public:
-    typedef tag_dynamic_observer dynamic_observer_tag;
+    using dynamic_observer_tag = tag_dynamic_observer;
 
 private:
     using this_type = observer<T, void, void, void, void>;
@@ -628,9 +610,9 @@ namespace detail {
 template<class F>
 struct maybe_from_result
 {
-    typedef decltype((*(F*)nullptr)()) decl_result_type;
-    typedef rxu::decay_t<decl_result_type> result_type;
-    typedef rxu::maybe<result_type> type;
+    using decl_result_type = decltype(std::declval<F>()());
+    using result_type = rxu::decay_t<decl_result_type>;
+    using type = rxu::maybe<result_type>;
 };
 
 }

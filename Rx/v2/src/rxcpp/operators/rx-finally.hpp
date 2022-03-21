@@ -45,8 +45,8 @@ using finally_invalid_t = typename finally_invalid<AN...>::type;
 template<class T, class LastCall>
 struct finally
 {
-    typedef rxu::decay_t<T> source_value_type;
-    typedef rxu::decay_t<LastCall> last_call_type;
+    using source_value_type = rxu::decay_t<T>;
+    using last_call_type = rxu::decay_t<LastCall>;
     last_call_type last_call;
 
     finally(last_call_type lc)
@@ -57,10 +57,10 @@ struct finally
     template<class Subscriber>
     struct finally_observer
     {
-        typedef finally_observer<Subscriber> this_type;
-        typedef source_value_type value_type;
-        typedef rxu::decay_t<Subscriber> dest_type;
-        typedef observer<value_type, this_type> observer_type;
+        using this_type = finally_observer<Subscriber>;
+        using value_type = source_value_type;
+        using dest_type = rxu::decay_t<Subscriber>;
+        using observer_type = observer<value_type, this_type>;
         dest_type dest;
 
         finally_observer(dest_type d)

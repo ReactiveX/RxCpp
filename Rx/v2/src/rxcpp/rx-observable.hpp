@@ -22,12 +22,12 @@ struct has_on_subscribe_for
 {
     struct not_void {};
     template<class CS, class CT>
-    static auto check(int) -> decltype((*(CT*)nullptr).on_subscribe(*(CS*)nullptr));
+    static auto check(int) -> decltype(std::declval<CT>().on_subscribe(std::declval<CS>()));
     template<class CS, class CT>
     static not_void check(...);
 
-    typedef decltype(check<rxu::decay_t<Subscriber>, T>(0)) detail_result;
-    static const bool value = std::is_same<detail_result, void>::value;
+    using detail_result = decltype(check<rxu::decay_t < Subscriber>, T > (0));
+    static const bool value = std::is_same_v<detail_result, void>;
 };
 
 }
@@ -39,7 +39,7 @@ class dynamic_observable
     struct state_type
         : public std::enable_shared_from_this<state_type>
     {
-        typedef std::function<void(subscriber<T>)> onsubscribe_type;
+        using onsubscribe_type = std::function<void(subscriber < T > )>;
 
         onsubscribe_type on_subscribe;
     };
@@ -64,7 +64,7 @@ class dynamic_observable
 
 public:
 
-    typedef tag_dynamic_observable dynamic_observable_tag;
+    using dynamic_observable_tag = tag_dynamic_observable;
 
     dynamic_observable()
     {
@@ -75,7 +75,7 @@ public:
         : state(std::make_shared<state_type>())
     {
         construct(std::forward<SOF>(sof),
-                  typename std::conditional<rxs::is_source<SOF>::value || rxo::is_operator<SOF>::value, rxs::tag_source, tag_function>::type());
+                  typename std::conditional_t<rxs::is_source<SOF>::value || rxo::is_operator<SOF>::value, rxs::tag_source, tag_function>());
     }
 
     void on_subscribe(subscriber<T> o) const {
@@ -110,10 +110,10 @@ struct resolve_observable;
 template<class Default, class SO>
 struct resolve_observable<true, Default, SO>
 {
-    typedef typename SO::type type;
-    typedef typename type::value_type value_type;
+    using type = typename SO::type;
+    using value_type = typename type::value_type;
     static const bool value = true;
-    typedef observable<value_type, type> observable_type;
+    using observable_type = observable<value_type, type>;
     template<class... AN>
     static observable_type make(const Default&, AN&&... an) {
         return observable_type(type(std::forward<AN>(an)...));
@@ -123,7 +123,7 @@ template<class Default, class SO>
 struct resolve_observable<false, Default, SO>
 {
     static const bool value = false;
-    typedef Default observable_type;
+    using observable_type = Default;
     template<class... AN>
     static observable_type make(const observable_type& that, const AN&...) {
         return that;
@@ -132,10 +132,10 @@ struct resolve_observable<false, Default, SO>
 template<class SO>
 struct resolve_observable<true, void, SO>
 {
-    typedef typename SO::type type;
-    typedef typename type::value_type value_type;
+    using type = typename SO::type;
+    using value_type = typename type::value_type;
     static const bool value = true;
-    typedef observable<value_type, type> observable_type;
+    using observable_type = observable<value_type, type>;
     template<class... AN>
     static observable_type make(AN&&... an) {
         return observable_type(type(std::forward<AN>(an)...));
@@ -145,7 +145,7 @@ template<class SO>
 struct resolve_observable<false, void, SO>
 {
     static const bool value = false;
-    typedef void observable_type;
+    using observable_type = void;
     template<class... AN>
     static observable_type make(const AN&...) {
     }
@@ -212,7 +212,7 @@ class blocking_observable
     }
 
 public:
-    typedef rxu::decay_t<Observable> observable_type;
+    using observable_type = rxu::decay_t<Observable>;
     observable_type source;
     ~blocking_observable()
     {
@@ -478,12 +478,12 @@ template<class T, class SourceOperator>
 class observable
     : public observable_base<T>
 {
-    static_assert(std::is_same<T, typename SourceOperator::value_type>::value, "SourceOperator::value_type must be the same as T in observable<T, SourceOperator>");
+    static_assert(std::is_same_v<T, typename SourceOperator::value_type>, "SourceOperator::value_type must be the same as T in observable<T, SourceOperator>");
 
-    typedef observable<T, SourceOperator> this_type;
+    using this_type = observable<T, SourceOperator>;
 
 public:
-    typedef rxu::decay_t<SourceOperator> source_operator_type;
+    using source_operator_type = rxu::decay_t<SourceOperator>;
     mutable source_operator_type source_operator;
 
 private:
@@ -498,10 +498,10 @@ private:
     auto detail_subscribe(Subscriber o) const
         -> composite_subscription {
 
-        typedef rxu::decay_t<Subscriber> subscriber_type;
+        using subscriber_type = rxu::decay_t<Subscriber>;
 
         static_assert(is_subscriber<subscriber_type>::value, "subscribe must be passed a subscriber");
-        static_assert(std::is_same<typename source_operator_type::value_type, T>::value && std::is_convertible<T*, typename subscriber_type::value_type*>::value, "the value types in the sequence must match or be convertible");
+        static_assert(std::is_same_v<typename source_operator_type::value_type, T> && std::is_convertible<T*, typename subscriber_type::value_type*>::value, "the value types in the sequence must match or be convertible");
         static_assert(detail::has_on_subscribe_for<subscriber_type, source_operator_type>::value, "inner must have on_subscribe method that accepts this subscriber ");
 
         trace_activity().subscribe_enter(*this, o);
@@ -527,7 +527,7 @@ private:
     }
 
 public:
-    typedef T value_type;
+    using value_type = T;
 
     static_assert(rxo::is_operator<source_operator_type>::value || rxs::is_source<source_operator_type>::value, "observable must wrap an operator or source");
 
@@ -579,7 +579,7 @@ public:
     template<class... AN>
     auto ref_count(AN... an) const // ref_count(ConnectableObservable&&)
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(ref_count_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(ref_count_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(ref_count_tag{},                *this, std::forward<AN>(an)...);
@@ -602,7 +602,7 @@ public:
     ///
     template<class OperatorFactory>
     auto op(OperatorFactory&& of) const
-        -> decltype(of(*(const this_type*)nullptr)) {
+        -> decltype(of(std::declval<const this_type>())) {
         return      of(*this);
         static_assert(is_operator_factory_for<this_type, OperatorFactory>::value, "Function passed for op() must have the signature Result(SourceObservable)");
     }
@@ -655,7 +655,7 @@ public:
     template<class... AN>
     auto all(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(all_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(all_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(all_tag{},                *this, std::forward<AN>(an)...);
@@ -666,7 +666,7 @@ public:
     template<class... AN>
     auto is_empty(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(is_empty_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(is_empty_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(is_empty_tag{},                *this, std::forward<AN>(an)...);
@@ -677,7 +677,7 @@ public:
     template<class... AN>
     auto any(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(any_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(any_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(any_tag{},                *this, std::forward<AN>(an)...);
@@ -688,7 +688,7 @@ public:
     template<class... AN>
     auto exists(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(exists_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(exists_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(exists_tag{},                *this, std::forward<AN>(an)...);
@@ -699,7 +699,7 @@ public:
     template<class... AN>
     auto contains(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(contains_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(contains_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(contains_tag{},                *this, std::forward<AN>(an)...);
@@ -710,7 +710,7 @@ public:
     template<class... AN>
     auto filter(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(filter_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(filter_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(filter_tag{}, *this,                std::forward<AN>(an)...);
@@ -721,7 +721,7 @@ public:
     template<class... AN>
     auto switch_if_empty(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(switch_if_empty_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(switch_if_empty_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(switch_if_empty_tag{},                *this, std::forward<AN>(an)...);
@@ -732,7 +732,7 @@ public:
     template<class... AN>
     auto default_if_empty(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(default_if_empty_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(default_if_empty_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(default_if_empty_tag{},                *this, std::forward<AN>(an)...);
@@ -743,7 +743,7 @@ public:
     template<class... AN>
     auto sequence_equal(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(sequence_equal_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(sequence_equal_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(sequence_equal_tag{},                *this, std::forward<AN>(an)...);
@@ -754,7 +754,7 @@ public:
     template<class... AN>
     auto tap(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(tap_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(tap_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(tap_tag{},                *this, std::forward<AN>(an)...);
@@ -765,7 +765,7 @@ public:
     template<class... AN>
     auto time_interval(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(time_interval_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(time_interval_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(time_interval_tag{},                *this, std::forward<AN>(an)...);
@@ -776,7 +776,7 @@ public:
     template<class... AN>
     auto timeout(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(timeout_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(timeout_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(timeout_tag{},                *this, std::forward<AN>(an)...);
@@ -787,7 +787,7 @@ public:
     template<class... AN>
     auto timestamp(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(timestamp_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(timestamp_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(timestamp_tag{},                *this, std::forward<AN>(an)...);
@@ -798,7 +798,7 @@ public:
     template<class... AN>
     auto finally(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(finally_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(finally_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(finally_tag{},                *this, std::forward<AN>(an)...);
@@ -809,7 +809,7 @@ public:
     template<class... AN>
     auto on_error_resume_next(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(on_error_resume_next_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(on_error_resume_next_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(on_error_resume_next_tag{},                *this, std::forward<AN>(an)...);
@@ -820,7 +820,7 @@ public:
     template<class... AN>
     auto switch_on_error(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(on_error_resume_next_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(on_error_resume_next_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(on_error_resume_next_tag{},                *this, std::forward<AN>(an)...);
@@ -831,7 +831,7 @@ public:
     template<class... AN>
     auto map(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(map_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(map_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(map_tag{},                *this, std::forward<AN>(an)...);
@@ -842,7 +842,7 @@ public:
     template<class... AN>
     auto transform(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(map_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(map_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(map_tag{},                *this, std::forward<AN>(an)...);
@@ -853,7 +853,7 @@ public:
     template<class... AN>
     auto debounce(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(debounce_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(debounce_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(debounce_tag{},                *this, std::forward<AN>(an)...);
@@ -864,7 +864,7 @@ public:
     template<class... AN>
     auto delay(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(delay_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(delay_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(delay_tag{},                *this, std::forward<AN>(an)...);
@@ -875,7 +875,7 @@ public:
     template<class... AN>
     auto distinct(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(distinct_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(distinct_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(distinct_tag{},                *this, std::forward<AN>(an)...);
@@ -886,7 +886,7 @@ public:
     template<class... AN>
     auto distinct_until_changed(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(distinct_until_changed_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(distinct_until_changed_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(distinct_until_changed_tag{},                *this, std::forward<AN>(an)...);
@@ -897,7 +897,7 @@ public:
     template<class... AN>
     auto element_at(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(element_at_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(element_at_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(element_at_tag{},                *this, std::forward<AN>(an)...);
@@ -908,7 +908,7 @@ public:
     template<class... AN>
     auto window(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(window_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(window_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(window_tag{},                *this, std::forward<AN>(an)...);
@@ -919,7 +919,7 @@ public:
     template<class... AN>
     auto window_with_time(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(window_with_time_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(window_with_time_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(window_with_time_tag{},                *this, std::forward<AN>(an)...);
@@ -930,7 +930,7 @@ public:
     template<class... AN>
     auto window_with_time_or_count(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(window_with_time_or_count_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(window_with_time_or_count_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(window_with_time_or_count_tag{},                *this, std::forward<AN>(an)...);
@@ -941,7 +941,7 @@ public:
     template<class... AN>
     auto window_toggle(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(window_toggle_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(window_toggle_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(window_toggle_tag{},                *this, std::forward<AN>(an)...);
@@ -952,7 +952,7 @@ public:
     template<class... AN>
     auto buffer(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(buffer_count_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(buffer_count_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(buffer_count_tag{},                *this, std::forward<AN>(an)...);
@@ -963,7 +963,7 @@ public:
     template<class... AN>
     auto buffer_with_time(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(buffer_with_time_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(buffer_with_time_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(buffer_with_time_tag{},                *this, std::forward<AN>(an)...);
@@ -974,7 +974,7 @@ public:
     template<class... AN>
     auto buffer_with_time_or_count(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(buffer_with_time_or_count_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(buffer_with_time_or_count_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(buffer_with_time_or_count_tag{},                *this, std::forward<AN>(an)...);
@@ -985,7 +985,7 @@ public:
     template<class... AN>
     auto switch_on_next(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(switch_on_next_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(switch_on_next_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(switch_on_next_tag{},                *this, std::forward<AN>(an)...);
@@ -996,7 +996,7 @@ public:
     template<class... AN>
     auto merge(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(merge_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(merge_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(merge_tag{},                *this, std::forward<AN>(an)...);
@@ -1007,7 +1007,7 @@ public:
     template<class... AN>
     auto merge_delay_error(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(merge_delay_error_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(merge_delay_error_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
             return      observable_member(merge_delay_error_tag{},                *this, std::forward<AN>(an)...);
@@ -1018,7 +1018,7 @@ public:
     template<class... AN>
     auto amb(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(amb_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(amb_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(amb_tag{},                *this, std::forward<AN>(an)...);
@@ -1029,7 +1029,7 @@ public:
     template<class... AN>
     auto flat_map(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(flat_map_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(flat_map_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(flat_map_tag{},                *this, std::forward<AN>(an)...);
@@ -1040,7 +1040,7 @@ public:
     template<class... AN>
     auto merge_transform(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(flat_map_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(flat_map_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(flat_map_tag{},                *this, std::forward<AN>(an)...);
@@ -1051,7 +1051,7 @@ public:
     template<class... AN>
     auto concat(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(concat_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(concat_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(concat_tag{},                *this, std::forward<AN>(an)...);
@@ -1062,7 +1062,7 @@ public:
     template<class... AN>
     auto concat_map(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(concat_map_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(concat_map_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(concat_map_tag{},                *this, std::forward<AN>(an)...);
@@ -1073,7 +1073,7 @@ public:
     template<class... AN>
     auto concat_transform(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(concat_map_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(concat_map_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(concat_map_tag{},                *this, std::forward<AN>(an)...);
@@ -1084,7 +1084,7 @@ public:
     template<class... AN>
     auto with_latest_from(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(with_latest_from_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(with_latest_from_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(with_latest_from_tag{},                *this, std::forward<AN>(an)...);
@@ -1096,7 +1096,7 @@ public:
     template<class... AN>
     auto combine_latest(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(combine_latest_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(combine_latest_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(combine_latest_tag{},                *this, std::forward<AN>(an)...);
@@ -1107,7 +1107,7 @@ public:
     template<class... AN>
     auto zip(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(zip_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(zip_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(zip_tag{},                *this, std::forward<AN>(an)...);
@@ -1118,7 +1118,7 @@ public:
     template<class... AN>
     inline auto group_by(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(group_by_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(group_by_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(group_by_tag{},                *this, std::forward<AN>(an)...);
@@ -1129,7 +1129,7 @@ public:
     template<class... AN>
     auto ignore_elements(AN&&... an) const
     /// \cond SHOW_SERVICE_MEMBERS
-    -> decltype(observable_member(ignore_elements_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+    -> decltype(observable_member(ignore_elements_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
     /// \endcond
     {
         return  observable_member(ignore_elements_tag{},                *this, std::forward<AN>(an)...);
@@ -1140,7 +1140,7 @@ public:
     template<class... AN>
     auto multicast(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(multicast_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(multicast_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(multicast_tag{},                *this, std::forward<AN>(an)...);
@@ -1151,7 +1151,7 @@ public:
     template<class... AN>
     auto publish(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(publish_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(publish_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(publish_tag{},                *this, std::forward<AN>(an)...);
@@ -1162,7 +1162,7 @@ public:
     template<class... AN>
     auto publish_synchronized(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(publish_synchronized_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(publish_synchronized_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(publish_synchronized_tag{},                *this, std::forward<AN>(an)...);
@@ -1173,7 +1173,7 @@ public:
     template<class... AN>
     auto replay(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(replay_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(replay_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(replay_tag{},                *this, std::forward<AN>(an)...);
@@ -1184,7 +1184,7 @@ public:
     template<class... AN>
     auto subscribe_on(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(subscribe_on_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(subscribe_on_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(subscribe_on_tag{},                *this, std::forward<AN>(an)...);
@@ -1195,7 +1195,7 @@ public:
     template<class... AN>
     auto observe_on(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(observe_on_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(observe_on_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(observe_on_tag{},                *this, std::forward<AN>(an)...);
@@ -1206,7 +1206,7 @@ public:
     template<class... AN>
     auto reduce(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(reduce_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(reduce_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(reduce_tag{},                *this, std::forward<AN>(an)...);
@@ -1217,7 +1217,7 @@ public:
     template<class... AN>
     auto accumulate(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(reduce_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(reduce_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(reduce_tag{},                *this, std::forward<AN>(an)...);
@@ -1228,7 +1228,7 @@ public:
     template<class... AN>
     auto first(AN**...) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(delayed_type<first_tag, AN...>::value(), *(this_type*)nullptr))
+        -> decltype(observable_member(delayed_type<first_tag, AN...>::value(), std::declval<this_type>()))
         /// \endcond
     {
         return      observable_member(delayed_type<first_tag, AN...>::value(),                *this);
@@ -1240,7 +1240,7 @@ public:
     template<class... AN>
     auto last(AN**...) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(delayed_type<last_tag, AN...>::value(), *(this_type*)nullptr))
+        -> decltype(observable_member(delayed_type<last_tag, AN...>::value(), std::declval<this_type>()))
         /// \endcond
     {
         return      observable_member(delayed_type<last_tag, AN...>::value(),                *this);
@@ -1252,7 +1252,7 @@ public:
     template<class... AN>
     auto count(AN**...) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(delayed_type<reduce_tag, AN...>::value(), *(this_type*)nullptr, 0, rxu::count(), identity_for<int>()))
+        -> decltype(observable_member(delayed_type<reduce_tag, AN...>::value(), std::declval<this_type>(), 0, rxu::count(), identity_for<int>()))
         /// \endcond
     {
         return      observable_member(delayed_type<reduce_tag, AN...>::value(),                *this, 0, rxu::count(), identity_for<int>());
@@ -1264,7 +1264,7 @@ public:
     template<class... AN>
     auto sum(AN**...) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(delayed_type<sum_tag, AN...>::value(), *(this_type*)nullptr))
+        -> decltype(observable_member(delayed_type<sum_tag, AN...>::value(), std::declval<this_type>()))
         /// \endcond
     {
         return      observable_member(delayed_type<sum_tag, AN...>::value(),                *this);
@@ -1276,7 +1276,7 @@ public:
     template<class... AN>
     auto average(AN**...) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(delayed_type<average_tag, AN...>::value(), *(this_type*)nullptr))
+        -> decltype(observable_member(delayed_type<average_tag, AN...>::value(), std::declval<this_type>()))
         /// \endcond
     {
         return      observable_member(delayed_type<average_tag, AN...>::value(),                *this);
@@ -1288,7 +1288,7 @@ public:
     template<class... AN>
     auto max(AN**...) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(delayed_type<max_tag, AN...>::value(), *(this_type*)nullptr))
+        -> decltype(observable_member(delayed_type<max_tag, AN...>::value(), std::declval<this_type>()))
         /// \endcond
     {
         return      observable_member(delayed_type<max_tag, AN...>::value(),                *this);
@@ -1300,7 +1300,7 @@ public:
     template<class... AN>
     auto min(AN**...) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(delayed_type<min_tag, AN...>::value(), *(this_type*)nullptr))
+        -> decltype(observable_member(delayed_type<min_tag, AN...>::value(), std::declval<this_type>()))
         /// \endcond
     {
         return      observable_member(delayed_type<min_tag, AN...>::value(),                *this);
@@ -1312,7 +1312,7 @@ public:
     template<class... AN>
     auto scan(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(scan_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(scan_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(scan_tag{},                *this, std::forward<AN>(an)...);
@@ -1323,7 +1323,7 @@ public:
     template<class... AN>
     auto sample_with_time(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(sample_with_time_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(sample_with_time_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(sample_with_time_tag{},                *this, std::forward<AN>(an)...);
@@ -1334,7 +1334,7 @@ public:
     template<class... AN>
     auto skip(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(skip_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(skip_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(skip_tag{},                *this, std::forward<AN>(an)...);
@@ -1345,7 +1345,7 @@ public:
     template<class... AN>
     auto skip_while(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(skip_while_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(skip_while_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(skip_while_tag{},                *this, std::forward<AN>(an)...);
@@ -1356,7 +1356,7 @@ public:
     template<class... AN>
     auto skip_last(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(skip_last_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(skip_last_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(skip_last_tag{},                *this, std::forward<AN>(an)...);
@@ -1367,7 +1367,7 @@ public:
     template<class... AN>
     auto skip_until(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(skip_until_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(skip_until_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(skip_until_tag{},                *this, std::forward<AN>(an)...);
@@ -1378,7 +1378,7 @@ public:
     template<class... AN>
     auto take(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(take_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(take_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(take_tag{},                *this, std::forward<AN>(an)...);
@@ -1389,7 +1389,7 @@ public:
     template<class... AN>
     auto take_last(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(take_last_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(take_last_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(take_last_tag{},                *this, std::forward<AN>(an)...);
@@ -1400,7 +1400,7 @@ public:
     template<class... AN>
     auto take_until(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(take_until_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(take_until_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(take_until_tag{},                *this, std::forward<AN>(an)...);
@@ -1411,7 +1411,7 @@ public:
     template<class... AN>
     auto take_while(AN&&... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(take_while_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(take_while_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(take_while_tag{},                *this, std::forward<AN>(an)...);
@@ -1422,7 +1422,7 @@ public:
     template<class... AN>
     auto repeat(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(repeat_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(repeat_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(repeat_tag{},                *this, std::forward<AN>(an)...);
@@ -1433,7 +1433,7 @@ public:
     template<class... AN>
     auto retry(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(retry_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(retry_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(retry_tag{},                *(this_type*)this, std::forward<AN>(an)...);
@@ -1444,7 +1444,7 @@ public:
     template<class... AN>
     auto start_with(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(start_with_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(start_with_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(start_with_tag{},                *this, std::forward<AN>(an)...);
@@ -1455,7 +1455,7 @@ public:
     template<class... AN>
     auto pairwise(AN... an) const
         /// \cond SHOW_SERVICE_MEMBERS
-        -> decltype(observable_member(pairwise_tag{}, *(this_type*)nullptr, std::forward<AN>(an)...))
+        -> decltype(observable_member(pairwise_tag{}, std::declval<this_type>(), std::forward<AN>(an)...))
         /// \endcond
     {
         return      observable_member(pairwise_tag{},                *this, std::forward<AN>(an)...);
@@ -1676,16 +1676,16 @@ public:
     /*! @copydoc rx-iterate.hpp
      */
     template<class Collection>
-    static auto iterate(Collection c)
-        -> decltype(rxs::iterate(std::move(c), identity_current_thread())) {
-        return      rxs::iterate(std::move(c), identity_current_thread());
+    static auto iterate(Collection&& c)
+        -> decltype(rxs::iterate(std::forward<Collection>(c), identity_current_thread())) {
+        return      rxs::iterate(std::forward<Collection>(c), identity_current_thread());
     }
     /*! @copydoc rx-iterate.hpp
      */
     template<class Collection, class Coordination>
-    static auto iterate(Collection c, Coordination cn)
-        -> decltype(rxs::iterate(std::move(c), std::move(cn))) {
-        return      rxs::iterate(std::move(c), std::move(cn));
+    static auto iterate(Collection&& c, Coordination cn)
+        -> decltype(rxs::iterate(std::forward<Collection>(c), std::move(cn))) {
+        return      rxs::iterate(std::forward<Collection>(c), std::move(cn));
     }
 
     /*! @copydoc rxcpp::sources::from()
@@ -1706,41 +1706,41 @@ public:
     /*! @copydoc rxcpp::sources::from(Value0 v0, ValueN... vn)
      */
     template<class Value0, class... ValueN>
-    static auto from(Value0 v0, ValueN... vn)
-        -> typename std::enable_if<!is_coordination<Value0>::value,
-            decltype(   rxs::from(v0, vn...))>::type {
-        return          rxs::from(v0, vn...);
+    static auto from(Value0&& v0, ValueN&&... vn)
+        -> typename std::enable_if<!is_coordination<rxu::decay_t<Value0>>::value,
+            decltype(   rxs::from(std::forward<Value0>(v0), std::forward<ValueN>(vn)...))>::type {
+        return          rxs::from(std::forward<Value0>(v0), std::forward<ValueN>(vn)...);
     }
     /*! @copydoc rxcpp::sources::from(Coordination cn, Value0 v0, ValueN... vn)
      */
     template<class Coordination, class Value0, class... ValueN>
-    static auto from(Coordination cn, Value0 v0, ValueN... vn)
+    static auto from(Coordination cn, Value0&& v0, ValueN&&... vn)
         -> typename std::enable_if<is_coordination<Coordination>::value,
-            decltype(   rxs::from(std::move(cn), v0, vn...))>::type {
-        return          rxs::from(std::move(cn), v0, vn...);
+            decltype(   rxs::from(std::move(cn), std::forward<Value0>(v0), std::forward<ValueN>(vn)...))>::type {
+        return          rxs::from(std::move(cn), std::forward<Value0>(v0), std::forward<ValueN>(vn)...);
     }
 
     /*! @copydoc rxcpp::sources::just(Value0 v0)
      */
     template<class T>
-    static auto just(T v)
-        -> decltype(rxs::just(std::move(v))) {
-        return      rxs::just(std::move(v));
+    static auto just(T&& v)
+        -> decltype(rxs::just(std::forward<T>(v))) {
+        return      rxs::just(std::forward<T>(v));
     }
     /*! @copydoc rxcpp::sources::just(Value0 v0, Coordination cn)
      */
     template<class T, class Coordination>
-    static auto just(T v, Coordination cn)
-        -> decltype(rxs::just(std::move(v), std::move(cn))) {
-        return      rxs::just(std::move(v), std::move(cn));
+    static auto just(T&& v, Coordination cn)
+        -> decltype(rxs::just(std::forward<T>(v), std::move(cn))) {
+        return      rxs::just(std::forward<T>(v), std::move(cn));
     }
 
     /*! @copydoc rxcpp::sources::start_with(Observable o, Value0 v0, ValueN... vn)
      */
     template<class Observable, class Value0, class... ValueN>
-    static auto start_with(Observable o, Value0 v0, ValueN... vn)
-        -> decltype(rxs::start_with(std::move(o), std::move(v0), std::move(vn)...)) {
-        return      rxs::start_with(std::move(o), std::move(v0), std::move(vn)...);
+    static auto start_with(Observable o, Value0&& v0, ValueN&&... vn)
+        -> decltype(rxs::start_with(std::move(o), std::forward<Value0>(v0), std::forward<ValueN>(vn)...)) {
+        return      rxs::start_with(std::move(o), std::forward<Value0>(v0), std::forward<ValueN>(vn)...);
     }
 
     /*! @copydoc rx-empty.hpp

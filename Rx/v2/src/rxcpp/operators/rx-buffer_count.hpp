@@ -46,8 +46,8 @@ using buffer_count_invalid_t = typename buffer_count_invalid<AN...>::type;
 template<class T>
 struct buffer_count
 {
-    typedef rxu::decay_t<T> source_value_type;
-    typedef std::vector<source_value_type> value_type;
+    using source_value_type = rxu::decay_t<T>;
+    using value_type = std::vector<source_value_type>;
 
     struct buffer_count_values
     {
@@ -70,10 +70,10 @@ struct buffer_count
     template<class Subscriber>
     struct buffer_count_observer : public buffer_count_values
     {
-        typedef buffer_count_observer<Subscriber> this_type;
-        typedef std::vector<T> value_type;
-        typedef rxu::decay_t<Subscriber> dest_type;
-        typedef observer<value_type, this_type> observer_type;
+        using this_type = buffer_count_observer<Subscriber>;
+        using value_type = std::vector<T>;
+        using dest_type = rxu::decay_t<Subscriber>;
+        using observer_type = observer<value_type, this_type>;
         dest_type dest;
         mutable int cursor;
         mutable std::deque<value_type> chunks;

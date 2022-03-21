@@ -48,11 +48,11 @@ using window_with_time_or_count_invalid_t = typename window_with_time_or_count_i
 template<class T, class Duration, class Coordination>
 struct window_with_time_or_count
 {
-    typedef rxu::decay_t<T> source_value_type;
-    typedef observable<source_value_type> value_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
-    typedef typename coordination_type::coordinator_type coordinator_type;
-    typedef rxu::decay_t<Duration> duration_type;
+    using source_value_type = rxu::decay_t<T>;
+    using value_type = observable<source_value_type>;
+    using coordination_type = rxu::decay_t<Coordination>;
+    using coordinator_type = typename coordination_type::coordinator_type;
+    using duration_type = rxu::decay_t<Duration>;
 
     struct window_with_time_or_count_values
     {
@@ -76,10 +76,10 @@ struct window_with_time_or_count
     template<class Subscriber>
     struct window_with_time_or_count_observer
     {
-        typedef window_with_time_or_count_observer<Subscriber> this_type;
-        typedef rxu::decay_t<T> value_type;
-        typedef rxu::decay_t<Subscriber> dest_type;
-        typedef observer<T, this_type> observer_type;
+        using this_type = window_with_time_or_count_observer<Subscriber>;
+        using value_type = rxu::decay_t<T>;
+        using dest_type = rxu::decay_t<Subscriber>;
+        using observer_type = observer<T, this_type>;
 
         struct window_with_time_or_count_subscriber_values : public window_with_time_or_count_values
         {
@@ -101,7 +101,8 @@ struct window_with_time_or_count
             mutable int subj_id;
             mutable rxcpp::subjects::subject<T> subj;
         };
-        typedef std::shared_ptr<window_with_time_or_count_subscriber_values> state_type;
+
+        using state_type = std::shared_ptr<window_with_time_or_count_subscriber_values>;
         state_type state;
 
         window_with_time_or_count_observer(composite_subscription cs, dest_type d, window_with_time_or_count_values v, coordinator_type c)

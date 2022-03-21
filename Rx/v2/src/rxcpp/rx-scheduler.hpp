@@ -17,16 +17,16 @@ class scheduler_interface;
 namespace detail {
 
 class action_type;
-typedef std::shared_ptr<action_type> action_ptr;
+    using action_ptr = std::shared_ptr<action_type>;
 
-typedef std::shared_ptr<worker_interface> worker_interface_ptr;
-typedef std::shared_ptr<const worker_interface> const_worker_interface_ptr;
+    using worker_interface_ptr = std::shared_ptr<worker_interface>;
+    using const_worker_interface_ptr = std::shared_ptr<const worker_interface>;
 
-typedef std::weak_ptr<worker_interface> worker_interface_weak_ptr;
-typedef std::weak_ptr<const worker_interface> const_worker_interface_weak_ptr;
+    using worker_interface_weak_ptr = std::weak_ptr<worker_interface>;
+    using const_worker_interface_weak_ptr = std::weak_ptr<const worker_interface>;
 
-typedef std::shared_ptr<scheduler_interface> scheduler_interface_ptr;
-typedef std::shared_ptr<const scheduler_interface> const_scheduler_interface_ptr;
+    using scheduler_interface_ptr = std::shared_ptr<scheduler_interface>;
+    using const_scheduler_interface_ptr = std::shared_ptr<const scheduler_interface>;
 
 inline action_ptr shared_empty() {
     static action_ptr shared_empty = std::make_shared<detail::action_type>();
@@ -121,7 +121,7 @@ public:
 
 struct action_base
 {
-    typedef tag_action action_tag;
+    using action_tag = tag_action;
 };
 
 class schedulable;
@@ -129,7 +129,7 @@ class schedulable;
 /// action provides type-forgetting for a potentially recursive set of calls to a function that takes a schedulable
 class action : public action_base
 {
-    typedef action this_type;
+    using this_type = action;
     detail::action_ptr inner;
 public:
     action()
@@ -151,22 +151,22 @@ public:
 
 struct scheduler_base
 {
-    typedef std::chrono::steady_clock clock_type;
-    typedef tag_scheduler scheduler_tag;
+    using clock_type = std::chrono::steady_clock;
+    using scheduler_tag = tag_scheduler;
 };
 
 struct worker_base : public subscription_base
 {
-    typedef tag_worker worker_tag;
+    using worker_tag = tag_worker;
 };
 
 class worker_interface
     : public std::enable_shared_from_this<worker_interface>
 {
-    typedef worker_interface this_type;
+    using this_type = worker_interface;
 
 public:
-    typedef scheduler_base::clock_type clock_type;
+    using clock_type = scheduler_base::clock_type;
 
     virtual ~worker_interface() {}
 
@@ -183,11 +183,11 @@ struct is_action_function
 {
     struct not_void {};
     template<class CF>
-    static auto check(int) -> decltype((*(CF*)nullptr)(*(schedulable*)nullptr));
+    static auto check(int) -> decltype(std::declval<CF>()(std::declval<schedulable>()));
     template<class CF>
     static not_void check(...);
 
-    static const bool value = std::is_same<decltype(check<rxu::decay_t<F>>(0)), void>::value;
+    static const bool value = std::is_same_v<decltype(check<rxu::decay_t<F>>(0)), void>;
 };
 
 }
@@ -199,14 +199,14 @@ class weak_worker;
 /// some inner implementations will impose additional constraints on the execution of items.
 class worker : public worker_base
 {
-    typedef worker this_type;
+    using this_type = worker;
     detail::worker_interface_ptr inner;
     composite_subscription lifetime;
     friend bool operator==(const worker&, const worker&);
     friend class weak_worker;
 public:
-    typedef scheduler_base::clock_type clock_type;
-    typedef composite_subscription::weak_subscription weak_subscription;
+    using clock_type = scheduler_base::clock_type;
+    using weak_subscription = composite_subscription::weak_subscription;
 
     worker()
     {
@@ -353,10 +353,10 @@ public:
 class scheduler_interface
     : public std::enable_shared_from_this<scheduler_interface>
 {
-    typedef scheduler_interface this_type;
+    using this_type = scheduler_interface;
 
 public:
-    typedef scheduler_base::clock_type clock_type;
+    using clock_type = scheduler_base::clock_type;
 
     virtual ~scheduler_interface() {}
 
@@ -371,7 +371,7 @@ struct schedulable_base :
     public worker_base,
     public action_base
 {
-    typedef tag_schedulable schedulable_tag;
+    using schedulable_tag = tag_schedulable;
 };
 
 /*!
@@ -382,11 +382,11 @@ struct schedulable_base :
 */
 class scheduler : public scheduler_base
 {
-    typedef scheduler this_type;
+    using this_type = scheduler;
     detail::scheduler_interface_ptr inner;
     friend bool operator==(const scheduler&, const scheduler&);
 public:
-    typedef scheduler_base::clock_type clock_type;
+    using clock_type = scheduler_base::clock_type;
 
     scheduler()
     {
@@ -425,7 +425,7 @@ inline scheduler make_scheduler(std::shared_ptr<scheduler_interface> si) {
 
 class schedulable : public schedulable_base
 {
-    typedef schedulable this_type;
+    using this_type = schedulable;
 
     composite_subscription lifetime;
     weak_worker controller;
@@ -501,8 +501,8 @@ class schedulable : public schedulable_base
     recursed_scope_type recursed_scope;
 
 public:
-    typedef composite_subscription::weak_subscription weak_subscription;
-    typedef scheduler_base::clock_type clock_type;
+    using weak_subscription = composite_subscription::weak_subscription;
+    using clock_type = scheduler_base::clock_type;
 
     ~schedulable()
     {
@@ -654,10 +654,10 @@ namespace detail {
 class action_type
     : public std::enable_shared_from_this<action_type>
 {
-    typedef action_type this_type;
+    using this_type = action_type;
 
 public:
-    typedef std::function<void(const schedulable&, const recurse&)> function_type;
+    using function_type = std::function<void(const schedulable &, const recurse &)>;
 
 private:
     function_type f;
@@ -683,10 +683,10 @@ public:
 class action_tailrecurser
     : public std::enable_shared_from_this<action_type>
 {
-    typedef action_type this_type;
+    using this_type = action_type;
 
 public:
-    typedef std::function<void(const schedulable&)> function_type;
+    using function_type = std::function<void(const schedulable &)>;
 
 private:
     function_type f;
@@ -870,7 +870,7 @@ namespace detail {
 template<class TimePoint>
 struct time_schedulable
 {
-    typedef TimePoint time_point_type;
+    using time_point_type = TimePoint;
 
     time_schedulable(TimePoint when, schedulable a)
         : when(when)
@@ -888,10 +888,10 @@ struct time_schedulable
 template<class TimePoint>
 class schedulable_queue {
 public:
-    typedef time_schedulable<TimePoint> item_type;
-    typedef std::pair<item_type, int64_t> elem_type;
-    typedef std::vector<elem_type> container_type;
-    typedef const item_type& const_reference;
+    using item_type = time_schedulable<TimePoint>;
+    using elem_type = std::pair<item_type, int64_t>;
+    using container_type = std::vector<elem_type>;
+    using const_reference = const item_type &;
 
 private:
     struct compare_elem
@@ -906,11 +906,7 @@ private:
         }
     };
 
-    typedef std::priority_queue<
-        elem_type,
-        container_type,
-        compare_elem
-    > queue_type;
+    using queue_type = std::priority_queue<elem_type, container_type, compare_elem>;
 
     queue_type q;
 

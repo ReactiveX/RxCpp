@@ -197,12 +197,12 @@ after_success:
 
 branches:
   only:
-  - master
+  - main
 
 notifications:
   email:
     recipients:
-      - kirk.shoop@microsoft.com
+      - kirk.shoop@gmail.com
     on_success: always
     on_failure: always
   slack: reactivex:eq4FFCchRIzufO2ZmpuuiJ9E

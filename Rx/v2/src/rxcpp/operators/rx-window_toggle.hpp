@@ -49,7 +49,7 @@ using window_toggle_invalid_t = typename window_toggle_invalid<AN...>::type;
 template<class T, class Openings, class ClosingSelector, class Coordination>
 struct window_toggle
 {
-    typedef window_toggle<T, Openings, ClosingSelector, Coordination> this_type;
+    using this_type = window_toggle<T, Openings, ClosingSelector, Coordination>;
 
     using source_value_type = rxu::decay_t<T>;
     using coordination_type = rxu::decay_t<Coordination>;
@@ -57,7 +57,7 @@ struct window_toggle
     using openings_type = rxu::decay_t<Openings>;
     using openings_value_type = typename openings_type::value_type;
     using closing_selector_type = rxu::decay_t<ClosingSelector>;
-    using closings_type = rxu::result_of_t<closing_selector_type(openings_value_type)>;
+    using closings_type = rxu::callable_result_t<closing_selector_type, openings_value_type>;
     using closings_value_type = typename closings_type::value_type;
 
     struct window_toggle_values
@@ -82,10 +82,10 @@ struct window_toggle
     template<class Subscriber>
     struct window_toggle_observer
     {
-        typedef window_toggle_observer<Subscriber> this_type;
-        typedef rxu::decay_t<T> value_type;
-        typedef rxu::decay_t<Subscriber> dest_type;
-        typedef observer<T, this_type> observer_type;
+        using this_type = window_toggle_observer<Subscriber>;
+        using value_type = rxu::decay_t<T>;
+        using dest_type = rxu::decay_t<Subscriber>;
+        using observer_type = observer<T, this_type>;
 
         struct window_toggle_subscriber_values : public window_toggle_values
         {
@@ -287,7 +287,7 @@ struct member_overload<window_toggle_tag>
         class OpeningsType = rxu::decay_t<Openings>,
         class OpeningsValueType = typename OpeningsType::value_type,
         class Enabled = rxu::enable_if_all_true_type_t<
-            all_observables<Observable, Openings, rxu::result_of_t<ClosingSelectorType(OpeningsValueType)>>>,
+            all_observables<Observable, Openings, rxu::callable_result_t<ClosingSelectorType, OpeningsValueType>>>,
         class SourceValue = rxu::value_type_t<Observable>,
         class WindowToggle = rxo::detail::window_toggle<SourceValue, rxu::decay_t<Openings>, rxu::decay_t<ClosingSelector>, identity_one_worker>,
         class Value = observable<SourceValue>>
@@ -301,7 +301,7 @@ struct member_overload<window_toggle_tag>
         class OpeningsType = rxu::decay_t<Openings>,
         class OpeningsValueType = typename OpeningsType::value_type,
         class Enabled = rxu::enable_if_all_true_type_t<
-            all_observables<Observable, Openings, rxu::result_of_t<ClosingSelectorType(OpeningsValueType)>>,
+            all_observables<Observable, Openings, rxu::callable_result_t<ClosingSelectorType, OpeningsValueType>>,
             is_coordination<Coordination>>,
         class SourceValue = rxu::value_type_t<Observable>,
         class WindowToggle = rxo::detail::window_toggle<SourceValue, rxu::decay_t<Openings>, rxu::decay_t<ClosingSelector>, rxu::decay_t<Coordination>>,

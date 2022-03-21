@@ -41,8 +41,8 @@ using switch_if_empty_invalid_t = typename switch_if_empty_invalid<AN...>::type;
 template<class T, class BackupSource>
 struct switch_if_empty
 {
-    typedef rxu::decay_t<T> source_value_type;
-    typedef rxu::decay_t<BackupSource> backup_source_type;
+    using source_value_type = rxu::decay_t<T>;
+    using backup_source_type = rxu::decay_t<BackupSource>;
 
     backup_source_type backup;
 
@@ -54,10 +54,10 @@ struct switch_if_empty
     template<class Subscriber>
     struct switch_if_empty_observer
     {
-        typedef switch_if_empty_observer<Subscriber> this_type;
-        typedef source_value_type value_type;
-        typedef rxu::decay_t<Subscriber> dest_type;
-        typedef observer<value_type, this_type> observer_type;
+        using this_type = switch_if_empty_observer<Subscriber>;
+        using value_type = source_value_type;
+        using dest_type = rxu::decay_t<Subscriber>;
+        using observer_type = observer<value_type, this_type>;
 
         dest_type dest;
         composite_subscription lifetime;

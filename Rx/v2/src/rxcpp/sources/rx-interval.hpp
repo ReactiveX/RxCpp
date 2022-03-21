@@ -44,10 +44,10 @@ namespace detail {
 template<class Coordination>
 struct interval : public source_base<long>
 {
-    typedef interval<Coordination> this_type;
+    using this_type = interval<Coordination>;
 
-    typedef rxu::decay_t<Coordination> coordination_type;
-    typedef typename coordination_type::coordinator_type coordinator_type;
+    using coordination_type = rxu::decay_t<Coordination>;
+    using coordinator_type = typename coordination_type::coordinator_type;
 
     struct interval_initial_type
     {

@@ -51,20 +51,7 @@ elseif (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     endif()
 endif()
 
-set(RX_COMPILE_FEATURES
-    cxx_auto_type
-    cxx_nullptr
-    cxx_decltype
-    cxx_lambdas
-    cxx_range_for
-    cxx_right_angle_brackets
-    cxx_rvalue_references
-    cxx_static_assert
-    cxx_trailing_return_types
-    cxx_alias_templates
-    cxx_variadic_templates
-    cxx_template_template_parameters
-    )
+set(RX_COMPILE_FEATURES cxx_std_14)
 
 set(IX_SRC_DIR ${RXCPP_DIR}/Ix/CPP/src)
 set(RX_SRC_DIR ${RXCPP_DIR}/Rx/v2/src)

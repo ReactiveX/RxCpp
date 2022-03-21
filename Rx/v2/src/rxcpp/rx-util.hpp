@@ -28,6 +28,8 @@
 
 #define RXCPP_MAKE_IDENTIFIER(Prefix) RXCPP_CONCAT_EVALUATE(Prefix, __LINE__)
 
+#define RXCPP_DECLVAL(...) static_cast<__VA_ARGS__ (*)() noexcept>(nullptr)()
+
 // Provide replacements for try/catch keywords, using which is a compilation error
 // when exceptions are disabled with -fno-exceptions.
 #if RXCPP_USE_EXCEPTIONS
@@ -46,18 +48,13 @@ namespace util {
 
 template<class T> using value_type_t = typename std::decay<T>::type::value_type;
 template<class T> using decay_t = typename std::decay<T>::type;
-#ifdef __cpp_lib_is_invocable
-template <class> struct result_of;
 
-template <class F, class... TN>
-struct result_of<F(TN...)>
-{
-    using type = std::invoke_result_t<F, TN...>;
+template <typename Fn, typename... ArgTypes>
+struct callable_result {
+    using type = decltype(RXCPP_DECLVAL(Fn&&)(RXCPP_DECLVAL(ArgTypes&&)...));
 };
-#else
-template<class... TN> using result_of = std::result_of<TN...>;
-#endif
-template<class... TN> using result_of_t = typename result_of<TN...>::type;
+template <typename Fn, typename... ArgTypes>
+using callable_result_t = typename callable_result<Fn, ArgTypes...>::type;
 
 template<class T, std::size_t size>
 std::vector<T> to_vector(const T (&arr) [size]) {
@@ -70,7 +67,7 @@ std::vector<T> to_vector(std::initializer_list<T> il) {
 }
 
 template<class T0, class... TN>
-typename std::enable_if<!std::is_array<T0>::value && std::is_pod<T0>::value, std::vector<T0>>::type to_vector(T0 t0, TN... tn) {
+typename std::enable_if<!std::is_array<T0>::value && std::is_trivial<T0>::value && std::is_standard_layout<T0>::value, std::vector<T0>>::type to_vector(T0 t0, TN... tn) {
     return to_vector({t0, tn...});
 }
 
@@ -93,13 +90,13 @@ struct values_from;
 template<class T, T Step, T Cursor, T... ValueN>
 struct values_from<T, 0, Step, Cursor, ValueN...>
 {
-    typedef values<T, ValueN...> type;
+    using type = values<T, ValueN...>;
 };
 
 template<class T, std::size_t Remaining, T Step, T Cursor, T... ValueN>
 struct values_from
 {
-    typedef typename values_from<T, Remaining - 1, Step, Cursor + Step, ValueN..., Cursor>::type type;
+    using type = typename values_from<T, Remaining - 1, Step, Cursor + Step, ValueN..., Cursor>::type;
 };
 
 template<bool... BN>
@@ -177,11 +174,11 @@ struct types {};
 struct types_checked {};
 
 namespace detail {
-template<class... TN> struct types_checked_from {typedef types_checked type;};
+template<class... TN> struct types_checked_from { using type = types_checked; };
 }
 
 template<class... TN>
-struct types_checked_from {typedef typename detail::types_checked_from<TN...>::type type;};
+struct types_checked_from { using type = typename detail::types_checked_from<TN...>::type; };
 
 template<class... TN>
 using types_checked_t = typename types_checked_from<TN...>::type;
@@ -199,11 +196,11 @@ using value_types_t = typename expand_value_types<types<TN...>>::type;
 
 
 template<class T, class C = types_checked>
-struct value_type_from : public std::false_type {typedef types_checked type;};
+struct value_type_from : public std::false_type { using type = types_checked; };
 
 template<class T>
 struct value_type_from<T, typename types_checked_from<value_type_t<T>>::type>
-    : public std::true_type {typedef value_type_t<T> type;};
+    : public std::true_type { using type = value_type_t<T>; };
 
 namespace detail {
 template<class F, class Tuple, int... IndexN>
@@ -333,13 +330,13 @@ struct defer_trait
     template<bool R>
     struct tag_valid {static const bool valid = true; static const bool value = R;};
     struct tag_not_valid {static const bool valid = false; static const bool value = false;};
-    typedef Deferred<typename resolve_type<AN>::type...> resolved_type;
+    using resolved_type = Deferred<typename resolve_type<AN>::type...>;
     template<class... CN>
     static auto check(int) -> tag_valid<resolved_type::value>;
     template<class... CN>
     static tag_not_valid check(...);
 
-    typedef decltype(check<AN...>(0)) tag_type;
+    using tag_type = decltype(check<AN...>(0));
     static const bool valid = tag_type::valid;
     static const bool value = tag_type::value;
     static const bool not_value = valid && !value;
@@ -349,16 +346,16 @@ template <template<class... TN> class Deferred, class... AN>
 struct defer_type
 {
     template<class R>
-    struct tag_valid {typedef R type; static const bool value = true;};
-    struct tag_not_valid {typedef void type; static const bool value = false;};
-    typedef Deferred<typename resolve_type<AN>::type...> resolved_type;
+    struct tag_valid { using type = R; static const bool value = true;};
+    struct tag_not_valid { using type = void; static const bool value = false;};
+    using resolved_type = Deferred<typename resolve_type<AN>::type...>;
     template<class... CN>
     static auto check(int) -> tag_valid<resolved_type>;
     template<class... CN>
     static tag_not_valid check(...);
 
-    typedef decltype(check<AN...>(0)) tag_type;
-    typedef typename tag_type::type type;
+    using tag_type = decltype(check<AN...>(0));
+    using type = typename tag_type::type;
     static const bool value = tag_type::value;
 };
 
@@ -366,16 +363,16 @@ template <template<class... TN> class Deferred, class... AN>
 struct defer_value_type
 {
     template<class R>
-    struct tag_valid {typedef R type; static const bool value = true;};
-    struct tag_not_valid {typedef void type; static const bool value = false;};
-    typedef Deferred<typename resolve_type<AN>::type...> resolved_type;
+    struct tag_valid { using type = R; static const bool value = true;};
+    struct tag_not_valid { using type = void; static const bool value = false;};
+    using resolved_type = Deferred<typename resolve_type<AN>::type...>;
     template<class... CN>
     static auto check(int) -> tag_valid<value_type_t<resolved_type>>;
     template<class... CN>
     static tag_not_valid check(...);
 
-    typedef decltype(check<AN...>(0)) tag_type;
-    typedef typename tag_type::type type;
+    using tag_type = decltype(check<AN...>(0));
+    using type = typename tag_type::type;
     static const bool value = tag_type::value;
 };
 
@@ -383,38 +380,38 @@ template <template<class... TN> class Deferred, class... AN>
 struct defer_seed_type
 {
     template<class R>
-    struct tag_valid {typedef R type; static const bool value = true;};
-    struct tag_not_valid {typedef void type; static const bool value = false;};
-    typedef Deferred<typename resolve_type<AN>::type...> resolved_type;
+    struct tag_valid { using type = R; static const bool value = true;};
+    struct tag_not_valid { using type = void; static const bool value = false;};
+    using resolved_type = Deferred<typename resolve_type<AN>::type...>;
     template<class... CN>
     static auto check(int) -> tag_valid<typename resolved_type::seed_type>;
     template<class... CN>
     static tag_not_valid check(...);
 
-    typedef decltype(check<AN...>(0)) tag_type;
-    typedef typename tag_type::type type;
+    using tag_type = decltype(check<AN...>(0));
+    using type = typename tag_type::type;
     static const bool value = tag_type::value;
 };
 
 template <class D>
 struct resolve_type
 {
-    typedef D type;
+    using type = D;
 };
 template <template<class... TN> class Deferred, class... AN>
 struct resolve_type<defer_type<Deferred, AN...>>
 {
-    typedef typename defer_type<Deferred, AN...>::type type;
+    using type = typename defer_type<Deferred, AN...>::type;
 };
 template <template<class... TN> class Deferred, class... AN>
 struct resolve_type<defer_value_type<Deferred, AN...>>
 {
-    typedef typename defer_value_type<Deferred, AN...>::type type;
+    using type = typename defer_value_type<Deferred, AN...>::type;
 };
 template <template<class... TN> class Deferred, class... AN>
 struct resolve_type<defer_seed_type<Deferred, AN...>>
 {
-    typedef typename defer_seed_type<Deferred, AN...>::type type;
+    using type = typename defer_seed_type<Deferred, AN...>::type;
 };
 
 struct plus
@@ -617,9 +614,9 @@ public:
         reset();
     }
 
-    typedef T value_type;
-    typedef T* iterator;
-    typedef const T* const_iterator;
+    using value_type = T;
+    using iterator = T *;
+    using const_iterator = const T *;
 
     bool empty() const {
         return !is_set;
@@ -834,7 +831,7 @@ struct is_duration : detail::is_duration<Decayed> {};
 // C++17 negation
 namespace detail {
     template<class T>
-    struct not_value : std::conditional<T::value, std::false_type, std::true_type>::type {
+    struct not_value : std::conditional_t<T::value, std::false_type, std::true_type> {
     };
 }
 
@@ -1027,7 +1024,7 @@ struct is_hashable<T,
     typename rxu::types_checked_from<
         typename filtered_hash<T>::result_type,
         typename filtered_hash<T>::argument_type,
-        typename rxu::result_of<filtered_hash<T>(T)>::type>::type>
+        typename rxu::callable_result<filtered_hash<T>, T>::type>::type>
     : std::true_type {};
 
 }

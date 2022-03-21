@@ -39,15 +39,15 @@ using distinct_invalid_t = typename distinct_invalid<AN...>::type;
 template<class T>
 struct distinct
 {
-    typedef rxu::decay_t<T> source_value_type;
+    using source_value_type = rxu::decay_t<T>;
 
     template<class Subscriber>
     struct distinct_observer
     {
-        typedef distinct_observer<Subscriber> this_type;
-        typedef source_value_type value_type;
-        typedef rxu::decay_t<Subscriber> dest_type;
-        typedef observer<value_type, this_type> observer_type;
+        using this_type = distinct_observer<Subscriber>;
+        using value_type = source_value_type;
+        using dest_type = rxu::decay_t<Subscriber>;
+        using observer_type = observer<value_type, this_type>;
         dest_type dest;
         mutable std::unordered_set<source_value_type, rxcpp::filtered_hash<source_value_type>> remembered;
 

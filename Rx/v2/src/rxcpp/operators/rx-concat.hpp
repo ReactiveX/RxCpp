@@ -63,17 +63,17 @@ template<class T, class Observable, class Coordination>
 struct concat
     : public operator_base<rxu::value_type_t<rxu::decay_t<T>>>
 {
-    typedef concat<T, Observable, Coordination> this_type;
+    using this_type = concat<T, Observable, Coordination>;
 
-    typedef rxu::decay_t<T> source_value_type;
-    typedef rxu::decay_t<Observable> source_type;
-    typedef rxu::decay_t<Coordination> coordination_type;
+    using source_value_type = rxu::decay_t<T>;
+    using source_type = rxu::decay_t<Observable>;
+    using coordination_type = rxu::decay_t<Coordination>;
 
-    typedef typename coordination_type::coordinator_type coordinator_type;
+    using coordinator_type = typename coordination_type::coordinator_type;
 
-    typedef typename source_type::source_operator_type source_operator_type;
-    typedef source_value_type collection_type;
-    typedef typename collection_type::value_type value_type;
+    using source_operator_type = typename source_type::source_operator_type;
+    using collection_type = source_value_type;
+    using value_type = typename collection_type::value_type;
 
     struct values
     {
@@ -96,7 +96,7 @@ struct concat
     void on_subscribe(Subscriber scbr) const {
         static_assert(is_subscriber<Subscriber>::value, "subscribe must be passed a subscriber");
 
-        typedef Subscriber output_type;
+        using output_type = Subscriber;
 
         struct concat_state_type
             : public std::enable_shared_from_this<concat_state_type>

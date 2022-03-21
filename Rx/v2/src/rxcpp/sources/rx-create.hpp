@@ -51,9 +51,9 @@ namespace detail {
 template<class T, class OnSubscribe>
 struct create : public source_base<T>
 {
-    typedef create<T, OnSubscribe> this_type;
+    using this_type = create<T, OnSubscribe>;
 
-    typedef rxu::decay_t<OnSubscribe> on_subscribe_type;
+    using on_subscribe_type = rxu::decay_t<OnSubscribe>;
 
     on_subscribe_type on_subscribe_function;
 

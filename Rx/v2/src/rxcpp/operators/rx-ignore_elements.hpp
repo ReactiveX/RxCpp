@@ -36,15 +36,15 @@ using ignore_elements_invalid_t = typename ignore_elements_invalid<AN...>::type;
 
 template<class T>
 struct ignore_elements {
-    typedef rxu::decay_t<T> source_value_type;
+    using source_value_type = rxu::decay_t<T>;
 
     template<class Subscriber>
     struct ignore_elements_observer
     {
-        typedef ignore_elements_observer<Subscriber> this_type;
-        typedef source_value_type value_type;
-        typedef rxu::decay_t<Subscriber> dest_type;
-        typedef observer<value_type, this_type> observer_type;
+        using this_type = ignore_elements_observer<Subscriber>;
+        using value_type = source_value_type;
+        using dest_type = rxu::decay_t<Subscriber>;
+        using observer_type = observer<value_type, this_type>;
         dest_type dest;
 
         ignore_elements_observer(dest_type d)
