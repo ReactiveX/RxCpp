@@ -174,7 +174,9 @@ public:
             std::terminate();
         }
     }
-    void on_next(const T& v) const {
+
+    template<typename U>
+    void on_next(U&& v) const {
         auto current_completer = b->current_completer.lock();
         if (!current_completer) {
             std::unique_lock<std::mutex> guard(b->state->lock);

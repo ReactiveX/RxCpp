@@ -53,7 +53,7 @@ struct notification_base
 
     virtual void out(std::ostream& out) const =0;
     virtual bool equals(const type& other) const = 0;
-    virtual void accept(const observer_type& o) const & =0;
+    virtual void accept(const observer_type& o) & =0;
     virtual void accept(const observer_type& o) && =0;
 };
 
@@ -140,7 +140,7 @@ private:
                 })));
             return result;
         }
-        void accept(const typename base::observer_type& o) const & override{
+        void accept(const typename base::observer_type& o) & override{
             o.on_next(value);
         }
 
@@ -169,7 +169,7 @@ private:
             })));
             return result;
         }
-        void accept(const typename base::observer_type& o) const & override{
+        void accept(const typename base::observer_type& o) & override{
             o.on_error(ep);
         }
 
@@ -192,7 +192,7 @@ private:
             })));
             return result;
         }
-        void accept(const typename base::observer_type& o) const & override{
+        void accept(const typename base::observer_type& o) & override{
             o.on_completed();
         }
 

@@ -282,3 +282,31 @@ SCENARIO("map doesn't provide copies for move", "[map][operators][copies]")
         }
     }
 }
+
+SCENARIO("test mutable", "[map][operators][copies]")
+{
+    // compilable due to all possible on_next calls to map only there
+    auto action  = [](int& v) { return v; };
+    auto sub        = rxcpp::make_subscriber<int>([](const auto&) {});
+    auto new_sub = rxcpp::operators::detail::map<int, decltype(action)>(action)(sub);
+    int  v          = 1;
+    new_sub.on_next(v);
+
+    // non-compilable due to int&& can't be bind to int&
+    // new_sub.on_next(1);
+
+
+    // non-compilable due to virtual_observer has override for const int&, int&& and etc
+    
+    //auto observable = rxcpp::observable<>::just(1).publish();
+    //// subscriber 1
+    //observable.map([](int& v)
+    //{
+    //    v += 2;
+    //    return v;
+    //}).subscribe([](const auto& v) { std::cout << "#1 " << v << std::endl; });
+    //// subscriber 2
+    //observable.subscribe([](const auto& v) { std::cout << "#2 " << v << std::endl; });
+
+    //observable.connect();
+}
