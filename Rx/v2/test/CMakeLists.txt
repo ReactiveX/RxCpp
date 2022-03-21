@@ -21,6 +21,7 @@ set(TEST_DIR ${RXCPP_DIR}/Rx/v2/test)
 set(TEST_SOURCES
     ${TEST_DIR}/subscriptions/coroutine.cpp
     ${TEST_DIR}/subscriptions/observer.cpp
+    ${TEST_DIR}/subscriptions/race_condition.cpp
     ${TEST_DIR}/subscriptions/subscription.cpp
     ${TEST_DIR}/subjects/subject.cpp
     ${TEST_DIR}/sources/create.cpp
