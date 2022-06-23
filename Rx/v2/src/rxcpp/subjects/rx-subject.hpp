@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <iterator>
+
 #if !defined(RXCPP_RX_SUBJECT_HPP)
 #define RXCPP_RX_SUBJECT_HPP
 
