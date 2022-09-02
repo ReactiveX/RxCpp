@@ -35,6 +35,8 @@ using namespace Rx;
 using namespace std;
 using namespace std::chrono;
 
+// main section begin
+
 int main()
 {
     random_device rd;   // non-deterministic generator
@@ -67,9 +69,9 @@ int main()
             cout << endl;
         });
 
-    //
+    
     // recover lines of text from byte stream
-    //
+    
     
     auto removespaces = [](string s){
         s.erase(remove_if(s.begin(), s.end(), ::isspace), s.end());
@@ -117,6 +119,7 @@ int main()
     return 0;
 }
 ```
+// main section end 
 
 # Reactive Extensions
 
