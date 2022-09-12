@@ -17,7 +17,7 @@
 
     \return  Observable that emits the results of applying a function to a pair of values emitted by the source observable and the collection observable.
 
-    Observables, produced by the CollectionSelector, are merged. There is another operator rxcpp::observable<T,SourceType>::flat_map that works similar but concatenates the observables.
+    Observables, produced by the CollectionSelector, are merged. There is another operator rxcpp::observable<T,SourceType>::concat_map that works similar but concatenates the observables.
 
     \sample
     \snippet flat_map.cpp flat_map sample
