@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.2...3.28 FATAL_ERROR)
 
 project(rxcpp VERSION 2.2.4 LANGUAGES C CXX)
 
@@ -150,7 +150,7 @@ install(DIRECTORY ${RXCPP_DIR}/Rx/v2/src/rxcpp/ DESTINATION include/rxcpp
         FILES_MATCHING PATTERN "*.hpp")
 
 # Here we are exporting TARGETS so that other projects can import rxcpp
-# just with find_package(rxcpp CONFIG) after rxcpp is installed into system by "make install". 
+# just with find_package(rxcpp CONFIG) after rxcpp is installed into system by "make install".
 add_library(rxcpp INTERFACE)
 
 target_include_directories(rxcpp INTERFACE
