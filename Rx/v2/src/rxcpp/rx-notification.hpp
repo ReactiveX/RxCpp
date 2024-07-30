@@ -155,7 +155,7 @@ private:
         }
         on_error_notification(const on_error_notification& o) : ep(o.ep) {}
         on_error_notification(const on_error_notification&& o) : ep(std::move(o.ep)) {}
-        on_error_notification& operator=(on_error_notification o) { ep = std::move(o.ep); return *this; }
+        on_error_notification& operator=(on_error_notification o) RXCPP_DELETE;
         void out(std::ostream& os) const override {
             os << "on_error(";
             os << rxu::what(ep);
@@ -274,7 +274,7 @@ std::ostream& operator<< (std::ostream& out, const recorded<T>& r) {
     out << "@" << r.time() << "-" << r.value();
     return out;
 }
- 
+
 }
 namespace rxn=notifications;
 
