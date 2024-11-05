@@ -115,8 +115,6 @@ struct concat_map
         collection_selector_type selectCollection;
         result_selector_type selectResult;
         coordination_type coordination;
-    private:
-        values& operator=(const values&) RXCPP_DELETE;
     };
     values initial;
 
@@ -275,8 +273,6 @@ struct concat_map
         source->subscribe(std::move(selectedSink.get()));
 
     }
-private:
-    concat_map& operator=(const concat_map&) RXCPP_DELETE;
 };
 
 }

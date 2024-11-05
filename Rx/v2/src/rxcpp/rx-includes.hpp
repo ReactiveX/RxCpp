@@ -181,6 +181,7 @@
 #include <map>
 #include <set>
 #include <mutex>
+#include <optional>
 #include <deque>
 #include <thread>
 #include <future>

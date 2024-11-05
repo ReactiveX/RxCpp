@@ -490,8 +490,6 @@ struct endline
     void operator()() const {
         os << std::endl;
     }
-private:
-    endline& operator=(const endline&) RXCPP_DELETE;
 };
 
 template<class OStream, class ValueType>
@@ -503,8 +501,6 @@ struct insert_value
     void operator()() const {
         os << value;
     }
-private:
-    insert_value& operator=(const insert_value&) RXCPP_DELETE;
 };
 
 template<class OStream, class Function>
@@ -516,8 +512,6 @@ struct insert_function
     void operator()() const {
         call(os);
     }
-private:
-    insert_function& operator=(const insert_function&) RXCPP_DELETE;
 };
 
 template<class OStream, class Delimit>
@@ -568,131 +562,94 @@ namespace detail {
 template <class T>
 class maybe
 {
-    bool is_set;
-    typename std::aligned_storage<sizeof(T), std::alignment_of<T>::value>::type
-        storage;
+    std::optional<T> val_;
 public:
-    maybe()
-    : is_set(false)
-    {
-    }
+    maybe() = default;
 
     maybe(const T& value)
-    : is_set(false)
+    : val_(value)
     {
-        new (reinterpret_cast<T*>(&storage)) T(value);
-        is_set = true;
     }
 
     maybe(T&& value)
-    : is_set(false)
+    : val_(std::move(value))
     {
-        new (reinterpret_cast<T*>(&storage)) T(std::move(value));
-        is_set = true;
     }
 
-    maybe(const maybe& other)
-    : is_set(false)
-    {
-        if (other.is_set) {
-            new (reinterpret_cast<T*>(&storage)) T(other.get());
-            is_set = true;
-        }
-    }
-    maybe(maybe&& other)
-    : is_set(false)
-    {
-        if (other.is_set) {
-            new (reinterpret_cast<T*>(&storage)) T(std::move(other.get()));
-            is_set = true;
-            other.reset();
-        }
-    }
-
-    ~maybe()
-    {
-        reset();
-    }
+    maybe(const maybe& other) = default;
+    maybe(maybe&& other) = default;
 
     using value_type = T;
     using iterator = T *;
     using const_iterator = const T *;
 
     bool empty() const {
-        return !is_set;
+        return !val_;
     }
 
     std::size_t size() const {
-        return is_set ? 1 : 0;
+        return val_ ? 1 : 0;
     }
 
     iterator begin() {
-        return reinterpret_cast<T*>(&storage);
+        return val_ ? &*val_ : nullptr;
     }
     const_iterator begin() const {
-        return reinterpret_cast<T*>(&storage);
+        return val_ ? &*val_ : nullptr;
     }
 
     iterator end() {
-        return reinterpret_cast<T*>(&storage) + size();
+        return begin() + size();
     }
     const_iterator end() const {
-        return reinterpret_cast<T*>(&storage) + size();
+        return begin() + size();
     }
 
     T* operator->() {
-        if (!is_set) std::terminate();
-        return reinterpret_cast<T*>(&storage);
+        if (!val_) std::terminate();
+        return val_.operator->();
     }
     const T* operator->() const {
-        if (!is_set) std::terminate();
-        return reinterpret_cast<T*>(&storage);
+        if (!val_) std::terminate();
+        return val_.operator->();
     }
 
     T& operator*() {
-        if (!is_set) std::terminate();
-        return *reinterpret_cast<T*>(&storage);
+        if (!val_) std::terminate();
+        return *val_;
     }
     const T& operator*() const {
-        if (!is_set) std::terminate();
-        return *reinterpret_cast<T*>(&storage);
+        if (!val_) std::terminate();
+        return *val_;
     }
 
     T& get() {
-        if (!is_set) std::terminate();
-        return *reinterpret_cast<T*>(&storage);
+        return **this;
     }
     const T& get() const {
-        if (!is_set) std::terminate();
-        return *reinterpret_cast<const T*>(&storage);
+        return **this;
     }
 
     void reset()
     {
-        if (is_set) {
-            is_set = false;
-            reinterpret_cast<T*>(&storage)->~T();
-            //std::fill_n(reinterpret_cast<char*>(&storage), sizeof(T), 0);
-        }
+        val_.reset();
     }
 
-    template<class U>
+    template<class U = T>
     void reset(U&& value) {
-        reset();
-        new (reinterpret_cast<T*>(&storage)) T(std::forward<U>(value));
-        is_set = true;
+        *this = std::forward<U>(value);
     }
 
-    maybe& operator=(const T& other) {
-        reset(other);
+    maybe& operator=(const maybe& other) = default;
+    maybe& operator=(maybe&& other) = default;
+
+    maybe& operator=(const T& value) {
+        val_ = value;
         return *this;
     }
-    maybe& operator=(const maybe& other) {
-        if (!other.empty()) {
-            reset(other.get());
-        } else {
-            reset();
-        }
+
+    maybe& operator=(T&& value) {
+        val_ = std::move(value);
         return *this;
     }
 };
@@ -996,22 +953,16 @@ struct filtered_hash<T, typename std::enable_if<rxu::is_string<T>::value>::type>
 };
 template <class T>
 struct filtered_hash<T, typename std::enable_if<std::is_convertible<T, std::chrono::duration<typename T::rep, typename T::period>>::value>::type> {
-    using argument_type = T;
-    using result_type = std::size_t;
-
-    result_type operator()(argument_type const & dur) const
+    std::size_t operator()(T const & dur) const
     {
-        return std::hash<typename argument_type::rep>{}(dur.count());
+        return std::hash<typename T::rep>{}(dur.count());
     }
 };
 template <class T>
 struct filtered_hash<T, typename std::enable_if<std::is_convertible<T, std::chrono::time_point<typename T::clock, typename T::duration>>::value>::type> {
-    using argument_type = T;
-    using result_type = std::size_t;
-
-    result_type operator()(argument_type const & tp) const
+    std::size_t operator()(T const & tp) const
     {
-        return std::hash<typename argument_type::rep>{}(tp.time_since_epoch().count());
+        return std::hash<typename T::rep>{}(tp.time_since_epoch().count());
     }
 };
 
@@ -1022,8 +973,6 @@ struct is_hashable
 template<typename T>
 struct is_hashable<T,
     typename rxu::types_checked_from<
-        typename filtered_hash<T>::result_type,
-        typename filtered_hash<T>::argument_type,
         typename rxu::callable_result<filtered_hash<T>, T>::type>::type>
     : std::true_type {};
 

@@ -124,9 +124,6 @@ struct reduce : public operator_base<rxu::value_type_t<reduce_traits<T, Observab
         accumulator_type accumulator;
         result_selector_type result_selector;
         seed_type seed;
-
-    private:
-        reduce_initial_type& operator=(reduce_initial_type o) RXCPP_DELETE;
     };
     reduce_initial_type initial;
 
@@ -181,8 +178,6 @@ struct reduce : public operator_base<rxu::value_type_t<reduce_traits<T, Observab
             }
         );
     }
-private:
-    reduce& operator=(reduce o) RXCPP_DELETE;
 };
 
 template<class T>
