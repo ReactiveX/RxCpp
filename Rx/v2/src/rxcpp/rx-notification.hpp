@@ -176,7 +176,7 @@ private:
         void accept(const typename base::observer_type& o) && override{
             o.on_error(ep);
         }
-        const rxu::error_ptr ep;
+        rxu::error_ptr ep;
     };
 
     struct on_completed_notification : public base {
@@ -274,7 +274,7 @@ std::ostream& operator<< (std::ostream& out, const recorded<T>& r) {
     out << "@" << r.time() << "-" << r.value();
     return out;
 }
- 
+
 }
 namespace rxn=notifications;
 
