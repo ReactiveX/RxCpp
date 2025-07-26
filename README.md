@@ -153,7 +153,7 @@ cd RxCpp
 
 # Installing
 
-To install RxCpp into your OS you need to follow standart procedure:
+To install RxCpp into your OS you need to follow standard procedure:
 ```shell
 mkdir build
 cd build
